@@ -1,0 +1,1 @@
+C:\Users\beero\Documents\GitHub\HairCarePlus\src\Client\HairCarePlus.Client.Patient\HairCarePlus.Client.Patient.csproj;x64
