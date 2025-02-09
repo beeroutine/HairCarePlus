@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using HairCarePlus.Server.Domain.Entities;
 
 namespace HairCarePlus.Server.Domain.ValueObjects
 {

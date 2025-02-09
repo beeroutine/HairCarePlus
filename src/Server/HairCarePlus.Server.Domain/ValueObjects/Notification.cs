@@ -1,4 +1,5 @@
 using System;
+using HairCarePlus.Server.Domain.Entities;
 
 namespace HairCarePlus.Server.Domain.ValueObjects
 {
