@@ -1,0 +1,108 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9A19103F-16F7-4668-BE54-9A1E7A4F7556}"
+EndProject
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{9B19103F-16F7-4668-BE54-9A1E7A4F7557}"
+EndProject
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{9C19103F-16F7-4668-BE54-9A1E7A4F7558}"
+EndProject
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{9D19103F-16F7-4668-BE54-9A1E7A4F7559}"
+EndProject
+
+# Client Projects
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Client.Patient", "src\Client\HairCarePlus.Client.Patient\HairCarePlus.Client.Patient.csproj", "{8A19103F-16F7-4668-BE54-9A1E7A4F7560}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Client.Clinic", "src\Client\HairCarePlus.Client.Clinic\HairCarePlus.Client.Clinic.csproj", "{8B19103F-16F7-4668-BE54-9A1E7A4F7561}"
+EndProject
+
+# Server Projects
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Server.API", "src\Server\HairCarePlus.Server.API\HairCarePlus.Server.API.csproj", "{8C19103F-16F7-4668-BE54-9A1E7A4F7562}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Server.Application", "src\Server\HairCarePlus.Server.Application\HairCarePlus.Server.Application.csproj", "{8D19103F-16F7-4668-BE54-9A1E7A4F7563}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Server.Domain", "src\Server\HairCarePlus.Server.Domain\HairCarePlus.Server.Domain.csproj", "{8E19103F-16F7-4668-BE54-9A1E7A4F7564}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Server.Infrastructure", "src\Server\HairCarePlus.Server.Infrastructure\HairCarePlus.Server.Infrastructure.csproj", "{8F19103F-16F7-4668-BE54-9A1E7A4F7565}"
+EndProject
+
+# Shared Projects
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Domain", "src\Shared\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj", "{9E19103F-16F7-4668-BE54-9A1E7A4F7566}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Communication", "src\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj", "{9F19103F-16F7-4668-BE54-9A1E7A4F7567}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Common", "src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj", "{9G19103F-16F7-4668-BE54-9A1E7A4F7568}"
+EndProject
+
+Global
+    GlobalSection(SolutionConfigurationPlatforms) = preSolution
+        Debug|Any CPU = Debug|Any CPU
+        Release|Any CPU = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(ProjectConfigurationPlatforms) = postSolution
+        {8A19103F-16F7-4668-BE54-9A1E7A4F7560}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8A19103F-16F7-4668-BE54-9A1E7A4F7560}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8A19103F-16F7-4668-BE54-9A1E7A4F7560}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8A19103F-16F7-4668-BE54-9A1E7A4F7560}.Release|Any CPU.Build.0 = Release|Any CPU
+        {8B19103F-16F7-4668-BE54-9A1E7A4F7561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8B19103F-16F7-4668-BE54-9A1E7A4F7561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8B19103F-16F7-4668-BE54-9A1E7A4F7561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8B19103F-16F7-4668-BE54-9A1E7A4F7561}.Release|Any CPU.Build.0 = Release|Any CPU
+        {8C19103F-16F7-4668-BE54-9A1E7A4F7562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8C19103F-16F7-4668-BE54-9A1E7A4F7562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8C19103F-16F7-4668-BE54-9A1E7A4F7562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8C19103F-16F7-4668-BE54-9A1E7A4F7562}.Release|Any CPU.Build.0 = Release|Any CPU
+        {8D19103F-16F7-4668-BE54-9A1E7A4F7563}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8D19103F-16F7-4668-BE54-9A1E7A4F7563}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8D19103F-16F7-4668-BE54-9A1E7A4F7563}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8D19103F-16F7-4668-BE54-9A1E7A4F7563}.Release|Any CPU.Build.0 = Release|Any CPU
+        {8E19103F-16F7-4668-BE54-9A1E7A4F7564}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8E19103F-16F7-4668-BE54-9A1E7A4F7564}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8E19103F-16F7-4668-BE54-9A1E7A4F7564}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8E19103F-16F7-4668-BE54-9A1E7A4F7564}.Release|Any CPU.Build.0 = Release|Any CPU
+        {8F19103F-16F7-4668-BE54-9A1E7A4F7565}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {8F19103F-16F7-4668-BE54-9A1E7A4F7565}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {8F19103F-16F7-4668-BE54-9A1E7A4F7565}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {8F19103F-16F7-4668-BE54-9A1E7A4F7565}.Release|Any CPU.Build.0 = Release|Any CPU
+        {9E19103F-16F7-4668-BE54-9A1E7A4F7566}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {9E19103F-16F7-4668-BE54-9A1E7A4F7566}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {9E19103F-16F7-4668-BE54-9A1E7A4F7566}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {9E19103F-16F7-4668-BE54-9A1E7A4F7566}.Release|Any CPU.Build.0 = Release|Any CPU
+        {9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Release|Any CPU.Build.0 = Release|Any CPU
+        {9G19103F-16F7-4668-BE54-9A1E7A4F7568}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {9G19103F-16F7-4668-BE54-9A1E7A4F7568}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {9G19103F-16F7-4668-BE54-9A1E7A4F7568}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {9G19103F-16F7-4668-BE54-9A1E7A4F7568}.Release|Any CPU.Build.0 = Release|Any CPU
+    EndGlobalSection
+    GlobalSection(SolutionProperties) = preSolution
+        HideSolutionNode = FALSE
+    EndGlobalSection
+    GlobalSection(NestedProjects) = preSolution
+        {9B19103F-16F7-4668-BE54-9A1E7A4F7557} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
+        {9C19103F-16F7-4668-BE54-9A1E7A4F7558} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
+        {9D19103F-16F7-4668-BE54-9A1E7A4F7559} = {9A19103F-16F7-4668-BE54-9A1E7A4F7556}
+        {8A19103F-16F7-4668-BE54-9A1E7A4F7560} = {9B19103F-16F7-4668-BE54-9A1E7A4F7557}
+        {8B19103F-16F7-4668-BE54-9A1E7A4F7561} = {9B19103F-16F7-4668-BE54-9A1E7A4F7557}
+        {8C19103F-16F7-4668-BE54-9A1E7A4F7562} = {9C19103F-16F7-4668-BE54-9A1E7A4F7558}
+        {8D19103F-16F7-4668-BE54-9A1E7A4F7563} = {9C19103F-16F7-4668-BE54-9A1E7A4F7558}
+        {8E19103F-16F7-4668-BE54-9A1E7A4F7564} = {9C19103F-16F7-4668-BE54-9A1E7A4F7558}
+        {8F19103F-16F7-4668-BE54-9A1E7A4F7565} = {9C19103F-16F7-4668-BE54-9A1E7A4F7558}
+        {9E19103F-16F7-4668-BE54-9A1E7A4F7566} = {9D19103F-16F7-4668-BE54-9A1E7A4F7559}
+        {9F19103F-16F7-4668-BE54-9A1E7A4F7567} = {9D19103F-16F7-4668-BE54-9A1E7A4F7559}
+        {9G19103F-16F7-4668-BE54-9A1E7A4F7568} = {9D19103F-16F7-4668-BE54-9A1E7A4F7559}
+    EndGlobalSection
+EndGlobal 
