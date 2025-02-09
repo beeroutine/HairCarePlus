@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "vS9A/pck37I=",
+  "dgSpecHash": "+dOdS1dUHqw=",
   "success": true,
   "projectFilePath": "/Users/alehleuchanka/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Clinic/HairCarePlus.Client.Clinic.csproj",
   "expectedPackageFiles": [
@@ -106,14 +106,7 @@
     "/Users/alehleuchanka/.nuget/packages/xamarin.kotlin.stdlib.jdk7/1.9.0.1/xamarin.kotlin.stdlib.jdk7.1.9.0.1.nupkg.sha512",
     "/Users/alehleuchanka/.nuget/packages/xamarin.kotlin.stdlib.jdk8/1.9.0.1/xamarin.kotlin.stdlib.jdk8.1.9.0.1.nupkg.sha512",
     "/Users/alehleuchanka/.nuget/packages/xamarin.kotlinx.coroutines.android/1.7.2.1/xamarin.kotlinx.coroutines.android.1.7.2.1.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/xamarin.kotlinx.coroutines.core.jvm/1.7.2.1/xamarin.kotlinx.coroutines.core.jvm.1.7.2.1.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.android.ref.34/34.0.147/microsoft.android.ref.34.34.0.147.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.android.runtime.34.android-arm/34.0.147/microsoft.android.runtime.34.android-arm.34.0.147.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.android.runtime.34.android-arm64/34.0.147/microsoft.android.runtime.34.android-arm64.34.0.147.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.android.runtime.34.android-x86/34.0.147/microsoft.android.runtime.34.android-x86.34.0.147.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.android.runtime.34.android-x64/34.0.147/microsoft.android.runtime.34.android-x64.34.0.147.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.ios.ref.net8.0_18.0/18.0.8319/microsoft.ios.ref.net8.0_18.0.18.0.8319.nupkg.sha512",
-    "/Users/alehleuchanka/.nuget/packages/microsoft.ios.runtime.iossimulator-x64.net8.0_18.0/18.0.8319/microsoft.ios.runtime.iossimulator-x64.net8.0_18.0.18.0.8319.nupkg.sha512"
+    "/Users/alehleuchanka/.nuget/packages/xamarin.kotlinx.coroutines.core.jvm/1.7.2.1/xamarin.kotlinx.coroutines.core.jvm.1.7.2.1.nupkg.sha512"
   ],
   "logs": []
 }

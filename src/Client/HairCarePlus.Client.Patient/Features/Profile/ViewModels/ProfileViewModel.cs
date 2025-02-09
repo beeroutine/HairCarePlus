@@ -10,9 +10,9 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
     {
         private readonly IProfileService _profileService;
         private readonly INavigationService _navigationService;
-        private PatientProfile _profile;
-        private string _newMedication;
-        private string _newAllergy;
+        private PatientProfile? _profile;
+        private string _newMedication = string.Empty;
+        private string _newAllergy = string.Empty;
         private bool _isEditing;
 
         public ProfileViewModel(
@@ -35,7 +35,7 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             Title = "My Profile";
         }
 
-        public PatientProfile Profile
+        public PatientProfile? Profile
         {
             get => _profile;
             private set => SetProperty(ref _profile, value);
@@ -91,6 +91,8 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
 
         private async Task SaveProfileAsync()
         {
+            if (Profile == null) return;
+
             await ExecuteAsync(async () =>
             {
                 Profile = await _profileService.UpdateProfileAsync(Profile);
@@ -106,6 +108,8 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
 
         private async Task UploadPhotoAsync()
         {
+            if (Profile == null) return;
+
             await ExecuteAsync(async () =>
             {
                 try

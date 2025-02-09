@@ -82,7 +82,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
 
     internal class CacheEntry<T>
     {
-        public T Data { get; set; }
+        public required T Data { get; set; }
         public DateTime Timestamp { get; set; }
     }
 } 

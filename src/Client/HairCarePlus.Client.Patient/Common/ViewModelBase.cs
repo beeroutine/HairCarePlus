@@ -6,8 +6,8 @@ namespace HairCarePlus.Client.Patient.Common
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
         private bool _isBusy;
-        private string _title;
-        private string _errorMessage;
+        private string? _title;
+        private string? _errorMessage;
 
         public bool IsBusy
         {
@@ -15,31 +15,31 @@ namespace HairCarePlus.Client.Patient.Common
             set => SetProperty(ref _isBusy, value);
         }
 
-        public string Title
+        public string? Title
         {
             get => _title;
             set => SetProperty(ref _title, value);
         }
 
-        public string ErrorMessage
+        public string? ErrorMessage
         {
             get => _errorMessage;
             set => SetProperty(ref _errorMessage, value);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public virtual Task LoadDataAsync()
         {
             return Task.CompletedTask;
         }
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
@@ -66,7 +66,7 @@ namespace HairCarePlus.Client.Patient.Common
             }
         }
 
-        protected async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        protected async Task<T?> ExecuteAsync<T>(Func<Task<T>> operation)
         {
             try
             {
