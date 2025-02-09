@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<common:BaseContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                       xmlns:common="clr-namespace:HairCarePlus.Client.Patient.Common"
+                       xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Profile.ViewModels"
+                       x:Class="HairCarePlus.Client.Patient.Features.Profile.Views.ProfilePage"
+                       x:DataType="viewmodels:ProfileViewModel"
+                       Title="{Binding Title}">
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,Auto,*" Padding="20">
+            <!-- Profile Header -->
+            <VerticalStackLayout Grid.Row="0" Spacing="10">
+                <Frame HeightRequest="120" WidthRequest="120" CornerRadius="60" 
+                       HorizontalOptions="Center" Padding="0" IsClippedToBounds="True">
+                    <Image Source="{Binding Profile.PhotoUrl}" Aspect="AspectFill"
+                           HeightRequest="120" WidthRequest="120"/>
+                </Frame>
+                <Button Text="Change Photo" Command="{Binding UploadPhotoCommand}"
+                        Style="{StaticResource SecondaryButton}" HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <!-- Profile Info -->
+            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" Margin="0,20">
+                <Entry Text="{Binding Profile.FirstName}" Placeholder="First Name" 
+                       IsEnabled="{Binding IsEditing}" Grid.Row="0" Grid.Column="0"/>
+                <Entry Text="{Binding Profile.LastName}" Placeholder="Last Name"
+                       IsEnabled="{Binding IsEditing}" Grid.Row="0" Grid.Column="1"/>
+                
+                <Entry Text="{Binding Profile.Email}" Placeholder="Email"
+                       IsEnabled="{Binding IsEditing}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
+                
+                <Entry Text="{Binding Profile.PhoneNumber}" Placeholder="Phone Number"
+                       IsEnabled="{Binding IsEditing}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
+                
+                <DatePicker Date="{Binding Profile.DateOfBirth}" 
+                           IsEnabled="{Binding IsEditing}"
+                           Grid.Row="3" Grid.Column="0"/>
+                
+                <DatePicker Date="{Binding Profile.SurgeryDate}"
+                           IsEnabled="{Binding IsEditing}"
+                           Grid.Row="3" Grid.Column="1"/>
+
+                <HorizontalStackLayout Grid.Row="4" Grid.ColumnSpan="2" Spacing="10" HorizontalOptions="End">
+                    <Button Text="Edit" Command="{Binding EditCommand}" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBoolConverter}}"
+                            Style="{StaticResource PrimaryButton}"/>
+                    <Button Text="Save" Command="{Binding SaveCommand}" IsVisible="{Binding IsEditing}"
+                            Style="{StaticResource PrimaryButton}"/>
+                    <Button Text="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsEditing}"
+                            Style="{StaticResource SecondaryButton}"/>
+                </HorizontalStackLayout>
+            </Grid>
+
+            <!-- Medications and Allergies -->
+            <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto,*" Margin="0,20">
+                <!-- Medications -->
+                <Label Text="Medications" Style="{StaticResource SubheaderLabel}" Grid.Row="0"/>
+                <CollectionView ItemsSource="{Binding Profile.Medications}" Grid.Row="1">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Delete" 
+                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=RemoveMedicationCommand}"
+                                                  CommandParameter="{Binding .}"
+                                                  BackgroundColor="{StaticResource Error}"/>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Grid Padding="10">
+                                    <Label Text="{Binding .}" VerticalOptions="Center"/>
+                                </Grid>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Entry Text="{Binding NewMedication}" Placeholder="Add new medication" Grid.Row="1" VerticalOptions="End">
+                    <Entry.Behaviors>
+                        <common:ReturnCommandBehavior Command="{Binding AddMedicationCommand}"/>
+                    </Entry.Behaviors>
+                </Entry>
+
+                <!-- Allergies -->
+                <Label Text="Allergies" Style="{StaticResource SubheaderLabel}" Grid.Row="2"/>
+                <CollectionView ItemsSource="{Binding Profile.Allergies}" Grid.Row="3">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <SwipeView>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Delete"
+                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=RemoveAllergyCommand}"
+                                                  CommandParameter="{Binding .}"
+                                                  BackgroundColor="{StaticResource Error}"/>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                <Grid Padding="10">
+                                    <Label Text="{Binding .}" VerticalOptions="Center"/>
+                                </Grid>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Entry Text="{Binding NewAllergy}" Placeholder="Add new allergy" Grid.Row="3" VerticalOptions="End">
+                    <Entry.Behaviors>
+                        <common:ReturnCommandBehavior Command="{Binding AddAllergyCommand}"/>
+                    </Entry.Behaviors>
+                </Entry>
+            </Grid>
+        </Grid>
+    </ScrollView>
+
+    <!-- Sync Button -->
+    <common:BaseContentPage.ToolbarItems>
+        <ToolbarItem Text="Sync" Command="{Binding SyncCommand}" Order="Primary"/>
+    </common:BaseContentPage.ToolbarItems>
+
+</common:BaseContentPage> 

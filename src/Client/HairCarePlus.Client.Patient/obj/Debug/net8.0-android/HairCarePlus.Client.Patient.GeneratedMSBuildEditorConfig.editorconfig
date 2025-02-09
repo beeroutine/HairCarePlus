@@ -28,6 +28,12 @@ build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patien
 build_metadata.AdditionalFiles.TargetPath = AppShell.xaml
 build_metadata.AdditionalFiles.RelativePath = AppShell.xaml
 
+[/Users/alehleuchanka/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Profile/Views/ProfilePage.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Profile.Views.ProfilePage.xaml
+build_metadata.AdditionalFiles.TargetPath = Features/Profile/Views/ProfilePage.xaml
+build_metadata.AdditionalFiles.RelativePath = Features/Profile/Views/ProfilePage.xaml
+
 [/Users/alehleuchanka/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/MainPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.MainPage.xaml
