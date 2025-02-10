@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows.Input;
 using HairCarePlus.Client.Patient.Common;
 using HairCarePlus.Client.Patient.Features.Profile.Models;
@@ -11,6 +12,9 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
         private readonly IProfileService _profileService;
         private readonly INavigationService _navigationService;
         private PatientProfile? _profile;
+        private ObservableCollection<DayViewModel> _weekDays;
+        private ObservableCollection<TaskViewModel> _dailyTasks;
+        private DateTime _selectedDate;
         private string _newMedication = string.Empty;
         private string _newAllergy = string.Empty;
         private bool _isEditing;
@@ -21,6 +25,9 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
         {
             _profileService = profileService;
             _navigationService = navigationService;
+            _weekDays = new ObservableCollection<DayViewModel>();
+            _dailyTasks = new ObservableCollection<TaskViewModel>();
+            _selectedDate = DateTime.Today;
 
             SaveCommand = new Command(async () => await SaveProfileAsync(), () => IsEditing);
             EditCommand = new Command(() => IsEditing = true);
@@ -31,14 +38,29 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             AddAllergyCommand = new Command(async () => await AddAllergyAsync(), () => !string.IsNullOrEmpty(NewAllergy));
             RemoveAllergyCommand = new Command<string>(async (allergy) => await RemoveAllergyAsync(allergy));
             SyncCommand = new Command(async () => await SyncProfileAsync());
+            SelectDateCommand = new Command<DayViewModel>(OnDateSelected);
+            TaskSelectedCommand = new Command<TaskViewModel>(OnTaskSelected);
 
             Title = "My Profile";
+            InitializeWeekDays();
         }
 
         public PatientProfile? Profile
         {
             get => _profile;
             private set => SetProperty(ref _profile, value);
+        }
+
+        public ObservableCollection<DayViewModel> WeekDays
+        {
+            get => _weekDays;
+            set => SetProperty(ref _weekDays, value);
+        }
+
+        public ObservableCollection<TaskViewModel> DailyTasks
+        {
+            get => _dailyTasks;
+            set => SetProperty(ref _dailyTasks, value);
         }
 
         public string NewMedication
@@ -80,13 +102,76 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
         public ICommand AddAllergyCommand { get; }
         public ICommand RemoveAllergyCommand { get; }
         public ICommand SyncCommand { get; }
+        public ICommand SelectDateCommand { get; }
+        public ICommand TaskSelectedCommand { get; }
 
         public override async Task LoadDataAsync()
         {
             await ExecuteAsync(async () =>
             {
                 Profile = await _profileService.GetProfileAsync();
+                await LoadDailyTasksAsync();
             });
+        }
+
+        private void InitializeWeekDays()
+        {
+            var today = DateTime.Today;
+            WeekDays.Clear();
+            for (int i = -3; i <= 3; i++)
+            {
+                var date = today.AddDays(i);
+                WeekDays.Add(new DayViewModel
+                {
+                    Date = date.Day.ToString(),
+                    DayOfWeek = date.ToString("ddd"),
+                    FullDate = date,
+                    IsSelected = i == 0
+                });
+            }
+        }
+
+        private async void OnDateSelected(DayViewModel day)
+        {
+            if (day == null) return;
+
+            foreach (var d in WeekDays)
+            {
+                d.IsSelected = d == day;
+            }
+
+            _selectedDate = day.FullDate;
+            await LoadDailyTasksAsync();
+        }
+
+        private async Task LoadDailyTasksAsync()
+        {
+            await ExecuteAsync(async () =>
+            {
+                // Here you would typically load tasks from your service
+                // For now, we'll add some sample tasks
+                DailyTasks.Clear();
+                DailyTasks.Add(new TaskViewModel
+                {
+                    Title = "Take Medication",
+                    Instructions = "2 pills after breakfast",
+                    DueTime = DateTime.Today.AddHours(9),
+                    IsCompleted = false
+                });
+                DailyTasks.Add(new TaskViewModel
+                {
+                    Title = "Apply Shampoo",
+                    Instructions = "Gentle massage for 5 minutes",
+                    DueTime = DateTime.Today.AddHours(14),
+                    IsCompleted = false
+                });
+            });
+        }
+
+        private void OnTaskSelected(TaskViewModel task)
+        {
+            // Handle task selection
+            // You could navigate to a task details page here
         }
 
         private async Task SaveProfileAsync()
@@ -179,6 +264,70 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
                 await _profileService.SyncProfileAsync();
                 await LoadDataAsync();
             });
+        }
+    }
+
+    public class DayViewModel : ViewModelBase
+    {
+        private string _date;
+        private string _dayOfWeek;
+        private DateTime _fullDate;
+        private bool _isSelected;
+
+        public string Date
+        {
+            get => _date;
+            set => SetProperty(ref _date, value);
+        }
+
+        public string DayOfWeek
+        {
+            get => _dayOfWeek;
+            set => SetProperty(ref _dayOfWeek, value);
+        }
+
+        public DateTime FullDate
+        {
+            get => _fullDate;
+            set => SetProperty(ref _fullDate, value);
+        }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+    }
+
+    public class TaskViewModel : ViewModelBase
+    {
+        private string _title;
+        private string _instructions;
+        private DateTime _dueTime;
+        private bool _isCompleted;
+
+        public string Title
+        {
+            get => _title;
+            set => SetProperty(ref _title, value);
+        }
+
+        public string Instructions
+        {
+            get => _instructions;
+            set => SetProperty(ref _instructions, value);
+        }
+
+        public DateTime DueTime
+        {
+            get => _dueTime;
+            set => SetProperty(ref _dueTime, value);
+        }
+
+        public bool IsCompleted
+        {
+            get => _isCompleted;
+            set => SetProperty(ref _isCompleted, value);
         }
     }
 } 

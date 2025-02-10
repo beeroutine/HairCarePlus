@@ -1,4 +1,6 @@
+using System;
 using System.Windows.Input;
+using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Common
 {
@@ -7,9 +9,9 @@ namespace HairCarePlus.Client.Patient.Common
         public static readonly BindableProperty CommandProperty =
             BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(ReturnCommandBehavior));
 
-        public ICommand Command
+        public ICommand? Command
         {
-            get => (ICommand)GetValue(CommandProperty);
+            get => (ICommand?)GetValue(CommandProperty);
             set => SetValue(CommandProperty, value);
         }
 
@@ -25,7 +27,7 @@ namespace HairCarePlus.Client.Patient.Common
             base.OnDetachingFrom(entry);
         }
 
-        private void OnEntryCompleted(object sender, EventArgs e)
+        private void OnEntryCompleted(object? sender, EventArgs e)
         {
             if (Command?.CanExecute(null) == true)
             {

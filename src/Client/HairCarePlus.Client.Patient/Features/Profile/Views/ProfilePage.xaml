@@ -9,104 +9,97 @@
 
     <ScrollView>
         <Grid RowDefinitions="Auto,Auto,*" Padding="20">
-            <!-- Profile Header -->
-            <VerticalStackLayout Grid.Row="0" Spacing="10">
-                <Frame HeightRequest="120" WidthRequest="120" CornerRadius="60" 
+            <!-- Profile Header with Photo -->
+            <Grid Grid.Row="0" RowDefinitions="Auto,Auto" HorizontalOptions="Center" Margin="0,20">
+                <Frame Grid.Row="0" HeightRequest="120" WidthRequest="120" CornerRadius="60" 
                        HorizontalOptions="Center" Padding="0" IsClippedToBounds="True">
                     <Image Source="{Binding Profile.PhotoUrl}" Aspect="AspectFill"
                            HeightRequest="120" WidthRequest="120"/>
                 </Frame>
-                <Button Text="Change Photo" Command="{Binding UploadPhotoCommand}"
-                        Style="{StaticResource SecondaryButton}" HorizontalOptions="Center"/>
+                <VerticalStackLayout Grid.Row="1" Spacing="5" Margin="0,10">
+                    <Label Text="{Binding Profile.FirstName}" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center"/>
+                    <Label Text="{Binding Profile.LastName}" FontSize="20" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Calendar Section -->
+            <VerticalStackLayout Grid.Row="1" Spacing="10" Margin="0,20">
+                <Label Text="Treatment Schedule" Style="{StaticResource SubheaderLabel}"/>
+                <CollectionView ItemsSource="{Binding WeekDays}" 
+                              HeightRequest="100" 
+                              HorizontalScrollBarVisibility="Never">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="viewmodels:DayViewModel">
+                            <Frame BorderColor="{StaticResource Primary}" 
+                                   BackgroundColor="{Binding Path=IsSelected, Converter={StaticResource BoolToColorConverter}}"
+                                   WidthRequest="60" 
+                                   HeightRequest="80"
+                                   Padding="10">
+                                <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                                    <Label Text="{Binding DayOfWeek}" 
+                                           FontSize="14" 
+                                           HorizontalOptions="Center"/>
+                                    <Label Text="{Binding Date}" 
+                                           FontSize="20" 
+                                           FontAttributes="Bold"
+                                           HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=SelectDateCommand}"
+                                                          CommandParameter="{Binding .}"/>
+                                </Frame.GestureRecognizers>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
             </VerticalStackLayout>
 
-            <!-- Profile Info -->
-            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" Margin="0,20">
-                <Entry Text="{Binding Profile.FirstName}" Placeholder="First Name" 
-                       IsEnabled="{Binding IsEditing}" Grid.Row="0" Grid.Column="0"/>
-                <Entry Text="{Binding Profile.LastName}" Placeholder="Last Name"
-                       IsEnabled="{Binding IsEditing}" Grid.Row="0" Grid.Column="1"/>
-                
-                <Entry Text="{Binding Profile.Email}" Placeholder="Email"
-                       IsEnabled="{Binding IsEditing}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"/>
-                
-                <Entry Text="{Binding Profile.PhoneNumber}" Placeholder="Phone Number"
-                       IsEnabled="{Binding IsEditing}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"/>
-                
-                <DatePicker Date="{Binding Profile.DateOfBirth}" 
-                           IsEnabled="{Binding IsEditing}"
-                           Grid.Row="3" Grid.Column="0"/>
-                
-                <DatePicker Date="{Binding Profile.SurgeryDate}"
-                           IsEnabled="{Binding IsEditing}"
-                           Grid.Row="3" Grid.Column="1"/>
-
-                <HorizontalStackLayout Grid.Row="4" Grid.ColumnSpan="2" Spacing="10" HorizontalOptions="End">
-                    <Button Text="Edit" Command="{Binding EditCommand}" IsVisible="{Binding IsEditing, Converter={StaticResource InverseBoolConverter}}"
-                            Style="{StaticResource PrimaryButton}"/>
-                    <Button Text="Save" Command="{Binding SaveCommand}" IsVisible="{Binding IsEditing}"
-                            Style="{StaticResource PrimaryButton}"/>
-                    <Button Text="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsEditing}"
-                            Style="{StaticResource SecondaryButton}"/>
-                </HorizontalStackLayout>
-            </Grid>
-
-            <!-- Medications and Allergies -->
-            <Grid Grid.Row="2" RowDefinitions="Auto,*,Auto,*" Margin="0,20">
-                <!-- Medications -->
-                <Label Text="Medications" Style="{StaticResource SubheaderLabel}" Grid.Row="0"/>
-                <CollectionView ItemsSource="{Binding Profile.Medications}" Grid.Row="1">
+            <!-- Daily Tasks Section -->
+            <VerticalStackLayout Grid.Row="2" Spacing="10" Margin="0,20">
+                <Label Text="Today's Tasks" Style="{StaticResource SubheaderLabel}"/>
+                <CollectionView ItemsSource="{Binding DailyTasks}">
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                            <SwipeView>
-                                <SwipeView.RightItems>
-                                    <SwipeItems>
-                                        <SwipeItem Text="Delete" 
-                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=RemoveMedicationCommand}"
-                                                  CommandParameter="{Binding .}"
-                                                  BackgroundColor="{StaticResource Error}"/>
-                                    </SwipeItems>
-                                </SwipeView.RightItems>
-                                <Grid Padding="10">
-                                    <Label Text="{Binding .}" VerticalOptions="Center"/>
+                        <DataTemplate x:DataType="viewmodels:TaskViewModel">
+                            <Frame Margin="0,5" Padding="15">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <CheckBox IsChecked="{Binding IsCompleted}"
+                                             Grid.Column="0"/>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="5">
+                                        <Label Text="{Binding Title}" 
+                                               FontSize="16" 
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Instructions}" 
+                                               FontSize="14" 
+                                               TextColor="{StaticResource Gray500}"/>
+                                        <Label Text="{Binding DueTime, StringFormat='{0:HH:mm}'}" 
+                                               FontSize="12" 
+                                               TextColor="{StaticResource Primary}"/>
+                                    </VerticalStackLayout>
+                                    <Image Source="arrow_right.png" 
+                                           Grid.Column="2" 
+                                           HeightRequest="20" 
+                                           WidthRequest="20"
+                                           VerticalOptions="Center"/>
                                 </Grid>
-                            </SwipeView>
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=TaskSelectedCommand}"
+                                                         CommandParameter="{Binding .}"/>
+                                </Frame.GestureRecognizers>
+                            </Frame>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
+                            <Label Text="No tasks for today"
+                                   TextColor="{StaticResource Gray500}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
                 </CollectionView>
-                <Entry Text="{Binding NewMedication}" Placeholder="Add new medication" Grid.Row="1" VerticalOptions="End">
-                    <Entry.Behaviors>
-                        <common:ReturnCommandBehavior Command="{Binding AddMedicationCommand}"/>
-                    </Entry.Behaviors>
-                </Entry>
-
-                <!-- Allergies -->
-                <Label Text="Allergies" Style="{StaticResource SubheaderLabel}" Grid.Row="2"/>
-                <CollectionView ItemsSource="{Binding Profile.Allergies}" Grid.Row="3">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                            <SwipeView>
-                                <SwipeView.RightItems>
-                                    <SwipeItems>
-                                        <SwipeItem Text="Delete"
-                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=RemoveAllergyCommand}"
-                                                  CommandParameter="{Binding .}"
-                                                  BackgroundColor="{StaticResource Error}"/>
-                                    </SwipeItems>
-                                </SwipeView.RightItems>
-                                <Grid Padding="10">
-                                    <Label Text="{Binding .}" VerticalOptions="Center"/>
-                                </Grid>
-                            </SwipeView>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-                <Entry Text="{Binding NewAllergy}" Placeholder="Add new allergy" Grid.Row="3" VerticalOptions="End">
-                    <Entry.Behaviors>
-                        <common:ReturnCommandBehavior Command="{Binding AddAllergyCommand}"/>
-                    </Entry.Behaviors>
-                </Entry>
-            </Grid>
+            </VerticalStackLayout>
         </Grid>
     </ScrollView>
 

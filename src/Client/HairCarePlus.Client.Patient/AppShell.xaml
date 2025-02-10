@@ -3,13 +3,14 @@
     x:Class="HairCarePlus.Client.Patient.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:HairCarePlus.Client.Patient"
+    xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Profile.Views"
     Shell.FlyoutBehavior="Disabled"
-    Title="HairCarePlus.Client.Patient">
+    Title="HairCarePlus">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Profile"
+        ContentTemplate="{DataTemplate views:ProfilePage}"
+        Route="/"
+        Shell.NavBarIsVisible="True" />
 
 </Shell>

@@ -1,11 +1,15 @@
+using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Common
 {
     public abstract class BaseContentPage : ContentPage
     {
         protected readonly INavigationService NavigationService;
-        protected ViewModelBase ViewModel => BindingContext as ViewModelBase;
+        protected ViewModelBase? ViewModel => BindingContext as ViewModelBase;
+
+        public new IList<ToolbarItem> ToolbarItems => base.ToolbarItems;
 
         protected BaseContentPage(INavigationService navigationService)
         {

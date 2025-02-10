@@ -1,0 +1,39 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# MAUI specific
+.mfractor/
+.localhistory/
+
+# Android build outputs
+**/bin/Debug/net*-android/*.apk
+**/bin/Release/net*-android/*.apk
+
+# iOS build outputs
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride 

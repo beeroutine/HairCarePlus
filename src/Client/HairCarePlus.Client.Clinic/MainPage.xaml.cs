@@ -1,4 +1,8 @@
-﻿namespace HairCarePlus.Client.Clinic;
+﻿using System;
+using Microsoft.Maui.Accessibility;
+using Microsoft.Maui.Controls;
+
+namespace HairCarePlus.Client.Clinic;
 
 public partial class MainPage : ContentPage
 {

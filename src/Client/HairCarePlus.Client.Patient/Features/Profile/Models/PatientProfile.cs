@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace HairCarePlus.Client.Patient.Features.Profile.Models
 {

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Profile.Models;
 
 namespace HairCarePlus.Client.Patient.Features.Profile.Services
