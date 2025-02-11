@@ -11,9 +11,43 @@
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
-            <!-- Converters -->
-            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
-            <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <!-- Цвета -->
+            <Color x:Key="Primary">#512BD4</Color>
+            <Color x:Key="Secondary">#DFD8F7</Color>
+            <Color x:Key="Gray100">#E1E1E1</Color>
+            <Color x:Key="Gray200">#C8C8C8</Color>
+            <Color x:Key="Gray300">#ACACAC</Color>
+            <Color x:Key="Gray400">#919191</Color>
+            <Color x:Key="Gray500">#6E6E6E</Color>
+            <Color x:Key="Gray600">#404040</Color>
+            <Color x:Key="Gray900">#212121</Color>
+            <Color x:Key="White">White</Color>
+            <Color x:Key="Black">Black</Color>
+
+            <!-- Конвертеры -->
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>
+            <converters:DaysToColorConverter x:Key="DaysToColorConverter"/>
+
+            <!-- Стили -->
+            <Style x:Key="OutlineButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="Transparent"/>
+                <Setter Property="BorderColor" Value="{StaticResource Primary}"/>
+                <Setter Property="BorderWidth" Value="1"/>
+                <Setter Property="TextColor" Value="{StaticResource Primary}"/>
+                <Setter Property="Padding" Value="15,10"/>
+                <Setter Property="CornerRadius" Value="5"/>
+            </Style>
+
+            <Style x:Key="BaseButton" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource Primary}"/>
+                <Setter Property="TextColor" Value="{StaticResource White}"/>
+                <Setter Property="Padding" Value="15,10"/>
+                <Setter Property="CornerRadius" Value="5"/>
+            </Style>
+
+            <Style TargetType="Button" BasedOn="{StaticResource BaseButton}"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

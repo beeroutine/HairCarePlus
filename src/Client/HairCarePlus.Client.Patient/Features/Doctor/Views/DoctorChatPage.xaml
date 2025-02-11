@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.ViewModels"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Models"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
+             x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
+             x:DataType="viewmodels:DoctorChatViewModel"
+             Title="Чат с доктором">
+
+    <ContentPage.Resources>
+        <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter"/>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="16">
+        <!-- Doctor Info -->
+        <Frame Grid.Row="0" Padding="8" Margin="0,0,0,8">
+            <HorizontalStackLayout Spacing="12">
+                <Image Source="{Binding Doctor.PhotoUrl}"
+                       HeightRequest="40" 
+                       WidthRequest="40"
+                       Aspect="AspectFill"/>
+                <VerticalStackLayout>
+                    <Label Text="{Binding Doctor.Name}" 
+                           FontAttributes="Bold"/>
+                    <Label Text="{Binding Doctor.Specialty}"
+                           TextColor="Gray"
+                           FontSize="Small"/>
+                </VerticalStackLayout>
+                <Label Text="{Binding Doctor.IsOnline, StringFormat='{0}'}"
+                       TextColor="Green"
+                       VerticalOptions="Center"
+                       HorizontalOptions="EndAndExpand"/>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!-- Messages List -->
+        <CollectionView Grid.Row="1" 
+                       ItemsSource="{Binding Messages}"
+                       Margin="0,8">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:ChatMessage">
+                    <Frame Margin="4"
+                           Padding="12,8"
+                           HasShadow="False"
+                           BackgroundColor="{Binding IsSending, Converter={StaticResource MessageBackgroundConverter}}">
+                        <VerticalStackLayout>
+                            <Label Text="{Binding Content}"
+                                   TextColor="Black"/>
+                            <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                   FontSize="Micro"
+                                   TextColor="Gray"
+                                   HorizontalOptions="End"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Message Input -->
+        <Grid Grid.Row="2" 
+              ColumnDefinitions="Auto,*,Auto"
+              RowDefinitions="Auto"
+              Margin="0,8,0,0">
+            <Button Grid.Column="0"
+                    Text="📷"
+                    Command="{Binding AttachPhotoCommand}"
+                    WidthRequest="40"
+                    HeightRequest="40"
+                    Margin="0,0,8,0"/>
+            <Entry Grid.Column="1"
+                   Text="{Binding MessageText}"
+                   Placeholder="Введите сообщение..."
+                   ReturnCommand="{Binding SendMessageCommand}"/>
+            <Button Grid.Column="2"
+                    Text="➤"
+                    Command="{Binding SendMessageCommand}"
+                    WidthRequest="40"
+                    HeightRequest="40"
+                    Margin="8,0,0,0"/>
+        </Grid>
+    </Grid>
+
+</ContentPage> 

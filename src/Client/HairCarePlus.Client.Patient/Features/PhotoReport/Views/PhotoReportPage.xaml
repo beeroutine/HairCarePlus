@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.ViewModels"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.Models"
+             x:Class="HairCarePlus.Client.Patient.Features.PhotoReport.Views.PhotoReportPage"
+             x:DataType="viewmodels:PhotoReportViewModel"
+             Title="{Binding Title}">
+
+    <Grid>
+        <!-- Основной контент -->
+        <Grid RowDefinitions="Auto,*" Padding="20">
+            <!-- Заголовок и кнопка добавления -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                <Label Text="Photo Reports" 
+                       FontSize="24" 
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"/>
+                <Button Grid.Column="1"
+                        Text="Take Photo"
+                        Command="{Binding TakePhotoCommand}"/>
+            </Grid>
+
+            <!-- Список фотографий -->
+            <CollectionView Grid.Row="1"
+                          ItemsSource="{Binding PhotoReports}"
+                          EmptyView="No photos yet. Take your first photo!">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PhotoReport">
+                        <Frame Margin="0,5" Padding="15">
+                            <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,Auto">
+                                <!-- Дата и статус -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
+                                       FontSize="16" FontAttributes="Bold"/>
+                                <Label Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding Status}"
+                                       TextColor="{StaticResource Primary}"/>
+
+                                <!-- Фотография -->
+                                <Frame Grid.Row="1" Grid.ColumnSpan="2"
+                                       Margin="0,10" Padding="0"
+                                       IsClippedToBounds="True">
+                                    <Grid>
+                                        <Image Source="{Binding PhotoUrl}"
+                                               Aspect="AspectFill"
+                                               HeightRequest="200"/>
+                                        <Label Text="{Binding Analysis}"
+                                               BackgroundColor="#80000000"
+                                               TextColor="White"
+                                               Padding="10"
+                                               VerticalOptions="End"/>
+                                    </Grid>
+                                </Frame>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+        <!-- Индикатор загрузки -->
+        <ActivityIndicator IsRunning="{Binding IsLoading}"
+                          IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
+
+</ContentPage> 

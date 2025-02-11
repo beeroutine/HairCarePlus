@@ -6,18 +6,22 @@ namespace HairCarePlus.Client.Patient.Common.Converters
 {
     public class InverseBoolConverter : IValueConverter
     {
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
+            {
                 return !boolValue;
-            return value;
+            }
+            return false;
         }
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
+            {
                 return !boolValue;
-            return value;
+            }
+            return false;
         }
     }
 } 

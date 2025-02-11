@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.Models"
+             x:Class="HairCarePlus.Client.Patient.Features.DailyRoutine.Views.DailyRoutinePage"
+             x:DataType="viewmodels:DailyRoutineViewModel"
+             Title="{Binding Title}">
+
+    <Grid>
+        <!-- Основной контент -->
+        <Grid RowDefinitions="Auto,*" Padding="20">
+            <!-- Переключатель Утро/Вечер -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="0,0,0,20">
+                <Button Grid.Column="0" Text="Morning"
+                        Command="{Binding ToggleRoutineTimeCommand}"
+                        CommandParameter="true"
+                        Style="{StaticResource OutlineButton}"
+                        BackgroundColor="{Binding IsMorningSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,Transparent'}"/>
+                <Button Grid.Column="1" Text="Evening"
+                        Command="{Binding ToggleRoutineTimeCommand}"
+                        CommandParameter="false"
+                        Style="{StaticResource OutlineButton}"
+                        BackgroundColor="{Binding IsMorningSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Transparent,Primary'}"/>
+            </Grid>
+
+            <ScrollView Grid.Row="1">
+                <VerticalStackLayout Spacing="20">
+                    <!-- Процедуры -->
+                    <CollectionView ItemsSource="{Binding TodayRoutine.MorningRoutines}"
+                                  IsVisible="{Binding IsMorningSelected}"
+                                  EmptyView="No morning routines for today">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CareRoutine">
+                                <Frame Margin="0,5" Padding="15">
+                                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                        <!-- Заголовок и приоритет -->
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Title}"
+                                               FontSize="18" FontAttributes="Bold"/>
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Duration, StringFormat='{0:mm} min'}"
+                                               TextColor="{StaticResource Primary}"/>
+
+                                        <!-- Описание -->
+                                        <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                               Text="{Binding Description}"
+                                               TextColor="{StaticResource Gray500}"
+                                               Margin="0,5"/>
+
+                                        <!-- Кнопки действий -->
+                                        <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                                             Spacing="10">
+                                            <Button Text="Start Timer"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=StartTimerCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsCompleted, Converter={StaticResource InverseBoolConverter}}"
+                                                    Style="{StaticResource OutlineButton}"/>
+                                            
+                                            <Button Text="Watch Guide"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=WatchVideoGuideCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsVisible="{Binding VideoGuideUrl, Converter={StaticResource StringNotEmptyConverter}}"
+                                                    Style="{StaticResource OutlineButton}"/>
+
+                                            <Button Text="Complete"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=CompleteRoutineCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsCompleted, Converter={StaticResource InverseBoolConverter}}"/>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <CollectionView ItemsSource="{Binding TodayRoutine.EveningRoutines}"
+                                  IsVisible="{Binding IsMorningSelected, Converter={StaticResource InverseBoolConverter}}"
+                                  EmptyView="No evening routines for today">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:CareRoutine">
+                                <Frame Margin="0,5" Padding="15">
+                                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                        <!-- Такой же шаблон как для утренних процедур -->
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Title}"
+                                               FontSize="18" FontAttributes="Bold"/>
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Duration, StringFormat='{0:mm} min'}"
+                                               TextColor="{StaticResource Primary}"/>
+
+                                        <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                               Text="{Binding Description}"
+                                               TextColor="{StaticResource Gray500}"
+                                               Margin="0,5"/>
+
+                                        <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                                             Spacing="10">
+                                            <Button Text="Start Timer"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=StartTimerCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsCompleted, Converter={StaticResource InverseBoolConverter}}"
+                                                    Style="{StaticResource OutlineButton}"/>
+                                            
+                                            <Button Text="Watch Guide"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=WatchVideoGuideCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsVisible="{Binding VideoGuideUrl, Converter={StaticResource StringNotEmptyConverter}}"
+                                                    Style="{StaticResource OutlineButton}"/>
+
+                                            <Button Text="Complete"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=CompleteRoutineCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsCompleted, Converter={StaticResource InverseBoolConverter}}"/>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Медикаменты -->
+                    <CollectionView ItemsSource="{Binding TodayRoutine.Medications}"
+                                  EmptyView="No medications for today">
+                        <CollectionView.Header>
+                            <Label Text="Medications"
+                                   FontSize="20" FontAttributes="Bold"
+                                   Margin="0,0,0,10"/>
+                        </CollectionView.Header>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Medication">
+                                <Frame Margin="0,5" Padding="15">
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto,Auto">
+                                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                                            <Label Text="{Binding Name}"
+                                                   FontSize="16" FontAttributes="Bold"/>
+                                            <Label Text="{Binding Instructions}"
+                                                   TextColor="{StaticResource Gray500}"/>
+                                        </VerticalStackLayout>
+
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Time, StringFormat='{0:hh\\:mm}'}"
+                                               VerticalOptions="Center"
+                                               Margin="10,0"/>
+
+                                        <HorizontalStackLayout Grid.Row="0" Grid.Column="2" Spacing="10">
+                                            <Button Text="Skip"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=SkipMedicationCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsTaken, Converter={StaticResource InverseBoolConverter}}"
+                                                    Style="{StaticResource OutlineButton}"/>
+                                            
+                                            <Button Text="Take"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=TakeMedicationCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsTaken, Converter={StaticResource InverseBoolConverter}}"/>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Необходимые продукты -->
+                    <CollectionView ItemsSource="{Binding TodayRoutine.RequiredProducts}"
+                                  EmptyView="No products needed">
+                        <CollectionView.Header>
+                            <Label Text="Required Products"
+                                   FontSize="20" FontAttributes="Bold"
+                                   Margin="0,0,0,10"/>
+                        </CollectionView.Header>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Product">
+                                <Frame Margin="0,5" Padding="15"
+                                       BackgroundColor="{Binding RemainingDays, Converter={StaticResource DaysToColorConverter}}">
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                                            <Label Text="{Binding Name}"
+                                                   FontSize="16" FontAttributes="Bold"/>
+                                            <Label Text="{Binding Description}"
+                                                   TextColor="{StaticResource Gray500}"/>
+                                            <Label Text="{Binding RemainingDays, StringFormat='{0} days remaining'}"
+                                                   TextColor="{StaticResource Primary}"
+                                                   FontSize="14"/>
+                                        </VerticalStackLayout>
+
+                                        <Button Grid.Row="0" Grid.Column="1"
+                                                Text="Buy Now"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DailyRoutineViewModel}}, Path=BuyProductCommand}"
+                                                CommandParameter="{Binding}"
+                                                VerticalOptions="Center"/>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+
+        <!-- Индикатор загрузки -->
+        <ActivityIndicator IsRunning="{Binding IsLoading}"
+                          IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
+    </Grid>
+
+</ContentPage> 

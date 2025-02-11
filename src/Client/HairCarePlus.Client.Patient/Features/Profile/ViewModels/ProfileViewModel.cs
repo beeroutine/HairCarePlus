@@ -11,6 +11,7 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
     {
         private readonly IProfileService _profileService;
         private readonly INavigationService _navigationService;
+        private readonly IVibrationService _vibrationService;
         private PatientProfile? _profile;
         private ObservableCollection<DayViewModel> _weekDays;
         private ObservableCollection<TaskViewModel> _dailyTasks;
@@ -21,10 +22,12 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
 
         public ProfileViewModel(
             IProfileService profileService,
-            INavigationService navigationService)
+            INavigationService navigationService,
+            IVibrationService vibrationService)
         {
             _profileService = profileService;
             _navigationService = navigationService;
+            _vibrationService = vibrationService;
             _weekDays = new ObservableCollection<DayViewModel>();
             _dailyTasks = new ObservableCollection<TaskViewModel>();
             _selectedDate = DateTime.Today;
@@ -40,6 +43,8 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             SyncCommand = new Command(async () => await SyncProfileAsync());
             SelectDateCommand = new Command<DayViewModel>(OnDateSelected);
             TaskSelectedCommand = new Command<TaskViewModel>(OnTaskSelected);
+            CompleteTaskCommand = new Command<TaskViewModel>(OnCompleteTask);
+            DeleteTaskCommand = new Command<TaskViewModel>(OnDeleteTask);
 
             Title = "My Profile";
             InitializeWeekDays();
@@ -104,6 +109,8 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
         public ICommand SyncCommand { get; }
         public ICommand SelectDateCommand { get; }
         public ICommand TaskSelectedCommand { get; }
+        public ICommand CompleteTaskCommand { get; }
+        public ICommand DeleteTaskCommand { get; }
 
         public override async Task LoadDataAsync()
         {
@@ -183,6 +190,11 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
                 Profile = await _profileService.UpdateProfileAsync(Profile);
                 IsEditing = false;
             });
+
+            if (_vibrationService.HasVibrator)
+            {
+                _vibrationService.Vibrate(100); // Короткая вибрация при сохранении
+            }
         }
 
         private void CancelEditing()
@@ -264,6 +276,22 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
                 await _profileService.SyncProfileAsync();
                 await LoadDataAsync();
             });
+        }
+
+        private void OnCompleteTask(TaskViewModel task)
+        {
+            if (task == null) return;
+
+            task.IsCompleted = true;
+            _vibrationService.Vibrate(50); // Короткая вибрация при выполнении задачи
+        }
+
+        private void OnDeleteTask(TaskViewModel task)
+        {
+            if (task == null) return;
+
+            DailyTasks.Remove(task);
+            _vibrationService.Vibrate(100); // Вибрация при удалении задачи
         }
     }
 

@@ -27,7 +27,8 @@
                 <Label Text="Treatment Schedule" Style="{StaticResource SubheaderLabel}"/>
                 <CollectionView ItemsSource="{Binding WeekDays}" 
                               HeightRequest="100" 
-                              HorizontalScrollBarVisibility="Never">
+                              HorizontalScrollBarVisibility="Never"
+                              SelectionMode="Single">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
                     </CollectionView.ItemsLayout>
@@ -60,35 +61,49 @@
             <!-- Daily Tasks Section -->
             <VerticalStackLayout Grid.Row="2" Spacing="10" Margin="0,20">
                 <Label Text="Today's Tasks" Style="{StaticResource SubheaderLabel}"/>
-                <CollectionView ItemsSource="{Binding DailyTasks}">
+                <CollectionView ItemsSource="{Binding DailyTasks}"
+                              HeightRequest="300">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="viewmodels:TaskViewModel">
-                            <Frame Margin="0,5" Padding="15">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <CheckBox IsChecked="{Binding IsCompleted}"
-                                             Grid.Column="0"/>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="5">
-                                        <Label Text="{Binding Title}" 
-                                               FontSize="16" 
-                                               FontAttributes="Bold"/>
-                                        <Label Text="{Binding Instructions}" 
-                                               FontSize="14" 
-                                               TextColor="{StaticResource Gray500}"/>
-                                        <Label Text="{Binding DueTime, StringFormat='{0:HH:mm}'}" 
-                                               FontSize="12" 
-                                               TextColor="{StaticResource Primary}"/>
-                                    </VerticalStackLayout>
-                                    <Image Source="arrow_right.png" 
-                                           Grid.Column="2" 
-                                           HeightRequest="20" 
-                                           WidthRequest="20"
-                                           VerticalOptions="Center"/>
-                                </Grid>
-                                <Frame.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=TaskSelectedCommand}"
-                                                         CommandParameter="{Binding .}"/>
-                                </Frame.GestureRecognizers>
-                            </Frame>
+                            <SwipeView>
+                                <SwipeView.LeftItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Complete"
+                                                  BackgroundColor="Green"
+                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=CompleteTaskCommand}"
+                                                  CommandParameter="{Binding .}"/>
+                                    </SwipeItems>
+                                </SwipeView.LeftItems>
+                                <SwipeView.RightItems>
+                                    <SwipeItems>
+                                        <SwipeItem Text="Delete"
+                                                  BackgroundColor="Red"
+                                                  Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:ProfileViewModel}}, Path=DeleteTaskCommand}"
+                                                  CommandParameter="{Binding .}"/>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+                                
+                                <Frame Margin="0,5" Padding="15">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <CheckBox IsChecked="{Binding IsCompleted}"
+                                                 VerticalOptions="Center"/>
+                                        
+                                        <VerticalStackLayout Grid.Column="1"
+                                                           Spacing="5">
+                                            <Label Text="{Binding Title}"
+                                                   FontSize="16"
+                                                   FontAttributes="Bold"/>
+                                            <Label Text="{Binding Instructions}"
+                                                   FontSize="14"
+                                                   TextColor="Gray"/>
+                                        </VerticalStackLayout>
+                                        
+                                        <Label Grid.Column="2"
+                                               Text="{Binding DueTime, StringFormat='{0:HH:mm}'}"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                </Frame>
+                            </SwipeView>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                     <CollectionView.EmptyView>

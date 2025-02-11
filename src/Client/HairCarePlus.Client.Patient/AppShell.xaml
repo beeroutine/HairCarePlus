@@ -3,14 +3,42 @@
     x:Class="HairCarePlus.Client.Patient.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Profile.Views"
+    xmlns:treatment="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Views"
+    xmlns:daily="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.Views"
+    xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.Views"
+    xmlns:doctor="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Views"
     Shell.FlyoutBehavior="Disabled"
     Title="HairCarePlus">
 
-    <ShellContent
-        Title="Profile"
-        ContentTemplate="{DataTemplate views:ProfilePage}"
-        Route="/"
-        Shell.NavBarIsVisible="True" />
+    <TabBar>
+        <!-- Прогресс лечения - главная страница -->
+        <Tab Title="Progress" Icon="progress_icon.png">
+            <ShellContent
+                Title="My Progress"
+                ContentTemplate="{DataTemplate treatment:TreatmentProgressPage}"
+                Route="/" />
+        </Tab>
+
+        <!-- Ежедневный уход -->
+        <Tab Title="Daily Care" Icon="care_icon.png">
+            <ShellContent
+                Title="Daily Care"
+                ContentTemplate="{DataTemplate daily:DailyRoutinePage}" />
+        </Tab>
+
+        <!-- Фотоотчеты -->
+        <Tab Title="Photos" Icon="camera_icon.png">
+            <ShellContent
+                Title="Photo Reports"
+                ContentTemplate="{DataTemplate photo:PhotoReportPage}" />
+        </Tab>
+
+        <!-- Чат с врачом -->
+        <Tab Title="Doctor" Icon="chat_icon.png">
+            <ShellContent
+                Title="Chat with Doctor"
+                ContentTemplate="{DataTemplate doctor:DoctorChatPage}" />
+        </Tab>
+    </TabBar>
 
 </Shell>
