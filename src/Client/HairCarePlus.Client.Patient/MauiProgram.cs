@@ -5,6 +5,8 @@ using HairCarePlus.Client.Patient.Features.PhotoReport.ViewModels;
 using HairCarePlus.Client.Patient.Features.PhotoReport.Views;
 using HairCarePlus.Client.Patient.Features.Doctor.ViewModels;
 using HairCarePlus.Client.Patient.Features.Doctor.Views;
+using HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels;
+using HairCarePlus.Client.Patient.Features.TreatmentProgress.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 
@@ -37,6 +39,10 @@ public static class MauiProgram
 		builder.Services.AddTransient<PhotoReportViewModel>();
 		builder.Services.AddTransient<DoctorChatPage>();
 		builder.Services.AddTransient<DoctorChatViewModel>();
+
+		// Register Treatment Progress
+		builder.Services.AddTransient<TreatmentProgressPage>();
+		builder.Services.AddTransient<TreatmentProgressViewModel>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

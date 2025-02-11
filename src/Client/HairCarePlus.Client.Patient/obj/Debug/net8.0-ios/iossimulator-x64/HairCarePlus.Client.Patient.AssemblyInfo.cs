@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HairCarePlus.Client.Patient")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+290168abf089cef274832c5b872eaeac216b17e7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+f4a08bbb325e419d82954f7ebfd76de529eac043")]
 [assembly: System.Reflection.AssemblyProductAttribute("HairCarePlus.Client.Patient")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HairCarePlus.Client.Patient")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
