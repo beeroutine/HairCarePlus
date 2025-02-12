@@ -4,14 +4,22 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
 {
     public class DayViewModel : ViewModelBase
     {
-        private string _date;
-        private string _dayOfWeek;
+        private string _date = string.Empty;
+        private string _dayOfWeek = string.Empty;
         private DateTime _fullDate;
         private bool _isSelected;
         private bool _hasTasks;
         private bool _hasEvents;
         private int _taskCount;
-        private string _taskTypes;
+        private string _taskTypes = string.Empty;
+
+        public DayViewModel()
+        {
+            _date = string.Empty;
+            _dayOfWeek = string.Empty;
+            _taskTypes = string.Empty;
+            _fullDate = DateTime.Today;
+        }
 
         public string Date
         {

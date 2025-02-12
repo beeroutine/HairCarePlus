@@ -10,9 +10,17 @@
     Shell.FlyoutBehavior="Disabled"
     Title="HairCarePlus">
 
+    <Shell.Resources>
+        <Style TargetType="Tab">
+            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+            <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
+        </Style>
+    </Shell.Resources>
+
     <TabBar>
         <!-- Прогресс лечения - главная страница -->
-        <Tab Title="Progress" Icon="progress_icon.png">
+        <Tab Title="Progress">
             <ShellContent
                 Title="My Progress"
                 ContentTemplate="{DataTemplate treatment:TreatmentProgressPage}"
@@ -20,21 +28,21 @@
         </Tab>
 
         <!-- Ежедневный уход -->
-        <Tab Title="Daily Care" Icon="care_icon.png">
+        <Tab Title="Daily Care">
             <ShellContent
                 Title="Daily Care"
                 ContentTemplate="{DataTemplate daily:DailyRoutinePage}" />
         </Tab>
 
         <!-- Фотоотчеты -->
-        <Tab Title="Photos" Icon="camera_icon.png">
+        <Tab Title="Photos">
             <ShellContent
                 Title="Photo Reports"
                 ContentTemplate="{DataTemplate photo:PhotoReportPage}" />
         </Tab>
 
         <!-- Чат с врачом -->
-        <Tab Title="Doctor" Icon="chat_icon.png">
+        <Tab Title="Doctor">
             <ShellContent
                 Title="Chat with Doctor"
                 ContentTemplate="{DataTemplate doctor:DoctorChatPage}" />

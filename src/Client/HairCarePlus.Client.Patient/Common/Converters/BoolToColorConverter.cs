@@ -5,20 +5,20 @@ namespace HairCarePlus.Client.Patient.Common.Converters
 {
     public class BoolToColorConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            if (value is bool isSelected && parameter is string colors)
+            if (value is bool boolValue)
             {
-                var colorParts = colors.Split(',');
-                if (colorParts.Length == 2)
+                if (parameter is string colorName)
                 {
-                    return Application.Current.Resources[isSelected ? colorParts[0].Trim() : colorParts[1].Trim()];
+                    return boolValue ? Color.FromArgb(colorName) : Colors.Gray;
                 }
+                return boolValue ? Colors.Green : Colors.Gray;
             }
-            return Colors.Transparent;
+            return Colors.Gray;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

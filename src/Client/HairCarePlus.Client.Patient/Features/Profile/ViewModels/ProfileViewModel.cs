@@ -42,7 +42,7 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             RemoveAllergyCommand = new Command<string>(async (allergy) => await RemoveAllergyAsync(allergy));
             SyncCommand = new Command(async () => await SyncProfileAsync());
             SelectDateCommand = new Command<DayViewModel>(OnDateSelected);
-            TaskSelectedCommand = new Command<TaskViewModel>(OnTaskSelected);
+            TaskSelectedCommand = new Command<TaskViewModel>(async (task) => await OnTaskSelected(task));
             CompleteTaskCommand = new Command<TaskViewModel>(OnCompleteTask);
             DeleteTaskCommand = new Command<TaskViewModel>(OnDeleteTask);
 
@@ -175,10 +175,14 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             });
         }
 
-        private void OnTaskSelected(TaskViewModel task)
+        private async Task OnTaskSelected(TaskViewModel task)
         {
-            // Handle task selection
-            // You could navigate to a task details page here
+            if (task == null) return;
+            
+            await _navigationService.NavigateToAsync("task/details", new Dictionary<string, object>
+            {
+                { "taskId", task.Title }
+            });
         }
 
         private async Task SaveProfileAsync()
@@ -297,10 +301,14 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
 
     public class DayViewModel : ViewModelBase
     {
-        private string _date;
-        private string _dayOfWeek;
+        private string _date = string.Empty;
+        private string _dayOfWeek = string.Empty;
         private DateTime _fullDate;
         private bool _isSelected;
+        private bool _hasTasks;
+        private bool _hasEvents;
+        private int _taskCount;
+        private string _taskTypes = string.Empty;
 
         public string Date
         {
@@ -325,16 +333,40 @@ namespace HairCarePlus.Client.Patient.Features.Profile.ViewModels
             get => _isSelected;
             set => SetProperty(ref _isSelected, value);
         }
+
+        public bool HasTasks
+        {
+            get => _hasTasks;
+            set => SetProperty(ref _hasTasks, value);
+        }
+
+        public bool HasEvents
+        {
+            get => _hasEvents;
+            set => SetProperty(ref _hasEvents, value);
+        }
+
+        public int TaskCount
+        {
+            get => _taskCount;
+            set => SetProperty(ref _taskCount, value);
+        }
+
+        public string TaskTypes
+        {
+            get => _taskTypes;
+            set => SetProperty(ref _taskTypes, value);
+        }
     }
 
     public class TaskViewModel : ViewModelBase
     {
-        private string _title;
-        private string _instructions;
-        private DateTime _dueTime;
+        private string _title = string.Empty;
+        private string _instructions = string.Empty;
+        private DateTime _dueTime = DateTime.Now;
         private bool _isCompleted;
 
-        public string Title
+        public new string Title
         {
             get => _title;
             set => SetProperty(ref _title, value);

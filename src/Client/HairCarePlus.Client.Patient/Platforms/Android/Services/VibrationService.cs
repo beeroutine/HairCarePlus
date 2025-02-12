@@ -1,21 +1,21 @@
 using Android.Content;
 using Android.OS;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
-using Microsoft.Maui.Platform;
-using Application = Android.App.Application;
+using Microsoft.Maui.ApplicationModel;
 
 namespace HairCarePlus.Client.Patient.Platforms.Android.Services
 {
     public class VibrationService : IVibrationService
     {
         private readonly Vibrator _vibrator;
-        
+
         public VibrationService()
         {
-            _vibrator = (Vibrator)Application.Context.GetSystemService(Context.VibratorService);
+            var context = Platform.CurrentActivity?.GetSystemService(Context.VibratorService) as Vibrator;
+            _vibrator = context ?? throw new InvalidOperationException("Vibrator service not available");
         }
 
-        public bool HasVibrator => _vibrator != null && _vibrator.HasVibrator;
+        public bool HasVibrator => _vibrator.HasVibrator;
 
         public void Vibrate(int milliseconds)
         {

@@ -4,12 +4,17 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
 {
     public class DailyTaskViewModel : ViewModelBase
     {
-        private string _title;
-        private string _description;
+        private string _title = string.Empty;
+        private string _description = string.Empty;
         private DateTime _time;
         private bool _isCompleted;
 
-        public string Title
+        public DailyTaskViewModel()
+        {
+            _time = DateTime.Now;
+        }
+
+        public new string Title
         {
             get => _title;
             set => SetProperty(ref _title, value);

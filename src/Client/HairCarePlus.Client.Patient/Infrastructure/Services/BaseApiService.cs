@@ -64,6 +64,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
                 var cachedData = await LocalStorageService.GetAsync<CacheEntry<T>>(cacheKey);
                 if (cachedData != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"Using expired cache due to error: {ex.Message}");
                     return cachedData.Data;
                 }
 

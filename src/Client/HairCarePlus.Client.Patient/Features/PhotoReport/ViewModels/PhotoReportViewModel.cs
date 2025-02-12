@@ -88,7 +88,9 @@ namespace HairCarePlus.Client.Patient.Features.PhotoReport.ViewModels
                         Id = Guid.NewGuid().ToString(),
                         Date = DateTime.Now,
                         PhotoUrl = photo.FullPath,
-                        Status = PhotoStatus.Uploading.ToString()
+                        Status = PhotoStatus.Uploading.ToString(),
+                        Analysis = "Awaiting analysis...",
+                        DoctorComment = "Pending review"
                     };
 
                     PhotoReports.Insert(0, newReport);

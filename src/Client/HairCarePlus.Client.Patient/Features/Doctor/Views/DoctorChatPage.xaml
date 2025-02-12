@@ -1,84 +1,136 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.ViewModels"
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
              x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
-             x:DataType="viewmodels:DoctorChatViewModel"
-             Title="Чат с доктором">
+             Title="{Binding Doctor.Name}"
+             BackgroundColor="{StaticResource ChatBackgroundColor}">
 
     <ContentPage.Resources>
-        <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter"/>
+        <ResourceDictionary Source="/Resources/Styles/ChatStyles.xaml" />
+        <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter" />
+        <Color x:Key="OutgoingMessageColor">#E3FCD9</Color>
+        <Color x:Key="IncomingMessageColor">#FFFFFF</Color>
+        <Color x:Key="ChatBackgroundColor">#E4E9EF</Color>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="16">
+    <Grid RowDefinitions="Auto,*,Auto">
         <!-- Doctor Info -->
-        <Frame Grid.Row="0" Padding="8" Margin="0,0,0,8">
-            <HorizontalStackLayout Spacing="12">
-                <Image Source="{Binding Doctor.PhotoUrl}"
-                       HeightRequest="40" 
-                       WidthRequest="40"
-                       Aspect="AspectFill"/>
-                <VerticalStackLayout>
+        <Border Grid.Row="0" 
+                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+                StrokeShape="Rectangle"
+                StrokeThickness="0">
+            <Border.Shadow>
+                <Shadow Offset="0,1"
+                        Brush="#20000000"
+                        Radius="3" />
+            </Border.Shadow>
+            <Grid Padding="16,8" ColumnDefinitions="Auto,*,Auto">
+                <Frame Grid.Column="0" 
+                       HeightRequest="36" 
+                       WidthRequest="36" 
+                       CornerRadius="18" 
+                       Padding="0" 
+                       IsClippedToBounds="True"
+                       BorderColor="Transparent">
+                    <Image Source="{Binding Doctor.PhotoUrl}"
+                           Aspect="AspectFill"/>
+                </Frame>
+                <VerticalStackLayout Grid.Column="1" Margin="12,0" Spacing="2">
                     <Label Text="{Binding Doctor.Name}" 
-                           FontAttributes="Bold"/>
-                    <Label Text="{Binding Doctor.Specialty}"
-                           TextColor="Gray"
-                           FontSize="Small"/>
+                           Style="{StaticResource DoctorNameStyle}"/>
+                    <Label Text="{Binding Doctor.Specialty}" 
+                           Style="{StaticResource DoctorSpecialtyStyle}"/>
                 </VerticalStackLayout>
-                <Label Text="{Binding Doctor.IsOnline, StringFormat='{0}'}"
-                       TextColor="Green"
-                       VerticalOptions="Center"
-                       HorizontalOptions="EndAndExpand"/>
-            </HorizontalStackLayout>
-        </Frame>
+                <Label Grid.Column="2" 
+                       Text="Online"
+                       Style="{StaticResource OnlineStatusStyle}"
+                       IsVisible="{Binding Doctor.IsOnline}"
+                       VerticalOptions="Center"/>
+            </Grid>
+        </Border>
 
-        <!-- Messages List -->
+        <!-- Message List -->
         <CollectionView Grid.Row="1" 
                        ItemsSource="{Binding Messages}"
-                       Margin="0,8">
+                       ItemsUpdatingScrollMode="KeepLastItemInView"
+                       Margin="8,0">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ChatMessage">
-                    <Frame Margin="4"
-                           Padding="12,8"
-                           HasShadow="False"
-                           BackgroundColor="{Binding IsSending, Converter={StaticResource MessageBackgroundConverter}}">
-                        <VerticalStackLayout>
-                            <Label Text="{Binding Content}"
-                                   TextColor="Black"/>
-                            <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
-                                   FontSize="Micro"
-                                   TextColor="Gray"
-                                   HorizontalOptions="End"/>
-                        </VerticalStackLayout>
-                    </Frame>
+                    <Grid Padding="4,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Doctor Avatar (only for incoming messages) -->
+                        <Frame IsVisible="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='avatar'}"
+                               Grid.Column="0"
+                               HeightRequest="28" 
+                               WidthRequest="28"
+                               CornerRadius="14"
+                               Padding="0"
+                               Margin="0,0,8,0"
+                               IsClippedToBounds="True"
+                               BorderColor="Transparent">
+                            <Image Source="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.Doctor.PhotoUrl}"
+                                   Aspect="AspectFill"/>
+                        </Frame>
+
+                        <Frame Grid.Column="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='column'}"
+                               Style="{StaticResource MessageFrameStyle}"
+                               BackgroundColor="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}}"
+                               HorizontalOptions="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}}"
+                               Margin="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}}">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Content}" 
+                                       Style="{StaticResource MessageTextStyle}"/>
+                                <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                       Style="{StaticResource TimestampStyle}"/>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
         <!-- Message Input -->
-        <Grid Grid.Row="2" 
-              ColumnDefinitions="Auto,*,Auto"
-              RowDefinitions="Auto"
-              Margin="0,8,0,0">
-            <Button Grid.Column="0"
-                    Text="📷"
-                    Command="{Binding AttachPhotoCommand}"
-                    WidthRequest="40"
-                    HeightRequest="40"
-                    Margin="0,0,8,0"/>
-            <Entry Grid.Column="1"
-                   Text="{Binding MessageText}"
-                   Placeholder="Введите сообщение..."
-                   ReturnCommand="{Binding SendMessageCommand}"/>
-            <Button Grid.Column="2"
-                    Text="➤"
-                    Command="{Binding SendMessageCommand}"
-                    WidthRequest="40"
-                    HeightRequest="40"
-                    Margin="8,0,0,0"/>
-        </Grid>
+        <Border Grid.Row="2"
+                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+                StrokeShape="Rectangle"
+                StrokeThickness="0">
+            <Border.Shadow>
+                <Shadow Offset="0,-1"
+                        Brush="#20000000"
+                        Radius="3" />
+            </Border.Shadow>
+            <Grid ColumnDefinitions="Auto,*,Auto" 
+                  Padding="8,12">
+                <Button Grid.Column="0" 
+                        Text="📎"
+                        Command="{Binding AttachPhotoCommand}"
+                        Style="{StaticResource ActionButtonStyle}"
+                        BackgroundColor="Transparent"
+                        TextColor="{StaticResource Primary}"
+                        Margin="0,0,8,0"/>
+                
+                <Frame Grid.Column="1"
+                       Style="{StaticResource InputFrameStyle}"
+                       VerticalOptions="Center">
+                    <Entry Text="{Binding MessageText}" 
+                           Placeholder="Message"
+                           Style="{StaticResource InputEntryStyle}"/>
+                </Frame>
+                
+                <Button Grid.Column="2" 
+                        Text="➤"
+                        Command="{Binding SendMessageCommand}"
+                        Style="{StaticResource ActionButtonStyle}"
+                        Margin="8,0,0,0"/>
+            </Grid>
+        </Border>
     </Grid>
 
 </ContentPage> 

@@ -14,16 +14,14 @@ public class LocalStorageService : ILocalStorageService
         };
     }
 
-    public async Task<T?> GetAsync<T>(string key)
+    public async Task<T> GetAsync<T>(string key)
     {
-        if (!Contains(key))
-            return default;
-
         var json = await SecureStorage.GetAsync(key);
         if (string.IsNullOrEmpty(json))
-            return default;
-
-        return JsonSerializer.Deserialize<T>(json, _jsonOptions);
+        {
+            return default!;
+        }
+        return JsonSerializer.Deserialize<T>(json)!;
     }
 
     public async Task SetAsync<T>(string key, T value)

@@ -20,6 +20,14 @@ namespace HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels
         {
             _navigationService = navigationService;
             _vibrationService = vibrationService;
+            _todayRoutine = new Models.DailyRoutine
+            {
+                Date = DateTime.Today,
+                MorningRoutines = new List<CareRoutine>(),
+                EveningRoutines = new List<CareRoutine>(),
+                Medications = new List<Medication>(),
+                RequiredProducts = new List<Product>()
+            };
 
             Title = "Daily Care";
 
@@ -103,7 +111,8 @@ namespace HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels
                                     "Gently pat, don't rub",
                                     "Let it absorb for 5 minutes"
                                 },
-                                Priority = Priority.Critical
+                                Priority = Priority.Critical,
+                                VideoGuideUrl = "https://example.com/serum-guide"
                             }
                         },
                         Medications = new List<Medication>

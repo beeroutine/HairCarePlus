@@ -1,53 +1,23 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace HairCarePlus.Client.Patient.Common
 {
-    public abstract class ViewModelBase : INotifyPropertyChanged
+    public abstract partial class ViewModelBase : ObservableObject
     {
+        [ObservableProperty]
         private bool _isBusy;
+
+        [ObservableProperty]
         private string? _title;
+
+        [ObservableProperty]
         private string? _errorMessage;
-
-        public bool IsBusy
-        {
-            get => _isBusy;
-            set => SetProperty(ref _isBusy, value);
-        }
-
-        public string? Title
-        {
-            get => _title;
-            set => SetProperty(ref _title, value);
-        }
-
-        public string? ErrorMessage
-        {
-            get => _errorMessage;
-            set => SetProperty(ref _errorMessage, value);
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         public virtual Task LoadDataAsync()
         {
             return Task.CompletedTask;
-        }
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
         }
 
         protected async Task ExecuteAsync(Func<Task> operation)

@@ -4,42 +4,56 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.Models
 {
     public class ChatMessage
     {
-        public string Id { get; set; }
-        public string SenderId { get; set; }
-        public string SenderName { get; set; }
-        public string Content { get; set; }
+        public required string Id { get; set; }
+        public required string SenderId { get; set; }
+        public required string Content { get; set; }
         public DateTime Timestamp { get; set; }
-        public MessageType Type { get; set; }
-        public string AttachmentUrl { get; set; }
         public bool IsRead { get; set; }
-        public bool IsSending { get; set; }
+        public MessageType Type { get; set; }
+        public string? AttachmentUrl { get; set; }
     }
 
     public class Doctor
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Specialty { get; set; }
-        public string PhotoUrl { get; set; }
+        public required string Id { get; set; }
+        public required string Name { get; set; }
+        public required string Specialty { get; set; }
+        public required string PhotoUrl { get; set; }
         public bool IsOnline { get; set; }
         public DateTime? LastSeen { get; set; }
+
+        public Doctor()
+        {
+            Id = string.Empty;
+            Name = string.Empty;
+            Specialty = string.Empty;
+            PhotoUrl = string.Empty;
+        }
     }
 
     public enum MessageType
     {
         Text,
-        Photo,
-        Document,
+        Image,
         Appointment
     }
 
     public class Appointment
     {
-        public string Id { get; set; }
+        public required string Id { get; set; }
         public DateTime DateTime { get; set; }
-        public string Purpose { get; set; }
+        public required string Purpose { get; set; }
         public AppointmentStatus Status { get; set; }
-        public string Notes { get; set; }
+        public required string Notes { get; set; }
+
+        public Appointment()
+        {
+            Id = string.Empty;
+            Purpose = string.Empty;
+            Notes = string.Empty;
+            DateTime = DateTime.Now;
+            Status = AppointmentStatus.Requested;
+        }
     }
 
     public enum AppointmentStatus

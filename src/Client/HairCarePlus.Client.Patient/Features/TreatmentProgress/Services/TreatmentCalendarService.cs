@@ -46,6 +46,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new MedicationEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(schedule.day),
                     Type = EventType.Medication,
                     MedicationType = MedicationType.Prednol,
@@ -66,6 +67,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
                 var date = surgeryDate.AddDays(day);
                 events.Add(new MedicationEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = date,
                     Type = EventType.Medication,
                     MedicationType = MedicationType.Ciprasid,
@@ -81,6 +83,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
 
                 events.Add(new MedicationEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = date,
                     Type = EventType.Medication,
                     MedicationType = MedicationType.Ciprasid,
@@ -100,6 +103,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new MedicationEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(day),
                     Type = EventType.Medication,
                     MedicationType = MedicationType.Apronax,
@@ -107,6 +111,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
                     Description = "При болях. Максимум 2 таблетки в день, перерыв 4 часа",
                     DosageCount = 1,
                     DosageUnit = "таблетка",
+                    WithFood = "независимо от приема пищи",
                     IsRequired = false
                 });
             }
@@ -116,11 +121,14 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new MedicationEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(day),
                     Type = EventType.Vitamins,
                     MedicationType = MedicationType.Vitamins,
                     Title = "Прием витаминов",
                     Description = "Ежедневный прием комплекса витаминов",
+                    DosageUnit = "таблетка",
+                    WithFood = "во время еды",
                     IsRequired = true
                 });
             }
@@ -146,6 +154,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new RestrictionEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate,
                     Type = EventType.Restriction,
                     RestrictionType = restriction.type,
@@ -177,13 +186,15 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new PhotoReportEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(day),
                     Type = EventType.PhotoReport,
                     Title = $"Фотоотчет: День {day}",
                     Description = "Сделайте фото зоны пересадки и донорской зоны",
                     RequiredAngles = new List<string> { "Фронтальный", "Левый бок", "Правый бок", "Затылок" },
                     IsRequired = true,
-                    NeedsAttention = day == 10 // Особое внимание на 10-й день для проверки корочек
+                    NeedsAttention = day == 10, // Особое внимание на 10-й день для проверки корочек
+                    LastPhotoUrl = string.Empty
                 });
             }
 
@@ -192,12 +203,14 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new PhotoReportEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddMonths(month),
                     Type = EventType.PhotoReport,
                     Title = $"Ежемесячный фотоотчет: {month} месяц",
                     Description = "Фото для отслеживания прогресса роста волос",
                     RequiredAngles = new List<string> { "Фронтальный", "Левый бок", "Правый бок", "Затылок" },
-                    IsRequired = true
+                    IsRequired = true,
+                    LastPhotoUrl = string.Empty
                 });
             }
         }
@@ -209,6 +222,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new CareEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(day),
                     Type = EventType.Care,
                     Title = "Мытье головы",
@@ -223,7 +237,8 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
                     },
                     DurationMinutes = 20,
                     IsRequired = true,
-                    VideoGuideUrl = "url_to_video_guide" // TODO: Добавить реальную ссылку
+                    VideoGuideUrl = "url_to_video_guide",
+                    ProductToUse = "Специальный спрей для очищения"
                 });
             }
 
@@ -232,11 +247,13 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new CareEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(day),
                     Type = EventType.Care,
                     Title = "Уход за волосами",
                     Description = "Использование специального шампуня",
                     IsRequired = true,
+                    VideoGuideUrl = "url_to_video_guide",
                     ProductToUse = "Специальный шампунь для восстановления"
                 });
             }
@@ -259,6 +276,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new MilestoneEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddDays(milestone.days),
                     Type = EventType.Milestone,
                     Title = milestone.phase,
@@ -266,7 +284,8 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
                     Phase = milestone.phase,
                     DaysSinceSurgery = milestone.days,
                     CommonSymptoms = new List<string>(milestone.symptoms),
-                    IsRequired = false
+                    IsRequired = false,
+                    ExpectedResult = "Нормальное заживление и восстановление"
                 });
             }
         }
@@ -278,6 +297,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.Services
             {
                 events.Add(new PlasmaTherapyEvent
                 {
+                    Id = Guid.NewGuid().ToString(),
                     Date = surgeryDate.AddMonths(month),
                     Type = EventType.PlasmaTherapy,
                     Title = $"Плазмотерапия: Сеанс {month}",
