@@ -23,17 +23,45 @@ bld/
 # MAUI specific
 .mfractor/
 .localhistory/
+.idea/
+*.userprefs
 
 # Android build outputs
 **/bin/Debug/net*-android/*.apk
 **/bin/Release/net*-android/*.apk
+Resource.designer.cs
 
 # iOS build outputs
 *.ipa
 *.dSYM.zip
 *.dSYM
+**/bin/Debug/net*-ios/
+**/bin/Release/net*-ios/
+*.mobileprovision
+*.provisionprofile
+*.certSigningRequest
+*.cer
 
 # macOS specific
 .DS_Store
 .AppleDouble
-.LSOverride 
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Rider
+.idea/
+*.sln.iml 
