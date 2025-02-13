@@ -35,8 +35,10 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IProfileService, ProfileService>();
 #if ANDROID
 		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.Android.Services.VibrationService>();
+		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();
 #elif IOS
 		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.iOS.Services.VibrationService>();
+		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
 #endif
 
 		// Register Pages and ViewModels

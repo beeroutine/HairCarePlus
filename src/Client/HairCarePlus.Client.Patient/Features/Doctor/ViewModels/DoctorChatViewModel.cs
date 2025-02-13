@@ -11,6 +11,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
     {
         private readonly INavigationService _navigationService;
         private readonly ILocalStorageService _localStorageService;
+        private readonly IKeyboardService _keyboardService;
 
         [ObservableProperty]
         private DoctorProfile _doctor;
@@ -20,10 +21,14 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
 
         public ObservableCollection<ChatMessage> Messages { get; } = new();
 
-        public DoctorChatViewModel(INavigationService navigationService, ILocalStorageService localStorageService)
+        public DoctorChatViewModel(
+            INavigationService navigationService, 
+            ILocalStorageService localStorageService,
+            IKeyboardService keyboardService)
         {
             _navigationService = navigationService;
             _localStorageService = localStorageService;
+            _keyboardService = keyboardService;
 
             // Mock data for demonstration
             Doctor = new DoctorProfile
@@ -141,6 +146,12 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             {
                 await Application.Current.MainPage.DisplayAlert("Error", "Failed to attach photo: " + ex.Message, "OK");
             }
+        }
+
+        [RelayCommand]
+        private void DismissKeyboard()
+        {
+            _keyboardService.HideKeyboard();
         }
     }
 } 

@@ -15,7 +15,10 @@
         <Color x:Key="ChatBackgroundColor">#E4E9EF</Color>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto" x:Name="MainGrid">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding DismissKeyboardCommand}" />
+        </Grid.GestureRecognizers>
         <!-- Doctor Info -->
         <Border Grid.Row="0" 
                 BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
