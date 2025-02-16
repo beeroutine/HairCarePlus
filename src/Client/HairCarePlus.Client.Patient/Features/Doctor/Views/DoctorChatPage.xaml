@@ -5,7 +5,12 @@
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
              x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
              Title="{Binding Doctor.Name}"
+             Shell.TabBarIsVisible="False"
              BackgroundColor="{StaticResource ChatBackgroundColor}">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior Command="{Binding BackCommand}" />
+    </Shell.BackButtonBehavior>
 
     <ContentPage.Resources>
         <ResourceDictionary Source="/Resources/Styles/ChatStyles.xaml" />

@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Patient.Common;
 using HairCarePlus.Client.Patient.Features.Doctor.Models;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using Microsoft.Maui.Controls;
+using System.Windows.Input;
 
 namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
 {
@@ -20,6 +22,8 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         private string _messageText = string.Empty;
 
         public ObservableCollection<ChatMessage> Messages { get; } = new();
+
+        public ICommand BackCommand { get; }
 
         public DoctorChatViewModel(
             INavigationService navigationService, 
@@ -39,6 +43,8 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
                 PhotoUrl = "doctor_avatar.png",
                 IsOnline = true
             };
+
+            BackCommand = new Command(async () => await GoBack());
         }
 
         public override async Task LoadDataAsync()
@@ -51,38 +57,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
 
         private void LoadMessages()
         {
-            var mockMessages = new List<ChatMessage>
-            {
-                new ChatMessage
-                {
-                    Id = "1",
-                    SenderId = "doctor",
-                    Content = "Hello! How can I help you today?",
-                    Timestamp = DateTime.Now.AddMinutes(-30),
-                    Type = MessageType.Text
-                },
-                new ChatMessage
-                {
-                    Id = "2",
-                    SenderId = "patient",
-                    Content = "Hi Dr. Johnson! I have a question about my treatment plan.",
-                    Timestamp = DateTime.Now.AddMinutes(-29),
-                    Type = MessageType.Text
-                },
-                new ChatMessage
-                {
-                    Id = "3",
-                    SenderId = "doctor",
-                    Content = "Of course! Please go ahead and ask.",
-                    Timestamp = DateTime.Now.AddMinutes(-28),
-                    Type = MessageType.Text
-                }
-            };
-
-            foreach (var message in mockMessages)
-            {
-                Messages.Add(message);
-            }
+            // Здесь будет загрузка реальных сообщений из базы данных или сервера
         }
 
         [RelayCommand]
@@ -103,22 +78,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             Messages.Add(message);
             MessageText = string.Empty;
 
-            // Simulate doctor's response after 1 second
-            Task.Delay(1000).ContinueWith(_ =>
-            {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    var response = new ChatMessage
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        SenderId = "doctor",
-                        Content = "I'm reviewing your message. I'll get back to you shortly.",
-                        Timestamp = DateTime.Now,
-                        Type = MessageType.Text
-                    };
-                    Messages.Add(response);
-                });
-            });
+            // Здесь будет отправка сообщения на сервер
         }
 
         [RelayCommand]
@@ -152,6 +112,11 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         private void DismissKeyboard()
         {
             _keyboardService.HideKeyboard();
+        }
+
+        private async Task GoBack()
+        {
+            await Shell.Current.GoToAsync("//progress");
         }
     }
 } 

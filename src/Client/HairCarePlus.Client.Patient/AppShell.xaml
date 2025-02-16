@@ -8,6 +8,7 @@
     xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.Views"
     xmlns:doctor="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Views"
     Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="True"
     Title="HairCarePlus">
 
     <Shell.Resources>
@@ -24,28 +25,31 @@
             <ShellContent
                 Title="My Progress"
                 ContentTemplate="{DataTemplate treatment:TreatmentProgressPage}"
-                Route="/" />
+                Route="progress" />
         </Tab>
 
         <!-- Ежедневный уход -->
         <Tab Title="Daily Care">
             <ShellContent
                 Title="Daily Care"
-                ContentTemplate="{DataTemplate daily:DailyRoutinePage}" />
+                ContentTemplate="{DataTemplate daily:DailyRoutinePage}"
+                Route="daily" />
         </Tab>
 
         <!-- Фотоотчеты -->
         <Tab Title="Photos">
             <ShellContent
                 Title="Photo Reports"
-                ContentTemplate="{DataTemplate photo:PhotoReportPage}" />
+                ContentTemplate="{DataTemplate photo:PhotoReportPage}"
+                Route="photos" />
         </Tab>
 
-        <!-- Чат с врачом -->
-        <Tab Title="Doctor">
+        <!-- Чат -->
+        <Tab Title="Chat">
             <ShellContent
-                Title="Chat with Doctor"
-                ContentTemplate="{DataTemplate doctor:DoctorChatPage}" />
+                Title="Chat"
+                ContentTemplate="{DataTemplate doctor:ChatPlaceholderPage}"
+                Route="chatTab" />
         </Tab>
     </TabBar>
 
