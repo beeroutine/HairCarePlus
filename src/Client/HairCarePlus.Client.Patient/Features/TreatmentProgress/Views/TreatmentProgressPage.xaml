@@ -9,10 +9,6 @@
              Title="{Binding Title}">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Chat"
-                    Command="{Binding OpenChatCommand}"
-                    Order="Primary"
-                    Priority="0" />
     </ContentPage.ToolbarItems>
 
     <Grid RowDefinitions="Auto,Auto,*" Padding="20">

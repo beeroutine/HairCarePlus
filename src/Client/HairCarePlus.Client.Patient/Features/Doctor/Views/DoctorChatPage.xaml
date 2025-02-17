@@ -5,6 +5,7 @@
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
              x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
              BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Black}}"
+             Shell.TabBarIsVisible="False"
              Padding="0">
 
     <ContentPage.Resources>

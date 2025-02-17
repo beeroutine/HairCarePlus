@@ -43,13 +43,14 @@
                 ContentTemplate="{DataTemplate photo:PhotoReportPage}"
                 Route="photos" />
         </Tab>
-    </TabBar>
 
-    <!-- Отдельные страницы -->
-    <ShellContent
-        Title="Chat"
-        ContentTemplate="{DataTemplate doctor:DoctorChatPage}"
-        Route="chat"
-        Shell.PresentationMode="ModalAnimated" />
+        <!-- Чат -->
+        <Tab Title="Chat">
+            <ShellContent
+                Title="Chat"
+                ContentTemplate="{DataTemplate doctor:DoctorChatPage}"
+                Route="chat" />
+        </Tab>
+    </TabBar>
 
 </Shell>
