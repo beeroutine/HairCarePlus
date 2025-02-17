@@ -21,9 +21,16 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         [ObservableProperty]
         private string _messageText = string.Empty;
 
+        [ObservableProperty]
+        private ChatMessage _replyToMessage;
+
         public ObservableCollection<ChatMessage> Messages { get; } = new();
 
         public ICommand BackCommand { get; }
+        public ICommand SendMessageCommand { get; }
+        public ICommand OpenCameraCommand { get; }
+        public ICommand ReplyToMessageCommand { get; }
+        public ICommand CancelReplyCommand { get; }
 
         public DoctorChatViewModel(
             INavigationService navigationService, 
@@ -45,6 +52,10 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             };
 
             BackCommand = new Command(async () => await GoBack());
+            SendMessageCommand = new AsyncRelayCommand(SendMessageAsync);
+            OpenCameraCommand = new AsyncRelayCommand(OpenCameraAsync);
+            ReplyToMessageCommand = new RelayCommand<ChatMessage>(SetReplyMessage);
+            CancelReplyCommand = new RelayCommand(CancelReply);
         }
 
         public override async Task LoadDataAsync()
@@ -60,8 +71,20 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             // Здесь будет загрузка реальных сообщений из базы данных или сервера
         }
 
-        [RelayCommand]
-        private void SendMessage()
+        private void SetReplyMessage(ChatMessage message)
+        {
+            if (message != null)
+            {
+                ReplyToMessage = message;
+            }
+        }
+
+        private void CancelReply()
+        {
+            ReplyToMessage = null;
+        }
+
+        private async Task SendMessageAsync()
         {
             if (string.IsNullOrWhiteSpace(MessageText))
                 return;
@@ -69,16 +92,89 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             var message = new ChatMessage
             {
                 Id = Guid.NewGuid().ToString(),
+                Content = MessageText,
                 SenderId = "patient",
-                Content = MessageText.Trim(),
                 Timestamp = DateTime.Now,
-                Type = MessageType.Text
+                Type = MessageType.Text,
+                ReplyTo = ReplyToMessage
             };
 
             Messages.Add(message);
             MessageText = string.Empty;
+            ReplyToMessage = null;
 
-            // Здесь будет отправка сообщения на сервер
+            // Имитация ответа от доктора
+            await SimulateReplyAsync();
+        }
+
+        private async Task SimulateReplyAsync()
+        {
+            // Имитация "печатает..."
+            await Task.Delay(Random.Shared.Next(1000, 3000));
+
+            var responses = new Dictionary<string, string[]>
+            {
+                ["hello"] = new[] { 
+                    "Hello! How can I help you today?",
+                    "Hi! How are you feeling? Any concerns about your treatment?"
+                },
+                ["pain"] = new[] {
+                    "Could you describe the pain level from 1 to 10? And where exactly do you feel it?",
+                    "I understand you're experiencing discomfort. Is it constant or does it come and go?"
+                },
+                ["treatment"] = new[] {
+                    "Your treatment is progressing well. Keep following the prescribed care routine.",
+                    "Based on your progress, everything looks normal. Continue with the recommended procedures."
+                },
+                ["question"] = new[] {
+                    "That's a good question. Let me explain in detail...",
+                    "I'll be happy to clarify that for you."
+                },
+                ["default"] = new[] {
+                    "I've received your message. Let me check and get back to you shortly.",
+                    "Thank you for letting me know. I'll review this information.",
+                    "I understand. Please continue following your treatment plan, and let me know if you have any specific concerns."
+                }
+            };
+
+            string[] possibleResponses = responses["default"];
+            string lowercaseMessage = MessageText.ToLower();
+
+            foreach (var category in responses.Keys)
+            {
+                if (lowercaseMessage.Contains(category))
+                {
+                    possibleResponses = responses[category];
+                    break;
+                }
+            }
+
+            var reply = new ChatMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                Content = possibleResponses[Random.Shared.Next(possibleResponses.Length)],
+                SenderId = "doctor",
+                Timestamp = DateTime.Now,
+                Type = MessageType.Text,
+                ReplyTo = ReplyToMessage != null ? Messages.LastOrDefault() : null
+            };
+
+            Messages.Add(reply);
+
+            // Шанс на дополнительный ответ
+            if (Random.Shared.Next(100) < 30)
+            {
+                await Task.Delay(Random.Shared.Next(1500, 3000));
+                var followUp = new ChatMessage
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Content = "Also, don't forget to update your progress in the app regularly. It helps me monitor your treatment better.",
+                    SenderId = "doctor",
+                    Timestamp = DateTime.Now,
+                    Type = MessageType.Text
+                };
+                Messages.Add(followUp);
+            }
         }
 
         [RelayCommand]
@@ -117,6 +213,12 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         private async Task GoBack()
         {
             await Shell.Current.GoToAsync("//progress");
+        }
+
+        private async Task OpenCameraAsync()
+        {
+            // Реализация открытия камеры
+            await Task.CompletedTask;
         }
     }
 } 

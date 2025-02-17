@@ -11,6 +11,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.Models
         public bool IsRead { get; set; }
         public MessageType Type { get; set; }
         public string? AttachmentUrl { get; set; }
+        public ChatMessage ReplyTo { get; set; }
     }
 
     public class Doctor
