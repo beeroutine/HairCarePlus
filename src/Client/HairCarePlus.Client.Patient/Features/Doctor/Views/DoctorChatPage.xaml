@@ -10,7 +10,6 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter" />
-            <x:String x:Key="CameraIcon">&#xf030;</x:String>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -120,12 +119,11 @@
 
             <!-- Camera Button -->
             <Button Grid.Column="0"
-                    Text="{StaticResource CameraIcon}"
+                    Text="＋"
                     Command="{Binding OpenCameraCommand}"
                     BackgroundColor="Transparent"
                     TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                    FontFamily="FASolid"
-                    FontSize="20"
+                    FontSize="24"
                     Padding="0"
                     HeightRequest="44"
                     WidthRequest="44"

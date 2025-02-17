@@ -4,34 +4,33 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.Converters;
 
 public class MessageBackgroundConverter : IValueConverter
 {
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    private static readonly Thickness OutgoingMargin = new(80.0, 2.0, 8.0, 2.0);
+    private static readonly Thickness IncomingMargin = new(44.0, 2.0, 80.0, 2.0);
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not string senderId)
+        if (value == null || parameter == null)
+            return null;
+
+        var senderId = value.ToString();
+        var paramString = parameter.ToString();
+        
+        if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(paramString))
             return null;
 
         var isOutgoing = senderId == "patient";
-        var paramString = parameter as string;
 
-        // Handle avatar visibility
-        if (paramString == "avatar")
-            return !isOutgoing;
-
-        // Handle message column placement
-        if (paramString == "column")
-            return isOutgoing ? 2 : 1;
-
-        // Handle alignment
-        if (paramString == "alignment")
-            return isOutgoing ? LayoutOptions.End : LayoutOptions.Start;
-
-        // Handle margin
-        if (paramString == "margin")
-            return isOutgoing ? new Thickness(80, 2, 8, 2) : new Thickness(44, 2, 80, 2);
-
-        return null;
+        return paramString switch
+        {
+            "avatar" => !isOutgoing,
+            "column" => isOutgoing ? 2 : 1,
+            "alignment" => isOutgoing ? LayoutOptions.End : LayoutOptions.Start,
+            "margin" => isOutgoing ? OutgoingMargin : IncomingMargin,
+            _ => null
+        };
     }
 
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }
