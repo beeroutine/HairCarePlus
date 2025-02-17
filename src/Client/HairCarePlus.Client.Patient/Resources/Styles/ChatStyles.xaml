@@ -3,28 +3,30 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
     <!-- Colors -->
-    <Color x:Key="ChatBackgroundColor">#F5F5F5</Color>
-    <Color x:Key="OutgoingMessageColor">#E7FFE3</Color>
-    <Color x:Key="IncomingMessageColor">#FFFFFF</Color>
-    <Color x:Key="MessageTextColor">#1A1A1A</Color>
+    <Color x:Key="ChatBackgroundColor">#FFFFFF</Color>
+    <Color x:Key="OutgoingMessageColor">#3797F0</Color>
+    <Color x:Key="IncomingMessageColor">#EFEFEF</Color>
+    <Color x:Key="MessageTextColor">#262626</Color>
     <Color x:Key="TimestampColor">#8E8E93</Color>
-    <Color x:Key="SendButtonColor">#6B4CD5</Color>
+    <Color x:Key="SendButtonColor">#3797F0</Color>
+    <Color x:Key="InputBorderColor">#DBDBDB</Color>
 
     <!-- Message Frame Style -->
     <Style x:Key="MessageFrameStyle" TargetType="Frame">
         <Setter Property="Padding" Value="12,8" />
         <Setter Property="HasShadow" Value="False" />
         <Setter Property="BorderColor" Value="Transparent" />
-        <Setter Property="MaximumWidthRequest" Value="240" />
-        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="MaximumWidthRequest" Value="280" />
+        <Setter Property="CornerRadius" Value="18" />
     </Style>
 
     <!-- Message Text Style -->
     <Style x:Key="MessageTextStyle" TargetType="Label">
         <Setter Property="TextColor" Value="{StaticResource MessageTextColor}" />
+        <Setter Property="FontFamily" Value="OpenSans" />
         <Setter Property="FontSize" Value="15" />
         <Setter Property="LineBreakMode" Value="WordWrap" />
-        <Setter Property="LineHeight" Value="1.2" />
+        <Setter Property="LineHeight" Value="1.25" />
     </Style>
 
     <!-- Timestamp Style -->
@@ -33,15 +35,16 @@
         <Setter Property="FontSize" Value="11" />
         <Setter Property="HorizontalOptions" Value="End" />
         <Setter Property="Margin" Value="0,-2,0,0" />
+        <Setter Property="FontFamily" Value="OpenSans" />
     </Style>
 
     <!-- Input Frame Style -->
     <Style x:Key="InputFrameStyle" TargetType="Frame">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}" />
+        <Setter Property="Padding" Value="16,8" />
         <Setter Property="HasShadow" Value="False" />
-        <Setter Property="CornerRadius" Value="20" />
-        <Setter Property="BorderColor" Value="#E5E5E5" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="BorderColor" Value="{StaticResource InputBorderColor}" />
     </Style>
 
     <!-- Input Entry Style -->
@@ -50,35 +53,49 @@
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
         <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontFamily" Value="OpenSans" />
         <Setter Property="VerticalOptions" Value="Center" />
     </Style>
 
     <!-- Action Button Style -->
     <Style x:Key="ActionButtonStyle" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="{StaticResource SendButtonColor}" />
-        <Setter Property="TextColor" Value="{StaticResource White}" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource SendButtonColor}" />
+        <Setter Property="FontSize" Value="24" />
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="HeightRequest" Value="40" />
         <Setter Property="WidthRequest" Value="40" />
         <Setter Property="Padding" Value="0" />
     </Style>
 
-    <!-- Doctor Info Style -->
+    <!-- Header Styles -->
     <Style x:Key="DoctorNameStyle" TargetType="Label">
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontFamily" Value="OpenSans-Bold" />
         <Setter Property="TextColor" Value="{StaticResource MessageTextColor}" />
     </Style>
 
     <Style x:Key="DoctorSpecialtyStyle" TargetType="Label">
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="TextColor" Value="{StaticResource Gray600}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+        <Setter Property="FontFamily" Value="OpenSans" />
     </Style>
 
     <Style x:Key="OnlineStatusStyle" TargetType="Label">
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="TextColor" Value="{StaticResource Primary}" />
+        <Setter Property="TextColor" Value="{StaticResource SendButtonColor}" />
+        <Setter Property="FontFamily" Value="OpenSans" />
+    </Style>
+
+    <!-- Media Button Style -->
+    <Style x:Key="MediaButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource Gray600}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="WidthRequest" Value="40" />
+        <Setter Property="HeightRequest" Value="40" />
     </Style>
 
 </ResourceDictionary> 

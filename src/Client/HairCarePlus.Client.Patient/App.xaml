@@ -32,6 +32,7 @@
             <Color x:Key="Yellow300">#FFC107</Color>
 
             <!-- Конвертеры -->
+            <converters:BoolToTextConverter x:Key="BoolToTextConverter" />
             <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
             <converters:StringNotEmptyConverter x:Key="StringNotEmptyConverter"/>

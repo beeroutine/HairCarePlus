@@ -8,6 +8,13 @@
              BackgroundColor="{StaticResource Gray100}"
              Title="{Binding Title}">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Chat"
+                    Command="{Binding OpenChatCommand}"
+                    Order="Primary"
+                    Priority="0" />
+    </ContentPage.ToolbarItems>
+
     <Grid RowDefinitions="Auto,Auto,*" Padding="20">
         <!-- Дневной прогресс -->
         <Frame Grid.Row="0" Margin="0,10" Padding="15" BackgroundColor="{StaticResource White}">

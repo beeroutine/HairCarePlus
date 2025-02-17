@@ -18,16 +18,15 @@ public class MessageBackgroundConverter : IValueConverter
 
         // Handle message column placement
         if (paramString == "column")
-            return isOutgoing ? 1 : 1;
+            return isOutgoing ? 2 : 1;
 
-        if (targetType == typeof(Color))
-            return isOutgoing ? Color.FromArgb("#E7FFE3") : Colors.White;
-        
-        if (targetType == typeof(LayoutOptions))
+        // Handle alignment
+        if (paramString == "alignment")
             return isOutgoing ? LayoutOptions.End : LayoutOptions.Start;
-        
-        if (targetType == typeof(Thickness))
-            return isOutgoing ? new Thickness(40, 2, 2, 2) : new Thickness(2, 2, 40, 2);
+
+        // Handle margin
+        if (paramString == "margin")
+            return isOutgoing ? new Thickness(80, 2, 8, 2) : new Thickness(44, 2, 80, 2);
 
         return null;
     }

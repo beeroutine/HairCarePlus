@@ -4,10 +4,12 @@ using HairCarePlus.Client.Patient.Common;
 using HairCarePlus.Client.Patient.Features.TreatmentProgress.Models;
 using HairCarePlus.Client.Patient.Features.TreatmentProgress.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
 {
-    public class TreatmentProgressViewModel : ViewModelBase
+    public partial class TreatmentProgressViewModel : ObservableObject
     {
         private readonly INavigationService _navigationService;
         private readonly IVibrationService _vibrationService;
@@ -19,6 +21,11 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         private double _dailyProgress;
         private bool _isLoading;
         private List<TreatmentEvent> _allEvents;
+
+        [ObservableProperty]
+        private string title = "My Progress";
+
+        public IAsyncRelayCommand OpenChatCommand { get; }
 
         public TreatmentProgressViewModel(
             INavigationService navigationService,
@@ -32,11 +39,10 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
             _selectedDate = DateTime.Today;
             _allEvents = new List<TreatmentEvent>();
 
-            Title = "My Progress";
-
             // Commands
             SelectDateCommand = new Command<DayViewModel>(OnDateSelected);
             CompleteEventCommand = new Command<TreatmentEvent>(OnEventCompleted);
+            OpenChatCommand = new AsyncRelayCommand(OpenChatAsync);
 
             InitializeCalendar();
         }
@@ -171,22 +177,24 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
             DailyProgress = totalEvents > 0 ? (double)completedEvents / totalEvents : 0;
         }
 
-        public override async Task LoadDataAsync()
+        private async Task OpenChatAsync()
         {
-            await ExecuteAsync(async () =>
+            await Shell.Current.GoToAsync("//chat");
+        }
+
+        public async Task LoadDataAsync()
+        {
+            IsLoading = true;
+            try
             {
-                IsLoading = true;
-                try
-                {
-                    // В реальном приложении здесь будет загрузка с сервера
-                    await Task.Delay(500);
-                    InitializeCalendar();
-                }
-                finally
-                {
-                    IsLoading = false;
-                }
-            });
+                // В реальном приложении здесь будет загрузка с сервера
+                await Task.Delay(500);
+                InitializeCalendar();
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
     }
 } 
