@@ -12,6 +12,10 @@ using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
 
+#if IOS
+using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
+#endif
+
 namespace HairCarePlus.Client.Patient;
 
 public static class MauiProgram
@@ -54,6 +58,16 @@ public static class MauiProgram
 		// Register Treatment Progress
 		builder.Services.AddTransient<TreatmentProgressPage>();
 		builder.Services.AddTransient<TreatmentProgressViewModel>();
+
+#if IOS
+		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
+		{
+			if (handler.PlatformView is UIKit.UITextView textView)
+			{
+				textView.InputAccessoryView = null;
+			}
+		});
+#endif
 
 #if DEBUG
 		builder.Logging.AddDebug();

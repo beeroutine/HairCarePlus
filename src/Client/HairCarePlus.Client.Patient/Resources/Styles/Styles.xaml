@@ -451,4 +451,11 @@
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
     </Style>
 
+    <!-- Shadows -->
+    <Shadow x:Key="SmallShadow"
+            Brush="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+            Offset="0,1"
+            Radius="2"
+            Opacity="0.1"/>
+
 </ResourceDictionary>

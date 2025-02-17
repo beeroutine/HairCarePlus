@@ -5,7 +5,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.Converters;
 public class MessageBackgroundConverter : IValueConverter
 {
     private static readonly Thickness OutgoingMargin = new(80.0, 2.0, 8.0, 2.0);
-    private static readonly Thickness IncomingMargin = new(44.0, 2.0, 80.0, 2.0);
+    private static readonly Thickness IncomingMargin = new(8.0, 2.0, 80.0, 2.0);
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -22,8 +22,7 @@ public class MessageBackgroundConverter : IValueConverter
 
         return paramString switch
         {
-            "avatar" => !isOutgoing,
-            "column" => isOutgoing ? 2 : 1,
+            "column" => isOutgoing ? 1 : 0,
             "alignment" => isOutgoing ? LayoutOptions.End : LayoutOptions.Start,
             "margin" => isOutgoing ? OutgoingMargin : IncomingMargin,
             _ => null
