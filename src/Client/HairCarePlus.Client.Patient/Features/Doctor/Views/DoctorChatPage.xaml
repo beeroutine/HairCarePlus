@@ -7,23 +7,22 @@
              Shell.NavBarIsVisible="True"
              Shell.TabBarIsVisible="False"
              Shell.BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
-             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Black}}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Black}}"
+             Padding="0">
 
     <Shell.TitleView>
         <Grid ColumnDefinitions="80,*,80">
-            <!-- Кнопка закрытия слева -->
             <Button Text="←"
                     Command="{Binding BackCommand}"
                     HorizontalOptions="Start"
                     FontSize="20"
                     TextColor="{StaticResource Primary}"
                     BackgroundColor="Transparent"
-                    Margin="0,0,0,0"
+                    Margin="0"
                     Padding="0"
                     HeightRequest="44"
                     WidthRequest="44" />
             
-            <!-- Имя доктора по центру -->
             <Label Grid.Column="1"
                    Text="{Binding Doctor.Name}"
                    HorizontalOptions="Center"
@@ -31,7 +30,6 @@
                    FontSize="17"
                    FontAttributes="Bold" />
             
-            <!-- Статус справа -->
             <Label Grid.Column="2"
                    Text="{Binding Doctor.IsOnline, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Online,Offline'}"
                    HorizontalOptions="End"
@@ -41,31 +39,12 @@
         </Grid>
     </Shell.TitleView>
 
-    <ContentPage.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Resources/Styles/ChatStyles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-            
-            <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter" />
-            
-            <!-- Base colors -->
-            <Color x:Key="OutgoingMessageColor">#3797F0</Color>
-            <Color x:Key="IncomingMessageColor">#EFEFEF</Color>
-        </ResourceDictionary>
-    </ContentPage.Resources>
-
-    <Grid RowDefinitions="*,Auto" x:Name="MainGrid"
-          BackgroundColor="{DynamicResource ThemeChatBackgroundColor}">
-        <Grid.GestureRecognizers>
-            <TapGestureRecognizer Command="{Binding DismissKeyboardCommand}" />
-        </Grid.GestureRecognizers>
-
+    <Grid RowDefinitions="*,Auto">
         <!-- Messages -->
         <CollectionView Grid.Row="0" 
                        ItemsSource="{Binding Messages}"
                        ItemsUpdatingScrollMode="KeepLastItemInView"
-                       Margin="8,8,8,0">
+                       Margin="8,8,8,8">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ChatMessage">
                     <Grid Padding="4,2">
@@ -75,7 +54,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Avatar (only for incoming messages) -->
+                        <!-- Avatar -->
                         <Frame IsVisible="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='avatar'}"
                                Grid.Column="0"
                                HeightRequest="28" 
@@ -89,9 +68,13 @@
                                    Aspect="AspectFill"/>
                         </Frame>
 
-                        <!-- Message Bubble -->
+                        <!-- Message -->
                         <Frame Grid.Column="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='column'}"
-                               Style="{StaticResource MessageFrameStyle}"
+                               Padding="12,8"
+                               HasShadow="False"
+                               BorderColor="Transparent"
+                               MaximumWidthRequest="280"
+                               CornerRadius="18"
                                BackgroundColor="{Binding SenderId, Mode=OneWay}"
                                HorizontalOptions="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='alignment'}"
                                Margin="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='margin'}">
@@ -111,11 +94,14 @@
                             </Frame.Triggers>
                             <VerticalStackLayout Spacing="2">
                                 <Label Text="{Binding Content}" 
-                                       Style="{StaticResource MessageTextStyle}"
-                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                       FontSize="15"
+                                       LineBreakMode="WordWrap"
+                                       LineHeight="1.25"/>
                                 <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
-                                       Style="{StaticResource TimestampStyle}"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                       FontSize="11"
+                                       HorizontalOptions="End"/>
                             </VerticalStackLayout>
                         </Frame>
                     </Grid>
@@ -123,67 +109,56 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- System-style Input Area -->
+        <!-- Input Area -->
         <Grid Grid.Row="1" 
-              BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
-              Margin="0"
-              Padding="0">
-            
-            <!-- Top Border -->
-            <BoxView HeightRequest="0.5"
-                     BackgroundColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
-                     VerticalOptions="Start"/>
+              ColumnDefinitions="Auto,*,Auto"
+              Padding="8"
+              BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}">
 
-            <!-- Input Area Content -->
-            <Grid ColumnDefinitions="Auto,*,Auto"
-                  Margin="16,8,16,0"
-                  Padding="0,4,0,0"
-                  ColumnSpacing="12">
+            <!-- Camera Button -->
+            <Button Grid.Column="0"
+                    Text="📸"
+                    Command="{Binding OpenCameraCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                    FontSize="24"
+                    Padding="8"
+                    HeightRequest="44"
+                    WidthRequest="44"
+                    VerticalOptions="Center"/>
 
-                <!-- Camera Button -->
-                <Button Grid.Column="0"
-                        Text="📸"
-                        Command="{Binding OpenCameraCommand}"
-                        Style="{StaticResource ActionButtonStyle}"
-                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                        FontSize="24"
-                        Padding="0"
-                        HeightRequest="36"
-                        WidthRequest="36"
-                        VerticalOptions="Center"/>
-
-                <!-- Message Input -->
-                <Frame Grid.Column="1"
-                       Style="{StaticResource InputFrameStyle}"
-                       BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
+            <!-- Message Input -->
+            <Frame Grid.Column="1"
+                   BackgroundColor="{AppThemeBinding Light=#E9E9EB, Dark=#1C1C1E}"
+                   Padding="16,8"
+                   CornerRadius="20"
+                   HasShadow="False"
+                   BorderColor="Transparent"
+                   VerticalOptions="Center">
+                <Entry Text="{Binding MessageText}" 
+                       Placeholder="Message"
+                       PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                       BackgroundColor="Transparent"
+                       FontSize="17"
                        VerticalOptions="Center"
-                       Padding="12,6"
-                       Margin="0,0,0,8"
-                       CornerRadius="20">
-                    <Entry Text="{Binding MessageText}" 
-                           Placeholder="Message..."
-                           PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                           Style="{StaticResource InputEntryStyle}"
-                           MaxLength="1000"/>
-                </Frame>
+                       MaxLength="1000"/>
+            </Frame>
 
-                <!-- Send Button -->
-                <Button Grid.Column="2"
-                        Text="↑"
-                        Command="{Binding SendMessageCommand}"
-                        Style="{StaticResource ActionButtonStyle}"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="{StaticResource White}"
-                        FontSize="20"
-                        HeightRequest="36"
-                        WidthRequest="36"
-                        CornerRadius="18"
-                        Margin="0,0,0,8"
-                        IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
-                        VerticalOptions="Center"/>
-            </Grid>
+            <!-- Send Button -->
+            <Button Grid.Column="2"
+                    Text="↑"
+                    Command="{Binding SendMessageCommand}"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="{StaticResource White}"
+                    FontSize="20"
+                    HeightRequest="36"
+                    WidthRequest="36"
+                    CornerRadius="18"
+                    Padding="0"
+                    Margin="4,0,0,0"
+                    IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
+                    VerticalOptions="Center"/>
         </Grid>
     </Grid>
-
 </ContentPage> 
