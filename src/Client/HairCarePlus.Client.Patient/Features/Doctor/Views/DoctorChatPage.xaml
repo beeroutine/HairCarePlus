@@ -4,10 +4,10 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Behaviors"
              x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
-             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Black}}"
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
-             Padding="0"
              NavigationPage.HasNavigationBar="False">
 
     <ContentPage.Resources>
@@ -48,31 +48,21 @@
         </Grid>
     </Shell.TitleView>
 
-    <Grid RowDefinitions="Auto,*,Auto" 
-          IgnoreSafeArea="True">
-        <!-- Header -->
-        <BoxView Grid.Row="0"
-                 HeightRequest="1"
-                 Color="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray800}}" />
-
-        <!-- Messages Background -->
-        <Grid Grid.Row="1"
-              BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}">
-            <Grid.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="{AppThemeBinding Light=#FFFFFF, Dark=#111827}"
-                                Offset="0.0" />
-                    <GradientStop Color="{AppThemeBinding Light=#F8FAFC, Dark=#0F172A}"
-                                Offset="1.0" />
-                </LinearGradientBrush>
-            </Grid.Background>
-        </Grid>
-
+    <Grid RowDefinitions="*,Auto">
         <!-- Messages -->
-        <CollectionView Grid.Row="1" 
+        <CollectionView Grid.Row="0"
+                       x:Name="MessagesCollection"
                        ItemsSource="{Binding Messages}"
                        ItemsUpdatingScrollMode="KeepLastItemInView"
-                       Margin="8,8,8,0">
+                       VerticalOptions="End"
+                       Margin="8,8,8,0"
+                       VerticalScrollBarVisibility="Never">
+            <CollectionView.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
+            </CollectionView.GestureRecognizers>
+            <CollectionView.Behaviors>
+                <behaviors:KeyboardBehavior />
+            </CollectionView.Behaviors>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ChatMessage">
                     <Grid Padding="4,2">
@@ -101,13 +91,13 @@
                                            Binding="{Binding SenderId}"
                                            Value="patient">
                                     <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#ECFDF5, Dark=#3B82F6}" />
+                                            Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
                                 </DataTrigger>
                                 <DataTrigger TargetType="Frame"
                                            Binding="{Binding SenderId}"
                                            Value="doctor">
                                     <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#D1FAE5, Dark=#1D4ED8}" />
+                                            Value="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}" />
                                 </DataTrigger>
                             </Frame.Triggers>
                             <VerticalStackLayout Spacing="2">
@@ -116,7 +106,7 @@
                                       Padding="8,4"
                                       Margin="0,0,0,4"
                                       CornerRadius="8"
-                                      BackgroundColor="{AppThemeBinding Light=#D1FAE5, Dark=#1D4ED8}"
+                                      BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
                                       Opacity="0.9">
                                     <VerticalStackLayout Spacing="2">
                                         <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
@@ -157,112 +147,61 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- Reply Preview -->
-        <Grid Grid.Row="2" 
-              RowDefinitions="Auto,1,Auto"
-              BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark=#1C1C1E}">
-            <Grid.Padding>
-                <OnPlatform x:TypeArguments="Thickness">
-                    <On Platform="iOS" Value="0,0,0,30"/>
-                    <On Platform="Default" Value="0"/>
-                </OnPlatform>
-            </Grid.Padding>
-            
-            <Frame Grid.Row="0"
-                   IsVisible="{Binding ReplyToMessage, Converter={StaticResource IsNotNullConverter}}"
-                   Padding="12,8"
-                   Margin="8,4"
-                   BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark=#2C2C2E}">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="{Binding ReplyToMessage.SenderId, StringFormat='Reply to {0}'}"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}"
-                               FontSize="13"/>
-                        <Label Text="{Binding ReplyToMessage.Content}"
-                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                               FontSize="14"
-                               MaxLines="1"
-                               LineBreakMode="TailTruncation"/>
-                    </VerticalStackLayout>
-                    <Button Grid.Column="1"
-                            Text="×"
-                            Command="{Binding CancelReplyCommand}"
-                            BackgroundColor="Transparent"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}"
-                            FontSize="20"
-                            Padding="0"
-                            HeightRequest="32"
-                            WidthRequest="32"
-                            VerticalOptions="Start"
-                            HorizontalOptions="End"/>
-                </Grid>
+        <!-- Input Panel -->
+        <Grid Grid.Row="1"
+              ColumnDefinitions="44,*,44"
+              Padding="8,6,8,8"
+              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
+            <Button Grid.Column="0"
+                   Text="＋"
+                   Command="{Binding OpenCameraCommand}"
+                   BackgroundColor="Transparent"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                   Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                   FontSize="24"
+                   Padding="0"
+                   Margin="0"
+                   HeightRequest="38"
+                   WidthRequest="38"
+                   VerticalOptions="Start"/>
+
+            <Frame Grid.Column="1"
+                   BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                   Padding="8,0"
+                   CornerRadius="18"
+                   HasShadow="True"
+                   Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                   BorderColor="Transparent"
+                   Margin="4,0,4,0"
+                   MinimumHeightRequest="38"
+                   MaximumHeightRequest="120"
+                   VerticalOptions="Start">
+                <Editor Text="{Binding MessageText}" 
+                       Placeholder="Message"
+                       PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                       BackgroundColor="Transparent"
+                       FontSize="17"
+                       AutoSize="TextChanges"
+                       MaxLength="1000"
+                       Keyboard="Chat"
+                       VerticalTextAlignment="Center"
+                       Margin="0,-2,0,-2"/>
             </Frame>
 
-            <BoxView Grid.Row="1"
-                     HeightRequest="1"
-                     Color="{AppThemeBinding Light={StaticResource Gray200}, Dark=#3A3A3C}" />
-
-            <!-- Input Panel -->
-            <Grid Grid.Row="2"
-                  ColumnDefinitions="44,*,44"
-                  MinimumHeightRequest="50"
-                  Padding="8,6,8,8"
-                  BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark=#1C1C1E}">
-
-                <!-- Camera Button -->
-                <Button Grid.Column="0"
-                       Text="＋"
-                       Command="{Binding OpenCameraCommand}"
-                       BackgroundColor="Transparent"
-                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
-                       FontSize="24"
-                       Padding="0"
-                       Margin="0"
-                       HeightRequest="38"
-                       WidthRequest="38"
-                       VerticalOptions="Start"/>
-
-                <!-- Message Input -->
-                <Frame Grid.Column="1"
-                       BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
-                       Padding="8,0"
-                       CornerRadius="18"
-                       HasShadow="True"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
-                       BorderColor="Transparent"
-                       Margin="4,0,4,0"
-                       MinimumHeightRequest="38"
-                       MaximumHeightRequest="120"
-                       VerticalOptions="Start">
-                    <Editor Text="{Binding MessageText}" 
-                           Placeholder="Message"
-                           PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
-                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                           BackgroundColor="Transparent"
-                           FontSize="17"
-                           AutoSize="TextChanges"
-                           MaxLength="1000"
-                           Keyboard="Chat"
-                           VerticalTextAlignment="Center"
-                           Margin="0,-2,0,-2"/>
-                </Frame>
-
-                <!-- Send Button -->
-                <Button Grid.Column="2"
-                       IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
-                       Text="↑"
-                       Command="{Binding SendMessageCommand}"
-                       BackgroundColor="Transparent"
-                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
-                       FontSize="20"
-                       Padding="0"
-                       Margin="0"
-                       HeightRequest="38"
-                       WidthRequest="38"
-                       VerticalOptions="Start"/>
-            </Grid>
+            <Button Grid.Column="2"
+                   IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"
+                   Text="↑"
+                   Command="{Binding SendMessageCommand}"
+                   BackgroundColor="Transparent"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                   Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                   FontSize="20"
+                   Padding="0"
+                   Margin="0"
+                   HeightRequest="38"
+                   WidthRequest="38"
+                   VerticalOptions="Start"/>
         </Grid>
     </Grid>
 </ContentPage> 

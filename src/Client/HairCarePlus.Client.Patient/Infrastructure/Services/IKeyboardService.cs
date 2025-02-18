@@ -1,7 +1,10 @@
-namespace HairCarePlus.Client.Patient.Infrastructure.Services
+using HairCarePlus.Client.Patient.Common.Behaviors;
+
+namespace HairCarePlus.Client.Patient.Infrastructure.Services;
+
+public interface IKeyboardService
 {
-    public interface IKeyboardService
-    {
-        void HideKeyboard();
-    }
+    event EventHandler<KeyboardEventArgs> KeyboardShown;
+    event EventHandler<KeyboardEventArgs> KeyboardHidden;
+    void HideKeyboard();
 } 

@@ -10,6 +10,7 @@ using HairCarePlus.Client.Patient.Features.TreatmentProgress.Views;
 using HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels;
 using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using HairCarePlus.Client.Patient.Common.Behaviors;
 using Microsoft.Extensions.Logging;
 
 #if IOS
@@ -73,6 +74,9 @@ public static class MauiProgram
 		builder.Logging.AddDebug();
 #endif
 
-		return builder.Build();
+		var app = builder.Build();
+		ServiceHelper.Initialize(app.Services);
+
+		return app;
 	}
 }

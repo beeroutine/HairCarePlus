@@ -6,6 +6,7 @@ using HairCarePlus.Client.Patient.Features.Doctor.Models;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using Microsoft.Maui.Controls;
 using System.Windows.Input;
+using HairCarePlus.Client.Patient.Common.Behaviors;
 
 namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
 {
@@ -31,6 +32,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         public ICommand OpenCameraCommand { get; }
         public ICommand ReplyToMessageCommand { get; }
         public ICommand CancelReplyCommand { get; }
+        public ICommand HideKeyboardCommand { get; }
 
         public DoctorChatViewModel(
             INavigationService navigationService, 
@@ -56,6 +58,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             OpenCameraCommand = new AsyncRelayCommand(OpenCameraAsync);
             ReplyToMessageCommand = new RelayCommand<ChatMessage>(SetReplyMessage);
             CancelReplyCommand = new RelayCommand(CancelReply);
+            HideKeyboardCommand = new Command(HideKeyboard);
         }
 
         public override async Task LoadDataAsync()
@@ -102,6 +105,20 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             Messages.Add(message);
             MessageText = string.Empty;
             ReplyToMessage = null;
+
+            // Принудительно вызываем прокрутку к последнему сообщению
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                var collectionView = Application.Current.MainPage.FindByName<CollectionView>("MessagesCollection");
+                if (collectionView?.ItemsSource != null)
+                {
+                    var items = collectionView.ItemsSource.Cast<object>().ToList();
+                    if (items.Any())
+                    {
+                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
+                    }
+                }
+            });
 
             // Имитация ответа от доктора
             await SimulateReplyAsync();
@@ -204,10 +221,9 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             }
         }
 
-        [RelayCommand]
-        private void DismissKeyboard()
+        private void HideKeyboard()
         {
-            _keyboardService.HideKeyboard();
+            _keyboardService?.HideKeyboard();
         }
 
         private async Task GoBack()
