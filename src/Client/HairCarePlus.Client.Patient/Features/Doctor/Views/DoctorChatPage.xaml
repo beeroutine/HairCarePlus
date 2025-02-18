@@ -60,7 +60,7 @@
               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}">
             <Grid.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="{AppThemeBinding Light=#FFFFFF, Dark=#1A1F2C}"
+                    <GradientStop Color="{AppThemeBinding Light=#FFFFFF, Dark=#111827}"
                                 Offset="0.0" />
                     <GradientStop Color="{AppThemeBinding Light=#F8FAFC, Dark=#0F172A}"
                                 Offset="1.0" />
@@ -101,13 +101,13 @@
                                            Binding="{Binding SenderId}"
                                            Value="patient">
                                     <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#F1F5F9, Dark=#312E81}" />
+                                            Value="{AppThemeBinding Light=#ECFDF5, Dark=#3B82F6}" />
                                 </DataTrigger>
                                 <DataTrigger TargetType="Frame"
                                            Binding="{Binding SenderId}"
                                            Value="doctor">
                                     <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#ECFDF5, Dark=#1E3A8A}" />
+                                            Value="{AppThemeBinding Light=#D1FAE5, Dark=#1D4ED8}" />
                                 </DataTrigger>
                             </Frame.Triggers>
                             <VerticalStackLayout Spacing="2">
@@ -116,7 +116,7 @@
                                       Padding="8,4"
                                       Margin="0,0,0,4"
                                       CornerRadius="8"
-                                      BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark=#2C2C2E}"
+                                      BackgroundColor="{AppThemeBinding Light=#D1FAE5, Dark=#1D4ED8}"
                                       Opacity="0.9">
                                     <VerticalStackLayout Spacing="2">
                                         <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
