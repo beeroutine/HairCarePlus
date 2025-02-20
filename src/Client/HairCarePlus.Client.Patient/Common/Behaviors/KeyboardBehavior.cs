@@ -8,8 +8,9 @@ public class KeyboardBehavior : Behavior<ContentPage>
 {
     private ContentPage _page;
     private IKeyboardService _keyboardService;
-    private double _originalY = 0.0;
     private bool _isKeyboardShown;
+    private Grid _mainGrid;
+    private View _inputPanel;
 
     protected override void OnAttachedTo(ContentPage page)
     {
@@ -22,6 +23,16 @@ public class KeyboardBehavior : Behavior<ContentPage>
             _keyboardService.KeyboardShown += OnKeyboardShown;
             _keyboardService.KeyboardHidden += OnKeyboardHidden;
         }
+
+        // Find the main grid and input panel
+        if (_page.Content is Grid mainGrid)
+        {
+            _mainGrid = mainGrid;
+            if (_mainGrid.Children.LastOrDefault() is View lastChild)
+            {
+                _inputPanel = lastChild;
+            }
+        }
     }
 
     protected override void OnDetachingFrom(ContentPage page)
@@ -33,35 +44,33 @@ public class KeyboardBehavior : Behavior<ContentPage>
             _keyboardService.KeyboardHidden -= OnKeyboardHidden;
         }
         _page = null;
+        _mainGrid = null;
+        _inputPanel = null;
     }
 
     private void OnKeyboardShown(object sender, KeyboardEventArgs e)
     {
-        if (_isKeyboardShown) return;
+        if (_isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (_page?.Content != null)
-            {
-                _originalY = _page.Content.Y;
-                var shift = e.KeyboardHeight;
-                _page.Content.TranslateTo(_page.Content.X, -shift, 100, Easing.Linear);
-                _isKeyboardShown = true;
-            }
+            // Only adjust the input panel's margin
+            var margin = _inputPanel.Margin;
+            _inputPanel.Margin = new Thickness(margin.Left, margin.Top, margin.Right, e.KeyboardHeight);
+            _isKeyboardShown = true;
         });
     }
 
     private void OnKeyboardHidden(object sender, KeyboardEventArgs e)
     {
-        if (!_isKeyboardShown) return;
+        if (!_isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            if (_page?.Content != null)
-            {
-                _page.Content.TranslateTo(_page.Content.X, _originalY, 100, Easing.Linear);
-                _isKeyboardShown = false;
-            }
+            // Restore original margin for input panel
+            var margin = _inputPanel.Margin;
+            _inputPanel.Margin = new Thickness(margin.Left, margin.Top, margin.Right, 0);
+            _isKeyboardShown = false;
         });
     }
 } 

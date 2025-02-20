@@ -107,3 +107,101 @@ Please read CONTRIBUTING.md for details on our code of conduct and the process f
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Chat Interface
+
+The chat interface is a crucial component of the HairCare+ solution, providing real-time communication between patients and doctors.
+
+### Existing Features
+- Real-time messaging with instant updates
+- Message reply functionality with preview
+- Timestamp display for each message
+- Keyboard-aware interface that adjusts automatically
+- Support for long messages with auto-expanding input
+- Visual feedback for message status
+- Message history persistence
+- Photo sharing capabilities (camera and gallery)
+- Message grouping by sender
+- Online/Offline status indication
+- Automatic scrolling to latest messages
+- Message reply preview with truncation
+- Smart response system with contextual replies
+- Input field with attachment options
+- Dynamic send button visibility
+- Message bubble styling with proper alignment
+- Support for both light and dark themes
+
+### Missing/Planned Features
+- Voice messages
+- Video messages
+- File attachments (documents, PDFs)
+- Message delivery status (sent, delivered, read)
+- Typing indicators
+- Message reactions/emojis
+- Message search functionality
+- Message forwarding
+- Message deletion
+- Message editing
+- Rich text formatting in messages
+- Link preview
+- Group chat support
+- Message pinning
+- Message bookmarks
+- Offline message queue
+- End-to-end encryption indicators
+- Message translation
+- Voice/Video call integration
+
+### Chat Styling
+
+#### Message Bubbles
+- **Patient Messages**
+  - Light theme: `#EAF4FC` (light blue)
+  - Dark theme: `#1E2A35` (dark blue)
+  - Corner radius: 18
+  - Maximum width: 280
+  - Right alignment
+
+- **Doctor Messages**
+  - Light theme: `#A0DAB2` (mint green)
+  - Dark theme: `#4D7B63` (dark mint)
+  - Corner radius: 18
+  - Maximum width: 280
+  - Left alignment
+
+#### Typography
+- Message content: 17sp
+- Timestamp: 11sp
+- Reply preview: 13sp
+- Input field: 17sp
+- Navigation buttons: 22sp
+
+#### Reply Preview
+- Background matches message style
+- Opacity: 0.9
+- Corner radius: 8
+- Shows original message preview
+- Truncates long content
+- Clear button for canceling reply
+
+#### Input Panel
+- Light theme background: `#F7F7F7`
+- Dark theme background: `#121212`
+- Input field corner radius: 18
+- Expandable input area (38-120px height)
+- Attachment button: "+" symbol
+- Send button: "↑" symbol
+- Dynamic send button visibility
+
+#### Navigation
+- Back button: "←" symbol
+- Doctor name: 18sp, bold
+- Online status indicator
+- Shadow effects on iOS
+
+### Behavior
+- Auto-scrolls to latest message
+- Keyboard-aware layout adjustment
+- Tap to reply to specific messages
+- Message grouping by sender
+- Smooth animations for state changes

@@ -4,7 +4,8 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
-             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Behaviors"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
+             xmlns:doctorBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Behaviors"
              x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
@@ -20,6 +21,10 @@
             </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
+
+    <ContentPage.Behaviors>
+        <behaviors:KeyboardBehavior />
+    </ContentPage.Behaviors>
 
     <Shell.TitleView>
         <Grid ColumnDefinitions="80,*,80">
@@ -63,12 +68,12 @@
                        VerticalOptions="End"
                        Margin="8,8,8,0"
                        VerticalScrollBarVisibility="Never">
+            <CollectionView.Behaviors>
+                <doctorBehaviors:KeyboardBehavior />
+            </CollectionView.Behaviors>
             <CollectionView.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>
-            <CollectionView.Behaviors>
-                <behaviors:KeyboardBehavior />
-            </CollectionView.Behaviors>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ChatMessage">
                     <Grid Padding="4,2">
@@ -202,7 +207,6 @@
                   Padding="8,6,8,8">
                 <Button Grid.Column="0"
                        Text="＋"
-                       Command="{Binding OpenCameraCommand}"
                        BackgroundColor="Transparent"
                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                        Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
@@ -211,7 +215,12 @@
                        Margin="0"
                        HeightRequest="38"
                        WidthRequest="38"
-                       VerticalOptions="Start"/>
+                       VerticalOptions="Start"
+                       x:Name="AttachmentButton">
+                    <Button.Behaviors>
+                        <behaviors:MenuFlyoutBehavior x:Name="AttachmentMenu" />
+                    </Button.Behaviors>
+                </Button>
 
                 <Frame Grid.Column="1"
                        BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"

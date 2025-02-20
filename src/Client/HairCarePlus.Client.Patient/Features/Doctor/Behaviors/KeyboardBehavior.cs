@@ -40,15 +40,14 @@ public class KeyboardBehavior : Behavior<CollectionView>
     {
         if (_collectionView?.ItemsSource == null) return;
 
-        Microsoft.Maui.Controls.Application.Current.Dispatcher.Dispatch(() =>
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
             var items = _collectionView.ItemsSource.Cast<object>().ToList();
             if (items.Any())
             {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    _collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: false);
-                });
+                // Wait for layout to update
+                await Task.Delay(100);
+                _collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
             }
         });
     }
@@ -57,15 +56,12 @@ public class KeyboardBehavior : Behavior<CollectionView>
     {
         if (_collectionView?.ItemsSource == null) return;
 
-        Microsoft.Maui.Controls.Application.Current.Dispatcher.Dispatch(() =>
+        MainThread.BeginInvokeOnMainThread(() =>
         {
             var items = _collectionView.ItemsSource.Cast<object>().ToList();
             if (items.Any())
             {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    _collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: false);
-                });
+                _collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
             }
         });
     }

@@ -30,6 +30,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         public ICommand BackCommand { get; }
         public ICommand SendMessageCommand { get; }
         public ICommand OpenCameraCommand { get; }
+        public ICommand ChoosePhotoCommand { get; }
         public ICommand ReplyToMessageCommand { get; }
         public ICommand CancelReplyCommand { get; }
         public ICommand HideKeyboardCommand { get; }
@@ -56,6 +57,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             BackCommand = new Command(async () => await GoBack());
             SendMessageCommand = new AsyncRelayCommand(SendMessageAsync);
             OpenCameraCommand = new AsyncRelayCommand(OpenCameraAsync);
+            ChoosePhotoCommand = new AsyncRelayCommand(ChoosePhotoAsync);
             ReplyToMessageCommand = new RelayCommand<ChatMessage>(SetReplyMessage);
             CancelReplyCommand = new RelayCommand(CancelReply);
             HideKeyboardCommand = new Command(HideKeyboard);
@@ -194,31 +196,86 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             }
         }
 
-        [RelayCommand]
-        private async Task AttachPhoto()
+        private async Task OpenCameraAsync()
         {
             try
             {
-                var photo = await MediaPicker.PickPhotoAsync();
-                if (photo != null)
+                if (MediaPicker.Default.IsCaptureSupported)
                 {
-                    var message = new ChatMessage
+                    var photo = await MediaPicker.Default.CapturePhotoAsync();
+                    if (photo != null)
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        SenderId = "patient",
-                        Content = "Photo",
-                        AttachmentUrl = photo.FullPath,
-                        Timestamp = DateTime.Now,
-                        Type = MessageType.Image
-                    };
-
-                    Messages.Add(message);
+                        await AddPhotoMessageAsync(photo);
+                    }
+                }
+                else
+                {
+                    await Application.Current.MainPage.DisplayAlert(
+                        "Error", 
+                        "Camera is not available on this device.", 
+                        "OK");
                 }
             }
             catch (Exception ex)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", "Failed to attach photo: " + ex.Message, "OK");
+                await Application.Current.MainPage.DisplayAlert(
+                    "Error", 
+                    $"Failed to take photo: {ex.Message}", 
+                    "OK");
             }
+        }
+
+        private async Task ChoosePhotoAsync()
+        {
+            try
+            {
+                var photo = await MediaPicker.Default.PickPhotoAsync();
+                if (photo != null)
+                {
+                    await AddPhotoMessageAsync(photo);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    "Error", 
+                    $"Failed to pick photo: {ex.Message}", 
+                    "OK");
+            }
+        }
+
+        private async Task AddPhotoMessageAsync(FileResult photo)
+        {
+            var message = new ChatMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                SenderId = "patient",
+                Content = "Photo",
+                AttachmentUrl = photo.FullPath,
+                Timestamp = DateTime.Now,
+                Type = MessageType.Image,
+                ReplyTo = ReplyToMessage
+            };
+
+            Messages.Add(message);
+            ReplyToMessage = null;
+
+            // Scroll to the new message
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                var collectionView = Application.Current.MainPage.FindByName<CollectionView>("MessagesCollection");
+                if (collectionView?.ItemsSource != null)
+                {
+                    var items = collectionView.ItemsSource.Cast<object>().ToList();
+                    if (items.Any())
+                    {
+                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
+                    }
+                }
+            });
+
+            // Simulate doctor's response
+            await SimulateReplyAsync();
         }
 
         private void HideKeyboard()
@@ -229,12 +286,6 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
         private async Task GoBack()
         {
             await Shell.Current.GoToAsync("//progress");
-        }
-
-        private async Task OpenCameraAsync()
-        {
-            // Реализация открытия камеры
-            await Task.CompletedTask;
         }
     }
 } 
