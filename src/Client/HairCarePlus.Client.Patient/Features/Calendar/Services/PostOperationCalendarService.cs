@@ -78,7 +78,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
 
         public int GetCurrentDay()
         {
-            return (int)(DateTime.Now - OperationDate).TotalDays;
+            var days = (int)(DateTime.Now - OperationDate).TotalDays;
+            return days + 1; // Add 1 to convert from 0-based to 1-based day numbering
         }
 
         public DateTime GetDateForDay(int dayNumber)

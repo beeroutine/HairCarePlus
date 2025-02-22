@@ -8,12 +8,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
     {
         public static readonly List<CalendarEvent> Events = new()
         {
-            // Day 0 - Operation Day
+            // Day 1 - Operation Day
             new CalendarEvent
             {
                 Name = "День операции",
                 Description = "День проведения операции по пересадке волос",
-                StartDay = 0,
+                StartDay = 1,
+                EndDay = 1,
                 Type = EventType.Milestone
             },
 
@@ -152,9 +153,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
         {
             new Restriction
             {
+                Name = "Защита области трансплантации",
+                Description = "Соблюдать осторожность, чтобы не ударить и не поцарапать область трансплантации",
+                StartDay = 1,
+                EndDay = 180, // 6 месяцев
+                Type = EventType.Restriction,
+                Reason = "Защита пересаженных волосяных фолликулов",
+                IsCritical = true
+            },
+            new Restriction
+            {
                 Name = "Запрет на наклоны головы",
-                Description = "Не наклонять голову вниз",
-                StartDay = 0,
+                Description = "Не наклонять голову вперед и не совершать длительных прогулок",
+                StartDay = 1,
                 EndDay = 3,
                 Type = EventType.Restriction,
                 Reason = "Предотвращение отека в области лба",
@@ -162,69 +173,79 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
             },
             new Restriction
             {
-                Name = "Запрет на головные уборы",
-                Description = "Нельзя носить шапки и другие головные уборы",
-                StartDay = 0,
-                EndDay = 10,
+                Name = "Запрет на стрижку машинкой",
+                Description = "Стричь волосы на зоне пересадки только ножницами",
+                StartDay = 1,
+                EndDay = 120, // 4 месяца
                 Type = EventType.Restriction,
-                Reason = "Защита зоны пересадки"
+                Reason = "Защита пересаженных волос",
+                RecommendedAlternative = "Использовать только ножницы для стрижки"
             },
             new Restriction
             {
-                Name = "Запрет на курение",
-                Description = "Полный запрет на курение",
-                StartDay = 0,
-                EndDay = 2,
+                Name = "Запрет на окрашивание волос",
+                Description = "Запрещено использовать краску для волос и гель",
+                StartDay = 1,
+                EndDay = 180, // 6 месяцев
                 Type = EventType.Restriction,
-                Reason = "Влияет на приживаемость",
-                IsCritical = true
-            },
-            new Restriction
-            {
-                Name = "Запрет на алкоголь",
-                Description = "Полный запрет на алкоголь",
-                StartDay = 0,
-                EndDay = 10,
-                Type = EventType.Restriction,
-                Reason = "Влияет на приживаемость и может взаимодействовать с лекарствами",
-                IsCritical = true
+                Reason = "Защита волосяных фолликулов от химического воздействия"
             },
             new Restriction
             {
                 Name = "Запрет на активный спорт",
-                Description = "Запрет на активные физические нагрузки",
-                StartDay = 0,
+                Description = "Запрет на занятия спортом с риском травмы (бокс, футбол, баскетбол, бодибилдинг)",
+                StartDay = 1,
                 EndDay = 30,
                 Type = EventType.Restriction,
-                Reason = "Защита зоны пересадки от травм и повышенного потоотделения",
+                Reason = "Защита от травм и повышенного потоотделения",
                 RecommendedAlternative = "Легкие прогулки после 15 дня"
+            },
+            new Restriction
+            {
+                Name = "Защита от солнца",
+                Description = "Необходимо защищать зону пересадки от прямых солнечных лучей",
+                StartDay = 1,
+                EndDay = 60, // 2 месяца
+                Type = EventType.Restriction,
+                Reason = "Защита от солнечного воздействия",
+                RecommendedAlternative = "Использовать головной убор из дышащей ткани и натуральный солнцезащитный крем"
+            },
+            new Restriction
+            {
+                Name = "Запрет на водные процедуры",
+                Description = "Запрет на посещение бассейна, сауны, турецкой бани, солярия",
+                StartDay = 1,
+                EndDay = 60, // 2 месяца
+                Type = EventType.Restriction,
+                Reason = "Защита от инфекций и воздействия высоких температур"
+            },
+            new Restriction
+            {
+                Name = "Запрет на купание в море",
+                Description = "Запрещено купание в море",
+                StartDay = 1,
+                EndDay = 30,
+                Type = EventType.Restriction,
+                Reason = "Защита от инфекций и соли"
             },
             new Restriction
             {
                 Name = "Запрет на интимную близость",
                 Description = "Воздержание от половой активности",
-                StartDay = 0,
+                StartDay = 1,
                 EndDay = 7,
                 Type = EventType.Restriction,
                 Reason = "Защита от повышения давления и потоотделения"
             },
             new Restriction
             {
-                Name = "Запрет на окрашивание волос",
-                Description = "Нельзя красить волосы",
-                StartDay = 0,
-                EndDay = 240, // 8 months
+                Name = "Запрет на алкоголь",
+                Description = "Полный запрет на употребление алкоголя во время приема антибиотиков",
+                StartDay = 1,
+                EndDay = 7,
                 Type = EventType.Restriction,
-                Reason = "Защита волосяных фолликулов от химического воздействия"
-            },
-            new Restriction
-            {
-                Name = "Запрет на водные процедуры",
-                Description = "Запрет на посещение бассейна, сауны, бани",
-                StartDay = 0,
-                EndDay = 30,
-                Type = EventType.Restriction,
-                Reason = "Защита от инфекций и воздействия высоких температур"
+                Reason = "Взаимодействие с лекарствами",
+                IsCritical = true
             }
         };
 
@@ -232,16 +253,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
         {
             new CalendarEvent
             {
-                Name = "Возможное начало болевых ощущений",
-                Description = "Может появиться тянущая, ноющая боль в зоне пересадки - это нормально",
-                StartDay = 3,
-                EndDay = 4,
+                Name = "Кровотечение в первую ночь",
+                Description = "В области затылка может вытекать кровь с физраствором - это нормально. Рекомендуется снять одежду в номере во избежание загрязнения.",
+                StartDay = 1,
+                EndDay = 2,
+                Type = EventType.Warning
+            },
+            new CalendarEvent
+            {
+                Name = "Возможный отек",
+                Description = "Может появиться отек в области лба, который уменьшится в течение 3-5 дней. Отек вызывает только внешний дискомфорт и не опасен для здоровья.",
+                StartDay = 1,
+                EndDay = 5,
+                Type = EventType.Warning
+            },
+            new CalendarEvent
+            {
+                Name = "Чувствительность в донорской зоне",
+                Description = "Чувствительность в области затылка может сохраняться до 4 недель. При зуде можно использовать антигистаминные препараты по согласованию с врачом.",
+                StartDay = 1,
+                EndDay = 28,
                 Type = EventType.Warning
             },
             new CalendarEvent
             {
                 Name = "Шоковое выпадение",
-                Description = "Может начаться выпадение пересаженных волос - это нормальный процесс",
+                Description = "Начало выпадения пересаженных волос - это нормальный процесс. Волосяные фолликулы остаются внутри кожи, выпадают только волосы.",
                 StartDay = 21,
                 EndDay = 28,
                 Type = EventType.Warning
@@ -249,9 +286,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
             new CalendarEvent
             {
                 Name = "Возможные прыщики",
-                Description = "Могут появляться прыщики на донорской зоне и в зоне пересадки - это нормальный процесс восстановления",
+                Description = "Могут появляться прыщики на донорской зоне и в зоне пересадки - это нормальный процесс восстановления. Соблюдайте гигиену, не выдавливайте прыщики.",
                 StartDay = 60,
                 EndDay = 180,
+                Type = EventType.Warning
+            },
+            new CalendarEvent
+            {
+                Name = "Начало роста новых волос",
+                Description = "Через три-четыре месяца на зоне пересадки начнут расти новые волосы.",
+                StartDay = 90,
+                EndDay = 120,
                 Type = EventType.Warning
             }
         };
@@ -260,9 +305,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
         {
             new WashingInstructionEvent
             {
-                Name = "Первое мытье головы",
-                Description = "Инструкция по первому мытью головы после операции",
-                StartDay = 1,
+                Name = "Использование морской воды",
+                Description = "Инструкция по использованию морской воды против зуда",
+                StartDay = 3,
                 EndDay = 10,
                 Type = EventType.WashingInstruction,
                 Steps = new List<WashingStep>
@@ -270,47 +315,79 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
                     new WashingStep
                     {
                         Order = 1,
-                        Description = "Нанесите спрей на всю область, включая донорскую зону",
-                        DurationInMinutes = 5,
-                        Tips = new[] { "Убедитесь, что спрей равномерно распределен" }
+                        Description = "Приобретите морскую воду в аптеке",
+                        DurationInMinutes = 0,
+                        Tips = new[] { "Используйте только аптечную морскую воду" }
                     },
                     new WashingStep
                     {
                         Order = 2,
-                        Description = "Подождите 5-10 минут после нанесения спрея",
-                        DurationInMinutes = 10,
-                        Tips = new[] { "Используйте таймер для точного отсчета времени" }
+                        Description = "Нанесите морскую воду на зудящие участки",
+                        DurationInMinutes = 1,
+                        Tips = new[] { "Наносите аккуратно, не растирая" }
+                    }
+                },
+                RequiredItems = new[] {
+                    "Морская вода из аптеки"
+                },
+                Warnings = new[] {
+                    "Не использовать обычную морскую воду",
+                    "Не тереть зону пересадки"
+                }
+            },
+            new WashingInstructionEvent
+            {
+                Name = "Первое мытье головы и смывание корочек",
+                Description = "Инструкция по первому мытью головы и смыванию корочек после операции",
+                StartDay = 10,
+                EndDay = 15,
+                Type = EventType.WashingInstruction,
+                Steps = new List<WashingStep>
+                {
+                    new WashingStep
+                    {
+                        Order = 1,
+                        Description = "Намочите голову теплой водой",
+                        DurationInMinutes = 2,
+                        Tips = new[] { "Вода должна быть комнатной температуры" }
+                    },
+                    new WashingStep
+                    {
+                        Order = 2,
+                        Description = "Нанесите специальный шампунь",
+                        DurationInMinutes = 1,
+                        Tips = new[] { "Используйте только рекомендованный шампунь" }
                     },
                     new WashingStep
                     {
                         Order = 3,
-                        Description = "Смойте прохладной водой без напора",
+                        Description = "Мягкими круговыми движениями массируйте кожу",
                         DurationInMinutes = 5,
                         Tips = new[] { 
-                            "Вода должна быть комнатной температуры",
-                            "Избегайте прямого напора воды на зону пересадки"
+                            "Не используйте ногти",
+                            "Движения должны быть очень легкими"
                         }
                     },
                     new WashingStep
                     {
                         Order = 4,
-                        Description = "Высушите области бумажным полотенцем",
-                        DurationInMinutes = 5,
+                        Description = "Тщательно промойте волосы теплой водой",
+                        DurationInMinutes = 3,
                         Tips = new[] { 
-                            "Промокающими движениями, не растирая",
-                            "Используйте только мягкие бумажные полотенца"
+                            "Убедитесь, что весь шампунь смыт",
+                            "Вода должна быть комнатной температуры"
                         }
                     }
                 },
                 RequiredItems = new[] {
-                    "Специальный спрей",
-                    "Бумажные полотенца",
-                    "Таймер"
+                    "Специальный шампунь от клиники",
+                    "Мягкое полотенце"
                 },
                 Warnings = new[] {
-                    "Не тереть зону пересадки",
-                    "Избегать горячей воды",
-                    "Не использовать обычное полотенце"
+                    "Не использовать обычные шампуни",
+                    "Не использовать горячую воду",
+                    "Не тереть кожу ногтями",
+                    "Не пытаться удалить корочки силой"
                 }
             }
         };
