@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:treatment="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Views"
-    xmlns:daily="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.Views"
+    xmlns:calendar="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
     xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.Views"
     xmlns:doctor="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Views"
     Shell.FlyoutBehavior="Disabled"
@@ -28,12 +28,12 @@
                 Route="progress" />
         </Tab>
 
-        <!-- Ежедневный уход -->
-        <Tab Title="Daily Care">
+        <!-- Календарь -->
+        <Tab Title="Calendar">
             <ShellContent
-                Title="Daily Care"
-                ContentTemplate="{DataTemplate daily:DailyRoutinePage}"
-                Route="daily" />
+                Title="Calendar"
+                ContentTemplate="{DataTemplate calendar:CalendarPage}"
+                Route="calendar" />
         </Tab>
 
         <!-- Фотоотчеты -->

@@ -11,6 +11,8 @@ using HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels;
 using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Common.Behaviors;
+using HairCarePlus.Client.Patient.Features.Calendar.Extensions;
+using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 
 #if IOS
@@ -26,6 +28,8 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseMauiCommunityToolkit()
+			.RegisterCalendarRoutes()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -59,6 +63,9 @@ public static class MauiProgram
 		// Register Treatment Progress
 		builder.Services.AddTransient<TreatmentProgressPage>();
 		builder.Services.AddTransient<TreatmentProgressViewModel>();
+
+		// Register Calendar Feature
+		builder.Services.AddCalendarFeature();
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>

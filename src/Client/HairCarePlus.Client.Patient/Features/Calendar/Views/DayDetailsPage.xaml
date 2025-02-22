@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.DayDetailsPage"
+             x:DataType="viewmodels:DayDetailsViewModel"
+             Title="{Binding Title}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="15">
+            <!-- Date Header -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout>
+                    <Label Text="{Binding DateText}" 
+                           FontSize="24" 
+                           HorizontalOptions="Center"/>
+                    <Label Text="{Binding DayText}" 
+                           FontSize="16" 
+                           HorizontalOptions="Center"
+                           TextColor="Gray"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Medications Section -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Медикаменты" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Medications}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:MedicationViewModel">
+                                <Frame Margin="0,5" Padding="15" BorderColor="LightGray">
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"
+                                               Grid.Row="0"/>
+                                        <Label Text="{Binding Description}" 
+                                               Grid.Row="1"
+                                               Grid.ColumnSpan="2"/>
+                                        <Label Text="{Binding Instructions}" 
+                                               Grid.Row="2"
+                                               Grid.ColumnSpan="2"
+                                               TextColor="Gray"/>
+                                        <Label Text="{Binding TimesPerDay, StringFormat='{}Принимать {0} раз(а) в день'}"
+                                               Grid.Row="3"
+                                               Grid.Column="0"
+                                               TextColor="Gray"/>
+                                        <Label Text="(Опционально)"
+                                               Grid.Row="3"
+                                               Grid.Column="1"
+                                               TextColor="Gray"
+                                               IsVisible="{Binding IsOptional}"/>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Нет медикаментов на этот день"
+                                   HorizontalOptions="Center"
+                                   TextColor="Gray"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Instructions Section -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Инструкции" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Instructions}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:InstructionViewModel">
+                                <Frame Margin="0,5" Padding="15" BorderColor="LightBlue">
+                                    <VerticalStackLayout Spacing="10">
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Description}"/>
+                                        <CollectionView ItemsSource="{Binding Steps}"
+                                                      Margin="10,0">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="Auto,*" Margin="0,5">
+                                                        <Label Text="•" Margin="0,0,5,0"/>
+                                                        <Label Text="{Binding .}" Grid.Column="1"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Нет инструкций на этот день"
+                                   HorizontalOptions="Center"
+                                   TextColor="Gray"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Restrictions Section -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Ограничения" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Restrictions}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:RestrictionViewModel">
+                                <Frame Margin="0,5" 
+                                       Padding="15" 
+                                       BorderColor="{Binding IsCritical, Converter={StaticResource BoolToColorConverter}}">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Description}" 
+                                               TextColor="Gray"/>
+                                        <Label Text="{Binding Reason}" 
+                                               TextColor="Gray"/>
+                                        <Label Text="{Binding RecommendedAlternative}" 
+                                               TextColor="Blue"
+                                               IsVisible="{Binding RecommendedAlternative, Converter={StaticResource StringNotEmptyConverter}}"/>
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Нет ограничений на этот день"
+                                   HorizontalOptions="Center"
+                                   TextColor="Gray"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Warnings Section -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Предупреждения" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Warnings}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Margin="0,5" Padding="15" BorderColor="Orange">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Description}"/>
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Нет предупреждений на этот день"
+                                   HorizontalOptions="Center"
+                                   TextColor="Gray"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <!-- Navigation -->
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Предыдущий"
+                     Command="{Binding PreviousDayCommand}"/>
+        <ToolbarItem Text="Следующий"
+                     Command="{Binding NextDayCommand}"/>
+    </ContentPage.ToolbarItems>
+</ContentPage> 

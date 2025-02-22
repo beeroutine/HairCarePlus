@@ -205,3 +205,4 @@ The chat interface is a crucial component of the HairCare+ solution, providing r
 - Tap to reply to specific messages
 - Message grouping by sender
 - Smooth animations for state changes
+

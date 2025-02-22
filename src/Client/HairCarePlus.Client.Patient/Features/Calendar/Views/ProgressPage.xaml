@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.ProgressPage"
+             x:DataType="viewmodels:ProgressViewModel"
+             Title="Прогресс восстановления">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="15">
+            <!-- Overall Progress -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding CurrentPhaseText}" 
+                           FontSize="20" 
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center"/>
+                    <ProgressBar Progress="{Binding ProgressPercentage}" 
+                                HeightRequest="10"/>
+                    <Label Text="{Binding ProgressText}" 
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Phase Progress -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Фазы восстановления" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Phases}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:PhaseViewModel">
+                                <Frame Margin="0,5" 
+                                       Padding="15" 
+                                       BorderColor="{Binding IsActive, Converter={StaticResource BoolToColorConverter}}">
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"
+                                               Grid.ColumnSpan="2"/>
+                                        <Label Text="{Binding Description}" 
+                                               Grid.Row="1"/>
+                                        <Label Text="{Binding Status}" 
+                                               Grid.Row="1" 
+                                               Grid.Column="1"
+                                               TextColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}"/>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Expected Changes -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Ожидаемые изменения" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding ExpectedChanges}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:ExpectedChangeViewModel">
+                                <Frame Margin="0,5" Padding="15" BorderColor="LightGray">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Name}" 
+                                               FontAttributes="Bold"/>
+                                        <Label Text="{Binding Description}"/>
+                                    </VerticalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Milestones -->
+            <Frame BorderColor="{StaticResource Primary}" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Важные этапы" 
+                           FontSize="20" 
+                           FontAttributes="Bold"/>
+                    <CollectionView ItemsSource="{Binding Milestones}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="viewmodels:MilestoneViewModel">
+                                <Frame Margin="0,5" Padding="15" 
+                                       BorderColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Label Text="{Binding DayNumber}" 
+                                               FontSize="24" 
+                                               VerticalOptions="Center"/>
+                                        <VerticalStackLayout Grid.Column="1" Margin="10,0">
+                                            <Label Text="{Binding Name}" 
+                                                   FontAttributes="Bold"/>
+                                            <Label Text="{Binding Description}" 
+                                                   TextColor="Gray"/>
+                                            <CollectionView ItemsSource="{Binding UnlockedActivities}"
+                                                          IsVisible="{Binding IsCompleted}">
+                                                <CollectionView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Label Text="{Binding .}" 
+                                                               TextColor="Green"
+                                                               Margin="10,2"/>
+                                                    </DataTemplate>
+                                                </CollectionView.ItemTemplate>
+                                            </CollectionView>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage> 

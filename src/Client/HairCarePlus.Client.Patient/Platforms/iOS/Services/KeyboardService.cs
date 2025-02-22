@@ -1,5 +1,4 @@
 using Foundation;
-using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using UIKit;
 
@@ -29,7 +28,16 @@ namespace HairCarePlus.Client.Patient.Platforms.iOS.Services
 
         public void HideKeyboard()
         {
-            UIApplication.SharedApplication.KeyWindow?.EndEditing(true);
+            var scenes = UIApplication.SharedApplication.ConnectedScenes;
+            var windowScene = scenes.ToArray()
+                .FirstOrDefault(s => s is UIWindowScene) as UIWindowScene;
+            
+            if (windowScene != null)
+            {
+                var windows = windowScene.Windows;
+                var keyWindow = windows.FirstOrDefault(w => w.IsKeyWindow);
+                keyWindow?.EndEditing(true);
+            }
         }
     }
 } 
