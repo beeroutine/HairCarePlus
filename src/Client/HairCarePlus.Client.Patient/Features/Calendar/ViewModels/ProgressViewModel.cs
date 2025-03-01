@@ -41,7 +41,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [ObservableProperty]
         private string name;
 
-        private readonly IPostOperationCalendarService _calendarService;
+        private readonly ICalendarService _calendarService;
 
         [ObservableProperty]
         private string currentPhaseText;
@@ -56,7 +56,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ObservableCollection<KeyValuePair<string, string>> ExpectedChanges { get; } = new();
         public ObservableCollection<MilestoneViewModel> Milestones { get; } = new();
 
-        public ProgressViewModel(IPostOperationCalendarService calendarService)
+        public ProgressViewModel(ICalendarService calendarService)
         {
             _calendarService = calendarService;
             LoadData();
@@ -87,6 +87,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             Phases.Clear();
             foreach (RecoveryPhase phase in Enum.GetValues(typeof(RecoveryPhase)))
             {
+                // Skip the Development phase as it's been replaced by Maturation
+                if (phase == RecoveryPhase.Development)
+                    continue;
+                
                 var isCompleted = _calendarService.IsPhaseCompleted(phase);
                 var isActive = phase == currentPhase;
 
@@ -126,7 +130,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Description = milestone.Description,
                     DayNumber = milestone.StartDay,
                     IsCompleted = currentDay >= milestone.StartDay,
-                    UnlockedActivities = milestone.UnlockedActivities.ToList()
+                    UnlockedActivities = milestone.UnlockedActivities?.ToList() ?? new List<string>()
                 });
             }
         }
@@ -139,7 +143,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 RecoveryPhase.EarlyRecovery => "Раннее восстановление (4-10 дней)",
                 RecoveryPhase.Healing => "Заживление (11-30 дней)",
                 RecoveryPhase.Growth => "Рост (1-3 месяца)",
-                RecoveryPhase.Development => "Развитие (4-8 месяца)",
+                RecoveryPhase.Maturation => "Созревание (4-9 месяца)",
                 RecoveryPhase.Final => "Финальная фаза (9-12 месяца)",
                 _ => phase.ToString()
             };
@@ -153,7 +157,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 RecoveryPhase.EarlyRecovery => "Формирование корочек и начало заживления",
                 RecoveryPhase.Healing => "Полное заживление донорской зоны",
                 RecoveryPhase.Growth => "Начало роста новых волос",
-                RecoveryPhase.Development => "Активный рост и укрепление волос",
+                RecoveryPhase.Maturation => "Активный рост и укрепление волос",
                 RecoveryPhase.Final => "Формирование окончательного результата",
                 _ => string.Empty
             };

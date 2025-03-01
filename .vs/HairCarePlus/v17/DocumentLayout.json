@@ -62,7 +62,7 @@
             },
             {
               "$type": "Bookmark",
-              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+              "Name": "ST:254354193:0:{71f361cc-493f-47c0-923f-f2570b6f8618}"
             },
             {
               "$type": "Document",
@@ -74,8 +74,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Doctor\\Views\\DoctorChatPage.xaml",
               "ViewState": "AgIAABkAAAAAAAAAAAAvwC0AAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-11T18:18:06.88Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T18:18:06.88Z"
             },
             {
               "$type": "Document",
@@ -87,8 +86,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\PhotoReport\\Views\\PhotoReportPage.xaml",
               "ViewState": "AgIAAA0AAAAAAAAAAAAvwCEAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-11T18:18:04.13Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T18:18:04.13Z"
             },
             {
               "$type": "Document",
@@ -100,8 +98,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\AppShell.xaml",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-11T18:00:30.756Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T18:00:30.756Z"
             },
             {
               "$type": "Document",
@@ -111,7 +108,7 @@
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\Views\\TreatmentProgressPage.xaml",
               "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\Views\\TreatmentProgressPage.xaml",
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\Views\\TreatmentProgressPage.xaml",
-              "ViewState": "AgIAAH0AAAAAAAAAAAAwwIYAAAA1AAAAAAAAAA==",
+              "ViewState": "AgIAAIUAAAAAAAAAAAAAwJQAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
               "WhenOpened": "2025-02-11T17:52:32.732Z",
               "EditorCaption": ""
@@ -126,8 +123,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\DailyRoutine\\Views\\DailyRoutinePage.xaml",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-11T17:49:02.684Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T17:49:02.684Z"
             },
             {
               "$type": "Document",
@@ -139,8 +135,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Platforms\\Android\\Services\\VibrationService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T17:48:40.07Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T17:48:40.07Z"
             },
             {
               "$type": "Document",
@@ -152,8 +147,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\ViewModels\\TreatmentProgressViewModel.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T17:47:31.024Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T17:47:31.024Z"
             },
             {
               "$type": "Document",
@@ -165,8 +159,7 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\DailyRoutine\\ViewModels\\DailyRoutineViewModel.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T17:45:30.551Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-11T17:45:30.551Z"
             },
             {
               "$type": "Document",
@@ -190,8 +183,11 @@
               "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Profile\\Views\\ProfilePage.xaml",
               "ViewState": "AgIAAA8AAAAAAAAAAAAiwDMAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-09T15:31:42.66Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-09T15:31:42.66Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
             }
           ]
         }

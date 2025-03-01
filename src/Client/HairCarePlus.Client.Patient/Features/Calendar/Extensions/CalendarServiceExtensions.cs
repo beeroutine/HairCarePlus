@@ -9,8 +9,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Extensions
         public static IServiceCollection AddCalendarFeature(this IServiceCollection services)
         {
             // Services
-            services.AddSingleton<IPostOperationCalendarService>(sp => 
-                new PostOperationCalendarService(DateTime.Now)); // TODO: Get actual operation date
+            services.AddSingleton<ICalendarService, PostOperationCalendarService>();
 
             // ViewModels
             services.AddTransient<CalendarViewModel>();

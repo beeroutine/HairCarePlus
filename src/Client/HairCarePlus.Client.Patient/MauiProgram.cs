@@ -14,6 +14,8 @@ using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar.Extensions;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
+using Syncfusion.Maui.Core.Hosting;
+using Syncfusion.Maui.Scheduler;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -29,6 +31,7 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
+			.ConfigureSyncfusionCore()
 			.RegisterCalendarRoutes()
 			.ConfigureFonts(fonts =>
 			{

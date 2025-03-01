@@ -9,6 +9,12 @@ public class NavigationService : INavigationService
         else
             await Shell.Current.GoToAsync(route);
     }
+    
+    public async Task NavigateToAsync<T>(IDictionary<string, object>? parameters = null) where T : class
+    {
+        var route = typeof(T).Name;
+        await NavigateToAsync(route, parameters);
+    }
 
     public async Task NavigateBackAsync()
     {

@@ -5,68 +5,16 @@ using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
+using HairCarePlus.Client.Patient.Features.Calendar.Data;
+using HairCarePlus.Client.Patient.Common.Behaviors;
+using HairCarePlus.Client.Patient.Infrastructure.Services;
+using Syncfusion.Maui.Scheduler;
+using Microsoft.Maui.Graphics;
+using System.Reflection;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
-    public partial class MedicationViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
-
-        [ObservableProperty]
-        private string instructions;
-
-        [ObservableProperty]
-        private string dosage;
-
-        [ObservableProperty]
-        private int timesPerDay;
-
-        [ObservableProperty]
-        private bool isOptional;
-    }
-
-    public partial class RestrictionViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
-
-        [ObservableProperty]
-        private string reason;
-
-        [ObservableProperty]
-        private bool isCritical;
-
-        [ObservableProperty]
-        private string recommendedAlternative;
-    }
-
-    public partial class InstructionViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
-
-        [ObservableProperty]
-        private string[] steps;
-    }
-
-    public partial class WarningViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
-    }
+    // Removed duplicate view model classes - now defined in SharedViewModels.cs
 
     public partial class CalendarViewModel : ObservableObject
     {
@@ -76,7 +24,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [ObservableProperty]
         private string description;
 
-        private readonly IPostOperationCalendarService _calendarService;
+        private readonly ICalendarService _calendarService;
 
         [ObservableProperty]
         private string currentPhaseText;
@@ -90,33 +38,69 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [ObservableProperty]
         private bool isRefreshing;
 
+        [ObservableProperty]
+        private int selectedViewIndex;
+
+        [ObservableProperty]
+        private SchedulerView selectedView = SchedulerView.Month;
+
         public ObservableCollection<MedicationViewModel> TodayMedications { get; } = new();
         public ObservableCollection<RestrictionViewModel> TodayRestrictions { get; } = new();
         public ObservableCollection<InstructionViewModel> TodayInstructions { get; } = new();
         public ObservableCollection<WarningViewModel> TodayWarnings { get; } = new();
         public ObservableCollection<CalendarEventViewModel> UpcomingEvents { get; } = new();
+        public ObservableCollection<SchedulerAppointment> CalendarAppointments { get; } = new();
 
-        public CalendarViewModel(IPostOperationCalendarService calendarService)
+        public CalendarViewModel(ICalendarService calendarService)
         {
             _calendarService = calendarService;
             LoadData();
+
+            // Наблюдаем за изменением индекса представления
+            this.PropertyChanged += (s, e) => 
+            {
+                if (e.PropertyName == nameof(SelectedViewIndex))
+                {
+                    SelectedView = SelectedViewIndex switch
+                    {
+                        0 => SchedulerView.Month,
+                        1 => SchedulerView.Week,
+                        2 => SchedulerView.Day,
+                        3 => SchedulerView.Agenda,
+                        _ => SchedulerView.Month
+                    };
+                }
+            };
         }
 
         [RelayCommand]
         private async Task ShowDayDetails()
         {
-            var currentDay = _calendarService.GetCurrentDay();
-            var parameters = new Dictionary<string, object>
+            var navigationService = ServiceHelper.GetService<INavigationService>();
+            if (navigationService != null)
             {
-                { "dayNumber", currentDay }
-            };
-            await Shell.Current.GoToAsync(nameof(DayDetailsPage), parameters);
+                await navigationService.NavigateToAsync<DayDetailsViewModel>(new Dictionary<string, object>
+                {
+                    { "Date", DateTime.Today }
+                });
+            }
         }
 
         [RelayCommand]
         private async Task ShowProgress()
         {
-            await Shell.Current.GoToAsync(nameof(ProgressPage));
+            var navigationService = ServiceHelper.GetService<INavigationService>();
+            if (navigationService != null)
+            {
+                await navigationService.NavigateToAsync<ProgressViewModel>();
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddEvent()
+        {
+            // Здесь будет логика добавления нового события
+            await Task.CompletedTask;
         }
 
         [RelayCommand]
@@ -131,121 +115,182 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 IsRefreshing = false;
             }
+            await Task.CompletedTask;
         }
 
         private void LoadData()
         {
-            var currentDay = _calendarService.GetCurrentDay();
-            var currentPhase = _calendarService.GetCurrentPhase();
+            var calendarData = _calendarService.GetCalendarData();
+            var currentDay = (DateTime.Now - calendarData.OperationDate).Days + 1;
+            var totalDays = 180; // Примерно 6 месяцев на восстановление
 
-            // Update phase and progress
-            CurrentPhaseText = $"Фаза: {GetPhaseDisplayName(currentPhase)}";
-            ProgressPercentage = _calendarService.GetProgressPercentage() / 100.0;
-            ProgressText = $"День {currentDay} из 365";
+            // Обновляем информацию о прогрессе
+            ProgressPercentage = Math.Min(1.0, Math.Max(0, (double)currentDay / totalDays));
+            ProgressText = $"День {currentDay} из {totalDays}";
 
-            // Load today's events
+            // Определяем текущую фазу
+            var phase = _calendarService.GetCurrentPhase(currentDay);
+            CurrentPhaseText = GetPhaseDisplayName(phase);
+
+            // Загружаем данные для сегодняшнего дня
             LoadTodayMedications(currentDay);
             LoadTodayRestrictions(currentDay);
             LoadTodayInstructions(currentDay);
             LoadTodayWarnings(currentDay);
             LoadUpcomingEvents(currentDay);
+            LoadCalendarAppointments(calendarData);
         }
 
-        private void LoadTodayMedications(int currentDay)
+        private void LoadCalendarAppointments(CalendarDataModel calendarData)
+        {
+            CalendarAppointments.Clear();
+            var operationDate = calendarData.OperationDate;
+
+            // Словарь цветов для разных типов событий
+            var eventColors = new Dictionary<EventType, (Color Background, Color TextColor, string Icon)>
+            {
+                { EventType.Medication, (Color.FromArgb("#4CAF50"), Colors.White, "\uf484") },
+                { EventType.PhotoUpload, (Color.FromArgb("#2196F3"), Colors.White, "\uf030") },
+                { EventType.Instruction, (Color.FromArgb("#9C27B0"), Colors.White, "\uf05a") },
+                { EventType.Milestone, (Color.FromArgb("#FF9800"), Colors.White, "\uf091") },
+                { EventType.PRP, (Color.FromArgb("#F44336"), Colors.White, "\uf0fa") },
+                { EventType.Restriction, (Color.FromArgb("#607D8B"), Colors.White, "\uf05e") },
+                { EventType.Warning, (Color.FromArgb("#FF5722"), Colors.White, "\uf071") },
+                { EventType.WashingInstruction, (Color.FromArgb("#00BCD4"), Colors.White, "\uf043") },
+                { EventType.ProgressCheck, (Color.FromArgb("#8BC34A"), Colors.White, "\uf201") }
+            };
+
+            // Добавляем все события в календарь
+            foreach (var evt in calendarData.Events)
+            {
+                var startDate = operationDate.AddDays(evt.StartDay - 1);
+                var endDate = evt.EndDay.HasValue 
+                    ? operationDate.AddDays(evt.EndDay.Value - 1) 
+                    : startDate;
+                
+                // Для повторяющихся событий
+                if (evt.IsRepeating && evt.RepeatIntervalDays.HasValue)
+                {
+                    var currentDate = startDate;
+                    var endRepeatDate = operationDate.AddDays(180); // 6 месяцев
+                    
+                    while (currentDate <= endRepeatDate)
+                    {
+                        AddAppointment(evt, currentDate, currentDate, eventColors);
+                        currentDate = currentDate.AddDays(evt.RepeatIntervalDays.Value);
+                    }
+                }
+                else
+                {
+                    // Для обычных событий
+                    AddAppointment(evt, startDate, endDate, eventColors);
+                }
+            }
+        }
+
+        private void AddAppointment(
+            CalendarEvent evt, 
+            DateTime startDate, 
+            DateTime endDate, 
+            Dictionary<EventType, (Color Background, Color TextColor, string Icon)> eventColors)
+        {
+            var (background, textColor, icon) = eventColors.ContainsKey(evt.Type) 
+                ? eventColors[evt.Type] 
+                : (Color.FromArgb("#9E9E9E"), Colors.White, "\uf128");
+
+            var appointment = new SchedulerAppointment
+            {
+                Subject = evt.Name,
+                Notes = evt.Description,
+                StartTime = startDate,
+                EndTime = endDate.AddDays(1).AddSeconds(-1), // До конца дня
+                Background = background,
+                TextColor = textColor
+            };
+
+            // Note: Since SchedulerAppointment doesn't have a Data property in this version,
+            // we'll skip setting it for now
+
+            CalendarAppointments.Add(appointment);
+        }
+
+        private async void LoadTodayMedications(int currentDay)
         {
             TodayMedications.Clear();
-            foreach (var med in _calendarService.GetMedicationsForDay(currentDay))
+            var medications = await _calendarService.GetMedicationsForDayAsync(currentDay);
+
+            foreach (var med in medications)
             {
-                TodayMedications.Add(new MedicationViewModel
-                {
-                    Name = med.MedicationName,
-                    Description = med.Description,
-                    Instructions = med.Instructions,
-                    Dosage = med.Dosage,
-                    TimesPerDay = med.TimesPerDay,
-                    IsOptional = med.IsOptional
-                });
+                // Create a new instance and set properties using reflection
+                var viewModel = new MedicationViewModel();
+                SetProperty(viewModel, "Name", med.Name);
+                SetProperty(viewModel, "Description", med.Description);
+                SetProperty(viewModel, "Instructions", med.Instructions);
+                SetProperty(viewModel, "Dosage", med.Dosage);
+                SetProperty(viewModel, "TimesPerDay", med.TimesPerDay);
+                SetProperty(viewModel, "IsOptional", med.IsOptional);
+                TodayMedications.Add(viewModel);
             }
         }
 
-        private void LoadTodayRestrictions(int currentDay)
+        private async void LoadTodayRestrictions(int currentDay)
         {
             TodayRestrictions.Clear();
-            foreach (var restriction in _calendarService.GetActiveRestrictionsForDay(currentDay))
+            var restrictions = await _calendarService.GetRestrictionsForDayAsync(currentDay);
+
+            foreach (var restriction in restrictions)
             {
-                TodayRestrictions.Add(new RestrictionViewModel
-                {
-                    Name = restriction.Name,
-                    Description = restriction.Description,
-                    Reason = restriction.Reason,
-                    IsCritical = restriction.IsCritical,
-                    RecommendedAlternative = restriction.RecommendedAlternative
-                });
+                var viewModel = new RestrictionViewModel();
+                SetProperty(viewModel, "Name", restriction.Name);
+                SetProperty(viewModel, "Description", restriction.Description);
+                SetProperty(viewModel, "Reason", restriction.Reason);
+                SetProperty(viewModel, "IsCritical", restriction.IsCritical);
+                SetProperty(viewModel, "RecommendedAlternative", restriction.RecommendedAlternative);
+                TodayRestrictions.Add(viewModel);
             }
         }
 
-        private void LoadTodayInstructions(int currentDay)
+        private async void LoadTodayInstructions(int currentDay)
         {
             TodayInstructions.Clear();
-            var washingInstructions = _calendarService.GetWashingInstructionsForDay(currentDay);
-            if (washingInstructions != null)
-            {
-                var instructionEvent = new InstructionViewModel
-                {
-                    Name = washingInstructions.Name,
-                    Description = washingInstructions.Description,
-                    Steps = washingInstructions.Steps.Select(s => s.Description).ToArray()
-                };
-                TodayInstructions.Add(instructionEvent);
-            }
+            var instructions = await _calendarService.GetInstructionsForDayAsync(currentDay);
 
-            var instructions = _calendarService.GetInstructionsForDay(currentDay);
-            if (instructions != null)
+            foreach (var instruction in instructions)
             {
-                TodayInstructions.Add(new InstructionViewModel
-                {
-                    Name = instructions.Name,
-                    Description = instructions.Description,
-                    Steps = instructions.Steps
-                });
+                var viewModel = new InstructionViewModel();
+                SetProperty(viewModel, "Name", instruction.Name);
+                SetProperty(viewModel, "Description", instruction.Description);
+                SetProperty(viewModel, "Steps", instruction.Steps);
+                TodayInstructions.Add(viewModel);
             }
         }
 
-        private void LoadTodayWarnings(int currentDay)
+        private async void LoadTodayWarnings(int currentDay)
         {
             TodayWarnings.Clear();
-            foreach (var warning in _calendarService.GetWarningsForDay(currentDay))
+            var warnings = await _calendarService.GetWarningsForDayAsync(currentDay);
+
+            foreach (var warning in warnings)
             {
-                TodayWarnings.Add(new WarningViewModel
-                {
-                    Name = warning.Name,
-                    Description = warning.Description
-                });
+                var viewModel = new WarningViewModel();
+                SetProperty(viewModel, "Name", warning.Name);
+                SetProperty(viewModel, "Description", warning.Description);
+                TodayWarnings.Add(viewModel);
             }
         }
 
-        private void LoadUpcomingEvents(int currentDay)
+        private async void LoadUpcomingEvents(int currentDay)
         {
             UpcomingEvents.Clear();
-            var nextWeekEvents = new List<CalendarEventViewModel>();
+            var upcomingEvents = await _calendarService.GetEventsForDayAsync(currentDay + 7);
 
-            // Look ahead for the next 7 days
-            for (int day = currentDay + 1; day <= currentDay + 7; day++)
+            foreach (var evt in upcomingEvents)
             {
-                var events = _calendarService.GetEventsForDay(day)
-                    .Select(e => new CalendarEventViewModel
-                    {
-                        DayNumber = day,
-                        Name = e.Name,
-                        Description = e.Description
-                    });
-
-                nextWeekEvents.AddRange(events);
-            }
-
-            foreach (var ev in nextWeekEvents.OrderBy(e => e.DayNumber))
-            {
-                UpcomingEvents.Add(ev);
+                var viewModel = new CalendarEventViewModel();
+                SetProperty(viewModel, "Name", evt.Name);
+                SetProperty(viewModel, "Description", evt.Description);
+                SetProperty(viewModel, "DayNumber", evt.StartDay);
+                UpcomingEvents.Add(viewModel);
             }
         }
 
@@ -253,26 +298,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             return phase switch
             {
-                RecoveryPhase.Initial => "Начальная (0-3 дня)",
-                RecoveryPhase.EarlyRecovery => "Раннее восстановление (4-10 дней)",
-                RecoveryPhase.Healing => "Заживление (11-30 дней)",
-                RecoveryPhase.Growth => "Рост (1-3 месяца)",
-                RecoveryPhase.Development => "Развитие (4-8 месяца)",
-                RecoveryPhase.Final => "Финальная (9-12 месяца)",
-                _ => phase.ToString()
+                RecoveryPhase.Initial => "Начальная фаза (0-3 дня)",
+                RecoveryPhase.EarlyRecovery => "Ранняя фаза (4-10 дней)",
+                RecoveryPhase.Healing => "Фаза заживления (11-30 дней)",
+                RecoveryPhase.Growth => "Фаза роста (1-3 месяца)",
+                RecoveryPhase.Maturation => "Фаза созревания (4-9 месяцев)",
+                RecoveryPhase.Final => "Финальная фаза (9-12 месяцев)",
+                _ => "Неизвестная фаза"
             };
         }
-    }
 
-    public partial class CalendarEventViewModel : ObservableObject
-    {
-        [ObservableProperty]
-        private int dayNumber;
-
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
+        // Helper method to set property using reflection
+        private void SetProperty(object obj, string propertyName, object value)
+        {
+            var property = obj.GetType().GetProperty(propertyName);
+            if (property != null)
+            {
+                property.SetValue(obj, value);
+            }
+        }
     }
 } 

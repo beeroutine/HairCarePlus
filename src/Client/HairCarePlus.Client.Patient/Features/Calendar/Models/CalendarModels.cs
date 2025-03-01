@@ -6,24 +6,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
     public enum EventType
     {
         Medication,
-        PhotoUpload,
-        Instruction,
-        Milestone,
-        PRP,
         Restriction,
+        Instruction,
         Warning,
+        Milestone,
         WashingInstruction,
-        ProgressCheck
+        ProgressCheck,
+        PhotoUpload,
+        PRP
     }
 
     public enum RecoveryPhase
     {
         Initial,           // 0-3 дня
-        EarlyRecovery,    // 4-10 дней
-        Healing,          // 11-30 дней
-        Growth,           // 1-3 месяца
-        Development,      // 4-8 месяца
-        Final             // 9-12 месяца
+        EarlyRecovery,     // 4-10 дней
+        Healing,           // 11-30 дней
+        Growth,            // 1-3 месяца
+        Maturation,        // 4-9 месяцев (renamed from Development)
+        Final,             // 9-12 месяцев
+        Development        // For backward compatibility
     }
 
     public class CalendarEvent
@@ -43,23 +44,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
     {
         public string MedicationName { get; set; }
         public string Dosage { get; set; }
-        public int TimesPerDay { get; set; }
         public string Instructions { get; set; }
+        public int TimesPerDay { get; set; }
         public bool IsOptional { get; set; }
-    }
-
-    public class Restriction : CalendarEvent
-    {
-        public string Reason { get; set; }
-        public string RecommendedAlternative { get; set; }
+        public string Frequency { get; set; }
+        public string Purpose { get; set; }
         public bool IsCritical { get; set; }
+        public string[] SideEffects { get; set; }
+        public string[] Interactions { get; set; }
     }
 
     public class PhotoUploadEvent : CalendarEvent
     {
         public string[] RequiredAreas { get; set; }
-        public string InstructionVideo { get; set; }
         public string[] RequiredAngles { get; set; }
+        public string InstructionVideo { get; set; }
     }
 
     public class MilestoneEvent : CalendarEvent
@@ -67,6 +66,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public string Achievement { get; set; }
         public string[] UnlockedActivities { get; set; }
         public string[] RemovedRestrictions { get; set; }
+    }
+
+    public class Restriction : CalendarEvent
+    {
+        public string Reason { get; set; }
+        public bool IsCritical { get; set; }
+        public string RecommendedAlternative { get; set; }
+    }
+
+    public class InstructionEvent : CalendarEvent
+    {
+        public string[] Steps { get; set; }
+        public string[] Tips { get; set; }
+        public string[] Cautions { get; set; }
+        public string VideoUrl { get; set; }
     }
 
     public class WashingInstructionEvent : CalendarEvent
@@ -94,11 +108,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public Dictionary<string, string> WarningSignals { get; set; }
     }
 
-    public class InstructionEvent : CalendarEvent
+    public class PhaseProgress
     {
-        public string[] Steps { get; set; }
-        public string[] Tips { get; set; }
-        public string[] Cautions { get; set; }
-        public string VideoUrl { get; set; }
+        public RecoveryPhase Phase { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int StartDay { get; set; }
+        public int EndDay { get; set; }
+        public bool IsCompleted { get; set; }
+        public bool IsActive { get; set; }
+        public double Progress { get; set; }
+    }
+
+    public class ExpectedChange
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public int ExpectedDay { get; set; }
+        public bool IsCompleted { get; set; }
+    }
+
+    public class Milestone
+    {
+        public int Day { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public bool IsCompleted { get; set; }
+        public string[] UnlockedActivities { get; set; }
     }
 } 
