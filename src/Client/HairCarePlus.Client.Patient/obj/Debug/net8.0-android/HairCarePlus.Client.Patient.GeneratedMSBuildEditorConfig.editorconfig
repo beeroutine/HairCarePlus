@@ -47,11 +47,35 @@ build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patien
 build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\DayDetailsPage.xaml
 build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\DayDetailsPage.xaml
 
+[C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Calendar/Views/DayTodoView.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Calendar.Views.DayTodoView.xaml
+build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\DayTodoView.xaml
+build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\DayTodoView.xaml
+
+[C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Calendar/Views/EventListView.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Calendar.Views.EventListView.xaml
+build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\EventListView.xaml
+build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\EventListView.xaml
+
+[C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Calendar/Views/MonthView.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Calendar.Views.MonthView.xaml
+build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\MonthView.xaml
+build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\MonthView.xaml
+
 [C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Calendar/Views/ProgressPage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml
 build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Calendar.Views.ProgressPage.xaml
 build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\ProgressPage.xaml
 build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\ProgressPage.xaml
+
+[C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/Calendar/Views/WeekView.xaml]
+build_metadata.AdditionalFiles.GenKind = Xaml
+build_metadata.AdditionalFiles.ManifestResourceName = HairCarePlus.Client.Patient.Features.Calendar.Views.WeekView.xaml
+build_metadata.AdditionalFiles.TargetPath = Features\Calendar\Views\WeekView.xaml
+build_metadata.AdditionalFiles.RelativePath = Features\Calendar\Views\WeekView.xaml
 
 [C:/Users/beero/Documents/GitHub/HairCarePlus/src/Client/HairCarePlus.Client.Patient/Features/DailyRoutine/Views/DailyRoutinePage.xaml]
 build_metadata.AdditionalFiles.GenKind = Xaml

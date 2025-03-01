@@ -16,6 +16,9 @@ using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Core.Hosting;
 using Syncfusion.Maui.Scheduler;
+using Syncfusion.Maui.TabView;
+using Microsoft.Maui.Controls;
+using HairCarePlus.Client.Patient.Features.Calendar.Views;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -69,6 +72,11 @@ public static class MauiProgram
 
 		// Register Calendar Feature
 		builder.Services.AddCalendarFeature();
+
+		// Register routes for calendar views
+		Routing.RegisterRoute(nameof(MonthView), typeof(MonthView));
+		Routing.RegisterRoute(nameof(WeekView), typeof(WeekView));
+		Routing.RegisterRoute(nameof(EventListView), typeof(EventListView));
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>

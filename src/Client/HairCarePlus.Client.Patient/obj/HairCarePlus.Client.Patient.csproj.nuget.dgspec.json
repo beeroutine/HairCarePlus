@@ -95,11 +95,15 @@
             },
             "Syncfusion.Maui.Core": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
             },
             "Syncfusion.Maui.Scheduler": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
+            },
+            "Syncfusion.Maui.TabView": {
+              "target": "Package",
+              "version": "[28.2.7, )"
             }
           },
           "imports": [
@@ -176,11 +180,15 @@
             },
             "Syncfusion.Maui.Core": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
             },
             "Syncfusion.Maui.Scheduler": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
+            },
+            "Syncfusion.Maui.TabView": {
+              "target": "Package",
+              "version": "[28.2.7, )"
             }
           },
           "imports": [
@@ -245,11 +253,15 @@
             },
             "Syncfusion.Maui.Core": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
             },
             "Syncfusion.Maui.Scheduler": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
+            },
+            "Syncfusion.Maui.TabView": {
+              "target": "Package",
+              "version": "[28.2.7, )"
             }
           },
           "imports": [
@@ -309,11 +321,15 @@
             },
             "Syncfusion.Maui.Core": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
             },
             "Syncfusion.Maui.Scheduler": {
               "target": "Package",
-              "version": "[24.2.8, )"
+              "version": "[28.2.7, )"
+            },
+            "Syncfusion.Maui.TabView": {
+              "target": "Package",
+              "version": "[28.2.7, )"
             }
           },
           "imports": [

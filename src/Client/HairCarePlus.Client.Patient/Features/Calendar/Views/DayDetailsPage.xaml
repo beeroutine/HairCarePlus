@@ -215,7 +215,7 @@
                         
                         <CollectionView ItemsSource="{Binding Restrictions}">
                             <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="viewmodels:RestrictionViewModel">
+                                <DataTemplate x:DataType="viewmodels:DayRestrictionViewModel">
                                     <Frame Margin="0,5" 
                                            Padding="15" 
                                            BorderColor="Transparent"

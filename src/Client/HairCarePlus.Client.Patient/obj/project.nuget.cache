@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "LN+e8vWTm38=",
+  "dgSpecHash": "1ClGNerOgVo=",
   "success": true,
   "projectFilePath": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj",
   "expectedPackageFiles": [
@@ -32,9 +32,12 @@
     "C:\\Users\\beero\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.11\\microsoft.net.illink.tasks.8.0.11.nupkg.sha512",
     "C:\\Users\\beero\\.nuget\\packages\\microsoft.windows.sdk.buildtools\\10.0.22621.756\\microsoft.windows.sdk.buildtools.10.0.22621.756.nupkg.sha512",
     "C:\\Users\\beero\\.nuget\\packages\\microsoft.windowsappsdk\\1.5.240627000\\microsoft.windowsappsdk.1.5.240627000.nupkg.sha512",
-    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.licensing\\24.2.8\\syncfusion.licensing.24.2.8.nupkg.sha512",
-    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.core\\24.2.8\\syncfusion.maui.core.24.2.8.nupkg.sha512",
-    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.scheduler\\24.2.8\\syncfusion.maui.scheduler.24.2.8.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.licensing\\28.2.7\\syncfusion.licensing.28.2.7.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.calendar\\28.2.7\\syncfusion.maui.calendar.28.2.7.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.core\\28.2.7\\syncfusion.maui.core.28.2.7.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.popup\\28.2.7\\syncfusion.maui.popup.28.2.7.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.scheduler\\28.2.7\\syncfusion.maui.scheduler.28.2.7.nupkg.sha512",
+    "C:\\Users\\beero\\.nuget\\packages\\syncfusion.maui.tabview\\28.2.7\\syncfusion.maui.tabview.28.2.7.nupkg.sha512",
     "C:\\Users\\beero\\.nuget\\packages\\system.speech\\8.0.0-rc.2.23479.6\\system.speech.8.0.0-rc.2.23479.6.nupkg.sha512",
     "C:\\Users\\beero\\.nuget\\packages\\xamarin.android.glide\\4.15.1.2\\xamarin.android.glide.4.15.1.2.nupkg.sha512",
     "C:\\Users\\beero\\.nuget\\packages\\xamarin.android.glide.annotations\\4.15.1.2\\xamarin.android.glide.annotations.4.15.1.2.nupkg.sha512",

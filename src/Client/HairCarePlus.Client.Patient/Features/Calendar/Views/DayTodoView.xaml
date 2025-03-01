@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.DayTodoView"
+             x:DataType="viewmodels:DayTodoViewModel">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Заголовок -->
+        <VerticalStackLayout Grid.Row="0" 
+                           Spacing="5"
+                           Margin="20,10">
+            <Label Text="{Binding CurrentDate, StringFormat='{0:d MMMM}'}"
+                   FontSize="24"
+                   FontAttributes="Bold"/>
+            <Label Text="{Binding DayNumber, StringFormat='День {0}'}"
+                   FontSize="16"
+                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+        </VerticalStackLayout>
+
+        <!-- Список задач -->
+        <CollectionView Grid.Row="1"
+                      ItemsSource="{Binding Events}"
+                      Margin="10">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
+                    <Frame Margin="0,5" 
+                           Padding="15"
+                           BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                           BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <BoxView Grid.Column="0"
+                                     WidthRequest="4"
+                                     HeightRequest="40"
+                                     CornerRadius="2"
+                                     Margin="0,0,10,0"
+                                     Color="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"/>
+                            
+                            <VerticalStackLayout Grid.Column="1" 
+                                               Spacing="5">
+                                <Label Text="{Binding Name}"
+                                       FontSize="16"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"
+                                       TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToStrikethroughConverter}}"/>
+                                <Label Text="{Binding Description}"
+                                       FontSize="14"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            </VerticalStackLayout>
+
+                            <CheckBox Grid.Column="2"
+                                    IsChecked="{Binding IsCompleted}"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <Label Text="На сегодня нет задач"
+                       FontSize="16"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"/>
+            </CollectionView.EmptyView>
+        </CollectionView>
+    </Grid>
+</ContentView> 

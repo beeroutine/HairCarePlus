@@ -52,20 +52,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
 
         public async Task<IEnumerable<Restriction>> GetRestrictionsForDayAsync(int day)
         {
-            await Task.Delay(100);
-            return new List<Restriction>(); // Placeholder
+            await Task.Delay(100); // Имитация задержки сети
+            return PostOperationCalendarData.Restrictions
+                .Where(r => r.StartDay <= day && (!r.EndDay.HasValue || r.EndDay.Value >= day));
         }
 
         public async Task<IEnumerable<InstructionEvent>> GetInstructionsForDayAsync(int day)
         {
-            await Task.Delay(100);
-            return new List<InstructionEvent>(); // Placeholder
+            await Task.Delay(100); // Имитация задержки сети
+            return PostOperationCalendarData.Instructions
+                .Where(i => i.StartDay <= day && (!i.EndDay.HasValue || i.EndDay.Value >= day));
         }
 
         public async Task<IEnumerable<CalendarEvent>> GetWarningsForDayAsync(int day)
         {
-            await Task.Delay(100);
-            return new List<CalendarEvent>(); // Placeholder
+            await Task.Delay(100); // Имитация задержки сети
+            return PostOperationCalendarData.Warnings
+                .Where(w => w.StartDay <= day && (!w.EndDay.HasValue || w.EndDay.Value >= day));
         }
 
         public RecoveryPhase GetCurrentPhase(int currentDay = 0)

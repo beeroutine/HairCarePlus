@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.EventListView"
+             x:DataType="viewmodels:ListViewModel"
+             Title="Список событий">
+
+    <Grid RowDefinitions="*" 
+          Padding="10">
+        <CollectionView ItemsSource="{Binding Events}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
+                    <Frame Margin="0,5" 
+                           Padding="15" 
+                           BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                           BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" 
+                              RowSpacing="5">
+                            <Label Grid.Row="0" 
+                                   Text="{Binding Name}" 
+                                   FontSize="16" 
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                            
+                            <Label Grid.Row="1" 
+                                   Text="{Binding Description}" 
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"/>
+                            
+                            <HorizontalStackLayout Grid.Row="2" 
+                                                 Spacing="10">
+                                <Label Text="{Binding Date, StringFormat='{0:d MMMM}'}" 
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                
+                                <Label Text="|" 
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                
+                                <Label Text="{Binding Type}" 
+                                       FontSize="12"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage> 

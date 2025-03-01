@@ -38,7 +38,13 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 
 		<!-- Android specific -->
-		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<EmbedAssembliesIntoApk Condition="'$(Configuration)' == 'Debug'">false</EmbedAssembliesIntoApk>
+		<EmbedAssembliesIntoApk Condition="'$(Configuration)' == 'Release'">true</EmbedAssembliesIntoApk>
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<AndroidUseAapt2>true</AndroidUseAapt2>
+		<AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
+		<!-- Enable this for release builds to reduce APK size -->
+		<AndroidEnableProfiledAot Condition="'$(Configuration)' == 'Release'">true</AndroidEnableProfiledAot>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -65,8 +71,9 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
-		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="24.2.8" />
-		<PackageReference Include="Syncfusion.Maui.Core" Version="24.2.8" />
+		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="28.2.7" />
+		<PackageReference Include="Syncfusion.Maui.Core" Version="28.2.7" />
+		<PackageReference Include="Syncfusion.Maui.TabView" Version="28.2.7" />
 	</ItemGroup>
 
 </Project>

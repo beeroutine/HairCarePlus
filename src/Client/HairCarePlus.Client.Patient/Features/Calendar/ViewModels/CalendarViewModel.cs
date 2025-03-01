@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,66 +13,74 @@ using HairCarePlus.Client.Patient.Infrastructure.Services;
 using Syncfusion.Maui.Scheduler;
 using Microsoft.Maui.Graphics;
 using System.Reflection;
+using Microsoft.Maui.Controls;
+using System.Threading.Tasks;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
     // Removed duplicate view model classes - now defined in SharedViewModels.cs
 
-    public partial class CalendarViewModel : ObservableObject
+    [INotifyPropertyChanged]
+    public partial class CalendarViewModel
     {
-        [ObservableProperty]
-        private string name;
-
-        [ObservableProperty]
-        private string description;
-
         private readonly ICalendarService _calendarService;
-
-        [ObservableProperty]
-        private string currentPhaseText;
-
-        [ObservableProperty]
-        private double progressPercentage;
-
-        [ObservableProperty]
-        private string progressText;
-
-        [ObservableProperty]
-        private bool isRefreshing;
+        private readonly DayTodoViewModel _dayTodoViewModel;
+        private readonly MonthViewModel _monthViewModel;
+        private readonly WeekViewModel _weekViewModel;
+        private readonly ListViewModel _eventListViewModel;
 
         [ObservableProperty]
         private int selectedViewIndex;
 
         [ObservableProperty]
-        private SchedulerView selectedView = SchedulerView.Month;
+        private string currentPhaseText = string.Empty;
+
+        [ObservableProperty]
+        private string progressText = string.Empty;
+
+        [ObservableProperty]
+        private double progressValue;
+
+        public string ProgressPercentage => $"{(int)(ProgressValue * 100)}%";
+
+        public MonthViewModel MonthViewModel { get; }
+        public WeekViewModel WeekViewModel { get; }
+        public ListViewModel ListViewModel { get; }
 
         public ObservableCollection<MedicationViewModel> TodayMedications { get; } = new();
         public ObservableCollection<RestrictionViewModel> TodayRestrictions { get; } = new();
         public ObservableCollection<InstructionViewModel> TodayInstructions { get; } = new();
         public ObservableCollection<WarningViewModel> TodayWarnings { get; } = new();
         public ObservableCollection<CalendarEventViewModel> UpcomingEvents { get; } = new();
-        public ObservableCollection<SchedulerAppointment> CalendarAppointments { get; } = new();
+        public ObservableCollection<Syncfusion.Maui.Scheduler.SchedulerAppointment> CalendarAppointments { get; } = new();
 
-        public CalendarViewModel(ICalendarService calendarService)
+        public CalendarViewModel(
+            ICalendarService calendarService,
+            DayTodoViewModel dayTodoViewModel,
+            MonthViewModel monthViewModel,
+            WeekViewModel weekViewModel,
+            ListViewModel eventListViewModel)
         {
             _calendarService = calendarService;
-            LoadData();
+            _dayTodoViewModel = dayTodoViewModel;
+            _monthViewModel = monthViewModel;
+            _weekViewModel = weekViewModel;
+            _eventListViewModel = eventListViewModel;
 
-            // Наблюдаем за изменением индекса представления
-            this.PropertyChanged += (s, e) => 
-            {
-                if (e.PropertyName == nameof(SelectedViewIndex))
-                {
-                    SelectedView = SelectedViewIndex switch
-                    {
-                        0 => SchedulerView.Month,
-                        1 => SchedulerView.Week,
-                        2 => SchedulerView.Day,
-                        3 => SchedulerView.Agenda,
-                        _ => SchedulerView.Month
-                    };
-                }
-            };
+            MonthViewModel = monthViewModel;
+            WeekViewModel = weekViewModel;
+            ListViewModel = eventListViewModel;
+
+            LoadProgressData();
+        }
+
+        private void LoadProgressData()
+        {
+            var currentDay = _calendarService.GetCurrentDay();
+            var phase = _calendarService.GetCurrentPhase(currentDay);
+            CurrentPhaseText = GetPhaseDisplayName(phase);
+            ProgressText = $"День {currentDay} из 180";
+            ProgressValue = _calendarService.GetProgressPercentage(currentDay);
         }
 
         [RelayCommand]
@@ -106,31 +116,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [RelayCommand]
         private async Task Refresh()
         {
-            IsRefreshing = true;
-            try
-            {
-                LoadData();
-            }
-            finally
-            {
-                IsRefreshing = false;
-            }
+            LoadData();
             await Task.CompletedTask;
         }
 
         private void LoadData()
         {
-            var calendarData = _calendarService.GetCalendarData();
-            var currentDay = (DateTime.Now - calendarData.OperationDate).Days + 1;
-            var totalDays = 180; // Примерно 6 месяцев на восстановление
+            var currentDay = _calendarService.GetCurrentDay();
+            var currentPhase = _calendarService.GetCurrentPhase(currentDay);
 
-            // Обновляем информацию о прогрессе
-            ProgressPercentage = Math.Min(1.0, Math.Max(0, (double)currentDay / totalDays));
-            ProgressText = $"День {currentDay} из {totalDays}";
+            CurrentPhaseText = GetPhaseDisplayName(currentPhase);
+            ProgressValue = _calendarService.GetProgressPercentage(currentDay);
+            ProgressText = $"День {currentDay} из 180";
 
-            // Определяем текущую фазу
-            var phase = _calendarService.GetCurrentPhase(currentDay);
-            CurrentPhaseText = GetPhaseDisplayName(phase);
+            // Initialize with Month view
+            SelectedViewIndex = 0;
 
             // Загружаем данные для сегодняшнего дня
             LoadTodayMedications(currentDay);
@@ -138,12 +138,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             LoadTodayInstructions(currentDay);
             LoadTodayWarnings(currentDay);
             LoadUpcomingEvents(currentDay);
-            LoadCalendarAppointments(calendarData);
+            LoadCalendarAppointments();
         }
 
-        private void LoadCalendarAppointments(CalendarDataModel calendarData)
+        private void LoadCalendarAppointments()
         {
             CalendarAppointments.Clear();
+            var calendarData = _calendarService.GetCalendarData();
             var operationDate = calendarData.OperationDate;
 
             // Словарь цветов для разных типов событий
@@ -198,7 +199,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 ? eventColors[evt.Type] 
                 : (Color.FromArgb("#9E9E9E"), Colors.White, "\uf128");
 
-            var appointment = new SchedulerAppointment
+            var appointment = new Syncfusion.Maui.Scheduler.SchedulerAppointment
             {
                 Subject = evt.Name,
                 Notes = evt.Description,
@@ -294,28 +295,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
+        // Helper method to set property using reflection
+        private void SetProperty(object obj, string propertyName, object value)
+        {
+            var property = obj.GetType().GetProperty(propertyName);
+            if (property != null && property.CanWrite)
+            {
+                property.SetValue(obj, value);
+            }
+        }
+
         private string GetPhaseDisplayName(RecoveryPhase phase)
         {
             return phase switch
             {
                 RecoveryPhase.Initial => "Начальная фаза (0-3 дня)",
-                RecoveryPhase.EarlyRecovery => "Ранняя фаза (4-10 дней)",
+                RecoveryPhase.EarlyRecovery => "Раннее восстановление (4-10 дней)",
                 RecoveryPhase.Healing => "Фаза заживления (11-30 дней)",
-                RecoveryPhase.Growth => "Фаза роста (1-3 месяца)",
-                RecoveryPhase.Maturation => "Фаза созревания (4-9 месяцев)",
-                RecoveryPhase.Final => "Финальная фаза (9-12 месяцев)",
-                _ => "Неизвестная фаза"
+                RecoveryPhase.Growth => "Рост (1-3 месяца)",
+                RecoveryPhase.Maturation => "Созревание (4-9 месяца)",
+                RecoveryPhase.Final => "Финальная фаза (9-12 месяца)",
+                _ => phase.ToString()
             };
-        }
-
-        // Helper method to set property using reflection
-        private void SetProperty(object obj, string propertyName, object value)
-        {
-            var property = obj.GetType().GetProperty(propertyName);
-            if (property != null)
-            {
-                property.SetValue(obj, value);
-            }
         }
     }
 } 

@@ -53,12 +53,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
 
         private static void InitializeRestrictions()
         {
-            // Add restrictions here
+            Restrictions.Add(new Restriction
+            {
+                Name = "Ограничение физических нагрузок",
+                Description = "Избегайте интенсивных физических нагрузок",
+                StartDay = 1,
+                EndDay = 14,
+                Type = EventType.Restriction,
+                Reason = "Риск повышения кровяного давления",
+                IsCritical = true,
+                RecommendedAlternative = "Легкая ходьба"
+            });
+
+            Restrictions.Add(new Restriction
+            {
+                Name = "Ограничение контакта с водой",
+                Description = "Избегайте прямого контакта с водой в области пересадки",
+                StartDay = 1,
+                EndDay = 7,
+                Type = EventType.Restriction,
+                Reason = "Риск инфекции",
+                IsCritical = true,
+                RecommendedAlternative = "Использование специального шампуня по инструкции"
+            });
         }
 
         private static void InitializeWarnings()
         {
-            // Add warnings here
+            Warnings.Add(new CalendarEvent
+            {
+                Name = "Возможное покраснение",
+                Description = "Возможно появление покраснения в области пересадки",
+                StartDay = 1,
+                EndDay = 5,
+                Type = EventType.Warning
+            });
+
+            Warnings.Add(new CalendarEvent
+            {
+                Name = "Отёк",
+                Description = "Возможно появление отёка в области лба",
+                StartDay = 2,
+                EndDay = 4,
+                Type = EventType.Warning
+            });
         }
 
         private static void InitializeWashingInstructions()
@@ -73,7 +111,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Data
 
         private static void InitializeInstructions()
         {
-            // Add instructions here
+            Instructions.Add(new InstructionEvent
+            {
+                Name = "Уход за областью пересадки",
+                Description = "Пошаговая инструкция по уходу за областью пересадки",
+                StartDay = 1,
+                EndDay = 7,
+                Type = EventType.Instruction,
+                Steps = new[]
+                {
+                    "Осторожно промывайте область специальным раствором",
+                    "Не трите и не чешите область пересадки",
+                    "Спите с приподнятой головой"
+                },
+                Tips = new[]
+                {
+                    "Используйте мягкую подушку",
+                    "Держите область пересадки в чистоте"
+                },
+                Cautions = new[]
+                {
+                    "Избегайте прямых солнечных лучей",
+                    "Не используйте обычные шампуни"
+                }
+            });
         }
 
         public static IEnumerable<int> GetActiveDays()

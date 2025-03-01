@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.MonthView"
+             x:DataType="viewmodels:MonthViewModel">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:BoolToBoldConverter x:Key="BoolToBoldConverter"/>
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*" 
+          Padding="10">
+        <!-- Заголовок месяца и кнопки навигации -->
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="Auto,*,Auto" 
+              Margin="0,0,0,10">
+            <Button Grid.Column="0"
+                    Text="&lt;"
+                    Command="{Binding PreviousMonthCommand}"
+                    WidthRequest="50"
+                    HeightRequest="40"
+                    Margin="0,0,10,0"/>
+            
+            <Label Grid.Column="1"
+                   Text="{Binding MonthTitle}"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"/>
+            
+            <Button Grid.Column="2"
+                    Text="&gt;"
+                    Command="{Binding NextMonthCommand}"
+                    WidthRequest="50"
+                    HeightRequest="40"
+                    Margin="10,0,0,0"/>
+        </Grid>
+
+        <!-- Дни недели -->
+        <Grid Grid.Row="1" 
+              ColumnDefinitions="*,*,*,*,*,*,*" 
+              Margin="0,0,0,10">
+            <Label Grid.Column="0" Text="Пн" HorizontalOptions="Center"/>
+            <Label Grid.Column="1" Text="Вт" HorizontalOptions="Center"/>
+            <Label Grid.Column="2" Text="Ср" HorizontalOptions="Center"/>
+            <Label Grid.Column="3" Text="Чт" HorizontalOptions="Center"/>
+            <Label Grid.Column="4" Text="Пт" HorizontalOptions="Center"/>
+            <Label Grid.Column="5" Text="Сб" HorizontalOptions="Center"/>
+            <Label Grid.Column="6" Text="Вс" HorizontalOptions="Center"/>
+        </Grid>
+
+        <!-- Календарная сетка -->
+        <CollectionView Grid.Row="2" 
+                       ItemsSource="{Binding Days}"
+                       ItemsLayout="VerticalGrid, 7">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="viewmodels:CalendarDayViewModel">
+                    <Frame Padding="5" 
+                           Margin="2"
+                           BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                           BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
+                           HeightRequest="100">
+                        <Grid RowDefinitions="Auto,*">
+                            <!-- Номер дня -->
+                            <Label Grid.Row="0"
+                                   Text="{Binding Date.Day}"
+                                   FontSize="16"
+                                   TextColor="{Binding IsCurrentMonth, Converter={StaticResource BoolToColorConverter}}"
+                                   FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"/>
+                            
+                            <!-- События дня -->
+                            <CollectionView Grid.Row="1"
+                                          ItemsSource="{Binding Events}"
+                                          SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
+                                        <Label Text="{Binding Name}"
+                                               FontSize="10"
+                                               LineBreakMode="TailTruncation"
+                                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentView> 

@@ -4,16 +4,22 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class BoolToColorConverter : IValueConverter
     {
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool boolValue)
+            if (value is bool isCurrentMonth)
             {
-                return boolValue ? Colors.Red : Colors.Gray;
+                return isCurrentMonth 
+                    ? Application.Current.RequestedTheme == AppTheme.Dark 
+                        ? Colors.White 
+                        : Colors.Black
+                    : Application.Current.RequestedTheme == AppTheme.Dark 
+                        ? Colors.Gray 
+                        : Colors.LightGray;
             }
-            return Colors.Gray;
+            return Colors.Black;
         }
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
@@ -73,6 +79,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToBoldConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (bool)value ? FontAttributes.Bold : FontAttributes.None;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

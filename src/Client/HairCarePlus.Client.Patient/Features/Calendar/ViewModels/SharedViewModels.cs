@@ -74,5 +74,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         [ObservableProperty]
         private int dayNumber;
+
+        [ObservableProperty]
+        private string type;
+
+        [ObservableProperty]
+        private DateTime date;
+
+        [ObservableProperty]
+        private bool isCompleted;
     }
 } 

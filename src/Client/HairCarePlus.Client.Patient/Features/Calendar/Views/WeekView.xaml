@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.WeekView"
+             x:DataType="viewmodels:WeekViewModel">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:BoolToBoldConverter x:Key="BoolToBoldConverter"/>
+            <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*" 
+          Padding="10">
+        <!-- Заголовок недели и кнопки навигации -->
+        <Grid Grid.Row="0" 
+              ColumnDefinitions="Auto,*,Auto" 
+              Margin="0,0,0,10">
+            <Button Grid.Column="0"
+                    Text="&lt;"
+                    Command="{Binding PreviousWeekCommand}"
+                    WidthRequest="50"
+                    HeightRequest="40"
+                    Margin="0,0,10,0"/>
+            
+            <Label Grid.Column="1"
+                   Text="{Binding WeekTitle}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"/>
+            
+            <Button Grid.Column="2"
+                    Text="&gt;"
+                    Command="{Binding NextWeekCommand}"
+                    WidthRequest="50"
+                    HeightRequest="40"
+                    Margin="10,0,0,0"/>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <!-- Индикатор загрузки -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                             IsVisible="{Binding IsLoading}"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             Color="{StaticResource Primary}"/>
+
+            <!-- Дни недели -->
+            <CollectionView ItemsSource="{Binding WeekDays}"
+                          IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="viewmodels:WeekDayViewModel">
+                        <Frame Margin="0,5" 
+                               Padding="15"
+                               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}">
+                            <Grid RowDefinitions="Auto,*">
+                                <!-- Заголовок дня -->
+                                <Grid Grid.Row="0" 
+                                      ColumnDefinitions="Auto,*,Auto"
+                                      Margin="0,0,0,10">
+                                    <VerticalStackLayout Grid.Column="0"
+                                                       Spacing="2">
+                                        <Label Text="{Binding DayOfWeek}"
+                                               FontSize="14"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                        <Label Text="{Binding Date, StringFormat='{0:d MMMM}'}"
+                                               FontSize="16"
+                                               FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"
+                                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="2"
+                                           Text="{Binding DayNumber, StringFormat='День {0}'}"
+                                           FontSize="14"
+                                           VerticalOptions="Center"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                </Grid>
+
+                                <!-- События дня -->
+                                <CollectionView Grid.Row="1"
+                                              ItemsSource="{Binding Events}"
+                                              SelectionMode="None">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
+                                            <Grid Margin="0,5" 
+                                                  ColumnDefinitions="Auto,*">
+                                                <BoxView Grid.Column="0"
+                                                         WidthRequest="4"
+                                                         HeightRequest="20"
+                                                         CornerRadius="2"
+                                                         Margin="0,0,10,0"
+                                                         Color="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"/>
+                                                <VerticalStackLayout Grid.Column="1" 
+                                                                   Spacing="2">
+                                                    <Label Text="{Binding Name}"
+                                                           FontSize="14"
+                                                           TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"/>
+                                                    <Label Text="{Binding Description}"
+                                                           FontSize="12"
+                                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                    <CollectionView.EmptyView>
+                                        <Label Text="Нет событий"
+                                               FontSize="14"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                                               HorizontalOptions="Center"/>
+                                    </CollectionView.EmptyView>
+                                </CollectionView>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+    </Grid>
+</ContentView> 
