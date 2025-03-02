@@ -71,89 +71,98 @@
             </Grid>
         </Frame>
 
-        <!-- Horizontal Calendar Widget - Redesigned to match screenshot -->
+        <!-- Horizontal Calendar Widget - Redesigned with minimalist style -->
         <ScrollView Grid.Row="1" 
                    Orientation="Horizontal" 
                    HorizontalScrollBarVisibility="Never"
                    Margin="0,0,0,16">
-            <HorizontalStackLayout Spacing="0">
+            <HorizontalStackLayout Spacing="8">
                 <BindableLayout.ItemsSource>
                     <Binding Path="WeekDays"/>
                 </BindableLayout.ItemsSource>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="viewmodels:DayViewModel">
-                        <Border StrokeThickness="0.5"
-                               Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                               WidthRequest="60"
-                               HeightRequest="105"
+                        <Border WidthRequest="65"
+                               HeightRequest="95"
                                Padding="0"
-                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,White|Primary,Gray800'}">
+                               Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
+                               StrokeShape="RoundRectangle 16,16,16,16"
+                               StrokeThickness="1">
                             <Grid>
+                                <!-- Selected day styling -->
+                                <Border IsVisible="{Binding IsSelected}"
+                                      BackgroundColor="{AppThemeBinding Light=#F5F2FF, Dark=#2D2A50}"
+                                      Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                      StrokeThickness="1.5"
+                                      StrokeShape="RoundRectangle 16,16,16,16"
+                                      Padding="0"
+                                      Margin="0"/>
+                                
                                 <!-- Current day highlight -->
                                 <Border IsVisible="{Binding IsToday}"
-                                       BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-                                       HeightRequest="24"
-                                       StrokeThickness="0"
-                                       VerticalOptions="Start"
-                                       HorizontalOptions="Fill"
-                                       ZIndex="-1"/>
+                                      Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                      StrokeThickness="2"
+                                      BackgroundColor="Transparent"
+                                      StrokeShape="RoundRectangle 16,16,16,16"
+                                      Padding="0"
+                                      Margin="0"/>
                                       
-                                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4" Padding="5">
+                                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="2" Padding="4">
                                     <!-- Day of Week -->
                                     <Label Text="{Binding DayOfWeek}"
                                            FontSize="13"
-                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray500|White,Gray400'}"
-                                           HorizontalOptions="Center"/>
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                                           HorizontalOptions="Center"
+                                           Margin="0,4,0,0"/>
                                     
                                     <!-- Date Number -->
                                     <Label Grid.Row="1"
                                            Text="{Binding Date}"
                                            FontSize="18"
                                            FontAttributes="Bold"
-                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray900|White,White'}"
-                                           HorizontalOptions="Center"/>
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                                           HorizontalOptions="Center"
+                                           Margin="0,2"/>
                                     
                                     <!-- Event Icons -->
-                                    <FlexLayout Grid.Row="2"
-                                              Direction="Row"
-                                              JustifyContent="Center"
-                                              AlignItems="Center"
-                                              Wrap="Wrap"
-                                              Margin="0,8,0,0">
-                                        <!-- Dynamic icons for event types with colored backgrounds -->
+                                    <HorizontalStackLayout Grid.Row="2"
+                                                        HorizontalOptions="Center"
+                                                        VerticalOptions="Start"
+                                                        Spacing="3" 
+                                                        Margin="0,4,0,0">
+                                        <!-- Event type icon with colored background -->
                                         <Border IsVisible="{Binding HasEvents}"
-                                               WidthRequest="16" 
-                                               HeightRequest="16"
-                                               Padding="0"
-                                               Margin="1"
-                                               StrokeThickness="0"
-                                               BackgroundColor="#4CAF50"
-                                               StrokeShape="RoundRectangle 4,4,4,4">
+                                              WidthRequest="20" 
+                                              HeightRequest="20"
+                                              Padding="0"
+                                              Margin="0"
+                                              StrokeThickness="0"
+                                              BackgroundColor="{Binding TaskTypes, Converter={StaticResource EventTypeToColorConverter}}"
+                                              StrokeShape="RoundRectangle 6,6,6,6">
                                             <Label Text="{Binding TaskTypes, Converter={StaticResource EventTypeToIconConverter}}"
-                                                   FontSize="10"
-                                                   TextColor="White"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"
-                                                   HorizontalTextAlignment="Center"/>
+                                                  FontSize="12"
+                                                  TextColor="White"
+                                                  HorizontalOptions="Center"
+                                                  VerticalOptions="Center"/>
                                         </Border>
                                         
                                         <!-- Number badge if more than 1 event -->
-                                        <Border IsVisible="{Binding HasTasks}"
-                                               HeightRequest="16"
-                                               WidthRequest="16"
-                                               Padding="0"
-                                               Margin="1"
-                                               StrokeThickness="0"
-                                               StrokeShape="RoundRectangle 4,4,4,4"
-                                               BackgroundColor="{StaticResource Secondary}">
+                                        <Border IsVisible="{Binding HasTasks, Converter={StaticResource IntToBoolConverter}}"
+                                              HeightRequest="20"
+                                              WidthRequest="20"
+                                              Padding="0"
+                                              StrokeThickness="0"
+                                              StrokeShape="RoundRectangle 6,6,6,6"
+                                              BackgroundColor="{StaticResource Secondary}">
                                             <Label Text="{Binding TaskCount}"
-                                                   TextColor="White"
-                                                   FontSize="10"
-                                                   FontAttributes="Bold"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"/>
+                                                  TextColor="White"
+                                                  FontSize="12"
+                                                  FontAttributes="Bold"
+                                                  HorizontalOptions="Center"
+                                                  VerticalOptions="Center"/>
                                         </Border>
-                                    </FlexLayout>
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </Grid>
                             <Border.GestureRecognizers>
