@@ -71,80 +71,96 @@
             </Grid>
         </Frame>
 
-        <!-- Horizontal Calendar Widget - Redesigned -->
+        <!-- Horizontal Calendar Widget - Redesigned to match screenshot -->
         <ScrollView Grid.Row="1" 
                    Orientation="Horizontal" 
                    HorizontalScrollBarVisibility="Never"
                    Margin="0,0,0,16">
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="0">
                 <BindableLayout.ItemsSource>
                     <Binding Path="WeekDays"/>
                 </BindableLayout.ItemsSource>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="viewmodels:DayViewModel">
-                        <Frame WidthRequest="70"
+                        <Border StrokeThickness="0.5"
+                               Stroke="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                               WidthRequest="60"
                                HeightRequest="105"
-                               Padding="8"
-                               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,White|Primary,Gray800'}"
-                               CornerRadius="12"
-                               HasShadow="False">
-                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4">
-                                <!-- Day of Week -->
-                                <Label Text="{Binding DayOfWeek}"
-                                       FontSize="13"
-                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray500|White,Gray400'}"
-                                       HorizontalOptions="Center"/>
-                                
-                                <!-- Date Number -->
-                                <Label Grid.Row="1"
-                                       Text="{Binding Date}"
-                                       FontSize="20"
-                                       FontAttributes="Bold"
-                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray900|White,White'}"
-                                       HorizontalOptions="Center"/>
-                                
-                                <!-- Event Icons -->
-                                <FlexLayout Grid.Row="2"
-                                          Direction="Row"
-                                          JustifyContent="Center"
-                                          AlignItems="Center"
-                                          AlignContent="Center"
-                                          Wrap="Wrap"
-                                          Margin="0,6,0,0">
-                                    <!-- Dynamic icons for event types -->
-                                    <Label IsVisible="{Binding HasEvents}"
-                                           Text="{Binding TaskTypes, Converter={StaticResource EventTypeToIconConverter}}"
-                                           FontSize="16"
-                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Primary|White,Primary'}"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center"
-                                           HorizontalTextAlignment="Center"/>
+                               Padding="0"
+                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,White|Primary,Gray800'}">
+                            <Grid>
+                                <!-- Current day highlight -->
+                                <Border IsVisible="{Binding IsToday}"
+                                       BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                       HeightRequest="24"
+                                       StrokeThickness="0"
+                                       VerticalOptions="Start"
+                                       HorizontalOptions="Fill"
+                                       ZIndex="-1"/>
+                                      
+                                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4" Padding="5">
+                                    <!-- Day of Week -->
+                                    <Label Text="{Binding DayOfWeek}"
+                                           FontSize="13"
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray500|White,Gray400'}"
+                                           HorizontalOptions="Center"/>
                                     
-                                    <!-- Number badge if more than 1 event -->
-                                    <Frame IsVisible="{Binding HasTasks}"
-                                           HeightRequest="20"
-                                           WidthRequest="20"
-                                           Padding="0"
-                                           CornerRadius="10"
-                                           BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Secondary|White,Secondary'}"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center"
-                                           Margin="4,0,0,0">
-                                        <Label Text="{Binding TaskCount}"
-                                               TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,Primary|Primary,Primary'}"
-                                               FontSize="12"
-                                               FontAttributes="Bold"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center"/>
-                                    </Frame>
-                                </FlexLayout>
+                                    <!-- Date Number -->
+                                    <Label Grid.Row="1"
+                                           Text="{Binding Date}"
+                                           FontSize="18"
+                                           FontAttributes="Bold"
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray900|White,White'}"
+                                           HorizontalOptions="Center"/>
+                                    
+                                    <!-- Event Icons -->
+                                    <FlexLayout Grid.Row="2"
+                                              Direction="Row"
+                                              JustifyContent="Center"
+                                              AlignItems="Center"
+                                              Wrap="Wrap"
+                                              Margin="0,8,0,0">
+                                        <!-- Dynamic icons for event types with colored backgrounds -->
+                                        <Border IsVisible="{Binding HasEvents}"
+                                               WidthRequest="16" 
+                                               HeightRequest="16"
+                                               Padding="0"
+                                               Margin="1"
+                                               StrokeThickness="0"
+                                               BackgroundColor="#4CAF50"
+                                               StrokeShape="RoundRectangle 4,4,4,4">
+                                            <Label Text="{Binding TaskTypes, Converter={StaticResource EventTypeToIconConverter}}"
+                                                   FontSize="10"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   HorizontalTextAlignment="Center"/>
+                                        </Border>
+                                        
+                                        <!-- Number badge if more than 1 event -->
+                                        <Border IsVisible="{Binding HasTasks}"
+                                               HeightRequest="16"
+                                               WidthRequest="16"
+                                               Padding="0"
+                                               Margin="1"
+                                               StrokeThickness="0"
+                                               StrokeShape="RoundRectangle 4,4,4,4"
+                                               BackgroundColor="{StaticResource Secondary}">
+                                            <Label Text="{Binding TaskCount}"
+                                                   TextColor="White"
+                                                   FontSize="10"
+                                                   FontAttributes="Bold"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"/>
+                                        </Border>
+                                    </FlexLayout>
+                                </Grid>
                             </Grid>
-                            <Frame.GestureRecognizers>
+                            <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TreatmentProgressViewModel}}, Path=SelectDateCommand}"
                                                     CommandParameter="{Binding .}"/>
-                            </Frame.GestureRecognizers>
-                        </Frame>
+                            </Border.GestureRecognizers>
+                        </Border>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>
             </HorizontalStackLayout>
@@ -192,7 +208,7 @@
                                            Padding="16"
                                            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
                                            BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                                           CornerRadius="12"
+                                           CornerRadius="16"
                                            HasShadow="False"
                                            Opacity="{Binding IsCompleted, Converter={StaticResource BoolToOpacityConverter}}">
                                         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
@@ -201,7 +217,7 @@
                                                    WidthRequest="40"
                                                    HeightRequest="40"
                                                    StrokeThickness="0"
-                                                   StrokeShape="RoundRectangle 10,10,10,10"
+                                                   StrokeShape="RoundRectangle 12,12,12,12"
                                                    BackgroundColor="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"
                                                    VerticalOptions="Center">
                                                 <Label Text="{Binding Type, Converter={StaticResource EventTypeToIconConverter}}"

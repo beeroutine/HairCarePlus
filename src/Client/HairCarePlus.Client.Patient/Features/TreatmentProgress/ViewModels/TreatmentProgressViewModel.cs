@@ -118,6 +118,9 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
             var surgeryDate = new DateTime(2025, 1, 15); // Пример даты операции
             _allEvents = _calendarService.GenerateCalendar(surgeryDate);
 
+            // Make sure today is selected by default
+            _selectedDate = DateTime.Today;
+
             UpdateCalendarDays();
             UpdateDailyEvents();
         }
@@ -141,14 +144,16 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
                     IsSelected = date.Date == SelectedDate.Date,
                     HasTasks = dateEvents.Any(),
                     HasEvents = dateEvents.Any(),
-                    TaskCount = dateEvents.Count
+                    TaskCount = dateEvents.Count,
+                    IsToday = date.Date == DateTime.Today
                 };
                 
                 // Get first event type for icon (if any)
                 if (dateEvents.Any())
                 {
-                    // Use the first event type for the icon
-                    dayVm.TaskTypes = dateEvents.First().Type.ToString();
+                    // Get the event type for icon background color
+                    var eventType = dateEvents.First().Type.ToString();
+                    dayVm.TaskTypes = eventType;
                 }
                 
                 WeekDays.Add(dayVm);
@@ -171,11 +176,14 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         {
             if (day == null) return;
 
+            // Deselect previously selected day
             foreach (var d in WeekDays)
             {
-                d.IsSelected = d.FullDate.Date == day.FullDate.Date;
+                d.IsSelected = false;
             }
 
+            // Select new day
+            day.IsSelected = true;
             SelectedDate = day.FullDate;
             _vibrationService.Vibrate(50);
         }

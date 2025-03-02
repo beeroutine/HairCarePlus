@@ -51,9 +51,7 @@
         <!-- Дни недели с улучшенным стилем -->
         <Grid Grid.Row="1" 
               ColumnDefinitions="*,*,*,*,*,*,*" 
-              Margin="0,0,0,10"
-              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#333333}"
-              Padding="5">
+              Margin="0,0,0,10">
             <Label Grid.Column="0" Text="Пн" HorizontalOptions="Center" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}"/>
             <Label Grid.Column="1" Text="Вт" HorizontalOptions="Center" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}"/>
             <Label Grid.Column="2" Text="Ср" HorizontalOptions="Center" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}"/>
@@ -67,104 +65,101 @@
         <CollectionView Grid.Row="2" 
                        ItemsSource="{Binding Days}"
                        ItemsLayout="VerticalGrid, 7"
-                       Margin="0,10">
+                       Margin="0,0">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="viewmodels:CalendarDayViewModel">
-                    <Grid Padding="4" Margin="3,3">
-                        <Frame Padding="0" 
-                               BorderColor="{AppThemeBinding Light=#DDDDDD, Dark=#333333}"
-                               BackgroundColor="{Binding IsCurrentMonth, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF|#2B2B2B|#F8F8F8|#222222'}"
-                               HasShadow="False"
-                               CornerRadius="12"
-                               HeightRequest="80"
-                               WidthRequest="80"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center">
-                            <Frame.GestureRecognizers>
+                    <Grid Padding="0" Margin="0">
+                        <Border
+                            StrokeThickness="0.5"
+                            Stroke="{AppThemeBinding Light=#DDDDDD, Dark=#333333}"
+                            StrokeShape="Rectangle"
+                            BackgroundColor="{Binding IsCurrentMonth, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FFFFFF|#2B2B2B|#F8F8F8|#222222'}"
+                            HeightRequest="85"
+                            VerticalOptions="Fill"
+                            HorizontalOptions="Fill">
+                            <Border.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:MonthViewModel}}, Path=DaySelectedCommand}"
                                                       CommandParameter="{Binding}"/>
-                            </Frame.GestureRecognizers>
+                            </Border.GestureRecognizers>
                             
-                            <!-- Special frame for "today" highlight -->
-                            <Grid>
-                                <Frame IsVisible="{Binding IsToday}"
-                                       BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
-                                       CornerRadius="12"
-                                       HasShadow="False"
-                                       BorderColor="Transparent"
-                                       Margin="0"
-                                       Padding="0"/>
-                                
-                                <Grid RowDefinitions="Auto,*,Auto" Margin="2">
-                                    <!-- Номер дня с улучшенным контрастом -->
-                                    <Label Grid.Row="0"
-                                           Text="{Binding Date.Day}"
-                                           FontSize="18"
-                                           TextColor="{Binding IsToday, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White|White|#333333|#EEEEEE'}"
-                                           FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"
-                                           HorizontalOptions="Center"
-                                           Margin="0,6,0,2"
-                                           Opacity="{Binding IsCurrentMonth, Converter={StaticResource BoolToColorConverter}, ConverterParameter='1.0|0.8|0.5|0.4'}"/>
-                                    
-                                    <!-- Event Icons using symbols -->
-                                    <HorizontalStackLayout Grid.Row="1" 
-                                                         HorizontalOptions="Center" 
-                                                         VerticalOptions="Center"
-                                                         Spacing="4"
-                                                         Margin="0,2,0,2">
-                                        <!-- Medication icon (pill symbol) -->
-                                        <Border IsVisible="{Binding HasMedications}"
-                                               StrokeThickness="0"
-                                               BackgroundColor="#4CAF50"
-                                               StrokeShape="RoundRectangle 6,6,6,6"
-                                               WidthRequest="18"
-                                               HeightRequest="18"
-                                               Padding="2">
-                                            <Label Text="💊" 
-                                                   TextColor="White"
-                                                   FontSize="10"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"/>
-                                        </Border>
-                                               
-                                        <!-- Instruction icon (info symbol) -->
-                                        <Border IsVisible="{Binding HasInstructions}"
-                                               StrokeThickness="0"
-                                               BackgroundColor="#9C27B0"
-                                               StrokeShape="RoundRectangle 6,6,6,6"
-                                               WidthRequest="18"
-                                               HeightRequest="18"
-                                               Padding="2">
-                                            <Label Text="ℹ️" 
-                                                   TextColor="White"
-                                                   FontSize="10"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"/>
-                                        </Border>
-                                               
-                                        <!-- Restriction icon (prohibited symbol) -->
-                                        <Border IsVisible="{Binding HasRestrictions}"
-                                               StrokeThickness="0"
-                                               BackgroundColor="#F44336"
-                                               StrokeShape="RoundRectangle 6,6,6,6"
-                                               WidthRequest="18"
-                                               HeightRequest="18"
-                                               Padding="2">
-                                            <Label Text="⛔" 
-                                                   TextColor="White"
-                                                   FontSize="10"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"/>
-                                        </Border>
-                                    </HorizontalStackLayout>
-                                    
-                                    <!-- Tappable area for events -->
-                                    <Grid Grid.Row="2"
-                                         HeightRequest="6">
-                                    </Grid>
+                            <Grid RowDefinitions="Auto,*">
+                                <!-- Highlight for current day -->
+                                <Grid ColumnSpan="2" IsVisible="{Binding IsToday}">
+                                    <Border
+                                        BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                                        HeightRequest="24"
+                                        StrokeThickness="0"
+                                        VerticalOptions="Start"
+                                        HorizontalOptions="Fill"
+                                        ZIndex="-1"/>
                                 </Grid>
+                                
+                                <!-- Day number with clean styling -->
+                                <Label Grid.Row="0"
+                                       Text="{Binding Date.Day}"
+                                       FontSize="16"
+                                       TextColor="{Binding IsToday, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White|White|#333333|#EEEEEE'}"
+                                       FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,4,0,2"
+                                       Opacity="{Binding IsCurrentMonth, Converter={StaticResource BoolToColorConverter}, ConverterParameter='1.0|0.8|0.5|0.4'}"/>
+                                
+                                <!-- Event Icons in a centered horizontal layout -->
+                                <HorizontalStackLayout Grid.Row="1" 
+                                                     HorizontalOptions="Center" 
+                                                     VerticalOptions="Start"
+                                                     Spacing="2"
+                                                     Margin="0,2,0,0">
+                                    <!-- Medication icon -->
+                                    <Border IsVisible="{Binding HasMedications}"
+                                           StrokeThickness="0"
+                                           BackgroundColor="#4CAF50"
+                                           StrokeShape="RoundRectangle 4,4,4,4"
+                                           WidthRequest="16"
+                                           HeightRequest="16"
+                                           Padding="0"
+                                           Margin="1">
+                                        <Label Text="💊" 
+                                               TextColor="White"
+                                               FontSize="10"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Border>
+                                           
+                                    <!-- Instruction icon -->
+                                    <Border IsVisible="{Binding HasInstructions}"
+                                           StrokeThickness="0"
+                                           BackgroundColor="#9C27B0"
+                                           StrokeShape="RoundRectangle 4,4,4,4"
+                                           WidthRequest="16"
+                                           HeightRequest="16"
+                                           Padding="0"
+                                           Margin="1">
+                                        <Label Text="ℹ️" 
+                                               TextColor="White"
+                                               FontSize="10"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Border>
+                                           
+                                    <!-- Restriction icon -->
+                                    <Border IsVisible="{Binding HasRestrictions}"
+                                           StrokeThickness="0"
+                                           BackgroundColor="#F44336"
+                                           StrokeShape="RoundRectangle 4,4,4,4"
+                                           WidthRequest="16"
+                                           HeightRequest="16"
+                                           Padding="0"
+                                           Margin="1">
+                                        <Label Text="⛔" 
+                                               TextColor="White"
+                                               FontSize="10"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Border>
+                                </HorizontalStackLayout>
                             </Grid>
-                        </Frame>
+                        </Border>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

@@ -10,6 +10,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         private bool _isSelected;
         private bool _hasTasks;
         private bool _hasEvents;
+        private bool _isToday;
         private int _taskCount;
         private string _taskTypes = string.Empty;
 
@@ -43,6 +44,12 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         {
             get => _isSelected;
             set => SetProperty(ref _isSelected, value);
+        }
+
+        public bool IsToday
+        {
+            get => _isToday;
+            set => SetProperty(ref _isToday, value);
         }
 
         public bool HasTasks
