@@ -3,108 +3,142 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels"
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Models"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+             xmlns:treatmentConverters="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Converters"
              x:Class="HairCarePlus.Client.Patient.Features.TreatmentProgress.Views.TreatmentProgressPage"
              x:DataType="viewmodels:TreatmentProgressViewModel"
-             BackgroundColor="{StaticResource Gray100}"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
              Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
+            <treatmentConverters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
+            <treatmentConverters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ContentPage.ToolbarItems>
     </ContentPage.ToolbarItems>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="20">
-        <!-- Дневной прогресс -->
-        <Frame Grid.Row="0" Margin="0,10" Padding="15" BackgroundColor="{StaticResource White}">
-            <Grid ColumnDefinitions="*,Auto">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Daily Progress" 
-                           Style="{StaticResource SubheaderLabel}"/>
-                    <Label Text="{Binding CompletedTasks, StringFormat='{0} of {1} tasks completed'}"
-                           TextColor="{StaticResource Gray500}"/>
-                </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16">
+        <!-- Daily Progress - Improved visualization -->
+        <Frame Grid.Row="0" 
+               Margin="0,8,0,16" 
+               Padding="16" 
+               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
+               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+               CornerRadius="16"
+               HasShadow="False">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="12">
+                <!-- Header -->
+                <Label Grid.Row="0" Grid.Column="0"
+                       Text="Прогресс на сегодня" 
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"/>
                 
-                <!-- Круговой прогресс бар -->
-                <Frame Grid.Column="1" 
-                       HeightRequest="60" 
-                       WidthRequest="60"
-                       CornerRadius="30"
-                       Padding="0"
-                       BorderColor="{StaticResource Primary}"
-                       BackgroundColor="{StaticResource White}">
-                    <Grid>
-                        <ProgressBar Progress="{Binding DailyProgress}"
-                                   ProgressColor="{StaticResource Primary}"
-                                   Scale="1.5"
-                                   Rotation="-90"/>
-                        <Label Text="{Binding DailyProgress, StringFormat='{0:P0}'}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               FontAttributes="Bold"
-                               TextColor="{StaticResource Primary}"/>
-                    </Grid>
-                </Frame>
+                <!-- Tasks Counter -->
+                <Label Grid.Row="0" Grid.Column="1"
+                       Text="{Binding CompletedTasks, StringFormat='{0} из {1}'}"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       HorizontalOptions="End"
+                       TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                
+                <!-- Linear Progress Bar -->
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" RowDefinitions="Auto,Auto" RowSpacing="6">
+                    <Frame HeightRequest="16"
+                           Padding="0" 
+                           BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                           CornerRadius="8"
+                           HasShadow="False">
+                        <Frame HorizontalOptions="Start"
+                               WidthRequest="{Binding DailyProgressWidth}"
+                               Margin="0"
+                               Padding="0"
+                               BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                               CornerRadius="8"
+                               HasShadow="False"/>
+                    </Frame>
+                    
+                    <Label Grid.Row="1" 
+                           Text="{Binding DailyProgress, StringFormat='{0:P0} выполнено'}"
+                           FontSize="14"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                </Grid>
             </Grid>
         </Frame>
 
-        <!-- Горизонтальный календарь -->
+        <!-- Horizontal Calendar Widget - Redesigned -->
         <ScrollView Grid.Row="1" 
                    Orientation="Horizontal" 
-                   HorizontalScrollBarVisibility="Never">
-            <HorizontalStackLayout Spacing="8" Margin="0,10">
+                   HorizontalScrollBarVisibility="Never"
+                   Margin="0,0,0,16">
+            <HorizontalStackLayout Spacing="10">
                 <BindableLayout.ItemsSource>
                     <Binding Path="WeekDays"/>
                 </BindableLayout.ItemsSource>
                 <BindableLayout.ItemTemplate>
                     <DataTemplate x:DataType="viewmodels:DayViewModel">
-                        <Frame BorderColor="{StaticResource Primary}"
-                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,White'}"
-                               WidthRequest="85"
-                               HeightRequest="110"
+                        <Frame WidthRequest="70"
+                               HeightRequest="105"
                                Padding="8"
-                               Margin="0"
-                               CornerRadius="15"
+                               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,White|Primary,Gray800'}"
+                               CornerRadius="12"
                                HasShadow="False">
-                            <Grid RowDefinitions="25,30,25,20" RowSpacing="2">
+                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="4">
+                                <!-- Day of Week -->
                                 <Label Text="{Binding DayOfWeek}"
-                                       FontSize="12"
-                                       TextColor="{Binding HasEvents, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Black,Gray500'}"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center"/>
+                                       FontSize="13"
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray500|White,Gray400'}"
+                                       HorizontalOptions="Center"/>
+                                
+                                <!-- Date Number -->
                                 <Label Grid.Row="1"
                                        Text="{Binding Date}"
                                        FontSize="20"
                                        FontAttributes="Bold"
-                                       TextColor="{Binding HasEvents, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Black,Gray300'}"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center"/>
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray900|White,White'}"
+                                       HorizontalOptions="Center"/>
                                 
-                                <!-- Индикатор количества задач -->
-                                <Frame Grid.Row="2"
-                                       IsVisible="{Binding HasTasks}"
-                                       HeightRequest="22"
-                                       WidthRequest="22"
-                                       Padding="0"
-                                       BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Secondary'}"
-                                       CornerRadius="11"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center">
-                                    <Label Text="{Binding TaskCount}"
-                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,Primary'}"
-                                           FontSize="12"
-                                           FontAttributes="Bold"
+                                <!-- Event Icons -->
+                                <FlexLayout Grid.Row="2"
+                                          Direction="Row"
+                                          JustifyContent="Center"
+                                          AlignItems="Center"
+                                          AlignContent="Center"
+                                          Wrap="Wrap"
+                                          Margin="0,6,0,0">
+                                    <!-- Dynamic icons for event types -->
+                                    <Label IsVisible="{Binding HasEvents}"
+                                           Text="{Binding TaskTypes, Converter={StaticResource EventTypeToIconConverter}}"
+                                           FontSize="16"
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Primary|White,Primary'}"
                                            HorizontalOptions="Center"
-                                           VerticalOptions="Center"/>
-                                </Frame>
-                                
-                                <!-- Типы задач -->
-                                <Label Grid.Row="3"
-                                       Text="{Binding TaskTypes}"
-                                       FontSize="10"
-                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Gray500'}"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Start"
-                                       HorizontalTextAlignment="Center"
-                                       MaxLines="1"
-                                       LineBreakMode="TailTruncation"/>
+                                           VerticalOptions="Center"
+                                           HorizontalTextAlignment="Center"/>
+                                    
+                                    <!-- Number badge if more than 1 event -->
+                                    <Frame IsVisible="{Binding HasTasks}"
+                                           HeightRequest="20"
+                                           WidthRequest="20"
+                                           Padding="0"
+                                           CornerRadius="10"
+                                           BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,Secondary|White,Secondary'}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"
+                                           Margin="4,0,0,0">
+                                        <Label Text="{Binding TaskCount}"
+                                               TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='Primary,Primary|Primary,Primary'}"
+                                               FontSize="12"
+                                               FontAttributes="Bold"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Frame>
+                                </FlexLayout>
                             </Grid>
                             <Frame.GestureRecognizers>
                                 <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TreatmentProgressViewModel}}, Path=SelectDateCommand}"
@@ -116,21 +150,29 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <!-- Список задач -->
-        <Frame Grid.Row="2" Margin="0,10" Padding="15" BackgroundColor="{StaticResource White}">
+        <!-- Today's Tasks - Improved design -->
+        <Frame Grid.Row="2" 
+               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
+               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+               CornerRadius="16"
+               Padding="16"
+               HasShadow="False">
             <Grid RowDefinitions="Auto,*">
-                <Label Text="Today's Tasks" 
-                       Style="{StaticResource SubheaderLabel}"
-                       Margin="0,0,0,10"/>
+                <Label Text="Задачи на день" 
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"
+                       Margin="0,0,0,12"/>
                 
                 <ScrollView Grid.Row="1">
-                    <CollectionView ItemsSource="{Binding DailyEvents}">
+                    <CollectionView ItemsSource="{Binding DailyEvents}" ItemSizingStrategy="MeasureAllItems">
                         <CollectionView.EmptyView>
                             <VerticalStackLayout HorizontalOptions="Center" 
-                                               VerticalOptions="Center">
-                                <Label Text="No tasks for today"
-                                       FontSize="18"
-                                       TextColor="{StaticResource Gray500}"
+                                               VerticalOptions="Center"
+                                               Margin="0,40">
+                                <Label Text="Нет задач на выбранный день"
+                                       FontSize="16"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
                                        HorizontalOptions="Center"/>
                             </VerticalStackLayout>
                         </CollectionView.EmptyView>
@@ -139,51 +181,57 @@
                                 <SwipeView>
                                     <SwipeView.RightItems>
                                         <SwipeItems>
-                                            <SwipeItem Text="Complete"
+                                            <SwipeItem Text="Выполнено"
                                                      BackgroundColor="{StaticResource Primary}"
                                                      Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TreatmentProgressViewModel}}, Path=CompleteEventCommand}"
                                                      CommandParameter="{Binding .}"/>
                                         </SwipeItems>
                                     </SwipeView.RightItems>
                                     
-                                    <Frame Margin="0,5" 
-                                           Padding="15"
-                                           BackgroundColor="{StaticResource White}"
-                                           BorderColor="{StaticResource Gray200}"
+                                    <Frame Margin="0,6" 
+                                           Padding="16"
+                                           BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}"
+                                           BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                           CornerRadius="12"
+                                           HasShadow="False"
                                            Opacity="{Binding IsCompleted, Converter={StaticResource BoolToOpacityConverter}}">
                                         <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-                                            <!-- Иконка типа события -->
-                                            <Frame Grid.RowSpan="2"
-                                                   HeightRequest="40"
+                                            <!-- Task Type Icon -->
+                                            <Border Grid.RowSpan="2"
                                                    WidthRequest="40"
-                                                   CornerRadius="20"
-                                                   Padding="0"
-                                                   BackgroundColor="{StaticResource Secondary}">
-                                                <Label Text="{Binding Type}"
-                                                       TextColor="{StaticResource Primary}"
-                                                       FontSize="12"
+                                                   HeightRequest="40"
+                                                   StrokeThickness="0"
+                                                   StrokeShape="RoundRectangle 10,10,10,10"
+                                                   BackgroundColor="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"
+                                                   VerticalOptions="Center">
+                                                <Label Text="{Binding Type, Converter={StaticResource EventTypeToIconConverter}}"
+                                                       TextColor="White"
+                                                       FontSize="20"
                                                        HorizontalOptions="Center"
                                                        VerticalOptions="Center"/>
-                                            </Frame>
+                                            </Border>
 
-                                            <!-- Название и описание -->
+                                            <!-- Title and Description -->
                                             <Label Grid.Column="1"
+                                                   Grid.Row="0"
                                                    Text="{Binding Title}"
                                                    FontSize="16"
                                                    FontAttributes="Bold"
-                                                   Margin="10,0,0,0"/>
+                                                   Margin="12,0,0,0"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}"/>
                                             <Label Grid.Column="1"
                                                    Grid.Row="1"
                                                    Text="{Binding Description}"
-                                                   TextColor="{StaticResource Gray500}"
                                                    FontSize="14"
-                                                   Margin="10,0,0,0"/>
+                                                   Margin="12,0,0,0"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
 
-                                            <!-- Индикатор выполнения -->
+                                            <!-- Completion Checkbox -->
                                             <CheckBox Grid.Column="2"
                                                      Grid.RowSpan="2"
                                                      IsChecked="{Binding IsCompleted}"
-                                                     Color="{StaticResource Primary}"/>
+                                                     Color="{StaticResource Primary}"
+                                                     VerticalOptions="Center"/>
                                         </Grid>
                                     </Frame>
                                 </SwipeView>

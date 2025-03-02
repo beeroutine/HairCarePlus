@@ -19,11 +19,12 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         private DateTime _selectedDate;
         private int _completedTasks;
         private double _dailyProgress;
+        private double _dailyProgressWidth;
         private bool _isLoading;
         private List<TreatmentEvent> _allEvents;
 
         [ObservableProperty]
-        private string title = "My Progress";
+        private string title = "Мой прогресс";
 
         public IAsyncRelayCommand OpenChatCommand { get; }
 
@@ -86,7 +87,20 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         public double DailyProgress
         {
             get => _dailyProgress;
-            set => SetProperty(ref _dailyProgress, value);
+            set
+            {
+                if (SetProperty(ref _dailyProgress, value))
+                {
+                    // Update the progress bar width when progress changes
+                    DailyProgressWidth = _dailyProgress * 100;
+                }
+            }
+        }
+        
+        public double DailyProgressWidth
+        {
+            get => _dailyProgressWidth;
+            set => SetProperty(ref _dailyProgressWidth, value);
         }
 
         public bool IsLoading
@@ -119,7 +133,7 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
                 var date = today.AddDays(i);
                 var dateEvents = _allEvents.Where(e => e.Date.Date == date.Date).ToList();
                 
-                WeekDays.Add(new DayViewModel
+                var dayVm = new DayViewModel
                 {
                     Date = date.Day.ToString(),
                     DayOfWeek = date.ToString("ddd"),
@@ -127,9 +141,17 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
                     IsSelected = date.Date == SelectedDate.Date,
                     HasTasks = dateEvents.Any(),
                     HasEvents = dateEvents.Any(),
-                    TaskCount = dateEvents.Count,
-                    TaskTypes = string.Join(", ", dateEvents.Select(e => e.Type).Distinct())
-                });
+                    TaskCount = dateEvents.Count
+                };
+                
+                // Get first event type for icon (if any)
+                if (dateEvents.Any())
+                {
+                    // Use the first event type for the icon
+                    dayVm.TaskTypes = dateEvents.First().Type.ToString();
+                }
+                
+                WeekDays.Add(dayVm);
             }
         }
 
