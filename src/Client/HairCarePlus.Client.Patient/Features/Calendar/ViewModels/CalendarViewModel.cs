@@ -41,7 +41,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [ObservableProperty]
         private double progressValue;
 
-        public string ProgressPercentage => $"{(int)(ProgressValue * 100)}%";
+        [ObservableProperty]
+        private double progressBarWidth; // Width in pixels or percentage for our progress bar fill
+
+        public string ProgressPercentage => $"{(int)(ProgressValue)}%";
 
         public MonthViewModel MonthViewModel { get; }
         public WeekViewModel WeekViewModel { get; }
@@ -78,9 +81,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             var currentDay = _calendarService.GetCurrentDay();
             var phase = _calendarService.GetCurrentPhase(currentDay);
-            CurrentPhaseText = GetPhaseDisplayName(phase);
-            ProgressText = $"День {currentDay} из 180";
-            ProgressValue = _calendarService.GetProgressPercentage(currentDay);
+            this.CurrentPhaseText = GetPhaseDisplayName(phase);
+            this.ProgressText = $"День {currentDay} из 180";
+            this.ProgressValue = _calendarService.GetProgressPercentage(currentDay);
+            
+            // Calculate width for our progress bar (as percentage)
+            this.ProgressBarWidth = Math.Max(1, Math.Min(100, (int)Math.Ceiling(this.ProgressValue)));
         }
 
         [RelayCommand]
@@ -125,12 +131,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             var currentDay = _calendarService.GetCurrentDay();
             var currentPhase = _calendarService.GetCurrentPhase(currentDay);
 
-            CurrentPhaseText = GetPhaseDisplayName(currentPhase);
-            ProgressValue = _calendarService.GetProgressPercentage(currentDay);
-            ProgressText = $"День {currentDay} из 180";
+            this.CurrentPhaseText = GetPhaseDisplayName(currentPhase);
+            this.ProgressValue = _calendarService.GetProgressPercentage(currentDay);
+            this.ProgressText = $"День {currentDay} из 180";
+            
+            // Calculate progress bar width again
+            this.ProgressBarWidth = Math.Max(1, Math.Min(100, (int)Math.Ceiling(this.ProgressValue)));
 
             // Initialize with Month view
-            SelectedViewIndex = 0;
+            this.SelectedViewIndex = 0;
 
             // Загружаем данные для сегодняшнего дня
             LoadTodayMedications(currentDay);
@@ -288,9 +297,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             foreach (var evt in upcomingEvents)
             {
                 var viewModel = new CalendarEventViewModel();
-                SetProperty(viewModel, "Name", evt.Name);
-                SetProperty(viewModel, "Description", evt.Description);
-                SetProperty(viewModel, "DayNumber", evt.StartDay);
+                viewModel.Name = evt.Name;
+                viewModel.Description = evt.Description;
+                viewModel.DayNumber = evt.StartDay;
                 UpcomingEvents.Add(viewModel);
             }
         }

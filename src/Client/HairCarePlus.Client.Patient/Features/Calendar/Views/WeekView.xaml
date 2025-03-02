@@ -6,39 +6,49 @@
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.WeekView"
              x:DataType="viewmodels:WeekViewModel">
 
-    <ContentPage.Resources>
+    <ContentView.Resources>
         <ResourceDictionary>
             <converters:BoolToBoldConverter x:Key="BoolToBoldConverter"/>
             <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+            <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         </ResourceDictionary>
-    </ContentPage.Resources>
+    </ContentView.Resources>
 
     <Grid RowDefinitions="Auto,*" 
           Padding="10">
         <!-- Заголовок недели и кнопки навигации -->
         <Grid Grid.Row="0" 
               ColumnDefinitions="Auto,*,Auto" 
-              Margin="0,0,0,10">
+              Margin="0,0,0,15">
             <Button Grid.Column="0"
                     Text="&lt;"
                     Command="{Binding PreviousWeekCommand}"
                     WidthRequest="50"
                     HeightRequest="40"
-                    Margin="0,0,10,0"/>
+                    Margin="0,0,10,0"
+                    BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                    TextColor="White"
+                    CornerRadius="8"/>
             
             <Label Grid.Column="1"
                    Text="{Binding WeekTitle}"
-                   FontSize="18"
+                   FontSize="20"
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
-                   VerticalOptions="Center"/>
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=#333333, Dark=#E0E0E0}"/>
             
             <Button Grid.Column="2"
                     Text="&gt;"
                     Command="{Binding NextWeekCommand}"
                     WidthRequest="50"
                     HeightRequest="40"
-                    Margin="10,0,0,0"/>
+                    Margin="10,0,0,0"
+                    BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                    TextColor="White"
+                    CornerRadius="8"/>
         </Grid>
 
         <Grid Grid.Row="1">
@@ -47,73 +57,157 @@
                              IsVisible="{Binding IsLoading}"
                              HorizontalOptions="Center"
                              VerticalOptions="Center"
-                             Color="{StaticResource Primary}"/>
+                             Color="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"/>
 
             <!-- Дни недели -->
             <CollectionView ItemsSource="{Binding WeekDays}"
-                          IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+                          IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                          Margin="0,5">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="viewmodels:WeekDayViewModel">
-                        <Frame Margin="0,5" 
-                               Padding="15"
-                               BorderColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
-                               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}">
-                            <Grid RowDefinitions="Auto,*">
-                                <!-- Заголовок дня -->
-                                <Grid Grid.Row="0" 
-                                      ColumnDefinitions="Auto,*,Auto"
-                                      Margin="0,0,0,10">
-                                    <VerticalStackLayout Grid.Column="0"
-                                                       Spacing="2">
-                                        <Label Text="{Binding DayOfWeek}"
-                                               FontSize="14"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                        <Label Text="{Binding Date, StringFormat='{0:d MMMM}'}"
-                                               FontSize="16"
-                                               FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"
-                                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
-                                    </VerticalStackLayout>
-
-                                    <Label Grid.Column="2"
-                                           Text="{Binding DayNumber, StringFormat='День {0}'}"
-                                           FontSize="14"
-                                           VerticalOptions="Center"
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                        <Frame Margin="0,6" 
+                               Padding="0"
+                               BorderColor="{AppThemeBinding Light=#DDDDDD, Dark=#333333}"
+                               BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2B2B2B}"
+                               HasShadow="False"
+                               CornerRadius="12">
+                            <Grid>
+                                <!-- Day header with background for today -->
+                                <Grid ColumnSpan="2">
+                                    <Frame IsVisible="{Binding IsToday}"
+                                         BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                                         CornerRadius="12,12,0,0"
+                                         HasShadow="False"
+                                         BorderColor="Transparent"
+                                         HeightRequest="50"
+                                         VerticalOptions="Start"
+                                         Margin="0"
+                                         Padding="0"/>
+                                         
+                                    <!-- Left highlight indicator for today -->
+                                    <Border IsVisible="{Binding IsToday}"
+                                           Margin="0,50,0,0"
+                                           StrokeThickness="0"
+                                           BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                                           HorizontalOptions="Start"
+                                           WidthRequest="4"
+                                           VerticalOptions="Fill"/>
                                 </Grid>
+                                
+                                <Grid RowDefinitions="Auto,*" Padding="15,12">
+                                    <!-- Заголовок дня -->
+                                    <Grid Grid.Row="0" 
+                                          ColumnDefinitions="Auto,*,Auto"
+                                          Margin="0,0,0,10">
+                                        <VerticalStackLayout Grid.Column="0"
+                                                           Spacing="2">
+                                            <Label Text="{Binding DayOfWeek}"
+                                                   FontSize="14"
+                                                   TextColor="{Binding IsToday, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White|White|#555555|#BBBBBB'}"
+                                                   FontAttributes="{Binding IsToday, Converter={StaticResource BoolToBoldConverter}}"/>
+                                            <Label Text="{Binding Date, StringFormat='{0:d MMMM}'}"
+                                                   FontSize="16"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{Binding IsToday, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White|White|#333333|#E0E0E0'}"/>
+                                        </VerticalStackLayout>
 
-                                <!-- События дня -->
-                                <CollectionView Grid.Row="1"
-                                              ItemsSource="{Binding Events}"
-                                              SelectionMode="None">
-                                    <CollectionView.ItemTemplate>
-                                        <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
-                                            <Grid Margin="0,5" 
-                                                  ColumnDefinitions="Auto,*">
-                                                <BoxView Grid.Column="0"
-                                                         WidthRequest="4"
-                                                         HeightRequest="20"
-                                                         CornerRadius="2"
-                                                         Margin="0,0,10,0"
-                                                         Color="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"/>
-                                                <VerticalStackLayout Grid.Column="1" 
-                                                                   Spacing="2">
-                                                    <Label Text="{Binding Name}"
-                                                           FontSize="14"
-                                                           TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"/>
-                                                    <Label Text="{Binding Description}"
-                                                           FontSize="12"
-                                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                                </VerticalStackLayout>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </CollectionView.ItemTemplate>
-                                    <CollectionView.EmptyView>
-                                        <Label Text="Нет событий"
+                                        <Label Grid.Column="2"
+                                               Text="{Binding DayNumber, StringFormat='День {0}'}"
                                                FontSize="14"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                                               HorizontalOptions="Center"/>
-                                    </CollectionView.EmptyView>
-                                </CollectionView>
+                                               VerticalOptions="Center"
+                                               TextColor="{Binding IsToday, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White|White|#555555|#BBBBBB'}"/>
+                                    </Grid>
+
+                                    <!-- События дня с улучшенным стилем -->
+                                    <CollectionView Grid.Row="1"
+                                                  ItemsSource="{Binding Events}"
+                                                  SelectionMode="None"
+                                                  Margin="0,5,0,0">
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:CalendarEventViewModel">
+                                                <Grid Margin="0,6" 
+                                                      ColumnDefinitions="Auto,Auto,*">
+                                                    <!-- Event indicator -->
+                                                    <Border Grid.Column="0"
+                                                           StrokeThickness="0"
+                                                           BackgroundColor="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"
+                                                           StrokeShape="RoundRectangle 6,6,6,6"
+                                                           WidthRequest="8"
+                                                           HeightRequest="36"
+                                                           Margin="0,0,12,0"
+                                                           VerticalOptions="Center"/>
+                                                    
+                                                    <!-- Event icon -->
+                                                    <Border Grid.Column="1"
+                                                           StrokeThickness="0"
+                                                           BackgroundColor="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"
+                                                           StrokeShape="RoundRectangle 6,6,6,6"
+                                                           WidthRequest="28"
+                                                           HeightRequest="28"
+                                                           Margin="0,0,10,0"
+                                                           VerticalOptions="Center">
+                                                        <Label Text="{Binding Type, Converter={StaticResource EventTypeToIconConverter}}" 
+                                                               TextColor="White"
+                                                               FontSize="16"
+                                                               HorizontalOptions="Center"
+                                                               VerticalOptions="Center"/>
+                                                    </Border>
+                                                    
+                                                    <!-- Event content -->
+                                                    <Grid Grid.Column="2" 
+                                                         RowDefinitions="Auto,Auto,Auto">
+                                                        <Label Grid.Row="0"
+                                                               Text="{Binding Name}"
+                                                               FontSize="15"
+                                                               FontAttributes="Bold"
+                                                               TextColor="{AppThemeBinding Light=#333333, Dark=#E0E0E0}"/>
+                                                        <Label Grid.Row="1"
+                                                               Text="{Binding Description}"
+                                                               FontSize="13"
+                                                               LineBreakMode="TailTruncation"
+                                                               MaxLines="2"
+                                                               TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}"/>
+                                                               
+                                                        <!-- Progress indicator for multi-day events (date range or progress bar) -->
+                                                        <Grid Grid.Row="2" IsVisible="{Binding IsMultiDay}" Margin="0,4,0,0">
+                                                            <!-- Date range text -->
+                                                            <Label Text="{Binding DateRangeText}"
+                                                                   FontSize="12"
+                                                                   TextColor="{AppThemeBinding Light=#6962AD, Dark=#A79FF7}"/>
+                                                                   
+                                                            <!-- Mini progress bar for multi-day events -->
+                                                            <Grid RowDefinitions="Auto" HeightRequest="4" Margin="0,18,0,0">
+                                                                <Frame BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#444444}"
+                                                                       CornerRadius="2"
+                                                                       HasShadow="False"
+                                                                       Padding="0"
+                                                                       HeightRequest="4"/>
+                                                                <Frame BackgroundColor="{Binding Type, Converter={StaticResource EventTypeToColorConverter}}"
+                                                                       CornerRadius="2"
+                                                                       HasShadow="False"
+                                                                       HorizontalOptions="Start"
+                                                                       WidthRequest="{Binding ProgressPercentage}"
+                                                                       Padding="0"
+                                                                       HeightRequest="4"/>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                        <CollectionView.EmptyView>
+                                            <Grid VerticalOptions="Center" 
+                                                  HorizontalOptions="Center" 
+                                                  HeightRequest="120">
+                                                <Label Text="Нет событий на этот день"
+                                                     FontSize="14"
+                                                     VerticalOptions="Center"
+                                                     HorizontalOptions="Center"
+                                                     TextColor="{AppThemeBinding Light=#999999, Dark=#777777}"/>
+                                            </Grid>
+                                        </CollectionView.EmptyView>
+                                    </CollectionView>
+                                </Grid>
                             </Grid>
                         </Frame>
                     </DataTemplate>

@@ -6,33 +6,66 @@
              xmlns:tabview="clr-namespace:Syncfusion.Maui.TabView;assembly=Syncfusion.Maui.TabView"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.CalendarPage"
              x:DataType="viewmodels:CalendarViewModel"
-             Title="Календарь восстановления">
+             Title="Календарь восстановления"
+             BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Progress Section -->
+        <!-- Progress Section - улучшенный дизайн и визуализация -->
         <Frame Grid.Row="0" 
-               Margin="10"
-               Padding="15"
-               BackgroundColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-               CornerRadius="10">
+               Margin="15,15,15,10"
+               Padding="18"
+               BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#2D2A54}"
+               CornerRadius="12"
+               HasShadow="True">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Image Grid.Column="0"
                        Source="calendar.png"
-                       HeightRequest="40"
-                       WidthRequest="40"
+                       HeightRequest="42"
+                       WidthRequest="42"
                        VerticalOptions="Center"/>
                 
                 <VerticalStackLayout Grid.Column="1" 
-                                   Spacing="5"
-                                   Margin="10,0">
+                                   Spacing="6"
+                                   Margin="12,0">
                     <Label Text="{Binding CurrentPhaseText}"
                            TextColor="White"
-                           FontSize="18"/>
+                           FontSize="18"
+                           FontAttributes="Bold"/>
                     <Label Text="{Binding ProgressText}"
                            TextColor="White"
-                           FontSize="14"/>
-                    <ProgressBar Progress="{Binding ProgressValue}"
-                                ProgressColor="White"/>
+                           Opacity="0.9"
+                           FontSize="15"/>
+                           
+                    <!-- Improved progress bar with cleaner visualization -->
+                    <Grid RowDefinitions="Auto,Auto" Margin="0,4,0,0">
+                        <!-- Progress bar background -->
+                        <Frame Grid.Row="0"
+                               HeightRequest="16" 
+                               Padding="0"
+                               BackgroundColor="{AppThemeBinding Light=#504C8A, Dark=#20204F}"
+                               CornerRadius="8"
+                               HasShadow="True"
+                               HorizontalOptions="Fill">
+                            <!-- Progress fill that scales based on percentage -->
+                            <Grid>
+                                <Frame HorizontalOptions="Start"
+                                      Margin="0"
+                                      Padding="0"  
+                                      WidthRequest="{Binding ProgressBarWidth}"
+                                      BackgroundColor="White"
+                                      CornerRadius="8"
+                                      HasShadow="False"/>
+                            </Grid>
+                        </Frame>
+                        
+                        <!-- Milestone markers (10%, 25%, 50%, 75%, 100%) -->
+                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Margin="0,2,0,0">
+                            <Label Grid.Column="0" Text="25%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="Start"/>
+                            <Label Grid.Column="1" Text="50%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="Center"/>
+                            <Label Grid.Column="2" Text="75%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="End" Margin="0,0,15,0"/>
+                            <Label Grid.Column="3" Text="100%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="End"/>
+                        </Grid>
+                    </Grid>
                 </VerticalStackLayout>
 
                 <Label Grid.Column="2"
@@ -44,25 +77,35 @@
             </Grid>
         </Frame>
 
-        <!-- Calendar Views -->
+        <!-- Calendar Views с улучшенным стилем -->
         <tabview:SfTabView Grid.Row="1"
-                          SelectedIndex="{Binding SelectedViewIndex}">
+                          SelectedIndex="{Binding SelectedViewIndex}"
+                          BackgroundColor="Transparent"
+                          TabBarBackground="{AppThemeBinding Light=White, Dark=#242424}"
+                          IndicatorBackground="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
+                          TabBarHeight="50">
             <tabview:SfTabView.Items>
-                <tabview:SfTabItem Header="Месяц">
+                <tabview:SfTabItem Header="Месяц" 
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
                     <tabview:SfTabItem.Content>
                         <Grid>
                             <views:MonthView BindingContext="{Binding MonthViewModel}"/>
                         </Grid>
                     </tabview:SfTabItem.Content>
                 </tabview:SfTabItem>
-                <tabview:SfTabItem Header="Неделя">
+                <tabview:SfTabItem Header="Неделя"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
                     <tabview:SfTabItem.Content>
                         <Grid>
                             <views:WeekView BindingContext="{Binding WeekViewModel}"/>
                         </Grid>
                     </tabview:SfTabItem.Content>
                 </tabview:SfTabItem>
-                <tabview:SfTabItem Header="Список">
+                <tabview:SfTabItem Header="Список"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
                     <tabview:SfTabItem.Content>
                         <Grid>
                             <views:EventListView BindingContext="{Binding ListViewModel}"/>

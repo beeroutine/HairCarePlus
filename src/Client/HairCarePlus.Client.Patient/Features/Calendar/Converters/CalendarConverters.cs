@@ -6,6 +6,34 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            bool boolValue = value is bool b && b;
+            
+            // Handle parameter string with format "TrueLight|TrueDark|FalseLight|FalseDark"
+            if (parameter is string strParam && strParam.Contains('|'))
+            {
+                string[] parameters = strParam.Split('|');
+                bool isDarkTheme = Application.Current.RequestedTheme == AppTheme.Dark;
+                
+                if (parameters.Length == 2) 
+                {
+                    // Format: "TrueColor,FalseColor"
+                    return boolValue ? GetColorFromString(parameters[0]) : GetColorFromString(parameters[1]);
+                }
+                else if (parameters.Length == 4) 
+                {
+                    // Format: "TrueLight|TrueDark|FalseLight|FalseDark"
+                    if (boolValue)
+                    {
+                        return isDarkTheme ? GetColorFromString(parameters[1]) : GetColorFromString(parameters[0]);
+                    }
+                    else
+                    {
+                        return isDarkTheme ? GetColorFromString(parameters[3]) : GetColorFromString(parameters[2]);
+                    }
+                }
+            }
+            
+            // Default behavior
             if (value is bool isCurrentMonth)
             {
                 return isCurrentMonth 
@@ -17,6 +45,38 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                         : Colors.LightGray;
             }
             return Colors.Black;
+        }
+
+        private Color GetColorFromString(string colorString)
+        {
+            if (string.IsNullOrEmpty(colorString)) return Colors.Transparent;
+            
+            if (colorString.StartsWith("#"))
+            {
+                try
+                {
+                    return Color.FromArgb(colorString);
+                }
+                catch
+                {
+                    return Colors.Transparent;
+                }
+            }
+            
+            // Handle named colors
+            switch (colorString.ToLowerInvariant())
+            {
+                case "white": return Colors.White;
+                case "black": return Colors.Black;
+                case "gray": return Colors.Gray;
+                case "lightgray": return Colors.LightGray;
+                case "transparent": return Colors.Transparent;
+                case "primary": return Application.Current.RequestedTheme == AppTheme.Dark 
+                                ? Color.FromArgb("#6962AD") : Color.FromArgb("#6962AD");
+                case "secondary": return Application.Current.RequestedTheme == AppTheme.Dark 
+                                ? Color.FromArgb("#504C8A") : Color.FromArgb("#A79FF7");
+                default: return Colors.Transparent;
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

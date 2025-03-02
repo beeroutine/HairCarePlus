@@ -101,10 +101,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
             if (currentDay == 0)
                 currentDay = GetCurrentDay();
                 
-            const int totalDays = 365; // Полный цикл восстановления - 1 год
+            // Максимальное значение - полное восстановление за 180 дней
+            const int totalDays = 180;
             
+            // Ограничиваем значение процента от 0 до 100
             double percentage = Math.Min(100, (double)currentDay / totalDays * 100);
-            return Math.Round(percentage, 1);
+            return Math.Round(percentage, 0);
         }
 
         public async Task<double> GetProgressPercentageAsync()

@@ -274,3 +274,33 @@ For optimal development experience:
 - Set up multi-targeting configurations to build only for the platform you're testing
 - Consider using Release configuration with debugging enabled for faster performance
 
+## UI Design Guidelines
+
+### Calendar Design for Male Audience 30+
+
+The calendar interface follows specific design principles tailored for the target audience (men 30+):
+
+#### Color Palette
+- **Primary Colors**: Deep blue-purple (#6962AD) and its variations are used as the primary accent colors
+- **Background Colors**: Clean, neutral backgrounds (light theme: #F8F8F8, dark theme: #1A1A1A)
+- **Accent Colors**: Distinct colors for different event types (medications: green, restrictions: red, instructions: purple)
+- **Text Colors**: High-contrast, readable text that maintains professionalism
+
+#### Typography
+- **Font Sizes**: Slightly larger than minimum (16-18px for regular text)
+- **Font Weight**: Bold text for important information, regular for details
+- **Font Family**: Sans-serif fonts for optimal readability
+
+#### Visual Elements
+- **Icons and Markers**: Minimalist dot indicators for event types
+- **Progress Indicators**: Clear progress bars showing recovery stages
+- **Current Day Highlighting**: Subtle background color highlighting for the current day
+
+#### UI Principles
+- **Minimalist Approach**: Only essential information is displayed
+- **Information Hierarchy**: Clear visual distinction between different types of content
+- **Reduced Visual Noise**: Clean interfaces without unnecessary decorative elements
+- **Professional Appearance**: Structured layout conveying medical professionalism
+
+These design principles create a calendar interface that is both functional and visually appropriate for the target demographic.
+
