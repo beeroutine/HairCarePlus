@@ -5,6 +5,7 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:treatmentConverters="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Converters"
+             xmlns:calendarConverters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              x:Class="HairCarePlus.Client.Patient.Features.TreatmentProgress.Views.TreatmentProgressPage"
              x:DataType="viewmodels:TreatmentProgressViewModel"
              BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}"
@@ -16,6 +17,7 @@
             <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter"/>
             <treatmentConverters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
             <treatmentConverters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+            <calendarConverters:IntToBoolConverter x:Key="IntToBoolConverter"/>
         </ResourceDictionary>
     </ContentPage.Resources>
 

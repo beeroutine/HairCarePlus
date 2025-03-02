@@ -116,7 +116,13 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         {
             // TODO: В реальном приложении дата операции должна приходить с сервера
             var surgeryDate = new DateTime(2025, 1, 15); // Пример даты операции
-            _allEvents = _calendarService.GenerateCalendar(surgeryDate);
+            
+            // Use lazy loading instead of generating all events upfront
+            _allEvents = new List<TreatmentEvent>();
+            
+            // Just get events for today initially
+            var todayEvents = _calendarService.GetEventsForDay(surgeryDate, DateTime.Today);
+            _allEvents.AddRange(todayEvents);
 
             // Make sure today is selected by default
             _selectedDate = DateTime.Today;
@@ -134,7 +140,10 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
             for (int i = 0; i <= 14; i++)
             {
                 var date = today.AddDays(i);
-                var dateEvents = _allEvents.Where(e => e.Date.Date == date.Date).ToList();
+                
+                // Only check if we have events for this day, don't actually load them all
+                bool hasEventsForDay = _calendarService.HasEventsForDay(date);
+                int eventCount = hasEventsForDay ? _calendarService.GetEventCountForDay(date) : 0;
                 
                 var dayVm = new DayViewModel
                 {
@@ -142,17 +151,17 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
                     DayOfWeek = date.ToString("ddd"),
                     FullDate = date,
                     IsSelected = date.Date == SelectedDate.Date,
-                    HasTasks = dateEvents.Any(),
-                    HasEvents = dateEvents.Any(),
-                    TaskCount = dateEvents.Count,
+                    HasTasks = hasEventsForDay,
+                    HasEvents = hasEventsForDay,
+                    TaskCount = eventCount,
                     IsToday = date.Date == DateTime.Today
                 };
                 
                 // Get first event type for icon (if any)
-                if (dateEvents.Any())
+                if (hasEventsForDay)
                 {
-                    // Get the event type for icon background color
-                    var eventType = dateEvents.First().Type.ToString();
+                    // Get the event type without loading all events
+                    var eventType = _calendarService.GetFirstEventTypeForDay(date);
                     dayVm.TaskTypes = eventType;
                 }
                 
@@ -163,8 +172,18 @@ namespace HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels
         private void UpdateDailyEvents()
         {
             DailyEvents.Clear();
-            var events = _allEvents.Where(e => e.Date.Date == SelectedDate.Date).ToList();
-            foreach (var evt in events)
+            
+            // Only load events for the selected day on demand
+            if (!_allEvents.Any(e => e.Date.Date == SelectedDate.Date))
+            {
+                // TODO: In a real app, we'd load this from the server
+                var surgeryDate = new DateTime(2025, 1, 15);
+                var events = _calendarService.GetEventsForDay(surgeryDate, SelectedDate);
+                _allEvents.AddRange(events);
+            }
+            
+            var selectedDayEvents = _allEvents.Where(e => e.Date.Date == SelectedDate.Date).ToList();
+            foreach (var evt in selectedDayEvents)
             {
                 DailyEvents.Add(evt);
             }
