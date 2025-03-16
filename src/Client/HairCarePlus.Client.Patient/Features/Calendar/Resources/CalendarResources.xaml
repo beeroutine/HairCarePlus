@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:helpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers">
+
+    <!-- Value Converters -->
+    <helpers:BoolToColorConverter x:Key="BoolToColorConverter" />
+    <helpers:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
+    <helpers:DoubleToPercentageConverter x:Key="DoubleToPercentageConverter" />
+    <helpers:HasItemsConverter x:Key="HasItemsConverter" />
+    
+    <!-- Common Colors -->
+    <Color x:Key="PrimaryColor">#FF5722</Color>
+    <Color x:Key="PrimaryVariantColor">#FF8A65</Color>
+    <Color x:Key="TextPrimaryColor">#212121</Color>
+    <Color x:Key="TextSecondaryColor">#757575</Color>
+    <Color x:Key="BackgroundColor">#FFFFFF</Color>
+    <Color x:Key="SurfaceColor">#F5F5F5</Color>
+    
+    <!-- Material Theme Colors (added to fix ColorStateList issues) -->
+    <Color x:Key="colorPrimary">#FF5722</Color>
+    <Color x:Key="colorPrimaryDark">#E64A19</Color>
+    <Color x:Key="colorAccent">#FF8A65</Color>
+    <Color x:Key="colorControlNormal">#757575</Color>
+    <Color x:Key="colorControlActivated">#FF5722</Color>
+    <Color x:Key="colorControlHighlight">#FFE0B2</Color>
+    <Color x:Key="colorButtonNormal">#FF5722</Color>
+    <Color x:Key="colorSwitchThumbNormal">#F1F1F1</Color>
+    <Color x:Key="colorOnPrimary">#FFFFFF</Color>
+    <Color x:Key="colorOnSurface">#212121</Color>
+    
+    <!-- Text Styles -->
+    <Style x:Key="HeaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+    </Style>
+    
+    <Style x:Key="SubheaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+    </Style>
+    
+    <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource TextSecondaryColor}" />
+    </Style>
+    
+    <!-- Button Styles -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryColor}" />
+        <Setter Property="TextColor" Value="White" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+    
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource SurfaceColor}" />
+        <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+        <Setter Property="CornerRadius" Value="22" />
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="Padding" Value="16,0" />
+    </Style>
+    
+    <!-- Card Style -->
+    <Style x:Key="CardStyle" TargetType="Frame">
+        <Setter Property="BackgroundColor" Value="{StaticResource BackgroundColor}" />
+        <Setter Property="BorderColor" Value="#E0E0E0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Margin" Value="16,8" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="HasShadow" Value="False" />
+    </Style>
+</ResourceDictionary> 

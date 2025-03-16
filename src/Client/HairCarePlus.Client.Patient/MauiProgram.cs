@@ -11,7 +11,7 @@ using HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels;
 using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Common.Behaviors;
-using HairCarePlus.Client.Patient.Features.Calendar.Extensions;
+using HairCarePlus.Client.Patient.Features.Calendar;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Core.Hosting;
@@ -19,6 +19,7 @@ using Syncfusion.Maui.Scheduler;
 using Syncfusion.Maui.TabView;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
+using System.Net.Http;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -40,7 +41,7 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-				fonts.AddFont("FontAwesome.ttf", "FontAwesome");
+				fonts.AddFont("FontAwesome/FontAwesome.ttf", "FontAwesome");
 			});
 
 		// Register Services
@@ -48,6 +49,12 @@ public static class MauiProgram
 		builder.Services.AddSingleton<INetworkService, NetworkService>();
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
 		builder.Services.AddSingleton<IProfileService, ProfileService>();
+		
+		// Register HttpClient
+		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
+			BaseAddress = new Uri("https://api.haircareplus.com/")
+		});
+		
 #if ANDROID
 		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.Android.Services.VibrationService>();
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();
@@ -71,12 +78,9 @@ public static class MauiProgram
 		builder.Services.AddTransient<TreatmentProgressViewModel>();
 
 		// Register Calendar Feature
-		builder.Services.AddCalendarFeature();
+		builder.Services.AddCalendarServices();
 
-		// Register routes for calendar views
-		Routing.RegisterRoute(nameof(MonthView), typeof(MonthView));
-		Routing.RegisterRoute(nameof(WeekView), typeof(WeekView));
-		Routing.RegisterRoute(nameof(EventListView), typeof(EventListView));
+		// No need to manually register routes here since we're doing it in RegisterCalendarRoutes()
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>

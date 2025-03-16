@@ -3,116 +3,130 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
-             xmlns:tabview="clr-namespace:Syncfusion.Maui.TabView;assembly=Syncfusion.Maui.TabView"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.CalendarPage"
-             x:DataType="viewmodels:CalendarViewModel"
-             Title="Календарь восстановления"
-             BackgroundColor="{AppThemeBinding Light=#F8F8F8, Dark=#1A1A1A}">
-
-    <Grid RowDefinitions="Auto,*">
-        <!-- Progress Section - улучшенный дизайн и визуализация -->
-        <Frame Grid.Row="0" 
-               Margin="15,15,15,10"
-               Padding="18"
-               BackgroundColor="{AppThemeBinding Light=#6962AD, Dark=#2D2A54}"
-               CornerRadius="12"
-               HasShadow="True">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <Image Grid.Column="0"
-                       Source="calendar.png"
-                       HeightRequest="42"
-                       WidthRequest="42"
-                       VerticalOptions="Center"/>
+             Title="{Binding Title}">
+    
+    <ContentPage.Resources>
+        <ResourceDictionary Source="../Resources/CalendarResources.xaml" />
+    </ContentPage.Resources>
+    
+    <ContentPage.BindingContext>
+        <viewmodels:CalendarViewModel />
+    </ContentPage.BindingContext>
+    
+    <RefreshView IsRefreshing="{Binding IsBusy}">
+        <ScrollView>
+            <StackLayout Spacing="0">
+                <!-- Active Restrictions section -->
+                <Frame Style="{StaticResource CardStyle}" 
+                       IsVisible="{Binding ActiveRestrictions, Converter={StaticResource HasItemsConverter}}">
+                    <StackLayout Spacing="8">
+                        <Label Text="Active Restrictions" 
+                               Style="{StaticResource SubheaderStyle}" />
+                               
+                        <CollectionView ItemsSource="{Binding ActiveRestrictions}" 
+                                        HeightRequest="120"
+                                        SelectionMode="None">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Horizontal" 
+                                                   ItemSpacing="12" />
+                            </CollectionView.ItemsLayout>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame CornerRadius="8" 
+                                           HasShadow="False" 
+                                           BorderColor="#E0E0E0"
+                                           BackgroundColor="White"
+                                           WidthRequest="200">
+                                        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                                            <Label Grid.Row="0" 
+                                                   Text="{Binding Title}" 
+                                                   LineBreakMode="TailTruncation"
+                                                   FontAttributes="Bold" />
+                                                   
+                                            <Label Grid.Row="1" 
+                                                   Text="{Binding Description}" 
+                                                   LineBreakMode="WordWrap"
+                                                   MaxLines="2"
+                                                   TextColor="{StaticResource TextSecondaryColor}" />
+                                                   
+                                            <Label Grid.Row="2" 
+                                                   Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd}'}" 
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource PrimaryColor}" />
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </StackLayout>
+                </Frame>
                 
-                <VerticalStackLayout Grid.Column="1" 
-                                   Spacing="6"
-                                   Margin="12,0">
-                    <Label Text="{Binding CurrentPhaseText}"
-                           TextColor="White"
-                           FontSize="18"
-                           FontAttributes="Bold"/>
-                    <Label Text="{Binding ProgressText}"
-                           TextColor="White"
-                           Opacity="0.9"
-                           FontSize="15"/>
-                           
-                    <!-- Improved progress bar with cleaner visualization -->
-                    <Grid RowDefinitions="Auto,Auto" Margin="0,4,0,0">
-                        <!-- Progress bar background -->
-                        <Frame Grid.Row="0"
-                               HeightRequest="16" 
-                               Padding="0"
-                               BackgroundColor="{AppThemeBinding Light=#504C8A, Dark=#20204F}"
-                               CornerRadius="8"
-                               HasShadow="True"
-                               HorizontalOptions="Fill">
-                            <!-- Progress fill that scales based on percentage -->
-                            <Grid>
-                                <Frame HorizontalOptions="Start"
-                                      Margin="0"
-                                      Padding="0"  
-                                      WidthRequest="{Binding ProgressBarWidth}"
-                                      BackgroundColor="White"
-                                      CornerRadius="8"
-                                      HasShadow="False"/>
-                            </Grid>
-                        </Frame>
-                        
-                        <!-- Milestone markers (10%, 25%, 50%, 75%, 100%) -->
-                        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" Margin="0,2,0,0">
-                            <Label Grid.Column="0" Text="25%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="Start"/>
-                            <Label Grid.Column="1" Text="50%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="Center"/>
-                            <Label Grid.Column="2" Text="75%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="End" Margin="0,0,15,0"/>
-                            <Label Grid.Column="3" Text="100%" FontSize="10" TextColor="White" Opacity="0.8" HorizontalOptions="End"/>
-                        </Grid>
-                    </Grid>
-                </VerticalStackLayout>
-
-                <Label Grid.Column="2"
-                       Text="{Binding ProgressPercentage}"
-                       TextColor="White"
-                       FontSize="24"
-                       FontAttributes="Bold"
-                       VerticalOptions="Center"/>
-            </Grid>
-        </Frame>
-
-        <!-- Calendar Views с улучшенным стилем -->
-        <tabview:SfTabView Grid.Row="1"
-                          SelectedIndex="{Binding SelectedViewIndex}"
-                          BackgroundColor="Transparent"
-                          TabBarBackground="{AppThemeBinding Light=White, Dark=#242424}"
-                          IndicatorBackground="{AppThemeBinding Light=#6962AD, Dark=#504C8A}"
-                          TabBarHeight="50">
-            <tabview:SfTabView.Items>
-                <tabview:SfTabItem Header="Месяц" 
-                                   FontSize="14"
-                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
-                    <tabview:SfTabItem.Content>
-                        <Grid>
-                            <views:MonthView BindingContext="{Binding MonthViewModel}"/>
-                        </Grid>
-                    </tabview:SfTabItem.Content>
-                </tabview:SfTabItem>
-                <tabview:SfTabItem Header="Неделя"
-                                   FontSize="14"
-                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
-                    <tabview:SfTabItem.Content>
-                        <Grid>
-                            <views:WeekView BindingContext="{Binding WeekViewModel}"/>
-                        </Grid>
-                    </tabview:SfTabItem.Content>
-                </tabview:SfTabItem>
-                <tabview:SfTabItem Header="Список"
-                                   FontSize="14"
-                                   TextColor="{AppThemeBinding Light=#6B6B6B, Dark=#B0B0B0}">
-                    <tabview:SfTabItem.Content>
-                        <Grid>
-                            <views:EventListView BindingContext="{Binding ListViewModel}"/>
-                        </Grid>
-                    </tabview:SfTabItem.Content>
-                </tabview:SfTabItem>
-            </tabview:SfTabView.Items>
-        </tabview:SfTabView>
-    </Grid>
+                <!-- Horizontal Calendar Widget -->
+                <Frame Style="{StaticResource CardStyle}">
+                    <views:HorizontalCalendarView BindingContext="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:CalendarViewModel}}}" />
+                </Frame>
+                
+                <!-- Monthly Calendar -->
+                <Frame Style="{StaticResource CardStyle}">
+                    <views:MonthCalendarView SelectedDate="{Binding SelectedDate}" 
+                                             BindingContext="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:CalendarViewModel}}}" />
+                </Frame>
+                
+                <!-- Daily Tasks -->
+                <Frame Style="{StaticResource CardStyle}" IsVisible="{Binding EventsForSelectedDate, Converter={StaticResource HasItemsConverter}}">
+                    <StackLayout Spacing="8">
+                        <Label Text="{Binding SelectedDate, StringFormat='Tasks for {0:MMMM d, yyyy}'}" 
+                               Style="{StaticResource SubheaderStyle}" />
+                               
+                        <CollectionView ItemsSource="{Binding EventsForSelectedDate}" 
+                                        SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Frame Margin="0,4" 
+                                           Padding="16" 
+                                           CornerRadius="8" 
+                                           BorderColor="#E0E0E0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                            <!-- Event type indicator -->
+                                            <BoxView Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                                     WidthRequest="4"
+                                                     Margin="0,0,12,0"
+                                                     BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
+                                                     
+                                            <!-- Event title -->
+                                            <Label Grid.Row="0" Grid.Column="1"
+                                                   Text="{Binding Title}"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextPrimaryColor}"
+                                                   Margin="0,0,0,4" />
+                                                   
+                                            <!-- Event description -->
+                                            <Label Grid.Row="1" Grid.Column="1"
+                                                   Text="{Binding Description}"
+                                                   TextColor="{StaticResource TextSecondaryColor}"
+                                                   LineBreakMode="WordWrap" />
+                                                   
+                                            <!-- Completion checkbox -->
+                                            <CheckBox Grid.Row="0" Grid.Column="2"
+                                                      IsChecked="{Binding IsCompleted}"
+                                                      Color="{StaticResource PrimaryColor}">
+                                                <CheckBox.Triggers>
+                                                    <DataTrigger TargetType="CheckBox"
+                                                                 Binding="{Binding EventType}"
+                                                                 Value="Restriction">
+                                                        <Setter Property="IsVisible" Value="False" />
+                                                    </DataTrigger>
+                                                </CheckBox.Triggers>
+                                            </CheckBox>
+                                        </Grid>
+                                    </Frame>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </StackLayout>
+                </Frame>
+            </StackLayout>
+        </ScrollView>
+    </RefreshView>
 </ContentPage> 

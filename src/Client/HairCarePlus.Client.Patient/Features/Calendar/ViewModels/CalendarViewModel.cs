@@ -1,331 +1,242 @@
+using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
-using HairCarePlus.Client.Patient.Features.Calendar.Views;
-using HairCarePlus.Client.Patient.Features.Calendar.Data;
-using HairCarePlus.Client.Patient.Common.Behaviors;
-using HairCarePlus.Client.Patient.Infrastructure.Services;
-using Syncfusion.Maui.Scheduler;
-using Microsoft.Maui.Graphics;
-using System.Reflection;
 using Microsoft.Maui.Controls;
-using System.Threading.Tasks;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
-    // Removed duplicate view model classes - now defined in SharedViewModels.cs
-
-    [INotifyPropertyChanged]
-    public partial class CalendarViewModel
+    public class CalendarViewModel : BaseViewModel
     {
         private readonly ICalendarService _calendarService;
-        private readonly DayTodoViewModel _dayTodoViewModel;
-        private readonly MonthViewModel _monthViewModel;
-        private readonly WeekViewModel _weekViewModel;
-        private readonly ListViewModel _eventListViewModel;
+        private readonly INotificationService _notificationService;
+        
+        private DateTime _selectedDate = DateTime.Today;
+        private DateTime _currentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        private ObservableCollection<CalendarEvent> _eventsForSelectedDate = new ObservableCollection<CalendarEvent>();
+        private ObservableCollection<CalendarEvent> _activeRestrictions = new ObservableCollection<CalendarEvent>();
 
-        [ObservableProperty]
-        private int selectedViewIndex;
+        public ICommand RefreshCommand { get; private set; }
+        public ICommand GoToTodayCommand { get; private set; }
+        public ICommand NextMonthCommand { get; private set; }
+        public ICommand PreviousMonthCommand { get; private set; }
+        public ICommand MarkEventCompletedCommand { get; private set; }
 
-        [ObservableProperty]
-        private string currentPhaseText = string.Empty;
-
-        [ObservableProperty]
-        private string progressText = string.Empty;
-
-        [ObservableProperty]
-        private double progressValue;
-
-        [ObservableProperty]
-        private double progressBarWidth; // Width in pixels or percentage for our progress bar fill
-
-        public string ProgressPercentage => $"{(int)(ProgressValue)}%";
-
-        public MonthViewModel MonthViewModel { get; }
-        public WeekViewModel WeekViewModel { get; }
-        public ListViewModel ListViewModel { get; }
-
-        public ObservableCollection<MedicationViewModel> TodayMedications { get; } = new();
-        public ObservableCollection<RestrictionViewModel> TodayRestrictions { get; } = new();
-        public ObservableCollection<InstructionViewModel> TodayInstructions { get; } = new();
-        public ObservableCollection<WarningViewModel> TodayWarnings { get; } = new();
-        public ObservableCollection<CalendarEventViewModel> UpcomingEvents { get; } = new();
-        public ObservableCollection<Syncfusion.Maui.Scheduler.SchedulerAppointment> CalendarAppointments { get; } = new();
-
-        public CalendarViewModel(
-            ICalendarService calendarService,
-            DayTodoViewModel dayTodoViewModel,
-            MonthViewModel monthViewModel,
-            WeekViewModel weekViewModel,
-            ListViewModel eventListViewModel)
+        public DateTime SelectedDate
         {
-            _calendarService = calendarService;
-            _dayTodoViewModel = dayTodoViewModel;
-            _monthViewModel = monthViewModel;
-            _weekViewModel = weekViewModel;
-            _eventListViewModel = eventListViewModel;
-
-            MonthViewModel = monthViewModel;
-            WeekViewModel = weekViewModel;
-            ListViewModel = eventListViewModel;
-
-            LoadProgressData();
-        }
-
-        private void LoadProgressData()
-        {
-            var currentDay = _calendarService.GetCurrentDay();
-            var phase = _calendarService.GetCurrentPhase(currentDay);
-            this.CurrentPhaseText = GetPhaseDisplayName(phase);
-            this.ProgressText = $"День {currentDay} из 180";
-            this.ProgressValue = _calendarService.GetProgressPercentage(currentDay);
-            
-            // Calculate width for our progress bar (as percentage)
-            this.ProgressBarWidth = Math.Max(1, Math.Min(100, (int)Math.Ceiling(this.ProgressValue)));
-        }
-
-        [RelayCommand]
-        private async Task ShowDayDetails()
-        {
-            var navigationService = ServiceHelper.GetService<INavigationService>();
-            if (navigationService != null)
+            get => _selectedDate;
+            set
             {
-                await navigationService.NavigateToAsync<DayDetailsViewModel>(new Dictionary<string, object>
+                if (SetProperty(ref _selectedDate, value))
                 {
-                    { "Date", DateTime.Today }
-                });
+                    LoadEventsForSelectedDateAsync().ConfigureAwait(false);
+                }
             }
         }
 
-        [RelayCommand]
-        private async Task ShowProgress()
+        public DateTime CurrentMonthDate
         {
-            var navigationService = ServiceHelper.GetService<INavigationService>();
-            if (navigationService != null)
+            get => _currentMonthDate;
+            set
             {
-                await navigationService.NavigateToAsync<ProgressViewModel>();
+                if (SetProperty(ref _currentMonthDate, value))
+                {
+                    LoadEventsForMonthAsync().ConfigureAwait(false);
+                }
             }
         }
 
-        [RelayCommand]
-        private async Task AddEvent()
+        public ObservableCollection<CalendarEvent> EventsForSelectedDate
         {
-            // Здесь будет логика добавления нового события
-            await Task.CompletedTask;
+            get => _eventsForSelectedDate;
+            set => SetProperty(ref _eventsForSelectedDate, value);
         }
 
-        [RelayCommand]
-        private async Task Refresh()
+        public ObservableCollection<CalendarEvent> ActiveRestrictions
         {
-            LoadData();
-            await Task.CompletedTask;
+            get => _activeRestrictions;
+            set => SetProperty(ref _activeRestrictions, value);
         }
 
-        private void LoadData()
+        /// <summary>
+        /// Default constructor for XAML
+        /// </summary>
+        public CalendarViewModel() 
         {
-            var currentDay = _calendarService.GetCurrentDay();
-            var currentPhase = _calendarService.GetCurrentPhase(currentDay);
-
-            this.CurrentPhaseText = GetPhaseDisplayName(currentPhase);
-            this.ProgressValue = _calendarService.GetProgressPercentage(currentDay);
-            this.ProgressText = $"День {currentDay} из 180";
+            Title = "Calendar";
             
-            // Calculate progress bar width again
-            this.ProgressBarWidth = Math.Max(1, Math.Min(100, (int)Math.Ceiling(this.ProgressValue)));
-
-            // Initialize with Month view
-            this.SelectedViewIndex = 0;
-
-            // Загружаем данные для сегодняшнего дня
-            LoadTodayMedications(currentDay);
-            LoadTodayRestrictions(currentDay);
-            LoadTodayInstructions(currentDay);
-            LoadTodayWarnings(currentDay);
-            LoadUpcomingEvents(currentDay);
-            LoadCalendarAppointments();
+            // Note: When created through XAML, services will be null
+            // This constructor is primarily for design-time and preview
+            
+            // Initialize commands with no-op implementations
+            RefreshCommand = new Command(() => { });
+            GoToTodayCommand = new Command(() => { });
+            NextMonthCommand = new Command(() => { });
+            PreviousMonthCommand = new Command(() => { });
+            MarkEventCompletedCommand = new Command<CalendarEvent>(_ => { });
         }
 
-        private void LoadCalendarAppointments()
+        public CalendarViewModel(ICalendarService calendarService, INotificationService notificationService)
         {
-            CalendarAppointments.Clear();
-            var calendarData = _calendarService.GetCalendarData();
-            var operationDate = calendarData.OperationDate;
+            Title = "Calendar";
+            _calendarService = calendarService ?? throw new ArgumentNullException(nameof(calendarService));
+            _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
 
-            // Словарь цветов для разных типов событий
-            var eventColors = new Dictionary<EventType, (Color Background, Color TextColor, string Icon)>
-            {
-                { EventType.Medication, (Color.FromArgb("#4CAF50"), Colors.White, "\uf484") },
-                { EventType.PhotoUpload, (Color.FromArgb("#2196F3"), Colors.White, "\uf030") },
-                { EventType.Instruction, (Color.FromArgb("#9C27B0"), Colors.White, "\uf05a") },
-                { EventType.Milestone, (Color.FromArgb("#FF9800"), Colors.White, "\uf091") },
-                { EventType.PRP, (Color.FromArgb("#F44336"), Colors.White, "\uf0fa") },
-                { EventType.Restriction, (Color.FromArgb("#607D8B"), Colors.White, "\uf05e") },
-                { EventType.Warning, (Color.FromArgb("#FF5722"), Colors.White, "\uf071") },
-                { EventType.WashingInstruction, (Color.FromArgb("#00BCD4"), Colors.White, "\uf043") },
-                { EventType.ProgressCheck, (Color.FromArgb("#8BC34A"), Colors.White, "\uf201") }
-            };
+            RefreshCommand = new Command(async () => await RefreshDataAsync());
+            GoToTodayCommand = new Command(ExecuteGoToToday);
+            NextMonthCommand = new Command(ExecuteNextMonth);
+            PreviousMonthCommand = new Command(ExecutePreviousMonth);
+            MarkEventCompletedCommand = new Command<CalendarEvent>(ExecuteMarkEventCompleted);
 
-            // Добавляем все события в календарь
-            foreach (var evt in calendarData.Events)
+            // Initial loading of data
+            Task.Run(async () =>
             {
-                var startDate = operationDate.AddDays(evt.StartDay - 1);
-                var endDate = evt.EndDay.HasValue 
-                    ? operationDate.AddDays(evt.EndDay.Value - 1) 
-                    : startDate;
+                await RefreshDataAsync();
+            });
+        }
+
+        private async Task RefreshDataAsync()
+        {
+            if (IsBusy)
+                return;
+
+            IsBusy = true;
+
+            try
+            {
+                await LoadEventsForSelectedDateAsync();
+                await LoadEventsForMonthAsync();
+                await LoadActiveRestrictionsAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log error or show message to user
+                System.Diagnostics.Debug.WriteLine($"Error refreshing calendar data: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private void ExecuteGoToToday()
+        {
+            SelectedDate = DateTime.Today;
+            CurrentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        }
+
+        private void ExecuteNextMonth()
+        {
+            CurrentMonthDate = CurrentMonthDate.AddMonths(1);
+        }
+
+        private void ExecutePreviousMonth()
+        {
+            CurrentMonthDate = CurrentMonthDate.AddMonths(-1);
+        }
+
+        private async void ExecuteMarkEventCompleted(CalendarEvent calendarEvent)
+        {
+            if (calendarEvent == null)
+                return;
+
+            try
+            {
+                IsBusy = true;
+                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, !calendarEvent.IsCompleted);
                 
-                // Для повторяющихся событий
-                if (evt.IsRepeating && evt.RepeatIntervalDays.HasValue)
+                // Update the local item's completion status
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                
+                // Refresh the events list
+                await LoadEventsForSelectedDateAsync();
+            }
+            catch (Exception)
+            {
+                // In a real app, show an error message to the user
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private async Task LoadEventsForSelectedDateAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
+                
+                EventsForSelectedDate.Clear();
+                foreach (var evt in events.OrderBy(e => e.Date))
                 {
-                    var currentDate = startDate;
-                    var endRepeatDate = operationDate.AddDays(180); // 6 месяцев
-                    
-                    while (currentDate <= endRepeatDate)
-                    {
-                        AddAppointment(evt, currentDate, currentDate, eventColors);
-                        currentDate = currentDate.AddDays(evt.RepeatIntervalDays.Value);
-                    }
+                    EventsForSelectedDate.Add(evt);
                 }
-                else
+            }
+            catch (Exception)
+            {
+                // In a real app, show an error message to the user
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private async Task LoadEventsForMonthAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                
+                // Get the first and last day of the month
+                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
+                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                
+                // We also need to include the days from previous/next month that appear in the calendar view
+                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+                var lastDayOfCalendarView = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
+                
+                // Get events for the entire calendar view
+                await _calendarService.GetEventsForDateRangeAsync(firstDayOfCalendarView, lastDayOfCalendarView);
+                
+                // In a real app, we'd update a property here to display events in the calendar
+            }
+            catch (Exception)
+            {
+                // In a real app, show an error message to the user
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private async Task LoadActiveRestrictionsAsync()
+        {
+            try
+            {
+                IsBusy = true;
+                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
+                
+                ActiveRestrictions.Clear();
+                foreach (var restriction in restrictions)
                 {
-                    // Для обычных событий
-                    AddAppointment(evt, startDate, endDate, eventColors);
+                    ActiveRestrictions.Add(restriction);
                 }
             }
-        }
-
-        private void AddAppointment(
-            CalendarEvent evt, 
-            DateTime startDate, 
-            DateTime endDate, 
-            Dictionary<EventType, (Color Background, Color TextColor, string Icon)> eventColors)
-        {
-            var (background, textColor, icon) = eventColors.ContainsKey(evt.Type) 
-                ? eventColors[evt.Type] 
-                : (Color.FromArgb("#9E9E9E"), Colors.White, "\uf128");
-
-            var appointment = new Syncfusion.Maui.Scheduler.SchedulerAppointment
+            catch (Exception)
             {
-                Subject = evt.Name,
-                Notes = evt.Description,
-                StartTime = startDate,
-                EndTime = endDate.AddDays(1).AddSeconds(-1), // До конца дня
-                Background = background,
-                TextColor = textColor
-            };
-
-            // Note: Since SchedulerAppointment doesn't have a Data property in this version,
-            // we'll skip setting it for now
-
-            CalendarAppointments.Add(appointment);
-        }
-
-        private async void LoadTodayMedications(int currentDay)
-        {
-            TodayMedications.Clear();
-            var medications = await _calendarService.GetMedicationsForDayAsync(currentDay);
-
-            foreach (var med in medications)
-            {
-                // Create a new instance and set properties using reflection
-                var viewModel = new MedicationViewModel();
-                SetProperty(viewModel, "Name", med.Name);
-                SetProperty(viewModel, "Description", med.Description);
-                SetProperty(viewModel, "Instructions", med.Instructions);
-                SetProperty(viewModel, "Dosage", med.Dosage);
-                SetProperty(viewModel, "TimesPerDay", med.TimesPerDay);
-                SetProperty(viewModel, "IsOptional", med.IsOptional);
-                TodayMedications.Add(viewModel);
+                // In a real app, show an error message to the user
             }
-        }
-
-        private async void LoadTodayRestrictions(int currentDay)
-        {
-            TodayRestrictions.Clear();
-            var restrictions = await _calendarService.GetRestrictionsForDayAsync(currentDay);
-
-            foreach (var restriction in restrictions)
+            finally
             {
-                var viewModel = new RestrictionViewModel();
-                SetProperty(viewModel, "Name", restriction.Name);
-                SetProperty(viewModel, "Description", restriction.Description);
-                SetProperty(viewModel, "Reason", restriction.Reason);
-                SetProperty(viewModel, "IsCritical", restriction.IsCritical);
-                SetProperty(viewModel, "RecommendedAlternative", restriction.RecommendedAlternative);
-                TodayRestrictions.Add(viewModel);
+                IsBusy = false;
             }
-        }
-
-        private async void LoadTodayInstructions(int currentDay)
-        {
-            TodayInstructions.Clear();
-            var instructions = await _calendarService.GetInstructionsForDayAsync(currentDay);
-
-            foreach (var instruction in instructions)
-            {
-                var viewModel = new InstructionViewModel();
-                SetProperty(viewModel, "Name", instruction.Name);
-                SetProperty(viewModel, "Description", instruction.Description);
-                SetProperty(viewModel, "Steps", instruction.Steps);
-                TodayInstructions.Add(viewModel);
-            }
-        }
-
-        private async void LoadTodayWarnings(int currentDay)
-        {
-            TodayWarnings.Clear();
-            var warnings = await _calendarService.GetWarningsForDayAsync(currentDay);
-
-            foreach (var warning in warnings)
-            {
-                var viewModel = new WarningViewModel();
-                SetProperty(viewModel, "Name", warning.Name);
-                SetProperty(viewModel, "Description", warning.Description);
-                TodayWarnings.Add(viewModel);
-            }
-        }
-
-        private async void LoadUpcomingEvents(int currentDay)
-        {
-            UpcomingEvents.Clear();
-            var upcomingEvents = await _calendarService.GetEventsForDayAsync(currentDay + 7);
-
-            foreach (var evt in upcomingEvents)
-            {
-                var viewModel = new CalendarEventViewModel();
-                viewModel.Name = evt.Name;
-                viewModel.Description = evt.Description;
-                viewModel.DayNumber = evt.StartDay;
-                UpcomingEvents.Add(viewModel);
-            }
-        }
-
-        // Helper method to set property using reflection
-        private void SetProperty(object obj, string propertyName, object value)
-        {
-            var property = obj.GetType().GetProperty(propertyName);
-            if (property != null && property.CanWrite)
-            {
-                property.SetValue(obj, value);
-            }
-        }
-
-        private string GetPhaseDisplayName(RecoveryPhase phase)
-        {
-            return phase switch
-            {
-                RecoveryPhase.Initial => "Начальная фаза (0-3 дня)",
-                RecoveryPhase.EarlyRecovery => "Раннее восстановление (4-10 дней)",
-                RecoveryPhase.Healing => "Фаза заживления (11-30 дней)",
-                RecoveryPhase.Growth => "Рост (1-3 месяца)",
-                RecoveryPhase.Maturation => "Созревание (4-9 месяца)",
-                RecoveryPhase.Final => "Финальная фаза (9-12 месяца)",
-                _ => phase.ToString()
-            };
         }
     }
 } 

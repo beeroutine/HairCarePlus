@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.HorizontalCalendarView">
+    <ContentView.Resources>
+        <Style x:Key="DayNumberStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        
+        <Style x:Key="DayNameStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+        </Style>
+        
+        <Style x:Key="EventMarkerStyle" TargetType="BoxView">
+            <Setter Property="HeightRequest" Value="5" />
+            <Setter Property="WidthRequest" Value="5" />
+            <Setter Property="CornerRadius" Value="2.5" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="BackgroundColor" Value="#FF5722" />
+            <Setter Property="IsVisible" Value="{Binding HasEvents}" />
+        </Style>
+        
+        <Style x:Key="DayFrameStyle" TargetType="Frame">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,12" />
+            <Setter Property="MinimumWidthRequest" Value="45" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="Transparent" />
+        </Style>
+    </ContentView.Resources>
+    
+    <Grid RowDefinitions="Auto,*" Margin="0,8">
+        <!-- Horizontal day picker -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="16,0">
+                <Button Grid.Column="0" 
+                        Text="&lt;" 
+                        Command="{Binding PreviousWeekCommand}"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        CornerRadius="18"
+                        BackgroundColor="#F5F5F5"
+                        TextColor="#212121"
+                        Margin="0,0,8,0" />
+                        
+                <Button Grid.Column="2" 
+                        Text="&gt;" 
+                        Command="{Binding NextWeekCommand}"
+                        WidthRequest="36"
+                        HeightRequest="36"
+                        CornerRadius="18"
+                        BackgroundColor="#F5F5F5"
+                        TextColor="#212121"
+                        Margin="8,0,0,0" />
+                
+                <Button Grid.Column="1"
+                        Text="Today"
+                        Command="{Binding GoToTodayCommand}"
+                        HorizontalOptions="Center"
+                        BackgroundColor="#F5F5F5"
+                        TextColor="#212121"
+                        HeightRequest="36"
+                        CornerRadius="18"
+                        Padding="16,0" />
+            </Grid>
+            
+            <CollectionView Grid.Row="1" 
+                            ItemsSource="{Binding Days}" 
+                            SelectionMode="None"
+                            HorizontalScrollBarVisibility="Never"
+                            ItemsLayout="HorizontalList">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="viewmodels:CalendarDayViewModel">
+                        <Frame Style="{StaticResource DayFrameStyle}"
+                               BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='#FF5722,Transparent'}"
+                               Margin="4,0">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Path=SelectDayCommand, Source={RelativeSource AncestorType={x:Type viewmodels:HorizontalCalendarViewModel}}}"
+                                                      CommandParameter="{Binding .}" />
+                            </Frame.GestureRecognizers>
+                            <StackLayout Spacing="2">
+                                <Label Text="{Binding DayOfWeek}" 
+                                       Style="{StaticResource DayNameStyle}"
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,#757575'}" />
+                                       
+                                <Label Text="{Binding DayOfMonth}" 
+                                       Style="{StaticResource DayNumberStyle}"
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}, ConverterParameter='White,#212121'}" />
+                                       
+                                <BoxView Style="{StaticResource EventMarkerStyle}" />
+                            </StackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+        
+        <!-- Events for selected day -->
+        <Grid Grid.Row="1" Margin="16,16,16,0">
+            <CollectionView ItemsSource="{Binding SelectedDayEvents}"
+                            EmptyView="No events for this day">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,4" Padding="16" CornerRadius="8" BorderColor="Transparent">
+                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                <!-- Event type indicator -->
+                                <BoxView Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                         WidthRequest="4"
+                                         Margin="0,0,12,0"
+                                         BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
+                                         
+                                <!-- Event title -->
+                                <Label Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding Title}"
+                                       FontAttributes="Bold"
+                                       TextColor="#212121"
+                                       Margin="0,0,0,4" />
+                                       
+                                <!-- Event description -->
+                                <Label Grid.Row="1" Grid.Column="1"
+                                       Text="{Binding Description}"
+                                       TextColor="#757575"
+                                       LineBreakMode="WordWrap" />
+                                       
+                                <!-- Completion checkbox -->
+                                <CheckBox Grid.Row="0" Grid.Column="2"
+                                          IsChecked="{Binding IsCompleted}"
+                                          Color="#FF5722">
+                                    <CheckBox.Triggers>
+                                        <DataTrigger TargetType="CheckBox"
+                                                     Binding="{Binding EventType}"
+                                                     Value="Restriction">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </CheckBox.Triggers>
+                                </CheckBox>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+    </Grid>
+</ContentView> 

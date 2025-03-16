@@ -3,36 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\views\\weekview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\views\\weekview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\views\\progresspage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\views\\progresspage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\views\\monthview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\views\\monthview.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\views\\calendarpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\views\\calendarpage.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\views\\calendarpage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\views\\calendarpage.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\extensions\\calendarserviceextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\extensions\\calendarserviceextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\data\\calendardatamodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\data\\calendardatamodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\features\\calendar\\data\\postoperationcalendardata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\features\\calendar\\data\\postoperationcalendardata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|c:\\users\\beero\\documents\\github\\haircareplus\\src\\client\\haircareplus.client.patient\\mauiprogram.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8A19103F-16F7-4668-BE54-9A1E7A4F7560}|src\\Client\\HairCarePlus.Client.Patient\\HairCarePlus.Client.Patient.csproj|solutionrelative:src\\client\\haircareplus.client.patient\\mauiprogram.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\obj\\Debug\\net8.0-android\\android\\src\\com\\companyname\\haircareplus\\client\\patient\\mobile.java||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -109,110 +81,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "WeekView.xaml",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\WeekView.xaml",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\WeekView.xaml",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\WeekView.xaml",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\WeekView.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-03-16T10:03:04.471Z",
+              "Title": "MauiProgram.cs",
+              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\MauiProgram.cs",
+              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\MauiProgram.cs",
+              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\MauiProgram.cs",
+              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\MauiProgram.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAUwBYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-16T12:39:44.572Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "ProgressPage.xaml",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\ProgressPage.xaml",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\ProgressPage.xaml",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\ProgressPage.xaml",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\ProgressPage.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-03-16T10:02:58.917Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "MonthView.xaml",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\MonthView.xaml",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\MonthView.xaml",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\MonthView.xaml",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\MonthView.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-03-16T10:02:43.46Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "CalendarPage.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml.cs",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml.cs",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml.cs",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-16T10:02:26.84Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "CalendarPage.xaml",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Views\\CalendarPage.xaml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-03-16T10:02:09.101Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "CalendarServiceExtensions.cs",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Extensions\\CalendarServiceExtensions.cs",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Extensions\\CalendarServiceExtensions.cs",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Extensions\\CalendarServiceExtensions.cs",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Extensions\\CalendarServiceExtensions.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-16T10:01:42.296Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "CalendarDataModel.cs",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\CalendarDataModel.cs",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\CalendarDataModel.cs",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\CalendarDataModel.cs",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\CalendarDataModel.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-16T10:01:22.249Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "PostOperationCalendarData.cs",
-              "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\PostOperationCalendarData.cs",
-              "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\PostOperationCalendarData.cs",
-              "ToolTip": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\PostOperationCalendarData.cs",
-              "RelativeToolTip": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Calendar\\Data\\PostOperationCalendarData.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-16T10:01:14.292Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
               "Title": "mobile.java",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\obj\\Debug\\net8.0-android\\android\\src\\com\\companyname\\haircareplus\\client\\patient\\mobile.java",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\obj\\Debug\\net8.0-android\\android\\src\\com\\companyname\\haircareplus\\client\\patient\\mobile.java",
@@ -225,7 +106,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 2,
               "Title": "App.xaml.sg.cs",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\obj\\Generated\\Microsoft.Maui.Controls.SourceGen\\Microsoft.Maui.Controls.SourceGen.CodeBehindGenerator\\App.xaml.sg.cs",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\obj\\Generated\\Microsoft.Maui.Controls.SourceGen\\Microsoft.Maui.Controls.SourceGen.CodeBehindGenerator\\App.xaml.sg.cs",
@@ -237,7 +118,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 3,
               "Title": "Microsoft.Maui.Resizetizer.After.targets",
               "DocumentMoniker": "C:\\Users\\beero\\.nuget\\packages\\microsoft.maui.resizetizer\\8.0.83\\buildTransitive\\Microsoft.Maui.Resizetizer.After.targets",
               "RelativeDocumentMoniker": "..\\..\\..\\.nuget\\packages\\microsoft.maui.resizetizer\\8.0.83\\buildTransitive\\Microsoft.Maui.Resizetizer.After.targets",
@@ -249,7 +130,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 4,
               "Title": "Xamarin.Android.EmbeddedResource.targets",
               "DocumentMoniker": "C:\\Program Files\\dotnet\\packs\\Microsoft.Android.Sdk.Windows\\34.0.145\\tools\\Xamarin.Android.EmbeddedResource.targets",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Program Files\\dotnet\\packs\\Microsoft.Android.Sdk.Windows\\34.0.145\\tools\\Xamarin.Android.EmbeddedResource.targets",
@@ -261,7 +142,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 8,
               "Title": "DoctorChatPage.xaml",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Doctor\\Views\\DoctorChatPage.xaml",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Doctor\\Views\\DoctorChatPage.xaml",
@@ -273,7 +154,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 7,
               "Title": "PhotoReportPage.xaml",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\PhotoReport\\Views\\PhotoReportPage.xaml",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\PhotoReport\\Views\\PhotoReportPage.xaml",
@@ -285,7 +166,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 6,
               "Title": "AppShell.xaml",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\AppShell.xaml",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\AppShell.xaml",
@@ -297,7 +178,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 9,
               "Title": "VibrationService.cs",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Platforms\\Android\\Services\\VibrationService.cs",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Platforms\\Android\\Services\\VibrationService.cs",
@@ -309,7 +190,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 5,
               "Title": "TreatmentProgressViewModel.cs",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\ViewModels\\TreatmentProgressViewModel.cs",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\TreatmentProgress\\ViewModels\\TreatmentProgressViewModel.cs",
@@ -321,7 +202,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 10,
               "Title": "DailyRoutineViewModel.cs",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\DailyRoutine\\ViewModels\\DailyRoutineViewModel.cs",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\DailyRoutine\\ViewModels\\DailyRoutineViewModel.cs",
@@ -333,7 +214,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 12,
               "Title": "ProfilePage.xaml.cs",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Profile\\Views\\ProfilePage.xaml.cs",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Profile\\Views\\ProfilePage.xaml.cs",
@@ -345,7 +226,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 11,
               "Title": "ProfilePage.xaml",
               "DocumentMoniker": "C:\\Users\\beero\\Documents\\GitHub\\HairCarePlus\\src\\Client\\HairCarePlus.Client.Patient\\Features\\Profile\\Views\\ProfilePage.xaml",
               "RelativeDocumentMoniker": "src\\Client\\HairCarePlus.Client.Patient\\Features\\Profile\\Views\\ProfilePage.xaml",

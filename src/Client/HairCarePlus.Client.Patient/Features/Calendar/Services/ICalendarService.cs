@@ -1,14 +1,38 @@
-using HairCarePlus.Client.Patient.Features.Calendar.Data;
-using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using HairCarePlus.Client.Patient.Features.Calendar.Models;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Services
 {
-    public interface ICalendarService : IPostOperationCalendarService
+    /// <summary>
+    /// Interface for the Calendar Service
+    /// </summary>
+    public interface ICalendarService
     {
-        // This interface inherits all methods from IPostOperationCalendarService
-        // Additional methods specific to the new interface can be added here
+        /// <summary>
+        /// Gets events for a specific date
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetEventsForDateAsync(DateTime date);
+        
+        /// <summary>
+        /// Gets events for a date range
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate);
+        
+        /// <summary>
+        /// Marks an event as completed
+        /// </summary>
+        Task MarkEventAsCompletedAsync(int eventId, bool isCompleted);
+        
+        /// <summary>
+        /// Gets active restrictions that haven't expired yet
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetActiveRestrictionsAsync();
+        
+        /// <summary>
+        /// Gets events requiring notification
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetPendingNotificationEventsAsync();
     }
 } 

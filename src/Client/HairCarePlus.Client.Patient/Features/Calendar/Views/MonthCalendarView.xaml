@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.MonthCalendarView">
+    <ContentView.Resources>
+        <Style x:Key="DayLabelStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="TextColor" Value="#757575" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+        
+        <Style x:Key="CalendarDayStyle" TargetType="Frame">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="CornerRadius" Value="22" />
+            <Setter Property="HeightRequest" Value="44" />
+            <Setter Property="WidthRequest" Value="44" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        
+        <Style x:Key="DayNumberStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="TextColor" Value="#212121" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+    </ContentView.Resources>
+    
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16">
+        <!-- Month and year header with navigation buttons -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
+            <Button Grid.Column="0" 
+                    Text="&lt;" 
+                    Command="{Binding PreviousMonthCommand}"
+                    HorizontalOptions="Start"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    CornerRadius="22"
+                    BackgroundColor="#F5F5F5"
+                    TextColor="#212121" />
+            
+            <Label Grid.Column="1" 
+                   Text="{Binding CurrentMonthDate, StringFormat='{0:MMMM yyyy}'}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center" />
+            
+            <Button Grid.Column="2" 
+                    Text="&gt;" 
+                    Command="{Binding NextMonthCommand}"
+                    HorizontalOptions="End"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    CornerRadius="22"
+                    BackgroundColor="#F5F5F5"
+                    TextColor="#212121" />
+        </Grid>
+        
+        <!-- Days of week -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,8">
+            <Label Grid.Column="0" Text="Su" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="1" Text="Mo" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="2" Text="Tu" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="3" Text="We" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="4" Text="Th" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="5" Text="Fr" Style="{StaticResource DayLabelStyle}" />
+            <Label Grid.Column="6" Text="Sa" Style="{StaticResource DayLabelStyle}" />
+        </Grid>
+        
+        <!-- Calendar grid (will be filled programmatically) -->
+        <Grid x:Name="CalendarGrid" 
+              Grid.Row="2" 
+              RowDefinitions="*,*,*,*,*,*" 
+              ColumnDefinitions="*,*,*,*,*,*,*">
+            <!-- Calendar cells will be added here programmatically -->
+        </Grid>
+    </Grid>
+</ContentView> 
