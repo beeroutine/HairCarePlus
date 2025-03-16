@@ -1,36 +1,84 @@
-# Calendar and Calendar Widget Functionalities
+# Calendar Module Development Plan
 
-## Calendar Functionalities
+## 1. Overview
+Данный документ описывает план по разработке календарного модуля в мобильном приложении HairCare+ (MAUI). Целевой аудиторией являются мужчины 30+ после трансплантации волос, которым важно удобное и **максимально простое (KISS)** решение.
 
-### General Features
-- **Recovery Progress Tracking:** Displays current recovery phase, progress percentage, and day count.
-- **View Selection:** Allows switching between Month, Week, Day, and List views.
-- **Event Management:** Supports adding new events through a floating action button.
+## 2. Цели и Задачи
+- **Предоставить пациенту** удобный инструмент для просмотра расписания восстановительного периода.
+- **Сократить тревожность** за счет наглядного отображения информации о ближайших мероприятиях и ограничениях.
+- **Обеспечить быстрое взаимодействие** с календарём (горизонтальный виджет на главном экране, месячный обзор, push-уведомления).
 
-### Detailed Day View
-- **Medications:** Lists medications with details such as name, description, dosage, instructions, and frequency.
-- **Restrictions:** Shows restrictions with reasons, criticality, and recommended alternatives.
-- **Instructions:** Provides detailed instructions with step-by-step guidance.
-- **Warnings:** Displays warnings relevant to the selected day.
+## 3. Функциональные Требования
 
-### Progress View
-- **Overall Progress:** Visual representation of recovery progress with phase details.
-- **Phase Progress:** Lists recovery phases with descriptions, statuses (active, completed, upcoming).
-- **Expected Changes:** Highlights expected changes during each recovery phase.
-- **Milestones:** Marks important milestones with descriptions and unlocked activities.
+### 3.1 Горизонтальный Виджет на Главном Экране
+1. Отображает неделю (или несколько дней) в горизонтальном формате.
+2. Свайпом перемещается на предыдущие/следующие дни.
+3. При выборе конкретной даты внизу появляется список задач на день.
+4. Отображение счётчиков/таймеров ограничений в шапке главной страницы (e.g., «Осталось 3 дня до снятия швов»).
 
-## Calendar Widget Functionalities
+### 3.2 Месячный Просмотр (Month View)
+1. **Минимальный интерфейс**: в ячейках только точки или небольшие иконки, указывающие на наличие событий.
+2. Нажатие на конкретную дату открывает подробный список дел этого дня (лекарства, фотоотчёты, ограничения и т.д.).
+3. Возможность быстрого возврата к «Сегодня» (кнопка Today).
 
-### Progress Card
-- **Phase Information:** Shows current recovery phase and duration.
-- **Progress Bar:** Visual indicator of recovery progress.
-- **Percentage Display:** Numeric representation of progress percentage.
+### 3.3 Список Дел на День (Daily Tasks)
+1. Краткие описания задач (приём лекарств, отправка фото, применение мазей и т.п.).
+2. Подробное описание доступно при тапе на задачу (дата, время, инструкции).
+3. Возможность отметить выполнение задачи (или просмотреть статус).
 
-### View Selector
-- **Picker Control:** Allows users to select calendar views (Month, Week, Day, List).
+### 3.4 Уведомления
+1. Push-уведомления о ближайших событиях (e.g., приём лекарств).
+2. Возможность отключения или настройки уведомлений в настройках профиля.
+3. Персонализированные напоминания (учитывая особенности пациента).
 
-### Placeholder
-- **Calendar Placeholder:** Temporary placeholder indicating where the calendar will be displayed, prompting users to select a view.
+### 3.5 Таймеры Ограничений
+1. Отображение ограничений (e.g., «Нельзя пить алкоголь ещё 5 дней»).
+2. Таймер автоматически скрывается при истечении срока.
+3. Дружелюбная формулировка (избегать тревожных, «запрещающих» слов).
 
-### Floating Action Button
-- **Event Addition:** Quick access button for adding new calendar events. 
+### 3.6 Отсутствие Ручного Редактирования
+1. Все события создаются клиникой или автоматически формируются при регистрации даты пересадки.
+2. Пациент не может добавлять/удалять собственные события, только просматривать и отмечать факт выполнения (если предусмотрено логикой).
+
+### 3.7 UX-решения
+
+Простота интерфейса, избегать лишних анимаций.
+
+Использовать понятные и дружелюбные тексты для снижения тревожности.
+
+Предлагать пользователю выбор уровня детализации (полный календарь или поэтапное раскрытие).
+
+Контрастная и понятная иконография событий.
+
+
+
+## 4. Архитектурные Аспекты
+
+### 4.1 Стек Технологий
+- **.NET MAUI** для реализации клиентского приложения (Patient Mobile App).
+- **C# / .NET 8** (включая MVVM-паттерн).
+- **ASP.NET Core Web API** на сервере (обмен данными с помощью REST).
+- **Entity Framework Core** для работы с БД (события календаря, статусы).
+- **SignalR** для обновления календаря/уведомлений в реальном времени (по желанию).
+- **JWT** для аутентификации и безопасности.
+
+### 4.2 Структура Каталогов (упрощённый обзор)
+
+
+Структура данных (Models)
+
+Используем простые структуры:
+
+CalendarEvent
+
+ID
+
+Date
+
+Title
+
+Description
+
+EventType (Medication, Photo, Restriction, Instruction)
+
+IsCompleted

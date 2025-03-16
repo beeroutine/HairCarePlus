@@ -104,9 +104,6 @@ The solution follows Clean Architecture principles with:
 
 Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Chat Interface
 
@@ -206,37 +203,6 @@ The chat interface is a crucial component of the HairCare+ solution, providing r
 - Message grouping by sender
 - Smooth animations for state changes
 
-## AI Model Agent Instructions
-
-All tasks performed by AI model agents should adhere to the specified technology stack outlined in this document. Ensure that tasks are executed efficiently and without unnecessary work to maintain consistency and avoid errors.
-
-### Third-Party Components
-
-This project uses Syncfusion Essential Studio for MAUI components:
-- The development version currently uses Syncfusion Trial Version
-- Before releasing the app, you will need to either:
-  - Obtain a Community License (free for individuals/small companies with <$1M revenue)
-  - Purchase a commercial license
-  - Replace Syncfusion components with standard MAUI alternatives
-- To apply a license key, add `SyncfusionLicenseProvider.RegisterLicense("YOUR_LICENSE_KEY");` in MauiProgram.cs
-
-### Package Version Consistency
-
-Always maintain consistent versions across related packages:
-- All Syncfusion packages must have the same version (currently 28.2.7)
-- Ensure compatibility between .NET MAUI (8.0) and all third-party packages
-- When updating packages, update all related packages together to avoid version conflicts
-
-### Syncfusion Components Usage
-
-When working with Syncfusion components in MAUI:
-- Use the correct namespace prefix (lowercase): `xmlns:tabview="clr-namespace:Syncfusion.Maui.TabView;assembly=Syncfusion.Maui.TabView"`
-- Use proper class names for Syncfusion components:
-  - `SfTabView` instead of `TabView`
-  - `SfTabItem` instead of `TabItem`
-  - Use `<tabview:SfTabView.Items>` instead of `<tabview:SfTabView.TabItemsCollection>` and `<tabview:TabItemCollection>`
-- Always verify compatibility between .NET MAUI version (8.0) and Syncfusion package versions
-- Reference the current Syncfusion version in use: 28.2.7
 
 ### Performance Optimization
 
@@ -247,7 +213,6 @@ To avoid UI freezes and frame skipping:
 - Consider using background threads for heavy calculations via `Task.Run()`
 - Optimize image loading and processing, use caching when possible
 - Keep UI component hierarchies flat when possible, avoid deep nesting
-- Use virtualization for long lists (CollectionView instead of ListView)
 - Implement proper view recycling patterns
 - Minimize UI updates and property change notifications
 

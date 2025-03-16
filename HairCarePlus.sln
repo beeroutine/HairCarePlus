@@ -26,8 +26,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Domain"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Communication", "src\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj", "{9F19103F-16F7-4668-BE54-9A1E7A4F7567}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HairCarePlus.Shared.Common", "src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj", "{B08AD144-020C-441E-97F0-BE39C2051EFB}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,10 +68,6 @@ Global
 		{9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F19103F-16F7-4668-BE54-9A1E7A4F7567}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B08AD144-020C-441E-97F0-BE39C2051EFB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B08AD144-020C-441E-97F0-BE39C2051EFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B08AD144-020C-441E-97F0-BE39C2051EFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B08AD144-020C-441E-97F0-BE39C2051EFB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
