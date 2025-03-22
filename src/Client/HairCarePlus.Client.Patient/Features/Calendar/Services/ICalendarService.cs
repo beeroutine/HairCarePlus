@@ -16,6 +16,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
         Task<IEnumerable<CalendarEvent>> GetEventsForDateAsync(DateTime date);
         
         /// <summary>
+        /// Gets events for a specific month
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetEventsForMonthAsync(int year, int month);
+        
+        /// <summary>
         /// Gets events for a date range
         /// </summary>
         Task<IEnumerable<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate);

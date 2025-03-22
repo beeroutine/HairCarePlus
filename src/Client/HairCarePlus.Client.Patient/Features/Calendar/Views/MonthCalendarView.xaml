@@ -13,27 +13,28 @@
                 <Setter Property="FontSize" Value="20" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}" />
             </Style>
             
             <Style x:Key="DayHeaderStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{StaticResource TextSecondaryColor}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
             </Style>
             
             <Style x:Key="DayNumberStyle" TargetType="Label">
-                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="VerticalTextAlignment" Value="Center" />
             </Style>
             
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
                 <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="TextColor" Value="{StaticResource PrimaryColor}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
                 <Setter Property="FontSize" Value="24" />
                 <Setter Property="WidthRequest" Value="40" />
                 <Setter Property="HeightRequest" Value="40" />
@@ -44,17 +45,20 @@
             
             <Style x:Key="CalendarCellStyle" TargetType="Frame">
                 <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="BorderColor" Value="{StaticResource BorderColor}" />
+                <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource Gray600}}" />
                 <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="Padding" Value="2" />
-                <Setter Property="Margin" Value="1" />
+                <Setter Property="Padding" Value="4" />
+                <Setter Property="Margin" Value="2" />
+                <Setter Property="MinimumHeightRequest" Value="45" />
+                <Setter Property="MinimumWidthRequest" Value="40" />
                 <Setter Property="HasShadow" Value="False" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=#1C1C1E}" />
             </Style>
             
             <Style x:Key="EventDotStyle" TargetType="BoxView">
-                <Setter Property="HeightRequest" Value="4" />
-                <Setter Property="WidthRequest" Value="4" />
-                <Setter Property="CornerRadius" Value="2" />
+                <Setter Property="HeightRequest" Value="6" />
+                <Setter Property="WidthRequest" Value="6" />
+                <Setter Property="CornerRadius" Value="3" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="Center" />
             </Style>
@@ -96,8 +100,9 @@
               Grid.Row="2" 
               RowDefinitions="*,*,*,*,*,*" 
               ColumnDefinitions="*,*,*,*,*,*,*"
-              RowSpacing="1"
-              ColumnSpacing="1"
+              RowSpacing="2"
+              ColumnSpacing="2"
+              Margin="0,5,0,0"
               BackgroundColor="Transparent"
               CascadeInputTransparent="False"
               InputTransparent="False">

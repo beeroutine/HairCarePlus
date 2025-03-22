@@ -10,11 +10,12 @@ using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
-    public class RestrictionTimer : BaseViewModel
+    public class RestrictTimerItem : BaseViewModel
     {
         private CalendarEvent _restrictionEvent;
         private string _remainingTimeText;
         private double _progressPercentage;
+        private DateTime _endDate;
 
         public CalendarEvent RestrictionEvent
         {
@@ -34,6 +35,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _progressPercentage, value);
         }
 
+        public DateTime EndDate
+        {
+            get => _endDate;
+            set => SetProperty(ref _endDate, value);
+        }
+
         public string Title => RestrictionEvent?.Title;
         public string Description => RestrictionEvent?.Description;
     }
@@ -41,11 +48,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
     public class RestrictionTimersViewModel : BaseViewModel, IDisposable
     {
         private readonly ICalendarService _calendarService;
-        private ObservableCollection<RestrictionTimer> _activeRestrictions = new ObservableCollection<RestrictionTimer>();
+        private ObservableCollection<RestrictTimerItem> _activeRestrictions = new ObservableCollection<RestrictTimerItem>();
         private Timer _updateTimer;
         private bool _disposed = false;
 
-        public ObservableCollection<RestrictionTimer> ActiveRestrictions
+        public ObservableCollection<RestrictTimerItem> ActiveRestrictions
         {
             get => _activeRestrictions;
             set => SetProperty(ref _activeRestrictions, value);
@@ -74,7 +81,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 ActiveRestrictions.Clear();
                 foreach (var restriction in restrictions.Where(r => r.ExpirationDate.HasValue))
                 {
-                    var timer = new RestrictionTimer
+                    var timer = new RestrictTimerItem
                     {
                         RestrictionEvent = restriction
                     };
@@ -103,7 +110,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private void UpdateTimerTexts()
         {
             var now = DateTime.Now;
-            var timersToRemove = new List<RestrictionTimer>();
+            var timersToRemove = new List<RestrictTimerItem>();
             
             foreach (var timer in ActiveRestrictions)
             {

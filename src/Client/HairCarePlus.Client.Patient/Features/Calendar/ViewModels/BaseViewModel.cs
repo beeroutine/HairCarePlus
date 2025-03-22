@@ -7,7 +7,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
     public abstract class BaseViewModel : INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         private bool _isBusy;
         public bool IsBusy
@@ -25,7 +25,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         protected bool SetProperty<T>(ref T backingStore, T value,
             [CallerMemberName] string propertyName = "",
-            Action onChanged = null)
+            Action? onChanged = null)
         {
             if (EqualityComparer<T>.Default.Equals(backingStore, value))
                 return false;

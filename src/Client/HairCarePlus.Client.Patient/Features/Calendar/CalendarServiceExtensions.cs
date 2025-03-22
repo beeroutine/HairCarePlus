@@ -1,12 +1,15 @@
 using System;
 using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Controls;
 using static Microsoft.Maui.Controls.Routing;
+using HairCarePlus.Client.Patient.Features.Notifications.Services;
+using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -22,10 +25,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             
             // Register services
             services.AddSingleton<ICalendarService, CalendarService>();
-            services.AddSingleton<INotificationService, NotificationService>();
+            services.AddSingleton<Calendar.Services.INotificationService, Calendar.Services.NotificationService>();
+            
+            // Register the Notifications.Services notification service
+            services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();
+            
+            // Register EventAggregationService
+            services.AddSingleton<IEventAggregationService, EventAggregationService>();
             
             // Register ViewModels
             services.AddTransient<CalendarViewModel>();
+            services.AddTransient<CleanCalendarViewModel>();
             
             // Register calendar views
             services.AddTransient<CalendarPage>();

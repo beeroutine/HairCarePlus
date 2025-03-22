@@ -55,7 +55,7 @@ public static class MauiProgram
 		
 		// Register HttpClient
 		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
-			BaseAddress = new Uri("https://api.haircareplus.com/")
+			BaseAddress = new Uri("http://localhost:5281/")
 		});
 		
 #if ANDROID
@@ -119,6 +119,7 @@ public static class MauiProgram
 	{
 		// Calendar
 		services.AddTransient<CalendarViewModel>();
+		services.AddTransient<CleanCalendarViewModel>();
 		services.AddTransient<RestrictionTimersViewModel>();
 		
 		// Calendar views

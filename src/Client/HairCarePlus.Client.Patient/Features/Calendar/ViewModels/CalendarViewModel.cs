@@ -1,243 +1,145 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
-using HairCarePlus.Client.Patient.Features.Calendar.Views;
-using Microsoft.Maui.Controls;
-using System.Collections.Generic;
-using Microsoft.Maui.ApplicationModel;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using NotificationsService = HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
+using RestrictTimer = HairCarePlus.Client.Patient.Features.Calendar.ViewModels.RestrictTimerItem;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
-    public class CalendarViewModel : BaseViewModel
+    public partial class CalendarViewModel : ObservableObject
     {
         private readonly ICalendarService _calendarService;
-        private readonly INotificationService _notificationService;
-        
+        private readonly NotificationsService.INotificationService _notificationService;
+        private readonly IEventAggregationService _eventAggregationService;
+
+        // Keep track of the last loaded month to avoid reloading unnecessarily
+        private DateTime _lastLoadedMonth;
+
+        [ObservableProperty]
+        private string _title = "Calendar";
+
+        [ObservableProperty]
         private DateTime _selectedDate = DateTime.Today;
+
+        [ObservableProperty]
+        private DateTime _displayMonth = DateTime.Today;
+
+        [ObservableProperty]
         private DateTime _currentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        private ObservableCollection<CalendarEvent> _eventsForSelectedDate = new ObservableCollection<CalendarEvent>();
-        private ObservableCollection<CalendarEvent> _eventsForMonth = new ObservableCollection<CalendarEvent>();
-        private ObservableCollection<RestrictionTimer> _activeRestrictions = new ObservableCollection<RestrictionTimer>();
-        private ObservableCollection<CalendarDayViewModel> _calendarDays = new ObservableCollection<CalendarDayViewModel>();
-        private string _errorMessage;
+
+        [ObservableProperty]
+        private ObservableCollection<CalendarEvent> _eventsForMonth = new();
+
+        [ObservableProperty]
+        private ObservableCollection<CalendarEvent> _eventsForSelectedDate = new();
+
+        [ObservableProperty]
+        private ObservableCollection<RestrictTimer> _activeRestrictions = new();
+
+        [ObservableProperty]
+        private ObservableCollection<CalendarDayViewModel> _calendarDays = new();
+
+        [ObservableProperty]
+        private bool _isBusy;
+
+        [ObservableProperty]
         private bool _hasError;
+
+        [ObservableProperty]
+        private string _errorMessage = string.Empty;
+
+        [ObservableProperty]
         private int _retryCount;
+
+        [ObservableProperty]
+        private bool _isLoaded = false;
+
         private const int MaxRetries = 3;
-        private string _bottomSheetTitle;
-        private bool _isPopupVisible = false;
 
-        public ObservableCollection<CalendarDayViewModel> CalendarDays
+        // Commands - initialize them in the constructor
+        public ICommand RefreshCommand { get; }
+        public ICommand GoToTodayCommand { get; }
+        public ICommand NextMonthCommand { get; }
+        public ICommand PreviousMonthCommand { get; }
+        public ICommand MarkEventCompletedCommand { get; }
+        public ICommand DaySelectedCommand { get; }
+
+        public CalendarViewModel(
+            ICalendarService calendarService,
+            NotificationsService.INotificationService notificationService,
+            IEventAggregationService eventAggregationService)
         {
-            get => _calendarDays;
-            private set => SetProperty(ref _calendarDays, value);
-        }
+            _calendarService = calendarService;
+            _notificationService = notificationService;
+            _eventAggregationService = eventAggregationService;
+            _lastLoadedMonth = CurrentMonthDate;
 
-        public ICommand RefreshCommand { get; private set; }
-        public ICommand GoToTodayCommand { get; private set; }
-        public ICommand NextMonthCommand { get; private set; }
-        public ICommand PreviousMonthCommand { get; private set; }
-        public ICommand MarkEventCompletedCommand { get; private set; }
-        public ICommand DaySelectedCommand { get; private set; }
-        public ICommand ClosePopupCommand { get; private set; }
-
-        public ObservableCollection<RestrictionTimer> ActiveRestrictions
-        {
-            get => _activeRestrictions;
-            private set => SetProperty(ref _activeRestrictions, value);
-        }
-
-        public string ErrorMessage
-        {
-            get => _errorMessage;
-            private set
-            {
-                if (SetProperty(ref _errorMessage, value))
-                {
-                    HasError = !string.IsNullOrEmpty(value);
-                }
-            }
-        }
-
-        public bool HasError
-        {
-            get => _hasError;
-            private set => SetProperty(ref _hasError, value);
-        }
-
-        public bool IsPopupVisible
-        {
-            get => _isPopupVisible;
-            set => SetProperty(ref _isPopupVisible, value);
-        }
-
-        public DateTime SelectedDate
-        {
-            get => _selectedDate;
-            set
-            {
-                if (SetProperty(ref _selectedDate, value))
-                {
-                    LoadEventsForSelectedDateAsync().ConfigureAwait(false);
-                    UpdateCalendarDays();
-                    _bottomSheetTitle = value.ToString("MMMM d, yyyy");
-                    OnPropertyChanged(nameof(BottomSheetTitle));
-                }
-            }
-        }
-
-        public DateTime CurrentMonthDate
-        {
-            get => _currentMonthDate;
-            set
-            {
-                if (SetProperty(ref _currentMonthDate, value))
-                {
-                    LoadEventsForMonthAsync().ConfigureAwait(false);
-                    UpdateCalendarDays();
-                }
-            }
-        }
-
-        public ObservableCollection<CalendarEvent> EventsForSelectedDate
-        {
-            get => _eventsForSelectedDate;
-            set => SetProperty(ref _eventsForSelectedDate, value);
-        }
-
-        public ObservableCollection<CalendarEvent> EventsForMonth
-        {
-            get => _eventsForMonth;
-            set
-            {
-                if (SetProperty(ref _eventsForMonth, value))
-                {
-                    UpdateCalendarDays();
-                }
-            }
-        }
-
-        public string BottomSheetTitle 
-        {
-            get => _bottomSheetTitle;
-            private set => SetProperty(ref _bottomSheetTitle, value);
-        }
-
-        public CalendarViewModel()
-        {
-            Title = "Calendar";
-            InitializeCommands();
-            
-            // Добавляем тестовые данные для демонстрации
-            AddSampleEvents();
-            
-            UpdateCalendarDays();
-        }
-
-        public CalendarViewModel(ICalendarService calendarService, INotificationService notificationService) : this()
-        {
-            _calendarService = calendarService ?? throw new ArgumentNullException(nameof(calendarService));
-            _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
-
-            Task.Run(async () =>
-            {
-                await RefreshDataAsync();
-            });
-        }
-
-        private void UpdateCalendarDays()
-        {
-            try
-            {
-                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
-                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
-                
-                // Create a new collection outside the UI thread
-                var days = new List<CalendarDayViewModel>(42); // Pre-allocate capacity for better performance
-                
-                // Cache for faster lookups
-                var eventLookup = new Dictionary<DateTime, bool>();
-                foreach (var evt in EventsForMonth)
-                {
-                    var date = evt.Date.Date;
-                    eventLookup[date] = true;
-                }
-                
-                // Generate all days for the calendar grid (6 rows x 7 columns = 42 days)
-                for (int i = 0; i < 42; i++)
-                {
-                    var currentDate = firstDayOfCalendarView.AddDays(i);
-                    var isCurrentMonth = currentDate.Month == CurrentMonthDate.Month;
-                    
-                    // Check for events using the lookup dictionary (much faster than LINQ)
-                    var hasEvents = eventLookup.ContainsKey(currentDate.Date);
-                    
-                    // Create day view model
-                    days.Add(new CalendarDayViewModel
-                    {
-                        Date = currentDate,
-                        IsCurrentMonth = isCurrentMonth,
-                        HasEvents = hasEvents,
-                        IsSelected = currentDate.Date == SelectedDate.Date
-                    });
-                }
-                
-                // Update collection on UI thread with a single operation
-                MainThread.BeginInvokeOnMainThread(() => 
-                {
-                    // Replace the entire collection at once to minimize UI updates
-                    CalendarDays = new ObservableCollection<CalendarDayViewModel>(days);
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error updating calendar days: {ex.Message}");
-            }
-        }
-
-        private void InitializeCommands()
-        {
-            RefreshCommand = new Command(async () => await RefreshDataAsync());
+            // Initialize commands
+            RefreshCommand = new Command(async () => await RefreshAsync());
             GoToTodayCommand = new Command(ExecuteGoToToday);
             NextMonthCommand = new Command(ExecuteNextMonth);
             PreviousMonthCommand = new Command(ExecutePreviousMonth);
             MarkEventCompletedCommand = new Command<CalendarEvent>(ExecuteMarkEventCompleted);
-            DaySelectedCommand = new Command<DateTime>(ShowPopupForDay);
-            ClosePopupCommand = new Command(ExecuteClosePopup);
+            DaySelectedCommand = new Command<DateTime>(ExecuteDaySelected);
+            
+            // Initialize
+            UpdateCalendarDays();
+            
+            // Load events for the current month and selected date when first opening
+            Task.Run(async () => 
+            {
+                await LoadEventsForMonthAsync(CurrentMonthDate.Year, CurrentMonthDate.Month);
+                await LoadEventsForSelectedDateAsync();
+                IsLoaded = true;
+            });
         }
 
-        private async Task RefreshDataAsync()
+        partial void OnSelectedDateChanged(DateTime value)
         {
-            if (IsBusy)
-                return;
+            LoadEventsForSelectedDateAsync().ConfigureAwait(false);
+            UpdateCalendarDays();
+        }
 
-            try
+        partial void OnDisplayMonthChanged(DateTime value)
+        {
+            // Check if we've already loaded this month to prevent unnecessary API calls
+            if (_lastLoadedMonth.Year != value.Year || _lastLoadedMonth.Month != value.Month)
             {
-                IsBusy = true;
-                ErrorMessage = null;
-                _retryCount = 0;
+                LoadEventsForMonthAsync(value.Year, value.Month).ConfigureAwait(false);
+                _lastLoadedMonth = value;
+            }
+        }
 
-                await LoadEventsForSelectedDateAsync();
-                await LoadEventsForMonthAsync();
-                await LoadActiveRestrictionsAsync();
-            }
-            catch (Exception ex)
+        partial void OnCurrentMonthDateChanged(DateTime value)
+        {
+            // Check if we've already loaded this month to prevent unnecessary API calls
+            if (_lastLoadedMonth.Year != value.Year || _lastLoadedMonth.Month != value.Month)
             {
-                HandleError("Error refreshing calendar data", ex);
+                LoadEventsForMonthAsync(value.Year, value.Month).ConfigureAwait(false);
+                _lastLoadedMonth = value;
             }
-            finally
-            {
-                IsBusy = false;
-            }
+            UpdateCalendarDays();
+        }
+
+        partial void OnEventsForMonthChanged(ObservableCollection<CalendarEvent> value)
+        {
+            // When events for the month change, update the calendar days to show event indicators
+            UpdateCalendarDays();
         }
 
         private void ExecuteGoToToday()
         {
-            SelectedDate = DateTime.Today;
             CurrentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            SelectedDate = DateTime.Today;
         }
 
         private void ExecuteNextMonth()
@@ -250,21 +152,40 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             CurrentMonthDate = CurrentMonthDate.AddMonths(-1);
         }
 
-        private async void ExecuteMarkEventCompleted(CalendarEvent calendarEvent)
+        private void ExecuteDaySelected(DateTime date)
         {
-            if (calendarEvent == null)
-                return;
+            SelectedDate = date;
+        }
 
+        private void ExecuteMarkEventCompleted(CalendarEvent calendarEvent)
+        {
+            if (calendarEvent != null)
+            {
+                MarkEventCompletedAsync(calendarEvent).ConfigureAwait(false);
+            }
+        }
+
+        private async Task RefreshAsync()
+        {
             try
             {
                 IsBusy = true;
-                ErrorMessage = null;
-                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, !calendarEvent.IsCompleted);
-                await RefreshDataAsync();
+                HasError = false;
+                
+                // Refresh events for the current month
+                await LoadEventsForMonthAsync(CurrentMonthDate.Year, CurrentMonthDate.Month, forceRefresh: true);
+                
+                // Refresh events for the selected date
+                await LoadEventsForSelectedDateAsync(forceRefresh: true);
+                
+                // Refresh active restrictions
+                await LoadActiveRestrictionsAsync();
             }
             catch (Exception ex)
             {
-                HandleError("Error updating event status", ex);
+                HasError = true;
+                ErrorMessage = "Could not refresh calendar data. Please try again.";
+                System.Diagnostics.Debug.WriteLine($"Error in RefreshAsync: {ex.Message}");
             }
             finally
             {
@@ -272,261 +193,244 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        private async Task LoadEventsForSelectedDateAsync()
+        private async Task LoadEventsForSelectedDateAsync(bool forceRefresh = false)
         {
+            if (IsBusy && !forceRefresh) return;
+            
             try
             {
+                IsBusy = true;
+                HasError = false;
+
+                // Create a new collection to store all events
+                var allDayEvents = new List<CalendarEvent>();
+
+                // First attempt to load from service if available
                 if (_calendarService != null)
                 {
-                    // Загружаем данные с сервера, если сервис доступен
                     var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
-                    EventsForSelectedDate.Clear();
-                    foreach (var calendarEvent in events)
+                    if (events != null)
                     {
-                        EventsForSelectedDate.Add(calendarEvent);
+                        allDayEvents.AddRange(events);
                     }
                 }
                 else
                 {
-                    // В демо-режиме используем события из EventsForMonth
-                    EventsForSelectedDate.Clear();
-                    foreach (var calendarEvent in EventsForMonth.Where(e => e.Date.Date == SelectedDate.Date))
+                    // Fall back to filtering from the events for month
+                    var filteredEvents = EventsForMonth.Where(e => e.Date.Date == SelectedDate.Date).ToList();
+                    allDayEvents.AddRange(filteredEvents);
+                }
+
+                // Now add any active restrictions that are valid for the selected date
+                if (_calendarService != null)
+                {
+                    var activeRestrictions = await _calendarService.GetActiveRestrictionsAsync();
+                    foreach (var restriction in activeRestrictions)
                     {
-                        EventsForSelectedDate.Add(calendarEvent);
-                    }
-                }
-                ErrorMessage = null;
-            }
-            catch (Exception ex)
-            {
-                if (await HandleErrorWithRetryAsync("Error loading events", ex))
-                {
-                    await LoadEventsForSelectedDateAsync();
-                }
-            }
-        }
-
-        private async Task LoadEventsForMonthAsync()
-        {
-            try
-            {
-                // Get the first and last day of the month
-                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
-                var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-                
-                // We also need to include the days from previous/next month that appear in the calendar view
-                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
-                var lastDayOfCalendarView = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
-                
-                // Get events for the entire calendar view
-                var events = await _calendarService.GetEventsForDateRangeAsync(firstDayOfCalendarView, lastDayOfCalendarView);
-                
-                EventsForMonth.Clear();
-                foreach (var calendarEvent in events)
-                {
-                    EventsForMonth.Add(calendarEvent);
-                }
-                ErrorMessage = null;
-            }
-            catch (Exception ex)
-            {
-                if (await HandleErrorWithRetryAsync("Error loading calendar", ex))
-                {
-                    await LoadEventsForMonthAsync();
-                }
-            }
-        }
-
-        private async Task LoadActiveRestrictionsAsync()
-        {
-            try
-            {
-                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
-                ActiveRestrictions.Clear();
-                foreach (var restriction in restrictions)
-                {
-                    ActiveRestrictions.Add(new RestrictionTimer { RestrictionEvent = restriction });
-                }
-            }
-            catch (Exception ex)
-            {
-                if (await HandleErrorWithRetryAsync("Error loading restrictions", ex))
-                {
-                    await LoadActiveRestrictionsAsync();
-                }
-            }
-        }
-
-        private void HandleError(string message, Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"{message}: {ex.Message}");
-            ErrorMessage = $"{message}. Please try again.";
-        }
-
-        private async Task<bool> HandleErrorWithRetryAsync(string message, Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"{message}: {ex.Message}");
-
-            if (_retryCount < MaxRetries)
-            {
-                _retryCount++;
-                ErrorMessage = $"{message}. Retrying... (Attempt {_retryCount}/{MaxRetries})";
-                await Task.Delay(1000 * _retryCount); // Exponential backoff
-                return true;
-            }
-
-            ErrorMessage = $"{message}. Please try again.";
-            return false;
-        }
-
-        private void AddSampleEvents()
-        {
-            try
-            {
-                // Создаем несколько событий для текущего месяца
-                var today = DateTime.Today;
-                var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
-                
-                // Ограничение на 5 дней от начала месяца
-                var restriction = new CalendarEvent
-                {
-                    Id = 1,
-                    Title = "Не мочить голову",
-                    Description = "Избегайте попадания воды на область пересадки",
-                    Date = firstDayOfMonth.AddDays(5),
-                    EventType = EventType.Restriction,
-                    IsCompleted = false,
-                    ExpirationDate = firstDayOfMonth.AddDays(7) // Add expiration date for restriction
-                };
-                
-                // Медикамент на 10 дней от начала месяца
-                var medication = new CalendarEvent
-                {
-                    Id = 2,
-                    Title = "Прием антибиотика",
-                    Description = "Азитромицин 500мг, 1 таблетка",
-                    Date = firstDayOfMonth.AddDays(10),
-                    EventType = EventType.Medication,
-                    IsCompleted = false
-                };
-                
-                // Фото на 15 дней от начала месяца
-                var photo = new CalendarEvent
-                {
-                    Id = 3,
-                    Title = "Отправить фото",
-                    Description = "Сделайте фото области пересадки и отправьте врачу",
-                    Date = firstDayOfMonth.AddDays(15),
-                    EventType = EventType.Photo,
-                    IsCompleted = false
-                };
-                
-                // Инструкция на 20 дней от начала месяца
-                var instruction = new CalendarEvent
-                {
-                    Id = 4,
-                    Title = "Начать массаж",
-                    Description = "Легкий массаж области пересадки, 5 минут утром и вечером",
-                    Date = firstDayOfMonth.AddDays(20),
-                    EventType = EventType.Instruction,
-                    IsCompleted = false
-                };
-                
-                // Событие на 11 марта 2025
-                var march11Event = new CalendarEvent
-                {
-                    Id = 7,
-                    Title = "Контрольный осмотр",
-                    Description = "Посещение врача для оценки приживаемости волос",
-                    Date = new DateTime(2025, 3, 11),
-                    EventType = EventType.Instruction,
-                    IsCompleted = false
-                };
-                
-                // Выбранный день (21 марта) имеет несколько событий
-                var multipleEvents1 = new CalendarEvent
-                {
-                    Id = 5,
-                    Title = "Прием лекарства",
-                    Description = "Миноксидил 5%, нанесение на область пересадки",
-                    Date = new DateTime(2025, 3, 21),
-                    EventType = EventType.Medication,
-                    IsCompleted = false
-                };
-                
-                var multipleEvents2 = new CalendarEvent
-                {
-                    Id = 6,
-                    Title = "Отправить фото",
-                    Description = "Сделайте фото области пересадки и отправьте врачу",
-                    Date = new DateTime(2025, 3, 21),
-                    EventType = EventType.Photo,
-                    IsCompleted = false
-                };
-                
-                // Подготовим все события в списке
-                var events = new List<CalendarEvent> {
-                    restriction, medication, photo, instruction, 
-                    march11Event, multipleEvents1, multipleEvents2
-                };
-                
-                // Добавим события в основной поток
-                MainThread.BeginInvokeOnMainThread(() => {
-                    try 
-                    {
-                        // Добавляем события в коллекцию
-                        foreach (var evt in events) {
-                            if (evt != null) {
-                                EventsForMonth.Add(evt);
+                        // Only include restrictions that are active on the selected date
+                        if (restriction.Date.Date <= SelectedDate.Date && 
+                            (!restriction.ExpirationDate.HasValue || restriction.ExpirationDate.Value >= SelectedDate.Date))
+                        {
+                            // Add to the events collection if not already included
+                            if (!allDayEvents.Any(e => e.Id == restriction.Id))
+                            {
+                                allDayEvents.Add(restriction);
                             }
                         }
-                        
-                        // Add restriction to active restrictions
-                        if (restriction != null && restriction.ExpirationDate.HasValue) {
-                            ActiveRestrictions.Add(new RestrictionTimer {
-                                RestrictionEvent = restriction
-                            });
-                        }
-                        
-                        // Добавляем события для выбранного дня
-                        var selectedDate = SelectedDate.Date;
-                        var march21 = new DateTime(2025, 3, 21).Date;
-                        var march11 = new DateTime(2025, 3, 11).Date;
-                        
-                        if (selectedDate == march21)
-                        {
-                            if (multipleEvents1 != null) EventsForSelectedDate.Add(multipleEvents1);
-                            if (multipleEvents2 != null) EventsForSelectedDate.Add(multipleEvents2);
-                        }
-                        else if (selectedDate == march11)
-                        {
-                            if (march11Event != null) EventsForSelectedDate.Add(march11Event);
-                        }
-                        
-                        // Обновляем календарь после добавления событий
-                        UpdateCalendarDays();
                     }
-                    catch (Exception ex)
+                }
+
+                // Update the observable collection
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    EventsForSelectedDate.Clear();
+                    foreach (var evnt in allDayEvents)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Error adding sample events: {ex.Message}");
+                        EventsForSelectedDate.Add(evnt);
                     }
                 });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error creating sample events: {ex.Message}");
+                HasError = true;
+                ErrorMessage = "Could not load events for this date. Please try again.";
+                System.Diagnostics.Debug.WriteLine($"Error in LoadEventsForSelectedDateAsync: {ex.Message}");
+                
+                // Retry logic
+                if (RetryCount < MaxRetries)
+                {
+                    RetryCount++;
+                    await Task.Delay(500 * RetryCount); // Exponential backoff
+                    await LoadEventsForSelectedDateAsync(forceRefresh);
+                }
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
-        private void ExecuteClosePopup()
+        private async Task LoadEventsForMonthAsync(int year, int month, bool forceRefresh = false)
         {
-            IsPopupVisible = false;
+            if (IsBusy && !forceRefresh) return;
+            
+            try
+            {
+                IsBusy = true;
+                HasError = false;
+                
+                // Get events for the month
+                var events = await _calendarService.GetEventsForMonthAsync(year, month);
+                if (events != null)
+                {
+                    // Update the observable collection
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        EventsForMonth.Clear();
+                        foreach (var evnt in events)
+                        {
+                            EventsForMonth.Add(evnt);
+                        }
+                    });
+                }
+                
+                // Also load active restrictions
+                await LoadActiveRestrictionsAsync();
+            }
+            catch (Exception ex)
+            {
+                HasError = true;
+                ErrorMessage = "Could not load calendar events. Please try again.";
+                System.Diagnostics.Debug.WriteLine($"Error in LoadEventsForMonthAsync: {ex.Message}");
+                
+                // Retry logic
+                if (RetryCount < MaxRetries)
+                {
+                    RetryCount++;
+                    await Task.Delay(500 * RetryCount); // Exponential backoff
+                    await LoadEventsForMonthAsync(year, month, forceRefresh);
+                }
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
-        private void ShowPopupForDay(DateTime date)
+        private async Task LoadActiveRestrictionsAsync()
         {
-            SelectedDate = date;
-            IsPopupVisible = true;
+            if (_calendarService == null) return;
+            
+            try
+            {
+                // Get active restrictions
+                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
+                if (restrictions != null)
+                {
+                    // Create timers for active restrictions
+                    var activeRestrictionTimers = new List<RestrictTimer>();
+                    foreach (var restriction in restrictions.Where(r => r.EventType == EventType.Restriction))
+                    {
+                        // Only add restrictions that haven't expired
+                        if (restriction.ExpirationDate.HasValue && restriction.ExpirationDate.Value > DateTime.Now)
+                        {
+                            var timer = new RestrictTimerItem
+                            {
+                                RestrictionEvent = restriction,
+                                EndDate = restriction.ExpirationDate.Value
+                            };
+                            activeRestrictionTimers.Add(timer);
+                        }
+                    }
+                    
+                    // Update the observable collection
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        ActiveRestrictions.Clear();
+                        foreach (var timer in activeRestrictionTimers)
+                        {
+                            ActiveRestrictions.Add(timer);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in LoadActiveRestrictionsAsync: {ex.Message}");
+                // Don't set HasError here to avoid showing error for restrictions only
+            }
+        }
+
+        private void UpdateCalendarDays()
+        {
+            try
+            {
+                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
+                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+
+                var calendarDays = new ObservableCollection<CalendarDayViewModel>();
+                for (int i = 0; i < 42; i++) // 6 weeks x 7 days
+                {
+                    var day = firstDayOfCalendarView.AddDays(i);
+                    var isCurrentMonth = day.Month == CurrentMonthDate.Month;
+                    var hasEvents = EventsForMonth.Count(e => e.Date.Date == day.Date) > 0;
+                    var isToday = day.Date == DateTime.Today.Date;
+                    var isSelected = day.Date == SelectedDate.Date;
+
+                    calendarDays.Add(new CalendarDayViewModel
+                    {
+                        Date = day,
+                        IsCurrentMonth = isCurrentMonth,
+                        HasEvents = hasEvents,
+                        IsToday = isToday,
+                        IsSelected = isSelected
+                    });
+                }
+
+                CalendarDays = calendarDays;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in UpdateCalendarDays: {ex.Message}");
+            }
+        }
+
+        private async Task MarkEventCompletedAsync(CalendarEvent calendarEvent)
+        {
+            if (calendarEvent == null) return;
+            
+            try
+            {
+                IsBusy = true;
+                
+                // Toggle completion status
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                
+                // Update on server
+                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
+                
+                // If this is a restriction that just got completed, refresh the active restrictions
+                if (calendarEvent.EventType == EventType.Restriction)
+                {
+                    await LoadActiveRestrictionsAsync();
+                }
+                
+                // Refresh the events for the selected date
+                await LoadEventsForSelectedDateAsync(forceRefresh: true);
+            }
+            catch (Exception ex)
+            {
+                // Revert the status change on error
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                
+                HasError = true;
+                ErrorMessage = "Could not update event status. Please try again.";
+                System.Diagnostics.Debug.WriteLine($"Error in MarkEventCompletedAsync: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
     }
 } 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Windows.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
+using System.Threading.Tasks;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -16,16 +17,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly Frame[,] _dayCells = new Frame[6, 7];
         private readonly Label[,] _dayLabels = new Label[6, 7];
         private readonly BoxView[,] _eventIndicators = new BoxView[6, 7];
-        private CalendarDayViewModel _selectedDay = null;
+        private CalendarDayViewModel? _selectedDay = null;
         
-        private CalendarViewModel ViewModel => BindingContext as CalendarViewModel;
+        private CleanCalendarViewModel? ViewModel => BindingContext as CleanCalendarViewModel;
 
         public MonthCalendarView()
         {
             InitializeComponent();
             CreateCalendarCells();
             
-            // Подписываемся на изменения BindingContext
+            // Subscribe to binding context changes
             this.BindingContextChanged += OnBindingContextChanged;
         }
         
@@ -33,17 +34,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         {
             if (ViewModel != null)
             {
-                // Подписываемся на изменения свойств ViewModel
+                // Subscribe to property changes in ViewModel
                 ViewModel.PropertyChanged += OnViewModelPropertyChanged;
                 UpdateCalendarDays();
             }
         }
         
-        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(CalendarViewModel.CalendarDays) || 
-                e.PropertyName == nameof(CalendarViewModel.SelectedDate) ||
-                e.PropertyName == nameof(CalendarViewModel.CurrentMonthDate))
+            if (e.PropertyName == nameof(CleanCalendarViewModel.CalendarDays) || 
+                e.PropertyName == nameof(CleanCalendarViewModel.SelectedDate) ||
+                e.PropertyName == nameof(CleanCalendarViewModel.CurrentMonthDate))
             {
                 UpdateCalendarDays();
             }
@@ -51,28 +52,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         private void CreateCalendarCells()
         {
-            // Создаем ячейки календаря программно
+            // Create calendar cells programmatically
             for (int row = 0; row < 6; row++)
             {
                 for (int col = 0; col < 7; col++)
                 {
-                    // Создаем индикатор событий
+                    // Create event indicator
                     var eventIndicator = new BoxView
                     {
                         Style = (Style)Resources["EventDotStyle"],
-                        IsVisible = false
+                        IsVisible = false,
+                        HeightRequest = 6,
+                        WidthRequest = 6
                     };
                     _eventIndicators[row, col] = eventIndicator;
                     
-                    // Создаем метку для числа
+                    // Create day number label
                     var dayLabel = new Label
                     {
                         Style = (Style)Resources["DayNumberStyle"],
-                        Text = ""
+                        Text = "",
+                        HorizontalOptions = LayoutOptions.Center
                     };
                     _dayLabels[row, col] = dayLabel;
                     
-                    // Создаем горизонтальный стек для индикаторов событий
+                    // Create horizontal stack for event indicators
                     var eventIndicatorsStack = new StackLayout
                     {
                         Orientation = StackOrientation.Horizontal,
@@ -81,67 +85,101 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         Children = { eventIndicator }
                     };
                     
-                    // Создаем вертикальный стек для текста дня и индикаторов
+                    // Create vertical stack for day text and indicators
                     var stack = new StackLayout
                     {
                         Spacing = 2,
                         VerticalOptions = LayoutOptions.Center,
                         HorizontalOptions = LayoutOptions.Center,
-                        Children = { dayLabel, eventIndicatorsStack }
+                        Children = { dayLabel, eventIndicatorsStack },
+                        InputTransparent = false
                     };
                     
-                    // Создаем ячейку дня
+                    // Create day cell frame
                     var dayCell = new Frame
                     {
                         Style = (Style)Resources["CalendarCellStyle"],
                         Content = stack,
-                        GestureRecognizers = {
-                            new TapGestureRecognizer { CommandParameter = new CalendarCellInfo(row, col) }
-                        }
+                        InputTransparent = false,
+                        BackgroundColor = Colors.Transparent
                     };
                     
-                    // Добавляем обработчик тапа
-                    ((TapGestureRecognizer)dayCell.GestureRecognizers[0]).Tapped += OnDayCellTapped;
+                    // Create and add tap gesture recognizer
+                    var tapGesture = new TapGestureRecognizer { CommandParameter = new CalendarCellInfo(row, col) };
+                    tapGesture.Tapped += OnDayCellTapped;
+                    dayCell.GestureRecognizers.Add(tapGesture);
                     
-                    // Добавляем ячейку в Grid
+                    // Add cell to Grid
                     CalendarGrid.Add(dayCell, col, row);
                     _dayCells[row, col] = dayCell;
                 }
             }
         }
         
-        private void OnDayCellTapped(object sender, EventArgs e)
+        private void OnDayCellTapped(object? sender, TappedEventArgs e)
         {
-            if (sender is Element element && 
-                element.BindingContext is CalendarDayViewModel dayViewModel && 
-                ViewModel != null)
+            try
             {
-                MainThread.BeginInvokeOnMainThread(() =>
+                // Find which cell was tapped based on the sender
+                var tappedFrame = sender as Frame;
+                if (tappedFrame == null) return;
+
+                // Find row and column of tapped cell
+                int tappedRow = -1, tappedCol = -1;
+                for (int row = 0; row < 6; row++)
                 {
-                    // Снимаем выделение с предыдущей ячейки
-                    if (_selectedDay != null)
+                    for (int col = 0; col < 7; col++)
                     {
-                        var oldRow = GetRowForDay(_selectedDay);
-                        var oldCol = GetColumnForDay(_selectedDay);
-                        if (oldRow >= 0 && oldCol >= 0)
+                        if (_dayCells[row, col] == tappedFrame)
                         {
-                            UpdateCellAppearance(oldRow, oldCol, _selectedDay, false);
+                            tappedRow = row;
+                            tappedCol = col;
+                            break;
                         }
                     }
-                    
-                    // Выделяем новую ячейку
-                    _selectedDay = dayViewModel;
-                    var row = GetRowForDay(dayViewModel);
-                    var col = GetColumnForDay(dayViewModel);
-                    if (row >= 0 && col >= 0)
+                    if (tappedRow >= 0) break;
+                }
+
+                // If couldn't find the cell, exit
+                if (tappedRow < 0 || tappedCol < 0) return;
+
+                // Get day data from binding context
+                var dayViewModel = tappedFrame.BindingContext as CalendarDayViewModel;
+                if (dayViewModel == null || ViewModel == null) return;
+
+                // Clear previous selection
+                if (_selectedDay != null)
+                {
+                    var oldRow = GetRowForDay(_selectedDay);
+                    var oldCol = GetColumnForDay(_selectedDay);
+                    if (oldRow >= 0 && oldCol >= 0)
                     {
-                        UpdateCellAppearance(row, col, dayViewModel, true);
+                        UpdateCellAppearance(oldRow, oldCol, _selectedDay, false);
                     }
-                    
-                    // Обновляем ViewModel
-                    ViewModel.SelectedDate = dayViewModel.Date;
-                    ViewModel.DaySelectedCommand?.Execute(dayViewModel.Date);
-                });
+                }
+
+                // Select new cell
+                _selectedDay = dayViewModel;
+                UpdateCellAppearance(tappedRow, tappedCol, dayViewModel, true);
+
+                // Update the selected date in the ViewModel
+                ViewModel.SelectedDate = dayViewModel.Date;
+
+                // Execute day selected command if available
+                if (ViewModel.DaySelectedCommand?.CanExecute(dayViewModel.Date) == true)
+                {
+                    ViewModel.DaySelectedCommand.Execute(dayViewModel.Date);
+                }
+
+                // Force refresh through RefreshCommand
+                if (ViewModel.RefreshCommand?.CanExecute(null) == true)
+                {
+                    ViewModel.RefreshCommand.Execute(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error handling tap: {ex.Message}");
             }
         }
 
@@ -150,11 +188,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (ViewModel?.CalendarDays == null || ViewModel.CalendarDays.Count < 42)
                 return;
                 
-            // Подготовим все данные вне UI-потока
+            // Prepare data off the UI thread
             var updatesRequired = new List<(int Row, int Col, CalendarDayViewModel Day, bool IsSelected)>();
-            CalendarDayViewModel selectedDay = null;
+            CalendarDayViewModel? selectedDay = null;
             
-            // Предварительное вычисление и сбор обновлений
+            // Pre-calculate and collect updates
             for (int row = 0; row < 6; row++)
             {
                 for (int col = 0; col < 7; col++)
@@ -165,10 +203,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         var dayViewModel = ViewModel.CalendarDays[index];
                         bool isSelected = dayViewModel.IsSelected;
                         
-                        // Добавляем это обновление в список
+                        // Add update to list
                         updatesRequired.Add((row, col, dayViewModel, isSelected));
                         
-                        // Если это выбранный день, сохраняем ссылку
+                        // If selected, save reference
                         if (isSelected)
                         {
                             selectedDay = dayViewModel;
@@ -177,20 +215,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
             }
             
-            // Применяем обновления на UI-потоке одним вызовом
+            // Apply updates on UI thread
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 try
                 {
                     _selectedDay = selectedDay;
                     
-                    // Применяем все подготовленные обновления
+                    // Apply all prepared updates
                     foreach (var update in updatesRequired)
                     {
-                        // Сохраняем ссылку на ViewModel в ячейке
+                        // Update binding context and appearance
                         _dayCells[update.Row, update.Col].BindingContext = update.Day;
-                        
-                        // Обновляем внешний вид ячейки
                         UpdateCellAppearance(update.Row, update.Col, update.Day, update.IsSelected);
                     }
                 }
@@ -208,55 +244,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
             try
             {
-                // Обновляем текст
+                // Update day label text
                 _dayLabels[row, col].Text = dayViewModel.Date.Day.ToString();
                 
-                // Обновляем цвет фона
-                Color selectedColor = Colors.Transparent;
-                if (Application.Current.Resources.TryGetValue("SelectedDayColor", out var color) && color is Color)
+                // Adjust visibility based on month
+                if (dayViewModel.IsCurrentMonth)
                 {
-                    selectedColor = (Color)color;
+                    // Current month - fully visible
+                    _dayLabels[row, col].Opacity = 1.0;
+                    _dayLabels[row, col].TextColor = Colors.White;
                 }
                 else
                 {
-                    selectedColor = Color.FromArgb("#6962AD"); // Запасной цвет
+                    // Other months - semi-transparent
+                    _dayLabels[row, col].Opacity = 0.5;
+                    _dayLabels[row, col].TextColor = Colors.LightGray;
                 }
                 
-                _dayCells[row, col].BackgroundColor = isSelected ? selectedColor : Colors.Transparent;
+                // Update event indicators
+                UpdateEventIndicators(row, col, dayViewModel);
                 
-                // Обновляем цвет текста
-                Color textColor = Colors.Black;
-                Color disabledTextColor = Colors.Gray;
+                // Set selected day highlighting
+                Color selectedColor = Color.FromArgb("#6962AD");
                 
-                if (Application.Current.Resources.TryGetValue("TextPrimaryColor", out var tColor) && tColor is Color)
+                // Apply selection styling
+                if (isSelected)
                 {
-                    textColor = (Color)tColor;
+                    _dayCells[row, col].BackgroundColor = selectedColor;
+                    _dayLabels[row, col].TextColor = Colors.White;
+                    _dayLabels[row, col].Opacity = 1.0;
+                    _dayLabels[row, col].FontAttributes = FontAttributes.Bold;
                 }
-                
-                if (Application.Current.Resources.TryGetValue("DisabledTextColor", out var dtColor) && dtColor is Color)
+                else
                 {
-                    disabledTextColor = (Color)dtColor;
-                }
-                
-                _dayLabels[row, col].TextColor = isSelected 
-                    ? Colors.White 
-                    : dayViewModel.IsCurrentMonth ? textColor : disabledTextColor;
+                    _dayCells[row, col].BackgroundColor = Colors.Transparent;
                     
-                // Обновляем прозрачность ячейки
-                _dayCells[row, col].Opacity = dayViewModel.IsCurrentMonth ? 1.0 : 0.3;
-                
-                // Обновляем индикаторы событий только если день в текущем месяце и имеет события
-                if (dayViewModel.HasEvents && dayViewModel.IsCurrentMonth)
-                {
-                    UpdateEventIndicators(row, col, dayViewModel);
-                }
-                else
-                {
-                    // Очищаем индикаторы, если нет событий
-                    var stack = (_dayCells[row, col].Content as StackLayout)?.Children[1] as StackLayout;
-                    if (stack != null)
+                    // Special styling for today
+                    if (dayViewModel.IsToday)
                     {
-                        stack.Clear();
+                        _dayLabels[row, col].FontAttributes = FontAttributes.Bold;
+                        _dayLabels[row, col].TextColor = Color.FromArgb("#6962AD");
+                    }
+                    else
+                    {
+                        _dayLabels[row, col].FontAttributes = FontAttributes.None;
                     }
                 }
             }
@@ -268,65 +299,52 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         private void UpdateEventIndicators(int row, int col, CalendarDayViewModel dayViewModel)
         {
-            // Получаем стек индикаторов
-            var stack = (_dayCells[row, col].Content as StackLayout)?.Children[1] as StackLayout;
-            if (stack == null) return;
-            
-            // Очищаем существующие индикаторы
-            stack.Clear();
-            
-            // Если нет событий или день не в текущем месяце, выходим
-            if (!dayViewModel.HasEvents || !dayViewModel.IsCurrentMonth || ViewModel?.EventsForMonth == null)
+            if (row < 0 || row >= 6 || col < 0 || col >= 7 || dayViewModel == null)
                 return;
-            
-            var date = dayViewModel.Date.Date;
-            var events = ViewModel.EventsForMonth.Where(e => e.Date.Date == date).ToList();
-            
-            if (events.Count == 0)
-                return;
-            
-            // Создаем один индикатор для всех событий
-            var indicator = new BoxView
-            {
-                Style = (Style)Resources["EventDotStyle"]
-            };
-            
-            // Приоритет цветов: Restriction > Medication > Photo > Instruction
-            EventType priorityType = GetPriorityEventType(events);
-            
-            // Устанавливаем цвет индикатора
-            try 
-            {
-                string resourceKey = priorityType switch
-                {
-                    EventType.Restriction => "RestrictionColor",
-                    EventType.Medication => "MedicationColor",
-                    EventType.Photo => "PhotoColor", 
-                    EventType.Instruction => "InstructionColor",
-                    _ => "EventIndicatorColor"
-                };
                 
-                if (Application.Current.Resources.TryGetValue(resourceKey, out var color))
-                {
-                    indicator.BackgroundColor = (Color)color;
-                }
-                else
-                {
-                    indicator.BackgroundColor = (Color)Application.Current.Resources["EventIndicatorColor"];
-                }
-            }
-            catch
+            try
             {
-                // В случае ошибки используем стандартный цвет индикатора
-                indicator.BackgroundColor = (Color)Application.Current.Resources["EventIndicatorColor"];
+                // Skip if no events
+                if (!dayViewModel.HasEvents)
+                {
+                    _eventIndicators[row, col].IsVisible = false;
+                    return;
+                }
+                
+                // Make indicator visible
+                _eventIndicators[row, col].IsVisible = true;
+                
+                // Set indicator color based on event type priority
+                var events = ViewModel?.EventsForMonth
+                    ?.Where(e => e.Date.Date == dayViewModel.Date.Date)
+                    ?.ToList() ?? new List<CalendarEvent>();
+                
+                if (events.Count > 0)
+                {
+                    EventType priorityType = GetPriorityEventType(events);
+                    
+                    // Set color based on event type
+                    Color indicatorColor = priorityType switch
+                    {
+                        EventType.Restriction => Color.FromArgb("#FF4B4B"),  // Red
+                        EventType.Medication => Color.FromArgb("#4DAF50"),   // Green
+                        EventType.Photo => Color.FromArgb("#2196F3"),        // Blue
+                        EventType.Instruction => Color.FromArgb("#9C27B0"),  // Purple
+                        _ => Color.FromArgb("#FF9800")                       // Orange (default)
+                    };
+                    
+                    _eventIndicators[row, col].BackgroundColor = indicatorColor;
+                }
             }
-            
-            stack.Add(indicator);
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating event indicators: {ex.Message}");
+            }
         }
         
         private EventType GetPriorityEventType(List<CalendarEvent> events)
         {
-            // Приоритет: Restriction > Medication > Photo > Instruction
+            // Priority: Restriction > Medication > Photo > Instruction
             var eventTypes = events.Select(e => e.EventType).Distinct().ToList();
             
             if (eventTypes.Contains(EventType.Restriction))
@@ -338,7 +356,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (eventTypes.Contains(EventType.Instruction))
                 return EventType.Instruction;
                 
-            return EventType.Instruction; // Default fallback
+            return EventType.Instruction; // Default
         }
         
         private int GetRowForDay(CalendarDayViewModel day)
@@ -370,6 +388,71 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
             return -1;
         }
+
+        // Override OnParentSet to ensure gestures are properly set up
+        protected override void OnParentSet()
+        {
+            base.OnParentSet();
+            
+            // Refresh tap gestures when the view is added to the visual tree
+            if (Parent != null)
+            {
+                // Use Dispatcher instead of deprecated Device.StartTimer
+                Dispatcher.DispatchAsync(async () => {
+                    // Small delay to ensure layout is complete
+                    await Task.Delay(100);
+                    RefreshTapGestures();
+                });
+            }
+        }
+
+        // Add method to refresh tap gesture recognizers
+        public void RefreshTapGestures()
+        {
+            try
+            {
+                // Update all cells to ensure they respond to taps
+                for (int row = 0; row < 6; row++)
+                {
+                    for (int col = 0; col < 7; col++)
+                    {
+                        var dayCell = _dayCells[row, col];
+                        
+                        // Remove existing gestures
+                        var oldGestures = dayCell.GestureRecognizers.ToList();
+                        foreach (var gesture in oldGestures)
+                        {
+                            if (gesture is TapGestureRecognizer tap)
+                            {
+                                tap.Tapped -= OnDayCellTapped;
+                                dayCell.GestureRecognizers.Remove(tap);
+                            }
+                        }
+                        
+                        // Add new gesture recognizer
+                        var newTapGesture = new TapGestureRecognizer
+                        {
+                            CommandParameter = new CalendarCellInfo(row, col),
+                            NumberOfTapsRequired = 1
+                        };
+                        newTapGesture.Tapped += OnDayCellTapped;
+                        dayCell.GestureRecognizers.Add(newTapGesture);
+                        
+                        // Ensure input transparency is set properly
+                        dayCell.InputTransparent = false;
+                        
+                        if (dayCell.Content is Layout layout)
+                        {
+                            layout.InputTransparent = false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error refreshing tap gestures: {ex.Message}");
+            }
+        }
     }
     
     public class CalendarCellInfo
@@ -381,66 +464,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         {
             Row = row;
             Column = column;
-        }
-    }
-    
-    public class CalendarDayViewModel : BindableObject
-    {
-        private DateTime _date;
-        private bool _isCurrentMonth;
-        private bool _hasEvents;
-        private bool _isSelected;
-
-        public DateTime Date
-        {
-            get => _date;
-            set
-            {
-                if (_date != value)
-                {
-                    _date = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool IsCurrentMonth
-        {
-            get => _isCurrentMonth;
-            set
-            {
-                if (_isCurrentMonth != value)
-                {
-                    _isCurrentMonth = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool HasEvents
-        {
-            get => _hasEvents;
-            set
-            {
-                if (_hasEvents != value)
-                {
-                    _hasEvents = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                if (_isSelected != value)
-                {
-                    _isSelected = value;
-                    OnPropertyChanged();
-                }
-            }
         }
     }
 } 
