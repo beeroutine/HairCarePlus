@@ -43,14 +43,53 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
             if (value is not EventType eventType)
                 return Colors.Gray;
 
-            return eventType switch
+            try
             {
-                EventType.Medication => Color.FromArgb("#2196F3"), // Blue
-                EventType.Photo => Color.FromArgb("#4CAF50"),      // Green
-                EventType.Restriction => Color.FromArgb("#F44336"), // Red
-                EventType.Instruction => Color.FromArgb("#FF9800"), // Orange
-                _ => Colors.Gray
-            };
+                // Используем константы для ключей ресурсов вместо строковых литералов
+                const string medicationColorKey = "MedicationColor";
+                const string photoColorKey = "PhotoColor";
+                const string restrictionColorKey = "RestrictionColor";
+                const string instructionColorKey = "InstructionColor";
+                const string defaultColorKey = "EventIndicatorColor";
+
+                string resourceKey = eventType switch
+                {
+                    EventType.Medication => medicationColorKey,
+                    EventType.Photo => photoColorKey,
+                    EventType.Restriction => restrictionColorKey,
+                    EventType.Instruction => instructionColorKey,
+                    _ => defaultColorKey
+                };
+                
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var color) && color is Color)
+                {
+                    return (Color)color;
+                }
+                
+                // Запасные цвета, если ресурсы не найдены
+                return eventType switch
+                {
+                    EventType.Medication => Color.FromArgb("#2196F3"),
+                    EventType.Photo => Color.FromArgb("#4CAF50"),
+                    EventType.Restriction => Color.FromArgb("#F44336"),
+                    EventType.Instruction => Color.FromArgb("#9C27B0"),
+                    _ => Colors.Gray
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error converting EventType to Color: {ex.Message}");
+                
+                // Запасные цвета в случае исключения
+                return eventType switch
+                {
+                    EventType.Medication => Color.FromArgb("#2196F3"),
+                    EventType.Photo => Color.FromArgb("#4CAF50"),
+                    EventType.Restriction => Color.FromArgb("#F44336"),
+                    EventType.Instruction => Color.FromArgb("#9C27B0"),
+                    _ => Colors.Gray
+                };
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -90,12 +129,92 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return false;
+                
             if (value is ICollection collection)
             {
                 return collection.Count > 0;
             }
             
             return false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Проверяет, является ли событие типом отличным от Restriction
+    /// </summary>
+    public class IsNotRestrictionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is EventType eventType)
+            {
+                return eventType != EventType.Restriction;
+            }
+            
+            return true; // По умолчанию показываем чекбокс
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts an EventType to a background color for event cards
+    /// </summary>
+    public class EventTypeToBackgroundConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is not EventType eventType)
+                return Colors.Transparent;
+
+            try
+            {
+                // Используем константы для ключей ресурсов фонов
+                const string medicationColorKey = "MedicationBackgroundColor";
+                const string photoColorKey = "PhotoBackgroundColor";
+                const string restrictionColorKey = "RestrictionBackgroundColor";
+                const string instructionColorKey = "InstructionBackgroundColor";
+                const string defaultColorKey = "BackgroundColor";
+
+                string resourceKey = eventType switch
+                {
+                    EventType.Medication => medicationColorKey,
+                    EventType.Photo => photoColorKey,
+                    EventType.Restriction => restrictionColorKey,
+                    EventType.Instruction => instructionColorKey,
+                    _ => defaultColorKey
+                };
+                
+                if (Application.Current.Resources.TryGetValue(resourceKey, out var color) && color is Color)
+                {
+                    return (Color)color;
+                }
+                
+                // Запасные цвета, если ресурсы не найдены
+                return eventType switch
+                {
+                    EventType.Medication => Color.FromArgb("#182196F3"), 
+                    EventType.Photo => Color.FromArgb("#184CAF50"),
+                    EventType.Restriction => Color.FromArgb("#18F44336"),
+                    EventType.Instruction => Color.FromArgb("#189C27B0"),
+                    _ => Colors.Transparent
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error converting EventType to background Color: {ex.Message}");
+                return Colors.Transparent;
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

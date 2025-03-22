@@ -3,130 +3,232 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:helpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.CalendarPage"
              Title="{Binding Title}">
     
     <ContentPage.Resources>
-        <ResourceDictionary Source="../Resources/CalendarResources.xaml" />
+        <ResourceDictionary>
+            <helpers:HasItemsConverter x:Key="HasItemsConverter" />
+            <helpers:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
+            <helpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
+            <helpers:IsNotRestrictionConverter x:Key="IsNotRestrictionConverter" />
+            
+            <Style x:Key="EventTitleStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+            </Style>
+            
+            <Style x:Key="EventDescriptionStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="TextColor" Value="{StaticResource TextSecondaryColor}" />
+            </Style>
+            
+            <Style x:Key="EventTimeStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="TextColor" Value="{StaticResource TextSecondaryColor}" />
+            </Style>
+            
+            <Style x:Key="EventCardStyle" TargetType="Frame">
+                <Setter Property="BackgroundColor" Value="{StaticResource BackgroundColor}" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="16" />
+                <Setter Property="Margin" Value="0,6" />
+                <Setter Property="BorderColor" Value="{StaticResource BorderColor}" />
+                <Setter Property="HasShadow" Value="False" />
+            </Style>
+
+            <Style x:Key="ErrorMessageStyle" TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource ErrorColor}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="Margin" Value="16" />
+            </Style>
+
+            <Style x:Key="PopupHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="Margin" Value="0,0,0,16" />
+            </Style>
+        </ResourceDictionary>
     </ContentPage.Resources>
     
-    <ContentPage.BindingContext>
-        <viewmodels:CalendarViewModel />
-    </ContentPage.BindingContext>
-    
-    <RefreshView IsRefreshing="{Binding IsBusy}">
-        <ScrollView>
-            <StackLayout Spacing="0">
-                <!-- Active Restrictions section -->
-                <Frame Style="{StaticResource CardStyle}" 
-                       IsVisible="{Binding ActiveRestrictions, Converter={StaticResource HasItemsConverter}}">
-                    <StackLayout Spacing="8">
-                        <Label Text="Active Restrictions" 
-                               Style="{StaticResource SubheaderStyle}" />
-                               
-                        <CollectionView ItemsSource="{Binding ActiveRestrictions}" 
-                                        HeightRequest="120"
-                                        SelectionMode="None">
-                            <CollectionView.ItemsLayout>
-                                <LinearItemsLayout Orientation="Horizontal" 
-                                                   ItemSpacing="12" />
-                            </CollectionView.ItemsLayout>
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Frame CornerRadius="8" 
-                                           HasShadow="False" 
-                                           BorderColor="#E0E0E0"
-                                           BackgroundColor="White"
-                                           WidthRequest="200">
-                                        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                                            <Label Grid.Row="0" 
-                                                   Text="{Binding Title}" 
-                                                   LineBreakMode="TailTruncation"
-                                                   FontAttributes="Bold" />
-                                                   
-                                            <Label Grid.Row="1" 
-                                                   Text="{Binding Description}" 
-                                                   LineBreakMode="WordWrap"
-                                                   MaxLines="2"
-                                                   TextColor="{StaticResource TextSecondaryColor}" />
-                                                   
-                                            <Label Grid.Row="2" 
-                                                   Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd}'}" 
-                                                   FontAttributes="Bold"
-                                                   TextColor="{StaticResource PrimaryColor}" />
-                                        </Grid>
-                                    </Frame>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
+    <Grid>
+        <!-- Main Content -->
+        <RefreshView IsRefreshing="{Binding IsBusy}"
+                     Command="{Binding RefreshCommand}">
+            <ScrollView>
+                <Grid RowDefinitions="Auto,*">
+                    <!-- Error Message -->
+                    <Label Grid.Row="0"
+                           Text="{Binding ErrorMessage}"
+                           Style="{StaticResource ErrorMessageStyle}"
+                           IsVisible="{Binding HasError}" />
+                    
+                    <!-- Calendar Content -->
+                    <StackLayout Grid.Row="1" 
+                               Padding="16" 
+                               Spacing="16">
+                        <!-- Monthly Calendar -->
+                        <Frame Style="{StaticResource CardStyle}" Padding="2" Margin="0,8" HasShadow="True">
+                            <views:MonthCalendarView BindingContext="{Binding .}" VerticalOptions="Start" />
+                        </Frame>
+                        
+                        <!-- Active Restrictions section -->
+                        <Frame Style="{StaticResource CardStyle}" 
+                               IsVisible="{Binding ActiveRestrictions, Converter={StaticResource HasItemsConverter}}"
+                               Margin="0,8">
+                            <StackLayout Spacing="8">
+                                <Label Text="Active Restrictions" 
+                                       Style="{StaticResource SubheaderStyle}" />
+                                       
+                                <CollectionView ItemsSource="{Binding ActiveRestrictions}" 
+                                                HeightRequest="120"
+                                                SelectionMode="None">
+                                    <CollectionView.ItemsLayout>
+                                        <LinearItemsLayout Orientation="Horizontal" 
+                                                           ItemSpacing="12" />
+                                    </CollectionView.ItemsLayout>
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Frame CornerRadius="8" 
+                                                   HasShadow="False" 
+                                                   BorderColor="{StaticResource BorderColor}"
+                                                   BackgroundColor="{StaticResource BackgroundColor}"
+                                                   WidthRequest="200">
+                                                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                                                    <Label Grid.Row="0" 
+                                                           Text="{Binding Title}" 
+                                                           LineBreakMode="TailTruncation"
+                                                           FontAttributes="Bold" />
+                                                       
+                                                    <Label Grid.Row="1" 
+                                                           Text="{Binding Description}" 
+                                                           LineBreakMode="WordWrap"
+                                                           MaxLines="2"
+                                                           TextColor="{StaticResource TextSecondaryColor}" />
+                                                       
+                                                    <Label Grid.Row="2" 
+                                                           Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd}'}" 
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource PrimaryColor}" />
+                                                </Grid>
+                                            </Frame>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </StackLayout>
+                        </Frame>
                     </StackLayout>
-                </Frame>
-                
-                <!-- Horizontal Calendar Widget -->
-                <Frame Style="{StaticResource CardStyle}">
-                    <views:HorizontalCalendarView BindingContext="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:CalendarViewModel}}}" />
-                </Frame>
-                
-                <!-- Monthly Calendar -->
-                <Frame Style="{StaticResource CardStyle}">
-                    <views:MonthCalendarView SelectedDate="{Binding SelectedDate}" 
-                                             BindingContext="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:CalendarViewModel}}}" />
-                </Frame>
-                
-                <!-- Daily Tasks -->
-                <Frame Style="{StaticResource CardStyle}" IsVisible="{Binding EventsForSelectedDate, Converter={StaticResource HasItemsConverter}}">
-                    <StackLayout Spacing="8">
-                        <Label Text="{Binding SelectedDate, StringFormat='Tasks for {0:MMMM d, yyyy}'}" 
-                               Style="{StaticResource SubheaderStyle}" />
-                               
-                        <CollectionView ItemsSource="{Binding EventsForSelectedDate}" 
-                                        SelectionMode="None">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Frame Margin="0,4" 
-                                           Padding="16" 
-                                           CornerRadius="8" 
-                                           BorderColor="#E0E0E0">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-                                            <!-- Event type indicator -->
-                                            <BoxView Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                                                     WidthRequest="4"
-                                                     Margin="0,0,12,0"
-                                                     BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
+                </Grid>
+            </ScrollView>
+        </RefreshView>
+        
+        <!-- Popup for day details -->
+        <Grid BackgroundColor="#80000000"
+              IsVisible="{Binding IsPopupVisible}">
+            <Grid.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ClosePopupCommand}" />
+            </Grid.GestureRecognizers>
+            
+            <Frame Margin="20"
+                   CornerRadius="12"
+                   BackgroundColor="White"
+                   Padding="0"
+                   HasShadow="True"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   MaximumWidthRequest="500">
+                <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+                    <!-- Popup Header -->
+                    <StackLayout Grid.Row="0" BackgroundColor="{StaticResource PrimaryColor}" Padding="16,12">
+                        <Label Text="{Binding SelectedDate, StringFormat='{0:MMMM d, yyyy}'}"
+                               TextColor="White"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center" />
+                    </StackLayout>
+                    
+                    <!-- Popup Content -->
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*" Padding="16">
+                        <!-- Loading Indicator -->
+                        <ActivityIndicator Grid.Row="0"
+                                         IsRunning="{Binding IsBusy}"
+                                         IsVisible="{Binding IsBusy}"
+                                         HorizontalOptions="Center"
+                                         Margin="0,8" 
+                                         Color="{StaticResource PrimaryColor}" />
+                        
+                        <!-- Events List -->
+                        <ScrollView Grid.Row="1" MaximumHeightRequest="400" MinimumHeightRequest="200">
+                            <StackLayout Spacing="12">
+                                <CollectionView ItemsSource="{Binding EventsForSelectedDate}" 
+                                              SelectionMode="None"
+                                              EmptyView="No events for this day">
+                                    <CollectionView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Frame Style="{StaticResource EventCardStyle}"
+                                                   BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToBackgroundConverter}}"
+                                                   Margin="0,6">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                                    <!-- Event type indicator -->
+                                                    <BoxView Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                                                             WidthRequest="6"
+                                                             VerticalOptions="Fill"
+                                                             Margin="0,0,12,0"
+                                                             BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
                                                      
-                                            <!-- Event title -->
-                                            <Label Grid.Row="0" Grid.Column="1"
-                                                   Text="{Binding Title}"
-                                                   FontAttributes="Bold"
-                                                   TextColor="{StaticResource TextPrimaryColor}"
-                                                   Margin="0,0,0,4" />
-                                                   
-                                            <!-- Event description -->
-                                            <Label Grid.Row="1" Grid.Column="1"
-                                                   Text="{Binding Description}"
-                                                   TextColor="{StaticResource TextSecondaryColor}"
-                                                   LineBreakMode="WordWrap" />
-                                                   
-                                            <!-- Completion checkbox -->
-                                            <CheckBox Grid.Row="0" Grid.Column="2"
-                                                      IsChecked="{Binding IsCompleted}"
-                                                      Color="{StaticResource PrimaryColor}">
-                                                <CheckBox.Triggers>
-                                                    <DataTrigger TargetType="CheckBox"
-                                                                 Binding="{Binding EventType}"
-                                                                 Value="Restriction">
-                                                        <Setter Property="IsVisible" Value="False" />
-                                                    </DataTrigger>
-                                                </CheckBox.Triggers>
-                                            </CheckBox>
-                                        </Grid>
-                                    </Frame>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </StackLayout>
-                </Frame>
-            </StackLayout>
-        </ScrollView>
-    </RefreshView>
+                                                    <!-- Event title -->
+                                                    <Label Grid.Row="0" Grid.Column="1"
+                                                           Text="{Binding Title}"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource TextPrimaryColor}"
+                                                           Margin="0,0,0,4" />
+                                                       
+                                                    <!-- Event time -->
+                                                    <Label Grid.Row="0" Grid.Column="2"
+                                                           Text="00:00"
+                                                           Style="{StaticResource EventTimeStyle}" />
+                                                       
+                                                    <!-- Event description -->
+                                                    <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                                           Text="{Binding Description}"
+                                                           TextColor="{StaticResource TextSecondaryColor}"
+                                                           LineBreakMode="WordWrap" />
+                                                       
+                                                    <!-- Completion checkbox -->
+                                                    <CheckBox Grid.Row="0" Grid.Column="2"
+                                                              IsChecked="{Binding IsCompleted}"
+                                                              CheckedChanged="OnEventCheckedChanged"
+                                                              Color="{StaticResource CheckBoxColor}">
+                                                        <CheckBox.Triggers>
+                                                            <DataTrigger TargetType="CheckBox"
+                                                                         Binding="{Binding EventType}"
+                                                                         Value="Restriction">
+                                                                <Setter Property="IsVisible" Value="False" />
+                                                            </DataTrigger>
+                                                        </CheckBox.Triggers>
+                                                    </CheckBox>
+                                                </Grid>
+                                            </Frame>
+                                        </DataTemplate>
+                                    </CollectionView.ItemTemplate>
+                                </CollectionView>
+                            </StackLayout>
+                        </ScrollView>
+                    </Grid>
+                    
+                    <!-- Popup Footer -->
+                    <Button Grid.Row="2"
+                            Text="Close"
+                            Command="{Binding ClosePopupCommand}"
+                            Margin="16"
+                            HorizontalOptions="Center" />
+                </Grid>
+            </Frame>
+        </Grid>
+    </Grid>
 </ContentPage> 

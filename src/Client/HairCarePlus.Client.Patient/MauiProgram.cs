@@ -20,6 +20,9 @@ using Syncfusion.Maui.TabView;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using System.Net.Http;
+using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
+using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -100,5 +103,39 @@ public static class MauiProgram
 		ServiceHelper.Initialize(app.Services);
 
 		return app;
+	}
+
+	private static void RegisterServices(IServiceCollection services)
+	{
+		// Calendar services
+		services.AddSingleton<ICalendarService, CalendarService>();
+		services.AddSingleton<INotificationService, NotificationService>();
+		
+		// Other services
+		// ...
+	}
+	
+	private static void RegisterViewModels(IServiceCollection services)
+	{
+		// Calendar
+		services.AddTransient<CalendarViewModel>();
+		services.AddTransient<RestrictionTimersViewModel>();
+		
+		// Calendar views
+		services.AddTransient<CalendarPage>();
+		services.AddTransient<MonthCalendarView>();
+		services.AddTransient<RestrictionTimersView>();
+		
+		// Other view models and views
+		// ...
+	}
+	
+	private static void RegisterConverters(IServiceCollection services)
+	{
+		// Register converters as resources
+		Application.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
+		Application.Current.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
+		Application.Current.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
+		Application.Current.Resources.Add("HasItemsConverter", new HasItemsConverter());
 	}
 }

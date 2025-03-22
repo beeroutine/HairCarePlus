@@ -20,14 +20,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             if (services == null)
                 throw new ArgumentNullException(nameof(services));
             
-            // Register calendar services
+            // Register services
             services.AddSingleton<ICalendarService, CalendarService>();
             services.AddSingleton<INotificationService, NotificationService>();
             
-            // Register calendar ViewModels
+            // Register ViewModels
             services.AddTransient<CalendarViewModel>();
-            services.AddTransient<HorizontalCalendarViewModel>();
-            services.AddTransient<RestrictionTimersViewModel>();
             
             // Register calendar views
             services.AddTransient<CalendarPage>();

@@ -1,85 +1,107 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
-             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.MonthCalendarView">
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.MonthCalendarView"
+             HeightRequest="400"
+             CascadeInputTransparent="False">
+    
     <ContentView.Resources>
-        <Style x:Key="DayLabelStyle" TargetType="Label">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="HorizontalTextAlignment" Value="Center" />
-            <Setter Property="TextColor" Value="#757575" />
-            <Setter Property="FontAttributes" Value="Bold" />
-        </Style>
-        
-        <Style x:Key="CalendarDayStyle" TargetType="Frame">
-            <Setter Property="BackgroundColor" Value="Transparent" />
-            <Setter Property="BorderColor" Value="Transparent" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="CornerRadius" Value="22" />
-            <Setter Property="HeightRequest" Value="44" />
-            <Setter Property="WidthRequest" Value="44" />
-            <Setter Property="HorizontalOptions" Value="Center" />
-            <Setter Property="VerticalOptions" Value="Center" />
-        </Style>
-        
-        <Style x:Key="DayNumberStyle" TargetType="Label">
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="TextColor" Value="#212121" />
-            <Setter Property="HorizontalTextAlignment" Value="Center" />
-            <Setter Property="VerticalTextAlignment" Value="Center" />
-            <Setter Property="HorizontalOptions" Value="Center" />
-            <Setter Property="VerticalOptions" Value="Center" />
-        </Style>
+        <ResourceDictionary>
+            <Style x:Key="MonthHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+            </Style>
+            
+            <Style x:Key="DayHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="TextColor" Value="{StaticResource TextSecondaryColor}" />
+            </Style>
+            
+            <Style x:Key="DayNumberStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="TextColor" Value="{StaticResource TextPrimaryColor}" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+            </Style>
+            
+            <Style x:Key="NavigationButtonStyle" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="TextColor" Value="{StaticResource PrimaryColor}" />
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="WidthRequest" Value="40" />
+                <Setter Property="HeightRequest" Value="40" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="CornerRadius" Value="20" />
+                <Setter Property="Visual" Value="Material" />
+            </Style>
+            
+            <Style x:Key="CalendarCellStyle" TargetType="Frame">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="BorderColor" Value="{StaticResource BorderColor}" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="Margin" Value="1" />
+                <Setter Property="HasShadow" Value="False" />
+            </Style>
+            
+            <Style x:Key="EventDotStyle" TargetType="BoxView">
+                <Setter Property="HeightRequest" Value="4" />
+                <Setter Property="WidthRequest" Value="4" />
+                <Setter Property="CornerRadius" Value="2" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+        </ResourceDictionary>
     </ContentView.Resources>
     
-    <Grid RowDefinitions="Auto,Auto,*" Padding="16">
-        <!-- Month and year header with navigation buttons -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
-            <Button Grid.Column="0" 
-                    Text="&lt;" 
+    <Grid RowDefinitions="Auto,Auto,*" Padding="0" RowSpacing="2" BackgroundColor="Transparent">
+        <!-- Month Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
+            <Button Grid.Column="0"
+                    Text="‹"
                     Command="{Binding PreviousMonthCommand}"
-                    HorizontalOptions="Start"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    CornerRadius="22"
-                    BackgroundColor="#F5F5F5"
-                    TextColor="#212121" />
+                    Style="{StaticResource NavigationButtonStyle}" />
             
-            <Label Grid.Column="1" 
+            <Label Grid.Column="1"
                    Text="{Binding CurrentMonthDate, StringFormat='{0:MMMM yyyy}'}"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center" />
+                   Style="{StaticResource MonthHeaderStyle}"
+                   HorizontalOptions="Center" />
             
-            <Button Grid.Column="2" 
-                    Text="&gt;" 
+            <Button Grid.Column="2"
+                    Text="›"
                     Command="{Binding NextMonthCommand}"
-                    HorizontalOptions="End"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    CornerRadius="22"
-                    BackgroundColor="#F5F5F5"
-                    TextColor="#212121" />
+                    Style="{StaticResource NavigationButtonStyle}" />
         </Grid>
         
-        <!-- Days of week -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,8">
-            <Label Grid.Column="0" Text="Su" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="1" Text="Mo" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="2" Text="Tu" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="3" Text="We" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="4" Text="Th" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="5" Text="Fr" Style="{StaticResource DayLabelStyle}" />
-            <Label Grid.Column="6" Text="Sa" Style="{StaticResource DayLabelStyle}" />
+        <!-- Day Headers -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,2" ColumnSpacing="1">
+            <Label Grid.Column="0" Text="Sun" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="1" Text="Mon" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="2" Text="Tue" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="3" Text="Wed" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="4" Text="Thu" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="5" Text="Fri" Style="{StaticResource DayHeaderStyle}" />
+            <Label Grid.Column="6" Text="Sat" Style="{StaticResource DayHeaderStyle}" />
         </Grid>
         
-        <!-- Calendar grid (will be filled programmatically) -->
+        <!-- Calendar Days Grid -->
         <Grid x:Name="CalendarGrid" 
               Grid.Row="2" 
               RowDefinitions="*,*,*,*,*,*" 
-              ColumnDefinitions="*,*,*,*,*,*,*">
-            <!-- Calendar cells will be added here programmatically -->
+              ColumnDefinitions="*,*,*,*,*,*,*"
+              RowSpacing="1"
+              ColumnSpacing="1"
+              BackgroundColor="Transparent"
+              CascadeInputTransparent="False"
+              InputTransparent="False">
+            <!-- Ячейки календаря будут добавлены программно в коде -->
         </Grid>
     </Grid>
 </ContentView> 

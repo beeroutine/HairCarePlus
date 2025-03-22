@@ -5,7 +5,9 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Maui.Controls;
+using System.Collections.Generic;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -17,13 +19,59 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private DateTime _selectedDate = DateTime.Today;
         private DateTime _currentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         private ObservableCollection<CalendarEvent> _eventsForSelectedDate = new ObservableCollection<CalendarEvent>();
-        private ObservableCollection<CalendarEvent> _activeRestrictions = new ObservableCollection<CalendarEvent>();
+        private ObservableCollection<CalendarEvent> _eventsForMonth = new ObservableCollection<CalendarEvent>();
+        private ObservableCollection<RestrictionTimer> _activeRestrictions = new ObservableCollection<RestrictionTimer>();
+        private ObservableCollection<CalendarDayViewModel> _calendarDays = new ObservableCollection<CalendarDayViewModel>();
+        private string _errorMessage;
+        private bool _hasError;
+        private int _retryCount;
+        private const int MaxRetries = 3;
+        private string _bottomSheetTitle;
+        private bool _isPopupVisible = false;
+
+        public ObservableCollection<CalendarDayViewModel> CalendarDays
+        {
+            get => _calendarDays;
+            private set => SetProperty(ref _calendarDays, value);
+        }
 
         public ICommand RefreshCommand { get; private set; }
         public ICommand GoToTodayCommand { get; private set; }
         public ICommand NextMonthCommand { get; private set; }
         public ICommand PreviousMonthCommand { get; private set; }
         public ICommand MarkEventCompletedCommand { get; private set; }
+        public ICommand DaySelectedCommand { get; private set; }
+        public ICommand ClosePopupCommand { get; private set; }
+
+        public ObservableCollection<RestrictionTimer> ActiveRestrictions
+        {
+            get => _activeRestrictions;
+            private set => SetProperty(ref _activeRestrictions, value);
+        }
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            private set
+            {
+                if (SetProperty(ref _errorMessage, value))
+                {
+                    HasError = !string.IsNullOrEmpty(value);
+                }
+            }
+        }
+
+        public bool HasError
+        {
+            get => _hasError;
+            private set => SetProperty(ref _hasError, value);
+        }
+
+        public bool IsPopupVisible
+        {
+            get => _isPopupVisible;
+            set => SetProperty(ref _isPopupVisible, value);
+        }
 
         public DateTime SelectedDate
         {
@@ -33,6 +81,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 if (SetProperty(ref _selectedDate, value))
                 {
                     LoadEventsForSelectedDateAsync().ConfigureAwait(false);
+                    UpdateCalendarDays();
+                    _bottomSheetTitle = value.ToString("MMMM d, yyyy");
+                    OnPropertyChanged(nameof(BottomSheetTitle));
                 }
             }
         }
@@ -45,6 +96,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 if (SetProperty(ref _currentMonthDate, value))
                 {
                     LoadEventsForMonthAsync().ConfigureAwait(false);
+                    UpdateCalendarDays();
                 }
             }
         }
@@ -55,47 +107,105 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _eventsForSelectedDate, value);
         }
 
-        public ObservableCollection<CalendarEvent> ActiveRestrictions
+        public ObservableCollection<CalendarEvent> EventsForMonth
         {
-            get => _activeRestrictions;
-            set => SetProperty(ref _activeRestrictions, value);
+            get => _eventsForMonth;
+            set
+            {
+                if (SetProperty(ref _eventsForMonth, value))
+                {
+                    UpdateCalendarDays();
+                }
+            }
         }
 
-        /// <summary>
-        /// Default constructor for XAML
-        /// </summary>
-        public CalendarViewModel() 
+        public string BottomSheetTitle 
         {
-            Title = "Calendar";
-            
-            // Note: When created through XAML, services will be null
-            // This constructor is primarily for design-time and preview
-            
-            // Initialize commands with no-op implementations
-            RefreshCommand = new Command(() => { });
-            GoToTodayCommand = new Command(() => { });
-            NextMonthCommand = new Command(() => { });
-            PreviousMonthCommand = new Command(() => { });
-            MarkEventCompletedCommand = new Command<CalendarEvent>(_ => { });
+            get => _bottomSheetTitle;
+            private set => SetProperty(ref _bottomSheetTitle, value);
         }
 
-        public CalendarViewModel(ICalendarService calendarService, INotificationService notificationService)
+        public CalendarViewModel()
         {
             Title = "Calendar";
+            InitializeCommands();
+            
+            // Добавляем тестовые данные для демонстрации
+            AddSampleEvents();
+            
+            UpdateCalendarDays();
+        }
+
+        public CalendarViewModel(ICalendarService calendarService, INotificationService notificationService) : this()
+        {
             _calendarService = calendarService ?? throw new ArgumentNullException(nameof(calendarService));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
 
+            Task.Run(async () =>
+            {
+                await RefreshDataAsync();
+            });
+        }
+
+        private void UpdateCalendarDays()
+        {
+            try
+            {
+                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
+                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+                
+                // Create a new collection outside the UI thread
+                var days = new List<CalendarDayViewModel>(42); // Pre-allocate capacity for better performance
+                
+                // Cache for faster lookups
+                var eventLookup = new Dictionary<DateTime, bool>();
+                foreach (var evt in EventsForMonth)
+                {
+                    var date = evt.Date.Date;
+                    eventLookup[date] = true;
+                }
+                
+                // Generate all days for the calendar grid (6 rows x 7 columns = 42 days)
+                for (int i = 0; i < 42; i++)
+                {
+                    var currentDate = firstDayOfCalendarView.AddDays(i);
+                    var isCurrentMonth = currentDate.Month == CurrentMonthDate.Month;
+                    
+                    // Check for events using the lookup dictionary (much faster than LINQ)
+                    var hasEvents = eventLookup.ContainsKey(currentDate.Date);
+                    
+                    // Create day view model
+                    days.Add(new CalendarDayViewModel
+                    {
+                        Date = currentDate,
+                        IsCurrentMonth = isCurrentMonth,
+                        HasEvents = hasEvents,
+                        IsSelected = currentDate.Date == SelectedDate.Date
+                    });
+                }
+                
+                // Update collection on UI thread with a single operation
+                MainThread.BeginInvokeOnMainThread(() => 
+                {
+                    // Replace the entire collection at once to minimize UI updates
+                    CalendarDays = new ObservableCollection<CalendarDayViewModel>(days);
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating calendar days: {ex.Message}");
+            }
+        }
+
+        private void InitializeCommands()
+        {
             RefreshCommand = new Command(async () => await RefreshDataAsync());
             GoToTodayCommand = new Command(ExecuteGoToToday);
             NextMonthCommand = new Command(ExecuteNextMonth);
             PreviousMonthCommand = new Command(ExecutePreviousMonth);
             MarkEventCompletedCommand = new Command<CalendarEvent>(ExecuteMarkEventCompleted);
-
-            // Initial loading of data
-            Task.Run(async () =>
-            {
-                await RefreshDataAsync();
-            });
+            DaySelectedCommand = new Command<DateTime>(ShowPopupForDay);
+            ClosePopupCommand = new Command(ExecuteClosePopup);
         }
 
         private async Task RefreshDataAsync()
@@ -103,18 +213,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             if (IsBusy)
                 return;
 
-            IsBusy = true;
-
             try
             {
+                IsBusy = true;
+                ErrorMessage = null;
+                _retryCount = 0;
+
                 await LoadEventsForSelectedDateAsync();
                 await LoadEventsForMonthAsync();
                 await LoadActiveRestrictionsAsync();
             }
             catch (Exception ex)
             {
-                // Log error or show message to user
-                System.Diagnostics.Debug.WriteLine($"Error refreshing calendar data: {ex.Message}");
+                HandleError("Error refreshing calendar data", ex);
             }
             finally
             {
@@ -146,17 +257,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             try
             {
                 IsBusy = true;
+                ErrorMessage = null;
                 await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, !calendarEvent.IsCompleted);
-                
-                // Update the local item's completion status
-                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                
-                // Refresh the events list
-                await LoadEventsForSelectedDateAsync();
+                await RefreshDataAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // In a real app, show an error message to the user
+                HandleError("Error updating event status", ex);
             }
             finally
             {
@@ -168,22 +275,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                IsBusy = true;
-                var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
-                
-                EventsForSelectedDate.Clear();
-                foreach (var evt in events.OrderBy(e => e.Date))
+                if (_calendarService != null)
                 {
-                    EventsForSelectedDate.Add(evt);
+                    // Загружаем данные с сервера, если сервис доступен
+                    var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
+                    EventsForSelectedDate.Clear();
+                    foreach (var calendarEvent in events)
+                    {
+                        EventsForSelectedDate.Add(calendarEvent);
+                    }
                 }
+                else
+                {
+                    // В демо-режиме используем события из EventsForMonth
+                    EventsForSelectedDate.Clear();
+                    foreach (var calendarEvent in EventsForMonth.Where(e => e.Date.Date == SelectedDate.Date))
+                    {
+                        EventsForSelectedDate.Add(calendarEvent);
+                    }
+                }
+                ErrorMessage = null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // In a real app, show an error message to the user
-            }
-            finally
-            {
-                IsBusy = false;
+                if (await HandleErrorWithRetryAsync("Error loading events", ex))
+                {
+                    await LoadEventsForSelectedDateAsync();
+                }
             }
         }
 
@@ -191,8 +309,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                IsBusy = true;
-                
                 // Get the first and last day of the month
                 var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
                 var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
@@ -202,17 +318,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var lastDayOfCalendarView = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
                 
                 // Get events for the entire calendar view
-                await _calendarService.GetEventsForDateRangeAsync(firstDayOfCalendarView, lastDayOfCalendarView);
+                var events = await _calendarService.GetEventsForDateRangeAsync(firstDayOfCalendarView, lastDayOfCalendarView);
                 
-                // In a real app, we'd update a property here to display events in the calendar
+                EventsForMonth.Clear();
+                foreach (var calendarEvent in events)
+                {
+                    EventsForMonth.Add(calendarEvent);
+                }
+                ErrorMessage = null;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // In a real app, show an error message to the user
-            }
-            finally
-            {
-                IsBusy = false;
+                if (await HandleErrorWithRetryAsync("Error loading calendar", ex))
+                {
+                    await LoadEventsForMonthAsync();
+                }
             }
         }
 
@@ -220,23 +340,166 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                IsBusy = true;
                 var restrictions = await _calendarService.GetActiveRestrictionsAsync();
-                
                 ActiveRestrictions.Clear();
                 foreach (var restriction in restrictions)
                 {
-                    ActiveRestrictions.Add(restriction);
+                    ActiveRestrictions.Add(new RestrictionTimer { RestrictionEvent = restriction });
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // In a real app, show an error message to the user
+                if (await HandleErrorWithRetryAsync("Error loading restrictions", ex))
+                {
+                    await LoadActiveRestrictionsAsync();
+                }
             }
-            finally
+        }
+
+        private void HandleError(string message, Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"{message}: {ex.Message}");
+            ErrorMessage = $"{message}. Please try again.";
+        }
+
+        private async Task<bool> HandleErrorWithRetryAsync(string message, Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"{message}: {ex.Message}");
+
+            if (_retryCount < MaxRetries)
             {
-                IsBusy = false;
+                _retryCount++;
+                ErrorMessage = $"{message}. Retrying... (Attempt {_retryCount}/{MaxRetries})";
+                await Task.Delay(1000 * _retryCount); // Exponential backoff
+                return true;
             }
+
+            ErrorMessage = $"{message}. Please try again.";
+            return false;
+        }
+
+        private void AddSampleEvents()
+        {
+            Task.Run(() => {
+                // Создаем несколько событий для текущего месяца
+                var today = DateTime.Today;
+                var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+                
+                // Ограничение на 5 дней от начала месяца
+                var restriction = new CalendarEvent
+                {
+                    Id = 1,
+                    Title = "Не мочить голову",
+                    Description = "Избегайте попадания воды на область пересадки",
+                    Date = firstDayOfMonth.AddDays(5),
+                    EventType = EventType.Restriction,
+                    IsCompleted = false
+                };
+                
+                // Медикамент на 10 дней от начала месяца
+                var medication = new CalendarEvent
+                {
+                    Id = 2,
+                    Title = "Прием антибиотика",
+                    Description = "Азитромицин 500мг, 1 таблетка",
+                    Date = firstDayOfMonth.AddDays(10),
+                    EventType = EventType.Medication,
+                    IsCompleted = false
+                };
+                
+                // Фото на 15 дней от начала месяца
+                var photo = new CalendarEvent
+                {
+                    Id = 3,
+                    Title = "Отправить фото",
+                    Description = "Сделайте фото области пересадки и отправьте врачу",
+                    Date = firstDayOfMonth.AddDays(15),
+                    EventType = EventType.Photo,
+                    IsCompleted = false
+                };
+                
+                // Инструкция на 20 дней от начала месяца
+                var instruction = new CalendarEvent
+                {
+                    Id = 4,
+                    Title = "Начать массаж",
+                    Description = "Легкий массаж области пересадки, 5 минут утром и вечером",
+                    Date = firstDayOfMonth.AddDays(20),
+                    EventType = EventType.Instruction,
+                    IsCompleted = false
+                };
+                
+                // Событие на 11 марта 2025
+                var march11Event = new CalendarEvent
+                {
+                    Id = 7,
+                    Title = "Контрольный осмотр",
+                    Description = "Посещение врача для оценки приживаемости волос",
+                    Date = new DateTime(2025, 3, 11),
+                    EventType = EventType.Instruction,
+                    IsCompleted = false
+                };
+                
+                // Выбранный день (21 марта) имеет несколько событий
+                var multipleEvents1 = new CalendarEvent
+                {
+                    Id = 5,
+                    Title = "Прием лекарства",
+                    Description = "Миноксидил 5%, нанесение на область пересадки",
+                    Date = new DateTime(2025, 3, 21),
+                    EventType = EventType.Medication,
+                    IsCompleted = false
+                };
+                
+                var multipleEvents2 = new CalendarEvent
+                {
+                    Id = 6,
+                    Title = "Отправить фото",
+                    Description = "Сделайте фото области пересадки и отправьте врачу",
+                    Date = new DateTime(2025, 3, 21),
+                    EventType = EventType.Photo,
+                    IsCompleted = false
+                };
+                
+                // Подготовим все события в списке
+                var events = new List<CalendarEvent> {
+                    restriction, medication, photo, instruction, 
+                    march11Event, multipleEvents1, multipleEvents2
+                };
+                
+                // Добавим события в основной поток
+                MainThread.BeginInvokeOnMainThread(() => {
+                    // Добавляем события в коллекцию
+                    foreach (var evt in events) {
+                        EventsForMonth.Add(evt);
+                    }
+                    
+                    // Добавляем события для выбранного дня
+                    if (SelectedDate.Date == new DateTime(2025, 3, 21).Date)
+                    {
+                        EventsForSelectedDate.Add(multipleEvents1);
+                        EventsForSelectedDate.Add(multipleEvents2);
+                    }
+                    else if (SelectedDate.Date == new DateTime(2025, 3, 11).Date)
+                    {
+                        EventsForSelectedDate.Add(march11Event);
+                    }
+                    
+                    // Обновляем календарь после добавления событий
+                    UpdateCalendarDays();
+                });
+            });
+        }
+
+        private void ExecuteClosePopup()
+        {
+            IsPopupVisible = false;
+        }
+
+        private void ShowPopupForDay(DateTime date)
+        {
+            SelectedDate = date;
+            IsPopupVisible = true;
         }
     }
 } 
