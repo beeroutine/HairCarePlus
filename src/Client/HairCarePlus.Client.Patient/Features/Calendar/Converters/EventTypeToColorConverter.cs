@@ -14,10 +14,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             {
                 return eventType switch
                 {
-                    EventType.Medication => Application.Current.Resources["MedicationEventColor"],
-                    EventType.Photo => Application.Current.Resources["PhotoEventColor"],
-                    EventType.Restriction => Application.Current.Resources["RestrictionEventColor"],
-                    EventType.Instruction => Application.Current.Resources["InstructionEventColor"],
+                    EventType.Medication => Application.Current.Resources["MedicationColor"],
+                    EventType.Photo => Application.Current.Resources["PhotoColor"],
+                    EventType.Restriction => Application.Current.Resources["RestrictionColor"],
+                    EventType.Instruction => Application.Current.Resources["InstructionColor"],
                     _ => Colors.Gray
                 };
             }

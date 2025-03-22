@@ -3,6 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:HairCarePlus.Client.Patient"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
+             xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+             xmlns:calendarHelpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
              x:Class="HairCarePlus.Client.Patient.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -23,6 +25,20 @@
             <Color x:Key="SurfaceColor">#F5F5F5</Color>
             <Color x:Key="ErrorColor">#B00020</Color>
             <Color x:Key="BorderColor">#E0E0E0</Color>
+            <Color x:Key="Primary">#6962AD</Color>
+            
+            <!-- Gray Scale Colors -->
+            <Color x:Key="White">#FFFFFF</Color>
+            <Color x:Key="Black">#000000</Color>
+            <Color x:Key="Gray100">#F5F5F5</Color>
+            <Color x:Key="Gray200">#EEEEEE</Color>
+            <Color x:Key="Gray300">#E0E0E0</Color>
+            <Color x:Key="Gray400">#BDBDBD</Color>
+            <Color x:Key="Gray500">#9E9E9E</Color>
+            <Color x:Key="Gray600">#757575</Color>
+            <Color x:Key="Gray700">#616161</Color>
+            <Color x:Key="Gray800">#424242</Color>
+            <Color x:Key="Gray900">#212121</Color>
             
             <!-- Calendar Specific Colors -->
             <Color x:Key="SelectedDayColor">#6962AD</Color>
@@ -61,6 +77,13 @@
             <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
             <converters:DateToColorConverter x:Key="DateToColorConverter" />
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
+            <commonConverters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+            <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <calendarHelpers:DoubleToPercentageConverter x:Key="DoubleToPercentageConverter" />
+            <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
+            <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
 
             <!-- Styles -->
             <Style x:Key="BaseFrameStyle" TargetType="Frame">

@@ -8,6 +8,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Maui.Controls;
 using System.Collections.Generic;
+using Microsoft.Maui.ApplicationModel;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -380,7 +381,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void AddSampleEvents()
         {
-            Task.Run(() => {
+            try
+            {
                 // Создаем несколько событий для текущего месяца
                 var today = DateTime.Today;
                 var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
@@ -393,7 +395,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Description = "Избегайте попадания воды на область пересадки",
                     Date = firstDayOfMonth.AddDays(5),
                     EventType = EventType.Restriction,
-                    IsCompleted = false
+                    IsCompleted = false,
+                    ExpirationDate = firstDayOfMonth.AddDays(7) // Add expiration date for restriction
                 };
                 
                 // Медикамент на 10 дней от начала месяца
@@ -469,26 +472,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 // Добавим события в основной поток
                 MainThread.BeginInvokeOnMainThread(() => {
-                    // Добавляем события в коллекцию
-                    foreach (var evt in events) {
-                        EventsForMonth.Add(evt);
-                    }
-                    
-                    // Добавляем события для выбранного дня
-                    if (SelectedDate.Date == new DateTime(2025, 3, 21).Date)
+                    try 
                     {
-                        EventsForSelectedDate.Add(multipleEvents1);
-                        EventsForSelectedDate.Add(multipleEvents2);
+                        // Добавляем события в коллекцию
+                        foreach (var evt in events) {
+                            if (evt != null) {
+                                EventsForMonth.Add(evt);
+                            }
+                        }
+                        
+                        // Add restriction to active restrictions
+                        if (restriction != null && restriction.ExpirationDate.HasValue) {
+                            ActiveRestrictions.Add(new RestrictionTimer {
+                                RestrictionEvent = restriction
+                            });
+                        }
+                        
+                        // Добавляем события для выбранного дня
+                        var selectedDate = SelectedDate.Date;
+                        var march21 = new DateTime(2025, 3, 21).Date;
+                        var march11 = new DateTime(2025, 3, 11).Date;
+                        
+                        if (selectedDate == march21)
+                        {
+                            if (multipleEvents1 != null) EventsForSelectedDate.Add(multipleEvents1);
+                            if (multipleEvents2 != null) EventsForSelectedDate.Add(multipleEvents2);
+                        }
+                        else if (selectedDate == march11)
+                        {
+                            if (march11Event != null) EventsForSelectedDate.Add(march11Event);
+                        }
+                        
+                        // Обновляем календарь после добавления событий
+                        UpdateCalendarDays();
                     }
-                    else if (SelectedDate.Date == new DateTime(2025, 3, 11).Date)
+                    catch (Exception ex)
                     {
-                        EventsForSelectedDate.Add(march11Event);
+                        System.Diagnostics.Debug.WriteLine($"Error adding sample events: {ex.Message}");
                     }
-                    
-                    // Обновляем календарь после добавления событий
-                    UpdateCalendarDays();
                 });
-            });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error creating sample events: {ex.Message}");
+            }
         }
 
         private void ExecuteClosePopup()

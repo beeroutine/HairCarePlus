@@ -38,11 +38,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public string Description => RestrictionEvent?.Description;
     }
 
-    public class RestrictionTimersViewModel : BaseViewModel
+    public class RestrictionTimersViewModel : BaseViewModel, IDisposable
     {
         private readonly ICalendarService _calendarService;
         private ObservableCollection<RestrictionTimer> _activeRestrictions = new ObservableCollection<RestrictionTimer>();
         private Timer _updateTimer;
+        private bool _disposed = false;
 
         public ObservableCollection<RestrictionTimer> ActiveRestrictions
         {
@@ -154,11 +155,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        // Cleanup when the ViewModel is no longer needed
         public void Dispose()
         {
-            _updateTimer?.Dispose();
-            _updateTimer = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose managed resources
+                    _updateTimer?.Dispose();
+                    _updateTimer = null;
+                }
+
+                _disposed = true;
+            }
+        }
+
+        ~RestrictionTimersViewModel()
+        {
+            Dispose(false);
         }
     }
 } 
