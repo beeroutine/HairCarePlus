@@ -143,6 +143,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             });
         }
 
+        partial void OnEventsForMonthChanged(ObservableCollection<CalendarEvent> value)
+        {
+            // When events for the month change, update the calendar days to reflect event indicators
+            System.Diagnostics.Debug.WriteLine($"Events for month changed. New count: {value?.Count ?? 0}");
+            UpdateCalendarDays();
+        }
+
         private void InitializeCommands()
         {
             RefreshCommand = new Command(async () => await RefreshAsync());
@@ -218,18 +225,55 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             try
             {
+                // Get events from the service
                 var events = await _calendarService.GetEventsForMonthAsync(year, month);
+                
+                // Also get active restrictions that might apply to this month
+                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
+                
+                // Combine all events
+                var allEvents = new List<CalendarEvent>();
+                
+                // Add regular events
+                if (events != null)
+                {
+                    allEvents.AddRange(events);
+                }
+                
+                // Add restrictions
+                if (restrictions != null)
+                {
+                    // Get date range for the calendar view
+                    var firstDayOfMonth = new DateTime(year, month, 1);
+                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                    
+                    // Include the days shown from previous/next months
+                    var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+                    var lastDayOfCalendarView = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
+                    
+                    // Add any restrictions that affect dates in our calendar range
+                    foreach (var restriction in restrictions)
+                    {
+                        // Only add restrictions that are visible in our date range and haven't expired
+                        bool isActive = restriction.Date <= lastDayOfCalendarView && 
+                                      (!restriction.ExpirationDate.HasValue || restriction.ExpirationDate >= firstDayOfCalendarView);
+                                      
+                        if (isActive && !allEvents.Any(e => e.Id == restriction.Id))
+                        {
+                            allEvents.Add(restriction);
+                        }
+                    }
+                }
+                
+                // Debug log
+                System.Diagnostics.Debug.WriteLine($"LoadEventsForMonthAsync: Loaded {allEvents.Count} total events for {year}-{month}");
                 
                 // Make sure UI updates happen on main thread
                 MainThread.BeginInvokeOnMainThread(() => {
-                    if (events != null)
-                    {
-                        EventsForMonth = new ObservableCollection<CalendarEvent>(events);
-                    }
-                    else
-                    {
-                        EventsForMonth = new ObservableCollection<CalendarEvent>();
-                    }
+                    EventsForMonth = new ObservableCollection<CalendarEvent>(allEvents);
+                    
+                    // Update calendar days to reflect the new events
+                    UpdateCalendarDays();
                 });
             }
             catch (Exception ex)
@@ -239,6 +283,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 MainThread.BeginInvokeOnMainThread(() => {
                     EventsForMonth = new ObservableCollection<CalendarEvent>();
+                    UpdateCalendarDays();
                 });
             }
             finally
@@ -356,13 +401,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
 
             var calendarDays = new ObservableCollection<CalendarDayViewModel>();
+            
+            // Debug: Log the total events in the month
+            System.Diagnostics.Debug.WriteLine($"UpdateCalendarDays: Total events in month: {EventsForMonth.Count}");
+            
             for (int i = 0; i < 42; i++) // 6 weeks x 7 days
             {
                 var day = firstDayOfCalendarView.AddDays(i);
                 var isCurrentMonth = day.Month == CurrentMonthDate.Month;
-                var hasEvents = EventsForMonth.Count(e => e.Date.Date == day.Date) > 0;
+                var eventsForDay = EventsForMonth.Where(e => e.Date.Date == day.Date).ToList();
+                var hasEvents = eventsForDay.Any();
                 var isToday = day.Date == DateTime.Today.Date;
                 var isSelected = day.Date == SelectedDate.Date;
+                
+                // Debug: Log days with events
+                if (hasEvents)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Day {day:yyyy-MM-dd} has {eventsForDay.Count} events");
+                }
 
                 calendarDays.Add(new CalendarDayViewModel
                 {

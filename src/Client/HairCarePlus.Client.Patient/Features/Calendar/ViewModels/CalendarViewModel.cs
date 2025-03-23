@@ -373,7 +373,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     var day = firstDayOfCalendarView.AddDays(i);
                     var isCurrentMonth = day.Month == CurrentMonthDate.Month;
-                    var hasEvents = EventsForMonth.Count(e => e.Date.Date == day.Date) > 0;
+                    var hasEvents = EventsForMonth.Any(e => e.Date.Date == day.Date);
                     var isToday = day.Date == DateTime.Today.Date;
                     var isSelected = day.Date == SelectedDate.Date;
 

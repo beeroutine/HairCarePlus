@@ -62,8 +62,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     {
                         Style = (Style)Resources["EventDotStyle"],
                         IsVisible = false,
-                        HeightRequest = 6,
-                        WidthRequest = 6
+                        HeightRequest = 8,
+                        WidthRequest = 8,
+                        CornerRadius = 4,
+                        Margin = new Thickness(0, 2, 0, 0),
+                        VerticalOptions = LayoutOptions.Center,
+                        HorizontalOptions = LayoutOptions.Center
                     };
                     _eventIndicators[row, col] = eventIndicator;
                     
@@ -304,23 +308,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
             try
             {
-                // Skip if no events
-                if (!dayViewModel.HasEvents)
+                // Get the BoxView for this cell
+                var indicator = _eventIndicators[row, col];
+                
+                // First check if the viewmodel says there are events
+                bool hasEvents = dayViewModel.HasEvents;
+                
+                // Set visibility based on whether there are events
+                indicator.IsVisible = hasEvents;
+                
+                if (!hasEvents)
                 {
-                    _eventIndicators[row, col].IsVisible = false;
                     return;
                 }
                 
-                // Make indicator visible
-                _eventIndicators[row, col].IsVisible = true;
-                
-                // Set indicator color based on event type priority
+                // Get the actual events to determine colors
                 var events = ViewModel?.EventsForMonth
                     ?.Where(e => e.Date.Date == dayViewModel.Date.Date)
                     ?.ToList() ?? new List<CalendarEvent>();
                 
                 if (events.Count > 0)
                 {
+                    // There are events, determine the priority color
                     EventType priorityType = GetPriorityEventType(events);
                     
                     // Set color based on event type
@@ -333,7 +342,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         _ => Color.FromArgb("#FF9800")                       // Orange (default)
                     };
                     
-                    _eventIndicators[row, col].BackgroundColor = indicatorColor;
+                    indicator.BackgroundColor = indicatorColor;
+                }
+                else if (hasEvents)
+                {
+                    // The view model says there are events but we can't find them in the collection
+                    // Use a default color
+                    indicator.BackgroundColor = Color.FromArgb("#FF9800"); // Orange
                 }
             }
             catch (Exception ex)
