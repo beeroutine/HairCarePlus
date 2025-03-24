@@ -19,11 +19,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
     /// </summary>
     public class RestrictionTimerViewModel : ObservableObject
     {
-        private CalendarEvent _restrictionEvent;
-        private string _remainingTimeText;
+        private CalendarEvent? _restrictionEvent;
+        private string _remainingTimeText = string.Empty;
         private double _progressPercentage;
 
-        public CalendarEvent RestrictionEvent
+        public CalendarEvent? RestrictionEvent
         {
             get => _restrictionEvent;
             set => SetProperty(ref _restrictionEvent, value);
@@ -41,8 +41,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _progressPercentage, value);
         }
 
-        public string Title => RestrictionEvent?.Title;
-        public string Description => RestrictionEvent?.Description;
+        public string? Title => RestrictionEvent?.Title;
+        public string? Description => RestrictionEvent?.Description;
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private bool _hasError;
 
         [ObservableProperty]
-        private string _errorMessage;
+        private string _errorMessage = string.Empty;
 
         [ObservableProperty]
         private int _retryCount;
@@ -146,18 +146,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         partial void OnEventsForMonthChanged(ObservableCollection<CalendarEvent> value)
         {
             // When events for the month change, update the calendar days to reflect event indicators
-            System.Diagnostics.Debug.WriteLine($"Events for month changed. New count: {value?.Count ?? 0}");
-            UpdateCalendarDays();
+            System.Diagnostics.Debug.WriteLine($"Events for month changed. New count: {value?.Count() ?? 0}");
+            MainThread.BeginInvokeOnMainThread(() => {
+                try {
+                    UpdateCalendarDays();
+                } catch (Exception ex) {
+                    System.Diagnostics.Debug.WriteLine($"Error updating calendar days: {ex.Message}");
+                }
+            });
         }
 
         private void InitializeCommands()
         {
-            RefreshCommand = new Command(async () => await RefreshAsync());
-            GoToTodayCommand = new Command(ExecuteGoToToday);
-            NextMonthCommand = new Command(ExecuteNextMonth);
-            PreviousMonthCommand = new Command(ExecutePreviousMonth);
-            MarkEventCompletedCommand = new Command<CalendarEvent>(ExecuteMarkEventCompleted);
-            DaySelectedCommand = new Command<DateTime>(ExecuteDaySelected);
+            RefreshCommand = new AsyncRelayCommand(async () => await RefreshAsync());
+            GoToTodayCommand = new RelayCommand(() => ExecuteGoToToday());
+            NextMonthCommand = new RelayCommand(() => ExecuteNextMonth());
+            PreviousMonthCommand = new RelayCommand(() => ExecutePreviousMonth());
+            MarkEventCompletedCommand = new RelayCommand<CalendarEvent>(e => ExecuteMarkEventCompleted(e));
+            DaySelectedCommand = new RelayCommand<DateTime>(d => ExecuteDaySelected(d));
         }
 
         private void ExecuteGoToToday()
@@ -217,69 +223,69 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private async Task LoadEventsForMonthAsync(int year, int month)
         {
-            if (IsBusy) return;
+            if (IsBusy || _calendarService == null) return;
             
             IsBusy = true;
             HasError = false;
             ErrorMessage = string.Empty;
-
+                
             try
             {
-                // Get events from the service
+                var startDate = new DateTime(year, month, 1);
+                var endDate = startDate.AddMonths(1).AddDays(-1);
+                
+                // Создать пустой список для событий
+                List<CalendarEvent> allEvents = new List<CalendarEvent>();
+                
+                // Загрузить обычные события
                 var events = await _calendarService.GetEventsForMonthAsync(year, month);
-                
-                // Also get active restrictions that might apply to this month
-                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
-                
-                // Combine all events
-                var allEvents = new List<CalendarEvent>();
-                
-                // Add regular events
                 if (events != null)
                 {
                     allEvents.AddRange(events);
+                    string message = $"Loaded {events.Count()} regular events for {year}-{month}";
+                    System.Diagnostics.Debug.WriteLine(message);
                 }
                 
                 // Add restrictions
+                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
                 if (restrictions != null)
                 {
-                    // Get date range for the calendar view
-                    var firstDayOfMonth = new DateTime(year, month, 1);
-                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+                    // Фильтруем ограничения, попадающие в текущий месяц
+                    var restrictionsInRange = restrictions.Where(r => 
+                        (r.Date.Year == year && r.Date.Month == month) || 
+                        (r.ExpirationDate.HasValue && 
+                         ((r.ExpirationDate.Value.Year == year && r.ExpirationDate.Value.Month == month) || 
+                          (r.Date <= startDate && r.ExpirationDate.Value >= endDate)))
+                    ).ToList();
                     
-                    // Include the days shown from previous/next months
-                    var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
-                    var lastDayOfCalendarView = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
-                    
-                    // Add any restrictions that affect dates in our calendar range
-                    foreach (var restriction in restrictions)
-                    {
-                        // Only add restrictions that are visible in our date range and haven't expired
-                        bool isActive = restriction.Date <= lastDayOfCalendarView && 
-                                      (!restriction.ExpirationDate.HasValue || restriction.ExpirationDate >= firstDayOfCalendarView);
-                                      
-                        if (isActive && !allEvents.Any(e => e.Id == restriction.Id))
-                        {
-                            allEvents.Add(restriction);
-                        }
-                    }
+                    allEvents.AddRange(restrictionsInRange);
+                    System.Diagnostics.Debug.WriteLine($"Added {restrictionsInRange.Count()} restrictions for {year}-{month}");
                 }
                 
                 // Debug log
-                System.Diagnostics.Debug.WriteLine($"LoadEventsForMonthAsync: Loaded {allEvents.Count} total events for {year}-{month}");
+                System.Diagnostics.Debug.WriteLine($"LoadEventsForMonthAsync: Total {allEvents.Count()} events for {year}-{month}");
                 
-                // Make sure UI updates happen on main thread
-                MainThread.BeginInvokeOnMainThread(() => {
+                // Group events by date for debugging
+                var eventsByDate = allEvents.GroupBy(e => e.Date.Date).ToDictionary(g => g.Key, g => g.ToList());
+                foreach (var kvp in eventsByDate)
+                {
+                    var eventTypeStrings = kvp.Value.Select(e => e.EventType.ToString()).ToList();
+                    var eventTypesText = string.Join(", ", eventTypeStrings);
+                    System.Diagnostics.Debug.WriteLine($"Date {kvp.Key:yyyy-MM-dd} has {kvp.Value.Count()} events: {eventTypesText}");
+                }
+                
+                // Обновить список событий на календаре (на главном потоке)
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
                     EventsForMonth = new ObservableCollection<CalendarEvent>(allEvents);
-                    
-                    // Update calendar days to reflect the new events
                     UpdateCalendarDays();
                 });
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error in LoadEventsForMonthAsync: {ex.Message}");
                 HasError = true;
-                ErrorMessage = $"Failed to load events: {ex.Message}";
+                ErrorMessage = "Failed to load events. Please try again.";
                 
                 MainThread.BeginInvokeOnMainThread(() => {
                     EventsForMonth = new ObservableCollection<CalendarEvent>();
@@ -359,7 +365,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
                 // Replace the events collection with the combined data
                 EventsForSelectedDate = new ObservableCollection<CalendarEvent>(allDayEvents);
-                ErrorMessage = null;
+                ErrorMessage = string.Empty;
             }
             catch (Exception ex)
             {
@@ -382,7 +388,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     foreach (var restriction in restrictions)
                     {
-                        restrictionTimers.Add(new RestrictionTimerViewModel { RestrictionEvent = restriction });
+                        restrictionTimers.Add(new RestrictionTimerViewModel { 
+                            RestrictionEvent = restriction,
+                            RemainingTimeText = string.Empty 
+                        });
                     }
                 }
                 
@@ -397,40 +406,72 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void UpdateCalendarDays()
         {
-            var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
-            var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
-
-            var calendarDays = new ObservableCollection<CalendarDayViewModel>();
-            
-            // Debug: Log the total events in the month
-            System.Diagnostics.Debug.WriteLine($"UpdateCalendarDays: Total events in month: {EventsForMonth.Count}");
-            
-            for (int i = 0; i < 42; i++) // 6 weeks x 7 days
+            try
             {
-                var day = firstDayOfCalendarView.AddDays(i);
-                var isCurrentMonth = day.Month == CurrentMonthDate.Month;
-                var eventsForDay = EventsForMonth.Where(e => e.Date.Date == day.Date).ToList();
-                var hasEvents = eventsForDay.Any();
-                var isToday = day.Date == DateTime.Today.Date;
-                var isSelected = day.Date == SelectedDate.Date;
+                var firstDayOfMonth = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, 1);
+                var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+
+                var calendarDays = new ObservableCollection<CalendarDayViewModel>();
                 
-                // Debug: Log days with events
-                if (hasEvents)
+                // Debug: Log the total events in the month
+                System.Diagnostics.Debug.WriteLine($"UpdateCalendarDays: Total events in month: {EventsForMonth.Count()}");
+                
+                // Отладка: выведем все события в месяце по типам
+                var eventTypes = EventsForMonth.GroupBy(e => e.EventType).ToDictionary(g => g.Key, g => g.Count());
+                foreach (var et in eventTypes)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Day {day:yyyy-MM-dd} has {eventsForDay.Count} events");
+                    System.Diagnostics.Debug.WriteLine($"  Event type {et.Key}: {et.Value} events");
+                }
+                
+                for (int i = 0; i < 42; i++) // 6 weeks x 7 days
+                {
+                    var day = firstDayOfCalendarView.AddDays(i);
+                    var isCurrentMonth = day.Month == CurrentMonthDate.Month;
+                    var eventsForDay = EventsForMonth.Where(e => e.Date.Date == day.Date).ToList();
+                    var hasEvents = eventsForDay.Any();
+                    var isToday = day.Date == DateTime.Today.Date;
+                    var isSelected = day.Date == SelectedDate.Date;
+                    
+                    // Усиленная проверка для hasEvents
+                    if (eventsForDay.Count > 0 && !hasEvents)
+                    {
+                        hasEvents = true;
+                        System.Diagnostics.Debug.WriteLine($"WARNING: Fixed hasEvents flag for {day:yyyy-MM-dd} with {eventsForDay.Count()} events");
+                    }
+                    
+                    // Debug: Log days with events
+                    if (hasEvents)
+                    {
+                        var eventTypeStrings = eventsForDay.Select(e => e.EventType.ToString()).ToList();
+                        var eventTypesText = string.Join(", ", eventTypeStrings);
+                        System.Diagnostics.Debug.WriteLine($"Day {day:yyyy-MM-dd} has {eventsForDay.Count()} events: {eventTypesText}");
+                    }
+
+                    var dayViewModel = new CalendarDayViewModel
+                    {
+                        Date = day,
+                        IsCurrentMonth = isCurrentMonth,
+                        HasEvents = hasEvents,
+                        IsToday = isToday,
+                        IsSelected = isSelected
+                    };
+                    
+                    // Дополнительная проверка после создания модели
+                    if (hasEvents && !dayViewModel.HasEvents)
+                    {
+                        dayViewModel.HasEvents = true;
+                        System.Diagnostics.Debug.WriteLine($"WARNING: Had to fix HasEvents after model creation for {day:yyyy-MM-dd}");
+                    }
+
+                    calendarDays.Add(dayViewModel);
                 }
 
-                calendarDays.Add(new CalendarDayViewModel
-                {
-                    Date = day,
-                    IsCurrentMonth = isCurrentMonth,
-                    HasEvents = hasEvents,
-                    IsToday = isToday,
-                    IsSelected = isSelected
-                });
+                CalendarDays = calendarDays;
             }
-
-            CalendarDays = calendarDays;
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in UpdateCalendarDays: {ex.Message}");
+            }
         }
 
         private async Task MarkEventCompletedAsync(CalendarEvent calendarEvent)

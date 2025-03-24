@@ -16,7 +16,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     {
         private readonly Frame[,] _dayCells = new Frame[6, 7];
         private readonly Label[,] _dayLabels = new Label[6, 7];
-        private readonly BoxView[,] _eventIndicators = new BoxView[6, 7];
+        private readonly HorizontalStackLayout[,] _eventIndicators = new HorizontalStackLayout[6, 7];
         private CalendarDayViewModel? _selectedDay = null;
         
         private CleanCalendarViewModel? ViewModel => BindingContext as CleanCalendarViewModel;
@@ -35,7 +35,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (ViewModel != null)
             {
                 // Subscribe to property changes in ViewModel
-                ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+                ViewModel.PropertyChanged -= OnViewModelPropertyChanged; // Remove existing subscription if any
+                ViewModel.PropertyChanged += (sender, args) => OnViewModelPropertyChanged(sender, args);
                 UpdateCalendarDays();
             }
         }
@@ -57,20 +58,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 for (int col = 0; col < 7; col++)
                 {
-                    // Create event indicator
-                    var eventIndicator = new BoxView
-                    {
-                        Style = (Style)Resources["EventDotStyle"],
-                        IsVisible = false,
-                        HeightRequest = 8,
-                        WidthRequest = 8,
-                        CornerRadius = 4,
-                        Margin = new Thickness(0, 2, 0, 0),
-                        VerticalOptions = LayoutOptions.Center,
-                        HorizontalOptions = LayoutOptions.Center
-                    };
-                    _eventIndicators[row, col] = eventIndicator;
-                    
                     // Create day number label
                     var dayLabel = new Label
                     {
@@ -81,22 +68,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     _dayLabels[row, col] = dayLabel;
                     
                     // Create horizontal stack for event indicators
-                    var eventIndicatorsStack = new StackLayout
+                    var eventIndicatorsStack = new HorizontalStackLayout
                     {
-                        Orientation = StackOrientation.Horizontal,
-                        Spacing = 2,
-                        HorizontalOptions = LayoutOptions.Center,
-                        Children = { eventIndicator }
+                        Style = (Style)Resources["EventIndicatorsContainerStyle"]
                     };
+                    _eventIndicators[row, col] = eventIndicatorsStack;
                     
                     // Create vertical stack for day text and indicators
-                    var stack = new StackLayout
+                    var stack = new VerticalStackLayout
                     {
                         Spacing = 2,
-                        VerticalOptions = LayoutOptions.Center,
-                        HorizontalOptions = LayoutOptions.Center,
-                        Children = { dayLabel, eventIndicatorsStack },
-                        InputTransparent = false
+                        Children = { dayLabel, eventIndicatorsStack }
                     };
                     
                     // Create day cell frame
@@ -308,47 +290,73 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
             try
             {
-                // Get the BoxView for this cell
-                var indicator = _eventIndicators[row, col];
+                var indicatorsStack = _eventIndicators[row, col];
+                indicatorsStack.Clear();
                 
-                // First check if the viewmodel says there are events
-                bool hasEvents = dayViewModel.HasEvents;
+                // Debug logging
+                System.Diagnostics.Debug.WriteLine($"Updating indicators for day {dayViewModel.Date:yyyy-MM-dd}, HasEvents: {dayViewModel.HasEvents}");
                 
-                // Set visibility based on whether there are events
-                indicator.IsVisible = hasEvents;
-                
-                if (!hasEvents)
+                if (!dayViewModel.HasEvents)
                 {
+                    indicatorsStack.IsVisible = false;
                     return;
                 }
                 
-                // Get the actual events to determine colors
+                // Убедимся, что у нас есть события для этого дня
                 var events = ViewModel?.EventsForMonth
                     ?.Where(e => e.Date.Date == dayViewModel.Date.Date)
                     ?.ToList() ?? new List<CalendarEvent>();
-                
-                if (events.Count > 0)
+
+                // Debug logging
+                System.Diagnostics.Debug.WriteLine($"Found {events.Count} events for {dayViewModel.Date:yyyy-MM-dd}: {string.Join(", ", events.Select(e => e.EventType))}");
+
+                // Если список событий пуст, скрываем индикаторы
+                if (events.Count == 0)
                 {
-                    // There are events, determine the priority color
-                    EventType priorityType = GetPriorityEventType(events);
-                    
-                    // Set color based on event type
-                    Color indicatorColor = priorityType switch
-                    {
-                        EventType.Restriction => Color.FromArgb("#FF4B4B"),  // Red
-                        EventType.Medication => Color.FromArgb("#4DAF50"),   // Green
-                        EventType.Photo => Color.FromArgb("#2196F3"),        // Blue
-                        EventType.Instruction => Color.FromArgb("#9C27B0"),  // Purple
-                        _ => Color.FromArgb("#FF9800")                       // Orange (default)
-                    };
-                    
-                    indicator.BackgroundColor = indicatorColor;
+                    indicatorsStack.IsVisible = false;
+                    return;
                 }
-                else if (hasEvents)
+
+                var eventTypes = events
+                    .Select(e => e.EventType)
+                    .Distinct()
+                    .OrderBy(et => GetEventTypePriority(et))
+                    .Take(3); // Показываем максимум 3 точки
+
+                indicatorsStack.Clear();
+                indicatorsStack.Spacing = 3; // Увеличиваем расстояние между точками
+                
+                foreach (var eventType in eventTypes)
                 {
-                    // The view model says there are events but we can't find them in the collection
-                    // Use a default color
-                    indicator.BackgroundColor = Color.FromArgb("#FF9800"); // Orange
+                    var dot = new BoxView
+                    {
+                        Style = GetStyleForEventType(eventType),
+                        HeightRequest = 8, // Увеличиваем размер
+                        WidthRequest = 8,  // Увеличиваем размер
+                        CornerRadius = 4,  // Корректируем для нового размера
+                        Margin = new Thickness(2, 0, 2, 0), // Больше места между точками
+                        IsVisible = true,
+                        Opacity = 1.0 // Убедимся что точки видны
+                    };
+                    indicatorsStack.Add(dot);
+                    
+                    // Debug logging
+                    System.Diagnostics.Debug.WriteLine($"Added dot for event type: {eventType}");
+                }
+
+                // Убедимся что контейнер с точками виден
+                indicatorsStack.IsVisible = true;
+                indicatorsStack.HorizontalOptions = LayoutOptions.Center;
+                indicatorsStack.Margin = new Thickness(0, 6, 0, 2); // Увеличиваем отступ сверху
+                indicatorsStack.Spacing = 4; // Устанавливаем расстояние между точками
+                indicatorsStack.MinimumHeightRequest = 10; // Обеспечиваем минимальную высоту
+                
+                // Проверяем родительские элементы
+                var parentStack = indicatorsStack.Parent as VerticalStackLayout;
+                if (parentStack != null)
+                {
+                    parentStack.IsVisible = true;
+                    parentStack.Spacing = 6; // Увеличиваем расстояние в родительском контейнере
                 }
             }
             catch (Exception ex)
@@ -357,21 +365,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        private EventType GetPriorityEventType(List<CalendarEvent> events)
+        private Style GetStyleForEventType(EventType eventType)
         {
-            // Priority: Restriction > Medication > Photo > Instruction
-            var eventTypes = events.Select(e => e.EventType).Distinct().ToList();
-            
-            if (eventTypes.Contains(EventType.Restriction))
-                return EventType.Restriction;
-            if (eventTypes.Contains(EventType.Medication))
-                return EventType.Medication;
-            if (eventTypes.Contains(EventType.Photo))
-                return EventType.Photo;
-            if (eventTypes.Contains(EventType.Instruction))
-                return EventType.Instruction;
-                
-            return EventType.Instruction; // Default
+            return eventType switch
+            {
+                EventType.Restriction => (Style)Resources["RestrictionDotStyle"],
+                EventType.Medication => (Style)Resources["MedicationDotStyle"],
+                EventType.Photo => (Style)Resources["PhotoDotStyle"],
+                EventType.Instruction => (Style)Resources["InstructionDotStyle"],
+                _ => (Style)Resources["EventDotBaseStyle"]
+            };
+        }
+        
+        private int GetEventTypePriority(EventType eventType)
+        {
+            return eventType switch
+            {
+                EventType.Restriction => 1,
+                EventType.Medication => 2,
+                EventType.Photo => 3,
+                EventType.Instruction => 4,
+                _ => 5
+            };
         }
         
         private int GetRowForDay(CalendarDayViewModel day)

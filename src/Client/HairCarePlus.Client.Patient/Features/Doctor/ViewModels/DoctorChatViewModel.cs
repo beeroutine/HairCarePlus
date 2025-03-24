@@ -112,12 +112,12 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 var collectionView = Application.Current.MainPage.FindByName<CollectionView>("MessagesCollection");
-                if (collectionView?.ItemsSource != null)
+                if (collectionView != null && collectionView.ItemsSource != null)
                 {
                     var items = collectionView.ItemsSource.Cast<object>().ToList();
                     if (items.Any())
                     {
-                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
+                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End);
                     }
                 }
             });
@@ -264,12 +264,12 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 var collectionView = Application.Current.MainPage.FindByName<CollectionView>("MessagesCollection");
-                if (collectionView?.ItemsSource != null)
+                if (collectionView != null && collectionView.ItemsSource != null)
                 {
                     var items = collectionView.ItemsSource.Cast<object>().ToList();
                     if (items.Any())
                     {
-                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End, animate: true);
+                        collectionView.ScrollTo(items.Last(), position: ScrollToPosition.End);
                     }
                 }
             });

@@ -136,52 +136,45 @@
                                 </CollectionView.EmptyViewTemplate>
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate>
-                                        <Frame Style="{StaticResource EventCardStyle}"
-                                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToBackgroundConverter}}"
-                                               Margin="0,4">
-                                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-                                                <!-- Event type indicator -->
-                                                <BoxView Grid.Row="0" Grid.RowSpan="4" Grid.Column="0"
-                                                         WidthRequest="6"
-                                                         VerticalOptions="Fill"
-                                                         Margin="0,0,12,0"
-                                                         BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
-                                                 
-                                                <!-- Event type badge -->
-                                                <Border Grid.Row="0" Grid.Column="1"
-                                                        BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}"
-                                                        Style="{StaticResource EventTypeBadgeStyle}">
-                                                    <Label Text="{Binding EventType, Converter={StaticResource EventTypeToLabelConverter}}"
-                                                           Style="{StaticResource EventTypeLabelStyle}" />
-                                                </Border>
+                                        <Grid Padding="8" ColumnSpacing="12" RowSpacing="4">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <!-- Event type indicator -->
+                                            <BoxView Grid.Row="0" Grid.Column="0" Grid.RowSpan="4"
+                                                    WidthRequest="4"
+                                                    HeightRequest="40"
+                                                    CornerRadius="2"
+                                                    VerticalOptions="Start"
+                                                    BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
                                                 
-                                                <!-- Event title -->
-                                                <Label Grid.Row="1" Grid.Column="1"
-                                                       Text="{Binding Title}"
-                                                       FontAttributes="Bold"
-                                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}"
-                                                       Margin="0,0,0,4" />
-                                                   
-                                                <!-- Event description -->
-                                                <Label Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
-                                                       Text="{Binding Description}"
-                                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}"
-                                                       LineBreakMode="WordWrap" />
-                                                
-                                                <!-- Date range for restrictions -->
-                                                <Label Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                                                       IsVisible="{Binding EventType, Converter={StaticResource IsRestrictionConverter}}"
-                                                       Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd, yyyy}'}"
-                                                       Style="{StaticResource DateRangeStyle}" />
-                                                   
-                                                <!-- Completion checkbox -->
-                                                <CheckBox Grid.Row="1" Grid.Column="2"
-                                                          IsChecked="{Binding IsCompleted}"
-                                                          CheckedChanged="OnEventCheckedChanged"
-                                                          Color="{StaticResource CheckBoxColor}"
-                                                          IsVisible="{Binding EventType, Converter={StaticResource IsNotRestrictionConverter}}"/>
-                                            </Grid>
-                                        </Frame>
+                                            <!-- Event title -->
+                                            <Label Grid.Row="1" Grid.Column="1"
+                                                   Text="{Binding Title}"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}"
+                                                   Margin="0,0,0,4" />
+                                               
+                                            <!-- Event description -->
+                                            <Label Grid.Row="2" Grid.Column="1"
+                                                   Text="{Binding Description}"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}"
+                                                   LineBreakMode="WordWrap" />
+                                            
+                                            <!-- Date range for restrictions -->
+                                            <Label Grid.Row="3" Grid.Column="1"
+                                                   IsVisible="{Binding EventType, Converter={StaticResource IsRestrictionConverter}}"
+                                                   Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd, yyyy}'}"
+                                                   Style="{StaticResource DateRangeStyle}" />
+                                        </Grid>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>

@@ -13,7 +13,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
     public class RestrictTimerItem : BaseViewModel
     {
         private CalendarEvent _restrictionEvent;
-        private string _remainingTimeText;
+        private string _remainingTimeText = string.Empty;
         private double _progressPercentage;
         private DateTime _endDate;
 

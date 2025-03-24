@@ -47,21 +47,44 @@
                 <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource Gray600}}" />
                 <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="Padding" Value="4" />
-                <Setter Property="Margin" Value="2" />
-                <Setter Property="MinimumHeightRequest" Value="45" />
-                <Setter Property="MinimumWidthRequest" Value="40" />
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="Margin" Value="1" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
+                <Setter Property="MinimumWidthRequest" Value="42" />
+                <Setter Property="MaximumHeightRequest" Value="60" />
                 <Setter Property="HasShadow" Value="False" />
                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=#1C1C1E}" />
             </Style>
             
-            <Style x:Key="EventDotStyle" TargetType="BoxView">
+            <Style x:Key="EventIndicatorsContainerStyle" TargetType="HorizontalStackLayout">
+                <Setter Property="Spacing" Value="4" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="End" />
+                <Setter Property="Margin" Value="0,6,0,2" />
+                <Setter Property="MinimumHeightRequest" Value="10" />
+            </Style>
+
+            <Style x:Key="EventDotBaseStyle" TargetType="BoxView">
                 <Setter Property="HeightRequest" Value="8" />
                 <Setter Property="WidthRequest" Value="8" />
                 <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="Margin" Value="0,2,0,0" />
+                <Setter Property="Opacity" Value="1" />
+            </Style>
+
+            <Style x:Key="RestrictionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
+                <Setter Property="BackgroundColor" Value="#FF4B4B" />
+            </Style>
+
+            <Style x:Key="MedicationDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
+                <Setter Property="BackgroundColor" Value="#2196F3" />
+            </Style>
+
+            <Style x:Key="PhotoDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
+                <Setter Property="BackgroundColor" Value="#2196F3" />
+            </Style>
+
+            <Style x:Key="InstructionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
+                <Setter Property="BackgroundColor" Value="#9C27B0" />
             </Style>
         </ResourceDictionary>
     </ContentView.Resources>
