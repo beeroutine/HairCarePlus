@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
+             xmlns:helpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.FullCalendarPage"
+             NavigationPage.HasNavigationBar="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource Gray900}}"
+             Title="Календарь">
+    
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <!-- Конвертеры -->
+            <helpers:BoolConverter x:Key="BoolConverter" />
+            <helpers:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
+            <helpers:CountToHeightConverter x:Key="CountToHeightConverter" />
+            
+            <!-- Стили для заголовков -->
+            <Style x:Key="PageTitleStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="Margin" Value="16,16,16,0" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+            </Style>
+            
+            <Style x:Key="MonthHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+            </Style>
+            
+            <Style x:Key="DayHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+            </Style>
+            
+            <Style x:Key="TimeOfDayHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="Margin" Value="0,16,0,8" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+            </Style>
+            
+            <!-- Стили для ячеек календаря -->
+            <Style x:Key="DayCellStyle" TargetType="Border">
+                <Setter Property="Padding" Value="2" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark={StaticResource Gray800}}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 8,8,8,8" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="MinimumHeightRequest" Value="65" />
+            </Style>
+            
+            <Style x:Key="OtherMonthDayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
+                <Setter Property="Opacity" Value="0.5" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}" />
+            </Style>
+            
+            <Style x:Key="TodayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
+                <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                <Setter Property="StrokeThickness" Value="2" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F0E8FF, Dark=#2C2948}" />
+            </Style>
+            
+            <Style x:Key="SelectedDayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
+                <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                <Setter Property="StrokeThickness" Value="2" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#E0D6FF, Dark=#3E3663}" />
+            </Style>
+            
+            <!-- Стили для текста дня -->
+            <Style x:Key="DayNumberStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+                <Setter Property="Margin" Value="0,2,0,0" />
+            </Style>
+            
+            <Style x:Key="OtherMonthDayNumberStyle" TargetType="Label" BasedOn="{StaticResource DayNumberStyle}">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+            </Style>
+            
+            <!-- Стили для индикаторов событий -->
+            <Style x:Key="EventIndicatorStyle" TargetType="Border">
+                <Setter Property="HeightRequest" Value="10" />
+                <Setter Property="WidthRequest" Value="10" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 5,5,5,5" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="Margin" Value="2,0" />
+            </Style>
+            
+            <Style x:Key="ExcessEventsLabelStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray300}}" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="Margin" Value="0,2,0,0" />
+            </Style>
+            
+            <!-- Стили для навигации -->
+            <Style x:Key="NavigationButtonStyle" TargetType="Button">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="BorderWidth" Value="0" />
+            </Style>
+            
+            <Style x:Key="BackButtonStyle" TargetType="Button">
+                <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="BorderWidth" Value="0" />
+            </Style>
+            
+            <!-- Стили для карточек событий -->
+            <Style x:Key="EventCardStyle" TargetType="Border">
+                <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark={StaticResource Gray800}}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="Padding" Value="16,12" />
+                <Setter Property="Margin" Value="0,0,0,8" />
+            </Style>
+            
+            <Style x:Key="EventTitleStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+            </Style>
+            
+            <Style x:Key="EventDescriptionStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
+                <Setter Property="Margin" Value="0,4,0,0" />
+            </Style>
+            
+            <Style x:Key="EventTypeIndicatorStyle" TargetType="BoxView">
+                <Setter Property="WidthRequest" Value="4" />
+                <Setter Property="CornerRadius" Value="2" />
+                <Setter Property="HorizontalOptions" Value="Start" />
+                <Setter Property="VerticalOptions" Value="Fill" />
+                <Setter Property="Margin" Value="0,0,12,0" />
+            </Style>
+            
+            <Style x:Key="NoEventsStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="Margin" Value="0,32" />
+            </Style>
+            
+            <!-- Шаблоны для событий -->
+            <DataTemplate x:Key="EventTemplate">
+                <Border Style="{StaticResource EventCardStyle}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <BoxView Grid.Column="0"
+                                 Style="{StaticResource EventTypeIndicatorStyle}"
+                                 Color="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
+                        
+                        <StackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="{Binding Title}" 
+                                   Style="{StaticResource EventTitleStyle}" />
+                            
+                            <Label Text="{Binding Description}"
+                                   Style="{StaticResource EventDescriptionStyle}"
+                                   MaxLines="2"
+                                   LineBreakMode="TailTruncation" />
+                        </StackLayout>
+                        
+                        <CheckBox Grid.Column="2"
+                                  IsChecked="{Binding IsCompleted}"
+                                  VerticalOptions="Center"
+                                  HorizontalOptions="End"/>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+            
+            <!-- Шаблон для группы событий -->
+            <DataTemplate x:Key="DayEventsGroupTemplate">
+                <StackLayout IsVisible="{Binding HasEvents}" Spacing="4">
+                    <Label Text="{Binding Header}" 
+                           Style="{StaticResource TimeOfDayHeaderStyle}" />
+                    
+                    <CollectionView ItemsSource="{Binding Events}"
+                                    ItemTemplate="{StaticResource EventTemplate}"
+                                    SelectionMode="None"
+                                    EmptyView="Нет событий"
+                                    HeightRequest="{Binding Events.Count, Converter={StaticResource CountToHeightConverter}}">
+                    </CollectionView>
+                </StackLayout>
+            </DataTemplate>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    
+    <Grid RowDefinitions="Auto,*" RowSpacing="0">
+        <!-- Заголовок страницы -->
+        <Label Text="Календарь" 
+               Style="{StaticResource PageTitleStyle}" />
+        
+        <!-- Контент страницы -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*" Padding="16,0,16,16">
+            
+            <!-- Месячный вид -->
+            <Grid IsVisible="{Binding IsMonthViewVisible}">
+                <!-- Заголовок с навигацией по месяцам -->
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,16,0,16">
+                    <Button Grid.Column="0"
+                            Text="‹"
+                            Command="{Binding PreviousMonthCommand}"
+                            Style="{StaticResource NavigationButtonStyle}" />
+                    
+                    <Label Grid.Column="1"
+                           Text="{Binding CurrentMonthYear}"
+                           Style="{StaticResource MonthHeaderStyle}" />
+                    
+                    <Button Grid.Column="2"
+                            Text="›"
+                            Command="{Binding NextMonthCommand}"
+                            Style="{StaticResource NavigationButtonStyle}" />
+                </Grid>
+                
+                <!-- Сетка дней недели -->
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <Label Grid.Column="0" Text="Вс" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="1" Text="Пн" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="2" Text="Вт" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="3" Text="Ср" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="4" Text="Чт" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="5" Text="Пт" Style="{StaticResource DayHeaderStyle}" />
+                    <Label Grid.Column="6" Text="Сб" Style="{StaticResource DayHeaderStyle}" />
+                </Grid>
+                
+                <!-- Сетка календаря -->
+                <CollectionView Grid.Row="2" 
+                                ItemsSource="{Binding Days}" 
+                                SelectionMode="None"
+                                Margin="0,8,0,0">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical" 
+                                         Span="7"
+                                         VerticalItemSpacing="8"
+                                         HorizontalItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+                    
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource DayCellStyle}">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" 
+                                                 Binding="{Binding IsToday}" 
+                                                 Value="True">
+                                        <Setter Property="Style" 
+                                                Value="{StaticResource TodayCellStyle}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" 
+                                                 Binding="{Binding IsSelected}" 
+                                                 Value="True">
+                                        <Setter Property="Style" 
+                                                Value="{StaticResource SelectedDayCellStyle}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" 
+                                                 Binding="{Binding IsCurrentMonth}" 
+                                                 Value="False">
+                                        <Setter Property="Style" 
+                                                Value="{StaticResource OtherMonthDayCellStyle}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+                                    <!-- Номер дня -->
+                                    <Label Text="{Binding Day}" 
+                                           Style="{Binding IsCurrentMonth, Converter={StaticResource BoolConverter}, ConverterParameter='DayNumberStyle:OtherMonthDayNumberStyle'}"
+                                           FontAttributes="{Binding IsToday, Converter={StaticResource BoolConverter}, ConverterParameter='Bold:None'}" />
+                                    
+                                    <!-- Индикаторы событий -->
+                                    <FlexLayout Grid.Row="1" 
+                                                JustifyContent="Center"
+                                                AlignItems="Center"
+                                                IsVisible="{Binding HasEvents}"
+                                                Margin="0,6,0,6">
+                                        
+                                        <!-- Индикатор события приема лекарств (синий) -->
+                                        <Border IsVisible="{Binding HasMedicationEvents}"
+                                                Style="{StaticResource EventIndicatorStyle}"
+                                                BackgroundColor="{StaticResource MedicationColor}" />
+                                        
+                                        <!-- Индикатор события фотоотчета (зеленый) -->
+                                        <Border IsVisible="{Binding HasPhotoEvents}"
+                                                Style="{StaticResource EventIndicatorStyle}"
+                                                BackgroundColor="{StaticResource PhotoColor}" />
+                                        
+                                        <!-- Индикатор события ограничений (красный) -->
+                                        <Border IsVisible="{Binding HasRestrictionEvents}"
+                                                Style="{StaticResource EventIndicatorStyle}"
+                                                BackgroundColor="{StaticResource RestrictionColor}" />
+                                        
+                                        <!-- Индикатор события инструкции (фиолетовый) -->
+                                        <Border IsVisible="{Binding HasInstructionEvents}"
+                                                Style="{StaticResource EventIndicatorStyle}"
+                                                BackgroundColor="{StaticResource InstructionColor}" />
+                                    </FlexLayout>
+                                    
+                                    <!-- Индикатор для избыточных событий -->
+                                    <Label Grid.Row="2"
+                                           IsVisible="{Binding HasExcessEvents}"
+                                           Text="{Binding ExcessEventsText}"
+                                           Style="{StaticResource ExcessEventsLabelStyle}" />
+                                    
+                                    <!-- Обработчик нажатия -->
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Path=BindingContext.DaySelectedCommand, 
+                                                                             Source={RelativeSource AncestorType={x:Type ContentPage}}}"
+                                                              CommandParameter="{Binding Date}" />
+                                    </Grid.GestureRecognizers>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+            
+            <!-- Дневной вид -->
+            <Grid IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BoolConverter}, ConverterParameter=false}">
+                <!-- Заголовок с датой и кнопкой назад -->
+                <Grid ColumnDefinitions="Auto,*" Margin="0,16,0,16">
+                    <Button Grid.Column="0"
+                            Text="‹ Назад к месяцу"
+                            Command="{Binding BackToMonthViewCommand}"
+                            Style="{StaticResource BackButtonStyle}" />
+                    
+                    <Label Grid.Column="1"
+                           Text="{Binding SelectedDateText}"
+                           Style="{StaticResource MonthHeaderStyle}"
+                           HorizontalOptions="End" />
+                </Grid>
+                
+                <!-- Содержимое дневного вида -->
+                <ScrollView Grid.Row="1">
+                    <StackLayout Spacing="16" Margin="0,8,0,0">
+                        <!-- Группы событий по времени суток -->
+                        <CollectionView ItemsSource="{Binding DayEventsGroups}"
+                                        ItemTemplate="{StaticResource DayEventsGroupTemplate}"
+                                        SelectionMode="None">
+                        </CollectionView>
+                        
+                        <!-- Сообщение при отсутствии событий -->
+                        <Label Text="На этот день нет запланированных событий"
+                               Style="{StaticResource NoEventsStyle}"
+                               IsVisible="{Binding HasEvents, Converter={StaticResource BoolConverter}, ConverterParameter=false}" />
+                    </StackLayout>
+                </ScrollView>
+            </Grid>
+        </Grid>
+    </Grid>
+</ContentPage> 

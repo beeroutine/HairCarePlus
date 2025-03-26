@@ -85,21 +85,22 @@
             </Style>
             
             <Style x:Key="OtherMonthDayStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
-                <Setter Property="Opacity" Value="0.5" />
-                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Opacity" Value="0.6" />
             </Style>
             
             <Style x:Key="TodayCellStyle" TargetType="Border">
-                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
                 <Setter Property="StrokeThickness" Value="2" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 20,20,20,20" />
-                <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="WidthRequest" Value="36" />
-                <Setter Property="HeightRequest" Value="36" />
+                <Setter Property="Padding" Value="4" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="WidthRequest" Value="32" />
+                <Setter Property="HeightRequest" Value="32" />
             </Style>
             
             <Style x:Key="SelectedCellStyle" TargetType="Border">
@@ -137,7 +138,7 @@
                     Style="{StaticResource NavigationButtonStyle}"/>
             
             <Label Grid.Column="1" 
-                   Text="{Binding CurrentMonthYear}"
+                   Text="{Binding CurrentMonthDate, StringFormat='{0:MMMM yyyy}'}"
                    Style="{StaticResource MonthHeaderStyle}"
                    HorizontalOptions="Center"/>
             

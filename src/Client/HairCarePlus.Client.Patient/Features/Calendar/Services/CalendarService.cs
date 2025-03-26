@@ -213,117 +213,149 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
             var currentMonth = new DateTime(today.Year, today.Month, 1);
             
             // Create a list of mock calendar events
-            return new List<CalendarEvent>
+            var events = new List<CalendarEvent>();
+            
+            // Today's events
+            events.Add(new CalendarEvent
             {
-                // Today's events
-                new CalendarEvent
+                Id = 1,
+                Title = "Утренний приём лекарств",
+                Description = "Принять лекарство с завтраком",
+                Date = today,
+                EventType = EventType.Medication,
+                TimeOfDay = TimeOfDay.Morning,
+                ReminderTime = new TimeSpan(8, 0, 0),
+                IsCompleted = false
+            });
+            
+            events.Add(new CalendarEvent
+            {
+                Id = 2,
+                Title = "Вечерний приём лекарств",
+                Description = "Принять лекарство перед сном",
+                Date = today,
+                EventType = EventType.Medication,
+                TimeOfDay = TimeOfDay.Evening,
+                ReminderTime = new TimeSpan(20, 0, 0),
+                IsCompleted = false
+            });
+            
+            // Tomorrow's events
+            events.Add(new CalendarEvent
+            {
+                Id = 3,
+                Title = "Мытьё головы",
+                Description = "Следовать назначенной процедуре мытья головы",
+                Date = today.AddDays(1),
+                EventType = EventType.Instruction,
+                TimeOfDay = TimeOfDay.Morning,
+                ReminderTime = new TimeSpan(9, 0, 0),
+                IsCompleted = false
+            });
+            
+            // Add more events across different days
+            for (int i = 1; i <= 28; i++)
+            {
+                // Add medication events on even days
+                if (i % 2 == 0)
                 {
-                    Id = 1,
-                    Title = "Morning Medication",
-                    Description = "Take your morning medication with breakfast",
-                    Date = today,
-                    EventType = EventType.Medication,
-                    ReminderTime = new TimeSpan(8, 0, 0),
-                    IsCompleted = false
-                },
-                new CalendarEvent
-                {
-                    Id = 2,
-                    Title = "Evening Medication",
-                    Description = "Take your evening medication before bed",
-                    Date = today,
-                    EventType = EventType.Medication,
-                    ReminderTime = new TimeSpan(20, 0, 0),
-                    IsCompleted = false
-                },
-                
-                // Tomorrow's events
-                new CalendarEvent
-                {
-                    Id = 3,
-                    Title = "Hair Washing",
-                    Description = "Wash your hair following the prescribed procedure",
-                    Date = today.AddDays(1),
-                    EventType = EventType.Instruction,
-                    ReminderTime = new TimeSpan(9, 0, 0),
-                    IsCompleted = false
-                },
-                
-                // Next week events
-                new CalendarEvent
-                {
-                    Id = 4,
-                    Title = "Photo Report",
-                    Description = "Take photos of your scalp from all angles",
-                    Date = today.AddDays(7),
-                    EventType = EventType.Photo,
-                    ReminderTime = new TimeSpan(12, 0, 0),
-                    IsCompleted = false
-                },
-                new CalendarEvent
-                {
-                    Id = 5,
-                    Title = "Doctor Appointment",
-                    Description = "Visit Dr. Smith for follow-up",
-                    Date = today.AddDays(10),
-                    EventType = EventType.Medication,
-                    ReminderTime = new TimeSpan(14, 30, 0),
-                    IsCompleted = false
-                },
-                
-                // Restrictions
-                new CalendarEvent
-                {
-                    Id = 6,
-                    Title = "No Hair Washing",
-                    Description = "Avoid washing your hair for 3 days",
-                    Date = today.AddDays(-1),
-                    ExpirationDate = today.AddDays(2),
-                    EventType = EventType.Restriction,
-                    IsCompleted = false
-                },
-                new CalendarEvent
-                {
-                    Id = 7,
-                    Title = "No Physical Activity",
-                    Description = "Avoid strenuous physical activity for 7 days",
-                    Date = today.AddDays(-2),
-                    ExpirationDate = today.AddDays(5),
-                    EventType = EventType.Restriction,
-                    IsCompleted = false
-                },
-                
-                // Past events
-                new CalendarEvent
-                {
-                    Id = 8,
-                    Title = "Morning Medication",
-                    Description = "Take your morning medication with breakfast",
-                    Date = today.AddDays(-3),
-                    EventType = EventType.Medication,
-                    IsCompleted = true
-                },
-                new CalendarEvent
-                {
-                    Id = 9,
-                    Title = "Apply Ointment",
-                    Description = "Apply prescribed ointment to affected areas",
-                    Date = today.AddDays(-2),
-                    EventType = EventType.Medication,
-                    IsCompleted = true
-                },
-                
-                // Next month's events
-                new CalendarEvent
-                {
-                    Id = 10,
-                    Title = "Follow-up Visit",
-                    Description = "Hospital follow-up appointment",
-                    Date = currentMonth.AddMonths(1).AddDays(15),
-                    EventType = EventType.Medication,
-                    IsCompleted = false
+                    events.Add(new CalendarEvent
+                    {
+                        Id = 100 + i,
+                        Title = "Приём лекарств",
+                        Description = "Утренний приём лекарств",
+                        Date = new DateTime(today.Year, today.Month, i),
+                        EventType = EventType.Medication,
+                        TimeOfDay = TimeOfDay.Morning,
+                        IsCompleted = i < today.Day
+                    });
                 }
-            };
+                
+                // Add photo reports on days divisible by 5
+                if (i % 5 == 0)
+                {
+                    events.Add(new CalendarEvent
+                    {
+                        Id = 200 + i,
+                        Title = "Фотоотчёт",
+                        Description = "Сделать фото головы со всех сторон",
+                        Date = new DateTime(today.Year, today.Month, i),
+                        EventType = EventType.Photo,
+                        TimeOfDay = TimeOfDay.Afternoon,
+                        IsCompleted = i < today.Day
+                    });
+                }
+                
+                // Add restrictions on days divisible by 7
+                if (i % 7 == 0)
+                {
+                    events.Add(new CalendarEvent
+                    {
+                        Id = 300 + i,
+                        Title = "Ограничение физической активности",
+                        Description = "Избегать интенсивных физических нагрузок",
+                        Date = new DateTime(today.Year, today.Month, i),
+                        EventType = EventType.Restriction,
+                        TimeOfDay = TimeOfDay.Morning,
+                        ExpirationDate = new DateTime(today.Year, today.Month, i).AddDays(3),
+                        IsCompleted = false
+                    });
+                }
+                
+                // Add instructions on days divisible by 3
+                if (i % 3 == 0)
+                {
+                    events.Add(new CalendarEvent
+                    {
+                        Id = 400 + i,
+                        Title = "Инструкция по уходу",
+                        Description = "Специальный уход за кожей головы",
+                        Date = new DateTime(today.Year, today.Month, i),
+                        EventType = EventType.Instruction,
+                        TimeOfDay = TimeOfDay.Evening,
+                        IsCompleted = i < today.Day
+                    });
+                }
+            }
+            
+            // Previous month events
+            for (int i = 25; i <= 31; i++)
+            {
+                var previousMonthDate = currentMonth.AddMonths(-1).AddDays(i - 1);
+                if (previousMonthDate.Month == currentMonth.AddMonths(-1).Month)
+                {
+                    events.Add(new CalendarEvent
+                    {
+                        Id = 500 + i,
+                        Title = "Приём лекарств",
+                        Description = "Ежедневный приём лекарств",
+                        Date = previousMonthDate,
+                        EventType = EventType.Medication,
+                        TimeOfDay = TimeOfDay.Morning,
+                        IsCompleted = true
+                    });
+                }
+            }
+            
+            // Next month events
+            for (int i = 1; i <= 10; i++)
+            {
+                events.Add(new CalendarEvent
+                {
+                    Id = 600 + i,
+                    Title = $"Плановый осмотр {i}",
+                    Description = "Плановый осмотр у врача",
+                    Date = currentMonth.AddMonths(1).AddDays(i - 1),
+                    EventType = i % 4 == 0 ? EventType.Instruction :
+                                i % 3 == 0 ? EventType.Photo :
+                                i % 2 == 0 ? EventType.Restriction : EventType.Medication,
+                    TimeOfDay = i % 3 == 0 ? TimeOfDay.Morning :
+                                i % 2 == 0 ? TimeOfDay.Afternoon : TimeOfDay.Evening,
+                    IsCompleted = false
+                });
+            }
+            
+            return events;
         }
 
         #endregion

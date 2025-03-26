@@ -16,51 +16,66 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class MonthCalendarView : ContentView
     {
-        private List<TapGestureRecognizer> _dayTapGestures = new List<TapGestureRecognizer>();
-        private CalendarViewModel? ViewModel => BindingContext as CalendarViewModel;
         private readonly Dictionary<DateTime, Frame> _dateCells = new();
+        private SimpleCalendarViewModel? _previousViewModel;
+        private SimpleCalendarViewModel? ViewModel => BindingContext as SimpleCalendarViewModel;
 
         public MonthCalendarView()
         {
             InitializeComponent();
             CreateCalendarCells();
             
-            // После загрузки данных создаем ячейки
-            this.Loaded += (s, e) => {
-                RefreshCalendarDays();
-            };
+            // Подписываемся на изменение BindingContext
+            this.BindingContextChanged += OnBindingContextChanged;
             
-            // При изменении размера представления пересоздаем ячейки
-            this.SizeChanged += (s, e) => {
-                if (Width > 0 && Height > 0)
-                {
-                    RefreshCalendarDays();
-                }
-            };
+            // Подписываемся на изменения размера для обновления ячеек
+            this.SizeChanged += (s, e) => RefreshCalendarDays();
         }
         
-        protected override void OnBindingContextChanged()
+        private void OnBindingContextChanged(object sender, EventArgs e)
         {
-            base.OnBindingContextChanged();
+            // Отписываемся от событий старой ViewModel
+            if (_previousViewModel != null)
+            {
+                _previousViewModel.CurrentMonthChanged -= ViewModel_CurrentMonthChanged;
+                _previousViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
             
+            // Подписываемся на события новой ViewModel
             if (ViewModel != null)
             {
-                ViewModel.PropertyChanged += (s, e) => {
-                    if (e.PropertyName == nameof(ViewModel.CalendarDays) ||
-                        e.PropertyName == nameof(ViewModel.SelectedDate) ||
-                        e.PropertyName == nameof(ViewModel.CurrentMonthDate))
-                    {
-                        RefreshCalendarDays();
-                    }
-                };
+                ViewModel.CurrentMonthChanged += ViewModel_CurrentMonthChanged;
+                ViewModel.PropertyChanged += ViewModel_PropertyChanged;
                 
-                // Начальная отрисовка календаря
+                // Обновляем календарь
+                RefreshCalendarDays();
+                
+                // Запоминаем текущую ViewModel
+                _previousViewModel = ViewModel;
+            }
+        }
+        
+        private void ViewModel_CurrentMonthChanged(object sender, EventArgs e)
+        {
+            // Обновляем календарь при смене месяца
+            RefreshCalendarDays();
+        }
+        
+        private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // Обновляем календарь при изменении даты
+            if (e.PropertyName == nameof(SimpleCalendarViewModel.CurrentMonthDate) || 
+                e.PropertyName == nameof(SimpleCalendarViewModel.SelectedDate))
+            {
                 RefreshCalendarDays();
             }
         }
         
         private void CreateCalendarCells()
         {
+            // Очищаем существующие ячейки
+            CalendarGrid.Children.Clear();
+            
             for (int row = 0; row < 6; row++)
             {
                 for (int col = 0; col < 7; col++)
@@ -82,7 +97,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     new RowDefinition { Height = GridLength.Auto },
                     new RowDefinition { Height = GridLength.Star }
                 },
-                Padding = new Thickness(0)
+                Padding = new Thickness(0),
+                BackgroundColor = Colors.Transparent
             };
 
             var dayLabel = new Label
@@ -90,15 +106,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 Style = (Style)Resources["DayNumberStyle"]
             };
 
-            var eventsStack = new StackLayout
-            {
-                Spacing = 2,
-                Margin = new Thickness(0, 4, 0, 0)
-            };
-
             cellGrid.Children.Add(dayLabel);
-            cellGrid.Children.Add(eventsStack);
-            Grid.SetRow(eventsStack, 1);
 
             var frame = new Frame
             {
@@ -115,56 +123,90 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
         private void OnDayCellTapped(object sender, EventArgs e)
         {
-            if (sender is Frame frame && frame.BindingContext is DateTime selectedDate)
+            if (sender is Frame frame && frame.BindingContext is DateTime selectedDate && ViewModel != null)
             {
-                // Вызываем команду выбора даты из ViewModel
-                if (BindingContext is CalendarViewModel viewModel)
+                if (ViewModel.DaySelectedCommand?.CanExecute(selectedDate) == true)
                 {
-                    viewModel.DaySelectedCommand?.Execute(selectedDate);
+                    ViewModel.DaySelectedCommand.Execute(selectedDate);
                 }
             }
         }
 
-        public void UpdateCalendar(DateTime currentMonth)
+        public void RefreshCalendarDays()
         {
-            var firstDayOfMonth = new DateTime(currentMonth.Year, currentMonth.Month, 1);
-            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-
-            var firstDayOfCalendar = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
-
-            var currentDate = firstDayOfCalendar;
-            var cells = CalendarGrid.Children.OfType<Frame>().ToList();
-
-            for (int i = 0; i < cells.Count; i++)
+            try
             {
-                var cell = cells[i];
-                var grid = cell.Content as Grid;
-                var dayLabel = grid?.Children.OfType<Label>().FirstOrDefault();
-
-                if (dayLabel != null)
+                // Получаем месяц для отображения
+                DateTime currentMonth = ViewModel?.CurrentMonthDate ?? DateTime.Today;
+                
+                // Рассчитываем первый день в календаре (может быть из предыдущего месяца)
+                var firstDayOfMonth = new DateTime(currentMonth.Year, currentMonth.Month, 1);
+                var firstDayOfCalendar = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+                
+                // Обрабатываем все ячейки календаря
+                var cells = CalendarGrid.Children.OfType<Frame>().ToList();
+                var currentDate = firstDayOfCalendar;
+                
+                foreach (var cell in cells)
                 {
-                    dayLabel.Text = currentDate.Day.ToString();
-                    cell.BindingContext = currentDate;
-
-                    // Стилизация для дней не из текущего месяца
+                    var grid = cell.Content as Grid;
+                    if (grid == null) continue;
+                    
+                    // Очищаем содержимое грида
+                    grid.Children.Clear();
+                    
+                    // Создаем лейбл для дня
+                    var dayLabel = new Label
+                    {
+                        Text = currentDate.Day.ToString(),
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center
+                    };
+                    
+                    // Устанавливаем стиль в зависимости от типа дня
                     if (currentDate.Month != currentMonth.Month)
                     {
-                        dayLabel.Opacity = 0.3;
+                        dayLabel.Style = (Style)Resources["OtherMonthDayStyle"];
+                }
+                else
+                {
+                        dayLabel.Style = (Style)Resources["DayNumberStyle"];
+                    }
+                    
+                    bool isSelected = ViewModel != null && currentDate.Date == ViewModel.SelectedDate.Date;
+                    
+                    // Обрабатываем текущий день или выбранный день
+                    if (currentDate.Date == DateTime.Today || isSelected)
+                    {
+                        var todayBorder = new Border
+                        {
+                            Style = (Style)Resources["TodayCellStyle"],
+                            BackgroundColor = isSelected ? 
+                                (Color)Application.Current.Resources["Primary"] : 
+                                Colors.Transparent
+                        };
+                        
+                        dayLabel.TextColor = isSelected ? Colors.White : Colors.Black;
+                        dayLabel.FontAttributes = FontAttributes.Bold;
+                        
+                        todayBorder.Content = dayLabel;
+                        grid.Children.Add(todayBorder);
                     }
                     else
                     {
-                        dayLabel.Opacity = 1;
+                        grid.Children.Add(dayLabel);
                     }
-
-                    // Выделение текущего дня
-                    if (currentDate.Date == DateTime.Today)
-                    {
-                        dayLabel.TextColor = (Color)Application.Current.Resources["Primary"];
-                        dayLabel.FontAttributes = FontAttributes.Bold;
-                    }
+                    
+                    // Устанавливаем контекст привязки
+                    cell.BindingContext = currentDate;
+                    
+                    // Переходим к следующему дню
+                    currentDate = currentDate.AddDays(1);
                 }
-
-                currentDate = currentDate.AddDays(1);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in RefreshCalendarDays: {ex}");
             }
         }
 
@@ -178,59 +220,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     tapGesture.Tapped -= OnDayCellTapped;
                     tapGesture.Tapped += OnDayCellTapped;
                 }
-            }
-        }
-
-        private void RefreshCalendarDays()
-        {
-            try
-            {
-                // Очищаем текущие ячейки
-                CalendarGrid.Children.Clear();
-                _dayTapGestures.Clear();
-                
-                if (ViewModel == null || ViewModel.CalendarDays == null || ViewModel.CalendarDays.Count == 0)
-                {
-                    return;
-                }
-                
-                // Добавляем ячейки для всех дней
-                int row = 0;
-                int col = 0;
-                
-                foreach (var dayViewModel in ViewModel.CalendarDays)
-                {
-                    var dayCell = CreateDayCell(dayViewModel);
-                    
-                    if (dayCell != null)
-                    {
-                        CalendarGrid.Add(dayCell, col, row);
-                        
-                        // Добавляем обработчик нажатия
-                        var tapGesture = new TapGestureRecognizer();
-                        tapGesture.Tapped += (s, e) => {
-                            if (ViewModel.DaySelectedCommand?.CanExecute(dayViewModel.Date) == true)
-                            {
-                                ViewModel.DaySelectedCommand.Execute(dayViewModel.Date);
-                            }
-                        };
-                        
-                        dayCell.GestureRecognizers.Add(tapGesture);
-                        _dayTapGestures.Add(tapGesture);
-                    }
-                    
-                    // Переходим к следующей ячейке
-                    col++;
-                    if (col >= 7)
-                    {
-                        col = 0;
-                        row++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error in RefreshCalendarDays: {ex.Message}");
             }
         }
 

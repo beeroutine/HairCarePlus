@@ -12,6 +12,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using NotificationsService = HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using RestrictTimer = HairCarePlus.Client.Patient.Features.Calendar.ViewModels.RestrictTimerItem;
+using INotificationsService = HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces.INotificationService;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -24,7 +25,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         }
 
         private readonly ICalendarService _calendarService;
-        private readonly NotificationsService.INotificationService _notificationService;
+        private readonly INotificationsService _notificationService;
         private readonly IEventAggregationService _eventAggregationService;
 
         // Keep track of the last loaded month to avoid reloading unnecessarily
@@ -94,7 +95,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         public CalendarViewModel(
             ICalendarService calendarService,
-            NotificationsService.INotificationService notificationService,
+            INotificationsService notificationService,
             IEventAggregationService eventAggregationService)
         {
             _calendarService = calendarService;
@@ -192,7 +193,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void ExecuteGoToToday()
         {
-            CurrentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            CurrentMonthDate = DateTime.Today;
             SelectedDate = DateTime.Today;
         }
 

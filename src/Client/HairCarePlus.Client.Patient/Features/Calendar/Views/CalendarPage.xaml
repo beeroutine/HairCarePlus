@@ -5,7 +5,7 @@
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
              xmlns:helpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.CalendarPage"
-             Title="{Binding Title}">
+             Title="Календарь">
     
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -16,6 +16,7 @@
             <helpers:IsRestrictionConverter x:Key="IsRestrictionConverter" />
             <helpers:EventTypeToLabelConverter x:Key="EventTypeToLabelConverter" />
             <helpers:BoolToCalendarViewConverter x:Key="BoolToCalendarViewConverter" />
+            <helpers:BoolConverter x:Key="BoolConverter" />
             
             <Style x:Key="EventTitleStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
@@ -116,43 +117,47 @@
             </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
-    
-    <Grid>
-        <!-- Заголовок с кнопками режимов -->
-        <Grid RowDefinitions="Auto,*">
-            <!-- Панель навигации -->
-            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Padding="16,8" BackgroundColor="{AppThemeBinding Light=White, Dark=#1C1C1E}">
-                <Button Grid.Column="0" 
-                        Text="Сегодня" 
-                        Command="{Binding GoToTodayCommand}"
-                        Style="{StaticResource ViewModeButtonStyle}"
-                        HorizontalOptions="Start" />
-                
-                <Label Grid.Column="2" 
-                       Text="{Binding SelectedDate, StringFormat='{0:dd MMM}'}"
-                       Style="{StaticResource DateHeaderStyle}"
-                       FontSize="16"
-                       VerticalOptions="Center"
-                       HorizontalOptions="End" />
-            </Grid>
+
+    <Grid RowDefinitions="Auto,*" Padding="8">
+        <!-- Переключатель вида -->
+        <Grid IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BoolConverter}, ConverterParameter=false}">
+            <Button Text="‹ Назад"
+                    Command="{Binding BackToMonthViewCommand}"
+                    HorizontalOptions="Start"
+                    StyleClass="Text"/>
             
-            <!-- Основной контент с календарем -->
-            <Grid Grid.Row="1">
-                <RefreshView IsRefreshing="{Binding IsBusy}"
-                             Command="{Binding RefreshCommand}">
-                    
-                    <!-- Месячный вид -->
-                    <views:MonthCalendarView BindingContext="{Binding .}" />
-                    
-                </RefreshView>
-                
-                <!-- Индикатор ошибки -->
-                <Label Text="{Binding ErrorMessage}"
-                       Style="{StaticResource ErrorMessageStyle}"
-                       IsVisible="{Binding HasError}" 
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
-            </Grid>
+            <Label Text="{Binding SelectedDateText}"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"/>
         </Grid>
+
+        <!-- Контейнер для месячного вида -->
+        <Border Grid.Row="1" 
+                Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 8,8,8,8"
+                Padding="8"
+                IsVisible="{Binding IsMonthViewVisible}">
+            <views:MonthCalendarView x:Name="monthCalendarView"/>
+        </Border>
+        
+        <!-- Контейнер для дневного вида -->
+        <ScrollView Grid.Row="1"
+                    IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BoolConverter}, ConverterParameter=false}">
+            <VerticalStackLayout Padding="16">
+                <Label Text="События на сегодня:" 
+                       Style="{StaticResource SubheaderStyle}"/>
+                
+                <!-- Заглушка для отсутствия событий -->
+                <Label Text="На этот день нет запланированных событий"
+                       Style="{StaticResource NoEventsStyle}"
+                       HorizontalOptions="Center"
+                       Margin="0,32"/>
+                
+                <!-- Здесь будет список событий на выбранный день -->
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage> 
