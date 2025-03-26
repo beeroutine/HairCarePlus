@@ -17,6 +17,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
     public partial class CalendarViewModel : ObservableObject
     {
+        public enum CalendarViewMode
+        {
+            Month,
+            Day
+        }
+
         private readonly ICalendarService _calendarService;
         private readonly NotificationsService.INotificationService _notificationService;
         private readonly IEventAggregationService _eventAggregationService;
@@ -43,6 +49,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private ObservableCollection<CalendarEvent> _eventsForSelectedDate = new();
 
         [ObservableProperty]
+        private ObservableCollection<CalendarEvent> _morningEvents = new();
+
+        [ObservableProperty]
+        private ObservableCollection<CalendarEvent> _afternoonEvents = new();
+
+        [ObservableProperty]
+        private ObservableCollection<CalendarEvent> _eveningEvents = new();
+
+        [ObservableProperty]
         private ObservableCollection<RestrictTimer> _activeRestrictions = new();
 
         [ObservableProperty]
@@ -63,6 +78,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         [ObservableProperty]
         private bool _isLoaded = false;
 
+        [ObservableProperty]
+        private CalendarViewMode _viewMode = CalendarViewMode.Month;
+
         private const int MaxRetries = 3;
 
         // Commands - initialize them in the constructor
@@ -72,6 +90,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand PreviousMonthCommand { get; }
         public ICommand MarkEventCompletedCommand { get; }
         public ICommand DaySelectedCommand { get; }
+        public ICommand SwitchViewModeCommand { get; }
 
         public CalendarViewModel(
             ICalendarService calendarService,
@@ -90,6 +109,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             PreviousMonthCommand = new Command(ExecutePreviousMonth);
             MarkEventCompletedCommand = new Command<CalendarEvent>(ExecuteMarkEventCompleted);
             DaySelectedCommand = new Command<DateTime>(ExecuteDaySelected);
+            SwitchViewModeCommand = new Command<CalendarViewMode>(ExecuteSwitchViewMode);
             
             // Initialize
             UpdateCalendarDays();
@@ -101,6 +121,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await LoadEventsForSelectedDateAsync();
                 IsLoaded = true;
             });
+        }
+
+        private void ExecuteSwitchViewMode(CalendarViewMode mode)
+        {
+            ViewMode = mode;
         }
 
         partial void OnSelectedDateChanged(DateTime value)
@@ -136,6 +161,35 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             UpdateCalendarDays();
         }
 
+        partial void OnEventsForSelectedDateChanged(ObservableCollection<CalendarEvent> value)
+        {
+            // Сортируем события по времени суток
+            GroupEventsByTimeOfDay();
+        }
+
+        private void GroupEventsByTimeOfDay()
+        {
+            MorningEvents.Clear();
+            AfternoonEvents.Clear();
+            EveningEvents.Clear();
+
+            foreach (var calendarEvent in EventsForSelectedDate)
+            {
+                switch (calendarEvent.TimeOfDay)
+                {
+                    case TimeOfDay.Morning:
+                        MorningEvents.Add(calendarEvent);
+                        break;
+                    case TimeOfDay.Afternoon:
+                        AfternoonEvents.Add(calendarEvent);
+                        break;
+                    case TimeOfDay.Evening:
+                        EveningEvents.Add(calendarEvent);
+                        break;
+                }
+            }
+        }
+
         private void ExecuteGoToToday()
         {
             CurrentMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -155,6 +209,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private void ExecuteDaySelected(DateTime date)
         {
             SelectedDate = date;
+            ViewMode = CalendarViewMode.Day;
         }
 
         private void ExecuteMarkEventCompleted(CalendarEvent calendarEvent)
@@ -373,18 +428,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     var day = firstDayOfCalendarView.AddDays(i);
                     var isCurrentMonth = day.Month == CurrentMonthDate.Month;
-                    var hasEvents = EventsForMonth.Any(e => e.Date.Date == day.Date);
                     var isToday = day.Date == DateTime.Today.Date;
                     var isSelected = day.Date == SelectedDate.Date;
 
-                    calendarDays.Add(new CalendarDayViewModel
+                    // Находим события для этого дня
+                    var eventsForDay = EventsForMonth.Where(e => e.Date.Date == day.Date).ToList();
+                    var hasEvents = eventsForDay.Any();
+                    
+                    var calendarDayVM = new CalendarDayViewModel
                     {
                         Date = day,
                         IsCurrentMonth = isCurrentMonth,
                         HasEvents = hasEvents,
                         IsToday = isToday,
-                        IsSelected = isSelected
-                    });
+                        IsSelected = isSelected,
+                        TotalEvents = eventsForDay.Count
+                    };
+
+                    // Устанавливаем наличие различных типов событий
+                    if (hasEvents)
+                    {
+                        calendarDayVM.HasMedication = eventsForDay.Any(e => e.EventType == EventType.Medication);
+                        calendarDayVM.HasPhoto = eventsForDay.Any(e => e.EventType == EventType.Photo);
+                        calendarDayVM.HasRestriction = eventsForDay.Any(e => e.EventType == EventType.Restriction);
+                        calendarDayVM.HasInstruction = eventsForDay.Any(e => e.EventType == EventType.Instruction);
+                    }
+
+                    calendarDays.Add(calendarDayVM);
                 }
 
                 CalendarDays = calendarDays;

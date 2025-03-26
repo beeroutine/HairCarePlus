@@ -4,71 +4,60 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.MonthCalendarView"
-             HeightRequest="400"
              CascadeInputTransparent="False">
     
     <ContentView.Resources>
         <ResourceDictionary>
             <Style x:Key="MonthHeaderStyle" TargetType="Label">
-                <Setter Property="FontSize" Value="20" />
+                <Setter Property="FontSize" Value="24" />
                 <Setter Property="FontAttributes" Value="Bold" />
-                <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
             </Style>
             
             <Style x:Key="DayHeaderStyle" TargetType="Label">
-                <Setter Property="FontSize" Value="12" />
-                <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
             </Style>
             
             <Style x:Key="DayNumberStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
-                <Setter Property="FontAttributes" Value="Bold" />
-                <Setter Property="HorizontalOptions" Value="Center" />
-                <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
-                <Setter Property="VerticalTextAlignment" Value="Center" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
             </Style>
             
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
-                <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
                 <Setter Property="FontSize" Value="24" />
-                <Setter Property="WidthRequest" Value="40" />
-                <Setter Property="HeightRequest" Value="40" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="CornerRadius" Value="20" />
-                <Setter Property="Visual" Value="Material" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="BorderWidth" Value="0" />
+                <Setter Property="Padding" Value="12,0" />
             </Style>
             
             <Style x:Key="CalendarCellStyle" TargetType="Frame">
-                <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource Gray600}}" />
-                <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="Padding" Value="2" />
-                <Setter Property="Margin" Value="1" />
-                <Setter Property="MinimumHeightRequest" Value="48" />
-                <Setter Property="MinimumWidthRequest" Value="42" />
-                <Setter Property="MaximumHeightRequest" Value="60" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}" />
+                <Setter Property="BorderColor" Value="Transparent" />
+                <Setter Property="Padding" Value="4" />
                 <Setter Property="HasShadow" Value="False" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=#1C1C1E}" />
+                <Setter Property="MinimumHeightRequest" Value="48" />
             </Style>
             
             <Style x:Key="EventIndicatorsContainerStyle" TargetType="HorizontalStackLayout">
-                <Setter Property="Spacing" Value="4" />
+                <Setter Property="Spacing" Value="2" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="End" />
-                <Setter Property="Margin" Value="0,6,0,2" />
-                <Setter Property="MinimumHeightRequest" Value="10" />
+                <Setter Property="Margin" Value="0,4,0,2" />
+                <Setter Property="MinimumHeightRequest" Value="8" />
             </Style>
 
             <Style x:Key="EventDotBaseStyle" TargetType="BoxView">
-                <Setter Property="HeightRequest" Value="8" />
-                <Setter Property="WidthRequest" Value="8" />
-                <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="Opacity" Value="1" />
+                <Setter Property="HeightRequest" Value="6" />
+                <Setter Property="WidthRequest" Value="6" />
+                <Setter Property="CornerRadius" Value="3" />
+                <Setter Property="Opacity" Value="0.8" />
             </Style>
 
             <Style x:Key="RestrictionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
@@ -80,57 +69,128 @@
             </Style>
 
             <Style x:Key="PhotoDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#2196F3" />
+                <Setter Property="BackgroundColor" Value="#9C27B0" />
             </Style>
 
             <Style x:Key="InstructionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#9C27B0" />
+                <Setter Property="BackgroundColor" Value="#4CAF50" />
+            </Style>
+            
+            <Style x:Key="ExcessEventsStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="End" />
+                <Setter Property="Margin" Value="0,2,0,0" />
+            </Style>
+            
+            <Style x:Key="OtherMonthDayStyle" TargetType="Label">
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+                <Setter Property="Opacity" Value="0.5" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+            
+            <Style x:Key="TodayCellStyle" TargetType="Border">
+                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="StrokeThickness" Value="2" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 20,20,20,20" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="WidthRequest" Value="36" />
+                <Setter Property="HeightRequest" Value="36" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
+            
+            <Style x:Key="SelectedCellStyle" TargetType="Border">
+                <Setter Property="Stroke" Value="Transparent" />
+                <Setter Property="StrokeThickness" Value="0" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 20,20,20,20" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="WidthRequest" Value="36" />
+                <Setter Property="HeightRequest" Value="36" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
             </Style>
         </ResourceDictionary>
     </ContentView.Resources>
     
-    <Grid RowDefinitions="Auto,Auto,*" Padding="0" RowSpacing="2" BackgroundColor="Transparent">
-        <!-- Month Header -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
-            <Button Grid.Column="0"
+    <Grid RowSpacing="0" ColumnSpacing="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок с месяцем и годом -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Grid.Column="0" 
                     Text="‹"
                     Command="{Binding PreviousMonthCommand}"
-                    Style="{StaticResource NavigationButtonStyle}" />
+                    Style="{StaticResource NavigationButtonStyle}"/>
             
-            <Label Grid.Column="1"
-                   Text="{Binding CurrentMonthDate, StringFormat='{0:MMMM yyyy}'}"
+            <Label Grid.Column="1" 
+                   Text="{Binding CurrentMonthYear}"
                    Style="{StaticResource MonthHeaderStyle}"
-                   HorizontalOptions="Center" />
+                   HorizontalOptions="Center"/>
             
-            <Button Grid.Column="2"
+            <Button Grid.Column="2" 
                     Text="›"
                     Command="{Binding NextMonthCommand}"
-                    Style="{StaticResource NavigationButtonStyle}" />
+                    Style="{StaticResource NavigationButtonStyle}"/>
         </Grid>
-        
-        <!-- Day Headers -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,2" ColumnSpacing="1">
-            <Label Grid.Column="0" Text="Sun" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="1" Text="Mon" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="2" Text="Tue" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="3" Text="Wed" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="4" Text="Thu" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="5" Text="Fri" Style="{StaticResource DayHeaderStyle}" />
-            <Label Grid.Column="6" Text="Sat" Style="{StaticResource DayHeaderStyle}" />
+
+        <!-- Заголовки дней недели -->
+        <Grid Grid.Row="1" ColumnSpacing="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <Label Grid.Column="0" Text="Вс" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="1" Text="Пн" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="2" Text="Вт" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="3" Text="Ср" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="4" Text="Чт" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="5" Text="Пт" Style="{StaticResource DayHeaderStyle}"/>
+            <Label Grid.Column="6" Text="Сб" Style="{StaticResource DayHeaderStyle}"/>
         </Grid>
-        
-        <!-- Calendar Days Grid -->
+
+        <!-- Сетка календаря -->
         <Grid x:Name="CalendarGrid" 
               Grid.Row="2" 
-              RowDefinitions="*,*,*,*,*,*" 
-              ColumnDefinitions="*,*,*,*,*,*,*"
-              RowSpacing="2"
-              ColumnSpacing="2"
-              Margin="0,5,0,0"
-              BackgroundColor="Transparent"
-              CascadeInputTransparent="False"
-              InputTransparent="False">
-            <!-- Ячейки календаря будут добавлены программно в коде -->
+              RowSpacing="1" 
+              ColumnSpacing="1"
+              BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray800}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
         </Grid>
     </Grid>
 </ContentView> 

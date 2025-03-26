@@ -15,6 +15,7 @@
             <helpers:IsNotRestrictionConverter x:Key="IsNotRestrictionConverter" />
             <helpers:IsRestrictionConverter x:Key="IsRestrictionConverter" />
             <helpers:EventTypeToLabelConverter x:Key="EventTypeToLabelConverter" />
+            <helpers:BoolToCalendarViewConverter x:Key="BoolToCalendarViewConverter" />
             
             <Style x:Key="EventTitleStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
@@ -89,99 +90,69 @@
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
                 <Setter Property="Margin" Value="0,4,0,0" />
             </Style>
+            
+            <Style x:Key="ViewModeButtonStyle" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Padding" Value="12,6" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="BorderColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="BorderWidth" Value="1" />
+            </Style>
+            
+            <Style x:Key="TimeOfDayHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}" />
+                <Setter Property="Margin" Value="0,16,0,8" />
+            </Style>
+            
+            <Style x:Key="TimeOfDayIconStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontFamily" Value="MaterialIcons" />
+                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="VerticalOptions" Value="Center" />
+            </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
     
     <Grid>
-        <!-- Main Content -->
-        <RefreshView IsRefreshing="{Binding IsBusy}"
-                     Command="{Binding RefreshCommand}">
-            <ScrollView>
-                <StackLayout Padding="16" Spacing="16">
-                    <!-- Error Message -->
-                    <Label Text="{Binding ErrorMessage}"
-                           Style="{StaticResource ErrorMessageStyle}"
-                           IsVisible="{Binding HasError}" />
+        <!-- Заголовок с кнопками режимов -->
+        <Grid RowDefinitions="Auto,*">
+            <!-- Панель навигации -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Padding="16,8" BackgroundColor="{AppThemeBinding Light=White, Dark=#1C1C1E}">
+                <Button Grid.Column="0" 
+                        Text="Сегодня" 
+                        Command="{Binding GoToTodayCommand}"
+                        Style="{StaticResource ViewModeButtonStyle}"
+                        HorizontalOptions="Start" />
+                
+                <Label Grid.Column="2" 
+                       Text="{Binding SelectedDate, StringFormat='{0:dd MMM}'}"
+                       Style="{StaticResource DateHeaderStyle}"
+                       FontSize="16"
+                       VerticalOptions="Center"
+                       HorizontalOptions="End" />
+            </Grid>
+            
+            <!-- Основной контент с календарем -->
+            <Grid Grid.Row="1">
+                <RefreshView IsRefreshing="{Binding IsBusy}"
+                             Command="{Binding RefreshCommand}">
                     
-                    <!-- Monthly Calendar -->
-                    <Frame Style="{StaticResource CardStyle}" 
-                           Padding="2" 
-                           Margin="0,8" 
-                           HasShadow="True"
-                           BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource Gray900}}"
-                           BorderColor="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource Gray600}}">
-                        <views:MonthCalendarView BindingContext="{Binding .}" VerticalOptions="Start" />
-                    </Frame>
+                    <!-- Месячный вид -->
+                    <views:MonthCalendarView BindingContext="{Binding .}" />
                     
-                    <!-- Combined Day Information Section -->
-                    <Frame Style="{StaticResource CardStyle}" 
-                           BackgroundColor="{AppThemeBinding Light={StaticResource BackgroundColor}, Dark={StaticResource Gray900}}"
-                           BorderColor="{AppThemeBinding Light={StaticResource BorderColor}, Dark={StaticResource Gray600}}"
-                           Margin="0,8">
-                        <StackLayout Spacing="12">
-                            <!-- Day Header -->
-                            <Label Text="{Binding SelectedDate, StringFormat='{0:MMMM d, yyyy}'}"
-                                   Style="{StaticResource DateHeaderStyle}" />
-                            
-                            <!-- All Events List (including restrictions) -->
-                            <CollectionView ItemsSource="{Binding EventsForSelectedDate}" 
-                                          SelectionMode="None"
-                                          EmptyView="No events or restrictions for this day"
-                                          HeightRequest="240">
-                                <CollectionView.EmptyViewTemplate>
-                                    <DataTemplate>
-                                        <Label Text="No events or restrictions for this day" 
-                                               Style="{StaticResource NoEventsStyle}" />
-                                    </DataTemplate>
-                                </CollectionView.EmptyViewTemplate>
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Padding="8" ColumnSpacing="12" RowSpacing="4">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="24" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            
-                                            <!-- Event type indicator -->
-                                            <BoxView Grid.Row="0" Grid.Column="0" Grid.RowSpan="4"
-                                                    WidthRequest="4"
-                                                    HeightRequest="40"
-                                                    CornerRadius="2"
-                                                    VerticalOptions="Start"
-                                                    BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
-                                                
-                                            <!-- Event title -->
-                                            <Label Grid.Row="1" Grid.Column="1"
-                                                   Text="{Binding Title}"
-                                                   FontAttributes="Bold"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark={StaticResource White}}"
-                                                   Margin="0,0,0,4" />
-                                               
-                                            <!-- Event description -->
-                                            <Label Grid.Row="2" Grid.Column="1"
-                                                   Text="{Binding Description}"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}"
-                                                   LineBreakMode="WordWrap" />
-                                            
-                                            <!-- Date range for restrictions -->
-                                            <Label Grid.Row="3" Grid.Column="1"
-                                                   IsVisible="{Binding EventType, Converter={StaticResource IsRestrictionConverter}}"
-                                                   Text="{Binding ExpirationDate, StringFormat='Until {0:MMM dd, yyyy}'}"
-                                                   Style="{StaticResource DateRangeStyle}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
-                        </StackLayout>
-                    </Frame>
-                </StackLayout>
-            </ScrollView>
-        </RefreshView>
+                </RefreshView>
+                
+                <!-- Индикатор ошибки -->
+                <Label Text="{Binding ErrorMessage}"
+                       Style="{StaticResource ErrorMessageStyle}"
+                       IsVisible="{Binding HasError}" 
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Grid>
+        </Grid>
     </Grid>
 </ContentPage> 
