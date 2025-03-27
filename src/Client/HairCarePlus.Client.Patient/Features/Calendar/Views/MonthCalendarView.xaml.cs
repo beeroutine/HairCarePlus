@@ -149,53 +149,111 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
                 foreach (var cell in cells)
                 {
+                    // Очищаем содержимое ячейки
                     var grid = cell.Content as Grid;
                     if (grid == null) continue;
                     
-                    // Очищаем содержимое грида
                     grid.Children.Clear();
                     
-                    // Создаем лейбл для дня
-                    var dayLabel = new Label
-                    {
-                        Text = currentDate.Day.ToString(),
-                        HorizontalOptions = LayoutOptions.Center,
-                        VerticalOptions = LayoutOptions.Center
+                    // Определяем, является ли ячейка текущим днем
+                    bool isToday = currentDate.Date == DateTime.Today;
+                    bool isSelected = ViewModel != null && currentDate.Date == ViewModel.SelectedDate.Date;
+                    bool isCurrentMonth = currentDate.Month == currentMonth.Month;
+                    
+                    // Устанавливаем стиль фона ячейки в зависимости от ее типа
+                    cell.BackgroundColor = Colors.Transparent;
+                    cell.Opacity = isCurrentMonth ? 1.0 : 0.5;
+                    
+                    // Создаем контейнер для содержимого дня
+                    var contentStack = new VerticalStackLayout 
+                    { 
+                        Spacing = 4,
+                        HorizontalOptions = LayoutOptions.Fill,
+                        VerticalOptions = LayoutOptions.Fill,
+                        Padding = new Thickness(2)
                     };
                     
-                    // Устанавливаем стиль в зависимости от типа дня
-                    if (currentDate.Month != currentMonth.Month)
-                    {
-                        dayLabel.Style = (Style)Resources["OtherMonthDayStyle"];
-                }
-                else
-                {
-                        dayLabel.Style = (Style)Resources["DayNumberStyle"];
-                    }
+                    // Номер дня
+                    Label dayLabel;
                     
-                    bool isSelected = ViewModel != null && currentDate.Date == ViewModel.SelectedDate.Date;
-                    
-                    // Обрабатываем текущий день или выбранный день
-                    if (currentDate.Date == DateTime.Today || isSelected)
+                    // Определяем стиль метки дня
+                    if (isToday || isSelected)
                     {
+                        // Для текущего или выбранного дня используем круглую рамку
                         var todayBorder = new Border
                         {
-                            Style = (Style)Resources["TodayCellStyle"],
-                            BackgroundColor = isSelected ? 
-                                (Color)Application.Current.Resources["Primary"] : 
-                                Colors.Transparent
+                            Style = isSelected 
+                                ? (Style)Resources["SelectedCellStyle"] 
+                                : (Style)Resources["TodayCellStyle"],
+                            HorizontalOptions = LayoutOptions.Center
                         };
                         
-                        dayLabel.TextColor = isSelected ? Colors.White : Colors.Black;
-                        dayLabel.FontAttributes = FontAttributes.Bold;
+                        dayLabel = new Label
+                        {
+                            Text = currentDate.Day.ToString(),
+                            TextColor = isSelected ? Colors.White : (isCurrentMonth 
+                                ? (Color)Application.Current.Resources["TextPrimaryColor"] 
+                                : (Color)Application.Current.Resources["Gray500"]),
+                            HorizontalOptions = LayoutOptions.Center,
+                            VerticalOptions = LayoutOptions.Center,
+                            FontSize = 16,
+                            FontAttributes = FontAttributes.Bold
+                        };
                         
                         todayBorder.Content = dayLabel;
-                        grid.Children.Add(todayBorder);
+                        contentStack.Add(todayBorder);
                     }
                     else
                     {
-                        grid.Children.Add(dayLabel);
+                        // Для обычных дней просто отображаем номер
+                        dayLabel = new Label
+                        {
+                            Text = currentDate.Day.ToString(),
+                            Style = isCurrentMonth 
+                                ? (Style)Resources["DayNumberStyle"] 
+                                : (Style)Resources["OtherMonthDayStyle"],
+                            HorizontalOptions = LayoutOptions.Center
+                        };
+                        contentStack.Add(dayLabel);
                     }
+                    
+                    // Пример добавления индикаторов событий - просто показываем случайные индикаторы для наглядности нового дизайна
+                    // В реальном коде здесь должно быть получение событий из сервиса или через ViewModel
+                    if (new Random().Next(10) > 6 && isCurrentMonth) // Примерно 30% дней будут иметь индикаторы
+                    {
+                        var indicatorsLayout = new HorizontalStackLayout
+                        {
+                            Spacing = 4,
+                            HorizontalOptions = LayoutOptions.Center,
+                            Margin = new Thickness(0, 2, 0, 0)
+                        };
+                        
+                        // Случайное количество разных типов индикаторов
+                        var rnd = new Random(currentDate.Day + currentDate.Month * 100); // Используем дату как seed для стабильных результатов
+                        int eventTypes = rnd.Next(1, 5); // от 1 до 4 типов
+                        
+                        var styles = new (Style, int)[] 
+                        {
+                            ((Style)Resources["MedicationDotStyle"], 0),
+                            ((Style)Resources["PhotoDotStyle"], 1),
+                            ((Style)Resources["RestrictionDotStyle"], 2),
+                            ((Style)Resources["InstructionDotStyle"], 3)
+                        };
+                        
+                        var selectedStyles = styles
+                            .OrderBy(x => rnd.Next()) // перемешиваем
+                            .Take(eventTypes); // берем нужное количество
+                        
+                        foreach (var (style, _) in selectedStyles)
+                        {
+                            var dot = new BoxView { Style = style };
+                            indicatorsLayout.Add(dot);
+                        }
+                        
+                        contentStack.Add(indicatorsLayout);
+                    }
+                    
+                    grid.Children.Add(contentStack);
                     
                     // Устанавливаем контекст привязки
                     cell.BindingContext = currentDate;

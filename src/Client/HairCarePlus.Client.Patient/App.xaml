@@ -45,10 +45,10 @@
             <Color x:Key="EventIndicatorColor">#6962AD</Color>
 
             <!-- Event Type Colors -->
-            <Color x:Key="MedicationColor">#2196F3</Color> <!-- Blue for medications -->
-            <Color x:Key="PhotoColor">#4CAF50</Color> <!-- Green for photos -->
-            <Color x:Key="RestrictionColor">#F44336</Color> <!-- Red for restrictions -->
-            <Color x:Key="InstructionColor">#9C27B0</Color> <!-- Purple for instructions -->
+            <Color x:Key="MedicationColor">#42A5F5</Color>
+            <Color x:Key="PhotoColor">#AB47BC</Color>
+            <Color x:Key="RestrictionColor">#FF6B6B</Color>
+            <Color x:Key="InstructionColor">#66BB6A</Color>
 
             <!-- Event Card Background Colors (Translucent) -->
             <Color x:Key="MedicationBackgroundColor">#182196F3</Color> 
@@ -185,6 +185,11 @@
                 <Setter Property="WidthRequest" Value="32" />
                 <Setter Property="HeightRequest" Value="32" />
             </Style>
+
+            <!-- Calendar Selected Day Color -->
+            <Color x:Key="SelectedDayBackgroundLight">#EFE9FF</Color>
+            <Color x:Key="SelectedDayBackgroundDark">#3E3663</Color>
+            <Color x:Key="TodayIndicatorColor">#6962AD</Color>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

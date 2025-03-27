@@ -14,42 +14,48 @@
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="VerticalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                <Setter Property="Margin" Value="0,0,0,8" />
             </Style>
             
             <Style x:Key="DayHeaderStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <Setter Property="Margin" Value="0,0,0,12" />
             </Style>
             
             <Style x:Key="DayNumberStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="Margin" Value="0,4,0,6" />
             </Style>
             
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
-                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontSize" Value="22" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
                 <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="BorderWidth" Value="0" />
-                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Padding" Value="16,0" />
             </Style>
             
             <Style x:Key="CalendarCellStyle" TargetType="Frame">
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="BorderColor" Value="Transparent" />
-                <Setter Property="Padding" Value="4" />
+                <Setter Property="Padding" Value="2" />
                 <Setter Property="HasShadow" Value="False" />
-                <Setter Property="MinimumHeightRequest" Value="48" />
+                <Setter Property="MinimumHeightRequest" Value="52" />
+                <Setter Property="Margin" Value="2" />
+                <Setter Property="CornerRadius" Value="8" />
             </Style>
             
             <Style x:Key="EventIndicatorsContainerStyle" TargetType="HorizontalStackLayout">
-                <Setter Property="Spacing" Value="2" />
+                <Setter Property="Spacing" Value="4" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="End" />
-                <Setter Property="Margin" Value="0,4,0,2" />
+                <Setter Property="Margin" Value="0,2,0,4" />
                 <Setter Property="MinimumHeightRequest" Value="8" />
             </Style>
 
@@ -57,28 +63,28 @@
                 <Setter Property="HeightRequest" Value="6" />
                 <Setter Property="WidthRequest" Value="6" />
                 <Setter Property="CornerRadius" Value="3" />
-                <Setter Property="Opacity" Value="0.8" />
+                <Setter Property="Opacity" Value="1" />
             </Style>
 
             <Style x:Key="RestrictionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#FF4B4B" />
+                <Setter Property="BackgroundColor" Value="#FF6B6B" />
             </Style>
 
             <Style x:Key="MedicationDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#2196F3" />
+                <Setter Property="BackgroundColor" Value="#42A5F5" />
             </Style>
 
             <Style x:Key="PhotoDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#9C27B0" />
+                <Setter Property="BackgroundColor" Value="#AB47BC" />
             </Style>
 
             <Style x:Key="InstructionDotStyle" TargetType="BoxView" BasedOn="{StaticResource EventDotBaseStyle}">
-                <Setter Property="BackgroundColor" Value="#4CAF50" />
+                <Setter Property="BackgroundColor" Value="#66BB6A" />
             </Style>
             
             <Style x:Key="ExcessEventsStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="10" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextSecondaryColor}, Dark={StaticResource Gray300}}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray300}}" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="End" />
                 <Setter Property="Margin" Value="0,2,0,0" />
@@ -88,26 +94,27 @@
                 <Setter Property="FontSize" Value="16" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
-                <Setter Property="Opacity" Value="0.6" />
+                <Setter Property="Opacity" Value="0.5" />
+                <Setter Property="Margin" Value="0,4,0,6" />
             </Style>
             
             <Style x:Key="TodayCellStyle" TargetType="Border">
                 <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
-                <Setter Property="StrokeThickness" Value="2" />
+                <Setter Property="StrokeThickness" Value="1.5" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 20,20,20,20" />
-                <Setter Property="Padding" Value="4" />
+                <Setter Property="Padding" Value="2" />
                 <Setter Property="HorizontalOptions" Value="Center" />
                 <Setter Property="VerticalOptions" Value="Center" />
-                <Setter Property="WidthRequest" Value="32" />
-                <Setter Property="HeightRequest" Value="32" />
+                <Setter Property="WidthRequest" Value="36" />
+                <Setter Property="HeightRequest" Value="36" />
             </Style>
             
             <Style x:Key="SelectedCellStyle" TargetType="Border">
                 <Setter Property="Stroke" Value="Transparent" />
                 <Setter Property="StrokeThickness" Value="0" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 20,20,20,20" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource PrimaryColor}, Dark={StaticResource PrimaryDark}}" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#E9E5FF, Dark=#433C7A}" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="WidthRequest" Value="36" />
                 <Setter Property="HeightRequest" Value="36" />
@@ -117,7 +124,7 @@
         </ResourceDictionary>
     </ContentView.Resources>
     
-    <Grid RowSpacing="0" ColumnSpacing="0">
+    <Grid RowSpacing="0" ColumnSpacing="0" Margin="8,0,8,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -125,7 +132,7 @@
         </Grid.RowDefinitions>
 
         <!-- Заголовок с месяцем и годом -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -149,7 +156,7 @@
         </Grid>
 
         <!-- Заголовки дней недели -->
-        <Grid Grid.Row="1" ColumnSpacing="1" Margin="0,0,0,8">
+        <Grid Grid.Row="1" ColumnSpacing="1" Margin="8,0,8,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -172,9 +179,9 @@
         <!-- Сетка календаря -->
         <Grid x:Name="CalendarGrid" 
               Grid.Row="2" 
-              RowSpacing="1" 
-              ColumnSpacing="1"
-              BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray800}}">
+              RowSpacing="4" 
+              ColumnSpacing="4"
+              BackgroundColor="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>

@@ -26,17 +26,19 @@
             </Style>
             
             <Style x:Key="MonthHeaderStyle" TargetType="Label">
-                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontSize" Value="24" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
+                <Setter Property="Margin" Value="0,4,0,12" />
             </Style>
             
             <Style x:Key="DayHeaderStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
-                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <Setter Property="Margin" Value="0,0,0,8" />
             </Style>
             
             <Style x:Key="TimeOfDayHeaderStyle" TargetType="Label">
@@ -49,28 +51,29 @@
             <!-- Стили для ячеек календаря -->
             <Style x:Key="DayCellStyle" TargetType="Border">
                 <Setter Property="Padding" Value="2" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark={StaticResource Gray800}}" />
-                <Setter Property="StrokeShape" Value="RoundRectangle 8,8,8,8" />
-                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}" />
-                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light=#F0F0F0, Dark={StaticResource Gray800}}" />
+                <Setter Property="StrokeThickness" Value="0.5" />
                 <Setter Property="MinimumHeightRequest" Value="65" />
+                <Setter Property="Margin" Value="2" />
             </Style>
             
             <Style x:Key="OtherMonthDayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
                 <Setter Property="Opacity" Value="0.5" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
             </Style>
             
             <Style x:Key="TodayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
                 <Setter Property="Stroke" Value="{StaticResource Primary}" />
-                <Setter Property="StrokeThickness" Value="2" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F0E8FF, Dark=#2C2948}" />
+                <Setter Property="StrokeThickness" Value="1.5" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F8F5FF, Dark=#2C2948}" />
             </Style>
             
             <Style x:Key="SelectedDayCellStyle" TargetType="Border" BasedOn="{StaticResource DayCellStyle}">
                 <Setter Property="Stroke" Value="{StaticResource Primary}" />
-                <Setter Property="StrokeThickness" Value="2" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#E0D6FF, Dark=#3E3663}" />
+                <Setter Property="StrokeThickness" Value="1.5" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F0EBFF, Dark=#3E3663}" />
             </Style>
             
             <!-- Стили для текста дня -->
@@ -79,7 +82,7 @@
                 <Setter Property="FontAttributes" Value="Bold" />
                 <Setter Property="HorizontalTextAlignment" Value="Center" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TextPrimaryColor}, Dark=White}" />
-                <Setter Property="Margin" Value="0,2,0,0" />
+                <Setter Property="Margin" Value="0,4,0,0" />
             </Style>
             
             <Style x:Key="OtherMonthDayNumberStyle" TargetType="Label" BasedOn="{StaticResource DayNumberStyle}">
@@ -88,11 +91,11 @@
             
             <!-- Стили для индикаторов событий -->
             <Style x:Key="EventIndicatorStyle" TargetType="Border">
-                <Setter Property="HeightRequest" Value="10" />
-                <Setter Property="WidthRequest" Value="10" />
-                <Setter Property="StrokeShape" Value="RoundRectangle 5,5,5,5" />
-                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray800}}" />
-                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="HeightRequest" Value="8" />
+                <Setter Property="WidthRequest" Value="8" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 4,4,4,4" />
+                <Setter Property="Stroke" Value="Transparent" />
+                <Setter Property="StrokeThickness" Value="0" />
                 <Setter Property="Margin" Value="2,0" />
             </Style>
             
@@ -124,10 +127,18 @@
             <Style x:Key="EventCardStyle" TargetType="Border">
                 <Setter Property="StrokeShape" Value="RoundRectangle 10,10,10,10" />
                 <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=White, Dark={StaticResource Gray800}}" />
-                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}" />
+                <Setter Property="Stroke" Value="{AppThemeBinding Light=#F5F5F5, Dark={StaticResource Gray700}}" />
                 <Setter Property="StrokeThickness" Value="1" />
                 <Setter Property="Padding" Value="16,12" />
-                <Setter Property="Margin" Value="0,0,0,8" />
+                <Setter Property="Margin" Value="0,0,0,10" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
+                                Offset="0,1"
+                                Radius="4"
+                                Opacity="0.2" />
+                    </Setter.Value>
+                </Setter>
             </Style>
             
             <Style x:Key="EventTitleStyle" TargetType="Label">
@@ -165,7 +176,7 @@
                                  Style="{StaticResource EventTypeIndicatorStyle}"
                                  Color="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}" />
                         
-                        <StackLayout Grid.Column="1" Spacing="2">
+                        <StackLayout Grid.Column="1" Spacing="4" Margin="12,0,0,0">
                             <Label Text="{Binding Title}" 
                                    Style="{StaticResource EventTitleStyle}" />
                             
