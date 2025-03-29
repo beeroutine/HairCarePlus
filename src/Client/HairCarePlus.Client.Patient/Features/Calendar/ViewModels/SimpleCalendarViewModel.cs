@@ -13,8 +13,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private DateTime _currentMonthDate;
         private DateTime _selectedDate;
         private bool _isMonthViewVisible = true;
-        private List<CalendarEvent> _selectedDayEvents;
-        private bool _hasSelectedDayEvents;
+        private List<CalendarEvent> _selectedDayEvents = new List<CalendarEvent>();
         
         // Событие для явного уведомления об изменении месяца
         public event EventHandler CurrentMonthChanged;
@@ -53,14 +52,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             get => _selectedDayEvents;
             set
             {
-                if (SetProperty(ref _selectedDayEvents, value))
+                // Защищаемся от null
+                var newValue = value ?? new List<CalendarEvent>();
+                if (SetProperty(ref _selectedDayEvents, newValue))
                 {
                     OnPropertyChanged(nameof(HasSelectedDayEvents));
                 }
             }
         }
         
-        public bool HasSelectedDayEvents => SelectedDayEvents != null && SelectedDayEvents.Any();
+        // Обновленное свойство с проверкой на null
+        public bool HasSelectedDayEvents => _selectedDayEvents != null && _selectedDayEvents.Any();
 
         public ICommand PreviousMonthCommand { get; }
         public ICommand NextMonthCommand { get; }
@@ -73,7 +75,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             Title = "Calendar";
             CurrentMonthDate = DateTime.Today;
             SelectedDate = DateTime.Today;
-            SelectedDayEvents = new List<CalendarEvent>();
+            
+            // SelectedDayEvents уже инициализирован в поле
 
             PreviousMonthCommand = new Command(ExecutePreviousMonth);
             NextMonthCommand = new Command(ExecuteNextMonth);
@@ -81,8 +84,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             GoToTodayCommand = new Command(ExecuteGoToToday);
             BackToMonthViewCommand = new Command(ExecuteBackToMonthView);
             
-            // Загружаем события для текущего дня
-            LoadEventsForSelectedDay();
+            try
+            {
+                // Загружаем события для текущего дня
+                LoadEventsForSelectedDay();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при загрузке первоначальных событий: {ex.Message}");
+                // Уже инициализировано пустым списком, поэтому ничего не делаем
+            }
         }
 
         private void ExecutePreviousMonth()
@@ -101,9 +112,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"ExecuteDaySelected: {dayString}");
                 
-                if (!int.TryParse(dayString, out int day))
+                if (string.IsNullOrEmpty(dayString) || !int.TryParse(dayString, out int day))
                 {
                     System.Diagnostics.Debug.WriteLine($"Не удалось преобразовать день '{dayString}' в число");
+                    return;
+                }
+                
+                // Проверяем валидность дня для текущего месяца
+                int daysInMonth = DateTime.DaysInMonth(CurrentMonthDate.Year, CurrentMonthDate.Month);
+                if (day < 1 || day > daysInMonth)
+                {
+                    System.Diagnostics.Debug.WriteLine($"День {day} находится вне диапазона для месяца ({1}-{daysInMonth})");
                     return;
                 }
                 
@@ -147,7 +166,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var events = GenerateMockEvents();
                 
                 System.Diagnostics.Debug.WriteLine($"SimpleCalendarViewModel: Загружено {events.Count} событий");
-                SelectedDayEvents = events;
+                SelectedDayEvents = events; // Здесь уже есть защита от null в сеттере
                 
                 System.Diagnostics.Debug.WriteLine($"SimpleCalendarViewModel: Загрузка событий завершена");
             }
@@ -156,11 +175,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 System.Diagnostics.Debug.WriteLine($"ОШИБКА SimpleCalendarViewModel: {ex.GetType().Name}: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 
-                // Создаём пустой список в случае ошибки
+                // Создаём пустой список в случае ошибки и устанавливаем его
                 SelectedDayEvents = new List<CalendarEvent>();
                 
-                // Пробрасываем исключение дальше для возможной обработки
-                throw new Exception($"Ошибка загрузки событий в SimpleCalendarViewModel: {ex.Message}", ex);
+                // Не пробрасываем исключение дальше, а обрабатываем локально
+                // Можно добавить уведомление пользователя при необходимости
             }
         }
         
