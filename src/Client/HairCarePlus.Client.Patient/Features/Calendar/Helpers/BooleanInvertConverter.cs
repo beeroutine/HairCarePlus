@@ -1,0 +1,29 @@
+using System;
+using System.Globalization;
+using Microsoft.Maui.Controls;
+
+namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
+{
+    public class BooleanInvertConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+            
+            return false;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return !boolValue;
+            }
+            
+            return false;
+        }
+    }
+} 

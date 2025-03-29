@@ -17,6 +17,7 @@
             <helpers:EventTypeToLabelConverter x:Key="EventTypeToLabelConverter" />
             <helpers:BoolToCalendarViewConverter x:Key="BoolToCalendarViewConverter" />
             <helpers:BoolConverter x:Key="BoolConverter" />
+            <helpers:BooleanInvertConverter x:Key="BooleanInvertConverter" />
             
             <Style x:Key="EventTitleStyle" TargetType="Label">
                 <Setter Property="FontSize" Value="16" />
@@ -120,7 +121,7 @@
 
     <Grid RowDefinitions="Auto,*" Padding="8">
         <!-- Переключатель вида -->
-        <Grid IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BoolConverter}, ConverterParameter=false}">
+        <Grid IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BooleanInvertConverter}}">
             <Button Text="‹ Назад"
                     Command="{Binding BackToMonthViewCommand}"
                     HorizontalOptions="Start"
@@ -145,7 +146,7 @@
         
         <!-- Контейнер для дневного вида -->
         <ScrollView Grid.Row="1"
-                    IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BoolConverter}, ConverterParameter=false}">
+                    IsVisible="{Binding IsMonthViewVisible, Converter={StaticResource BooleanInvertConverter}}">
             <VerticalStackLayout Padding="16">
                 <Label Text="События на сегодня:" 
                        Style="{StaticResource SubheaderStyle}"/>
@@ -154,9 +155,55 @@
                 <Label Text="На этот день нет запланированных событий"
                        Style="{StaticResource NoEventsStyle}"
                        HorizontalOptions="Center"
-                       Margin="0,32"/>
+                       Margin="0,32"
+                       IsVisible="{Binding HasSelectedDayEvents, Converter={StaticResource BooleanInvertConverter}}"/>
                 
-                <!-- Здесь будет список событий на выбранный день -->
+                <!-- Список событий на выбранный день -->
+                <CollectionView ItemsSource="{Binding SelectedDayEvents}"
+                                IsVisible="{Binding HasSelectedDayEvents}"
+                                SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource EventCardStyle}"
+                                   Margin="0,6">
+                                <Grid RowSpacing="6" ColumnSpacing="12">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Упрощенная привязка для типа события -->
+                                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" 
+                                            Style="{StaticResource EventTypeBadgeStyle}"
+                                            BackgroundColor="Blue">
+                                        <Label Text="Событие" 
+                                               Style="{StaticResource EventTypeLabelStyle}"/>
+                                    </Border>
+                                    
+                                    <!-- Время дня (если есть) -->
+                                    <Label Grid.Row="1" Grid.Column="0" 
+                                           Text="[Время]"
+                                           Style="{StaticResource EventTimeStyle}"/>
+                                    
+                                    <!-- Заголовок события -->
+                                    <Label Grid.Row="1" Grid.Column="1" 
+                                           Text="{Binding Title}" 
+                                           Style="{StaticResource EventTitleStyle}"/>
+                                    
+                                    <!-- Описание события -->
+                                    <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                                           Text="{Binding Description}"
+                                           Style="{StaticResource EventDescriptionStyle}"/>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>
