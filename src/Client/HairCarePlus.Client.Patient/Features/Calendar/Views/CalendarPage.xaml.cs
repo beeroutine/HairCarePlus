@@ -55,12 +55,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class CalendarPage : ContentPage
     {
+        private SimpleCalendarViewModel _viewModel;
+        
         public CalendarPage()
         {
             try
             {
                 System.Diagnostics.Debug.WriteLine("CalendarPage: начало инициализации");
                 InitializeComponent();
+                
+                // Инициализируем и устанавливаем ViewModel
+                _viewModel = new SimpleCalendarViewModel();
+                BindingContext = _viewModel;
+                
+                System.Diagnostics.Debug.WriteLine("CalendarPage: ViewModel успешно установлена");
                 System.Diagnostics.Debug.WriteLine("CalendarPage: InitializeComponent выполнен успешно");
             }
             catch (Exception ex)
@@ -74,7 +82,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 
                 Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () => {
-                    await DisplayAlert("Ошибка", $"Произошла ошибка при загрузке календаря: {ex.Message}", "OK");
+                    await DisplayAlert("Ошибка", $"Произошла ошибка при загрузке календаря: {ex.Message}\n\nТип: {ex.GetType().Name}\n\nStack: {ex.StackTrace}", "OK");
                 });
             }
         }
@@ -85,7 +93,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             
             try
             {
-                System.Diagnostics.Debug.WriteLine("CalendarPage.OnAppearing: начало выполнения");                
+                System.Diagnostics.Debug.WriteLine("CalendarPage.OnAppearing: начало выполнения");
+                
+                // Ничего особого не делаем, так как SimpleCalendarViewModel автоматически
+                // загружает события для выбранного дня в конструкторе
+                
                 System.Diagnostics.Debug.WriteLine("CalendarPage.OnAppearing: успешно завершено");
             }
             catch (Exception ex)
@@ -96,6 +108,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     System.Diagnostics.Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
                 }
                 System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+                
+                Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () => {
+                    await DisplayAlert("Ошибка", $"Произошла ошибка при обновлении календаря: {ex.Message}\n\nТип: {ex.GetType().Name}\n\nStack: {ex.StackTrace}", "OK");
+                });
             }
         }
         
@@ -126,6 +142,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             sb.AppendLine("--- CalendarPage ---");
             sb.AppendLine($"BindingContext null: {BindingContext == null}");
             sb.AppendLine($"BindingContext тип: {(BindingContext != null ? BindingContext.GetType().Name : "N/A")}");
+            
+            // Добавляем информацию о ViewModel
+            if (BindingContext is SimpleCalendarViewModel vm)
+            {
+                sb.AppendLine();
+                sb.AppendLine("--- SimpleCalendarViewModel ---");
+                sb.AppendLine($"Текущий месяц: {vm.CurrentMonthYear}");
+                sb.AppendLine($"Выбранная дата: {vm.SelectedDateText}");
+                sb.AppendLine($"События для дня: {(vm.HasSelectedDayEvents ? vm.SelectedDayEvents.Count : 0)}");
+                sb.AppendLine($"Режим месяца: {vm.IsMonthViewVisible}");
+            }
             
             return sb.ToString();
         }
