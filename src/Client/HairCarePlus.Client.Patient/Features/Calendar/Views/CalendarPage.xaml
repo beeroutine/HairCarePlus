@@ -59,6 +59,15 @@
                 <Setter Property="TextColor" Value="#666666" />
                 <Setter Property="HorizontalOptions" Value="Center" />
             </Style>
+
+            <!-- Стиль для текущего дня -->
+            <Style x:Key="CurrentDayButtonStyle" TargetType="Button" BasedOn="{StaticResource CalendarDayButtonStyle}">
+                <Setter Property="TextColor" Value="#6200EE" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="BorderColor" Value="#6200EE" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="CornerRadius" Value="20" />
+            </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -160,30 +169,12 @@
                     <Label Grid.Column="6" Text="ВС" Style="{StaticResource CalendarDayOfWeekStyle}" />
                 </Grid>
                 
-                <!-- Простая статическая сетка календаря как заглушка -->
-                <Grid ColumnDefinitions="*,*,*,*,*,*,*" 
-                      RowDefinitions="*,*,*,*,*,*" 
+                <!-- Динамическая сетка календаря -->
+                <Grid x:Name="CalendarGrid" 
+                      ColumnDefinitions="*,*,*,*,*,*,*" 
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" 
                       Margin="0,5,0,0">
-                    
-                    <!-- Первая неделя (пустые дни и начало месяца) -->
-                    <Label Grid.Row="0" Grid.Column="0" Text="" Style="{StaticResource CalendarDayLabelStyle}" />
-                    <Label Grid.Row="0" Grid.Column="1" Text="" Style="{StaticResource CalendarDayLabelStyle}" />
-                    <Label Grid.Row="0" Grid.Column="2" Text="" Style="{StaticResource CalendarDayLabelStyle}" />
-                    <Label Grid.Row="0" Grid.Column="3" Text="" Style="{StaticResource CalendarDayLabelStyle}" />
-                    <Button Grid.Row="0" Grid.Column="4" Text="1" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="1" />
-                    <Button Grid.Row="0" Grid.Column="5" Text="2" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="2" />
-                    <Button Grid.Row="0" Grid.Column="6" Text="3" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="3" />
-                    
-                    <!-- Вторая неделя -->
-                    <Button Grid.Row="1" Grid.Column="0" Text="4" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="4" />
-                    <Button Grid.Row="1" Grid.Column="1" Text="5" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="5" />
-                    <Button Grid.Row="1" Grid.Column="2" Text="6" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="6" />
-                    <Button Grid.Row="1" Grid.Column="3" Text="7" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="7" />
-                    <Button Grid.Row="1" Grid.Column="4" Text="8" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="8" />
-                    <Button Grid.Row="1" Grid.Column="5" Text="9" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="9" />
-                    <Button Grid.Row="1" Grid.Column="6" Text="10" Style="{StaticResource CalendarDayButtonStyle}" Command="{Binding DaySelectedCommand}" CommandParameter="10" />
-                    
-                    <!-- Остальные недели ... -->
+                    <!-- Сетка будет заполнена программно в CalendarPage.xaml.cs -->
                 </Grid>
                 
                 <!-- Кнопка перехода к текущей дате -->

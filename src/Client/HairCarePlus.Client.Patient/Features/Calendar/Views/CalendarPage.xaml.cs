@@ -73,6 +73,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 // Устанавливаем контекст привязки
                 BindingContext = _viewModel;
                 
+                // Подписываемся на изменение месяца для обновления сетки
+                _viewModel.CurrentMonthChanged += OnCurrentMonthChanged;
+                
+                // Генерируем сетку календаря для текущего месяца
+                GenerateCalendarGrid(_viewModel.CurrentMonthDate);
+                
                 System.Diagnostics.Debug.WriteLine("CalendarPage: ViewModel успешно установлена");
                 System.Diagnostics.Debug.WriteLine("CalendarPage: InitializeComponent выполнен успешно");
             }
@@ -117,6 +123,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     System.Diagnostics.Debug.WriteLine("CalendarPage.OnAppearing: _viewModel не инициализирована, выполняем инициализацию");
                     _viewModel = new SimpleCalendarViewModel();
                     BindingContext = _viewModel;
+                    
+                    // Подписываемся на изменение месяца
+                    _viewModel.CurrentMonthChanged += OnCurrentMonthChanged;
+                    
+                    // Генерируем сетку календаря
+                    GenerateCalendarGrid(_viewModel.CurrentMonthDate);
                 }
                 
                 System.Diagnostics.Debug.WriteLine("CalendarPage.OnAppearing: успешно завершено");
@@ -134,6 +146,105 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(async () => {
                     await DisplayAlert("Ошибка", $"Произошла ошибка при обновлении календаря: {ex.Message}\n\nТип: {ex.GetType().Name}", "OK");
                 });
+            }
+        }
+        
+        // Обработчик изменения месяца в ViewModel
+        private void OnCurrentMonthChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_viewModel != null)
+                {
+                    // Обновляем сетку календаря при изменении месяца
+                    GenerateCalendarGrid(_viewModel.CurrentMonthDate);
+                    System.Diagnostics.Debug.WriteLine($"Обновлена сетка для месяца: {_viewModel.CurrentMonthYear}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при обновлении сетки календаря: {ex.Message}");
+            }
+        }
+        
+        // Метод для динамической генерации сетки календаря
+        private void GenerateCalendarGrid(DateTime month)
+        {
+            try
+            {
+                // Очищаем текущую сетку
+                CalendarGrid.Children.Clear();
+                
+                // Получаем первый день месяца
+                var firstDayOfMonth = new DateTime(month.Year, month.Month, 1);
+                
+                // Определяем, на какой день недели приходится первый день месяца
+                // (0 = воскресенье, 1 = понедельник, ..., 6 = суббота)
+                int dayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+                // Преобразуем, чтобы понедельник был 0, воскресенье было 6
+                dayOfWeek = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
+                
+                // Получаем количество дней в месяце
+                int daysInMonth = DateTime.DaysInMonth(month.Year, month.Month);
+                
+                // Текущая дата для определения сегодняшнего дня
+                var today = DateTime.Today;
+                bool isCurrentMonth = (month.Year == today.Year && month.Month == today.Month);
+                
+                // Заполняем пустые ячейки до первого дня месяца
+                for (int i = 0; i < dayOfWeek; i++)
+                {
+                    var emptyLabel = new Label
+                    {
+                        Text = "",
+                        Style = (Style)Resources["CalendarDayLabelStyle"]
+                    };
+                    CalendarGrid.Add(emptyLabel, i, 0);
+                }
+                
+                // Заполняем дни месяца
+                int row = 0;
+                int col = dayOfWeek;
+                
+                for (int day = 1; day <= daysInMonth; day++)
+                {
+                    var dayButton = new Button
+                    {
+                        Text = day.ToString(),
+                        CommandParameter = day.ToString()
+                    };
+                    
+                    // Устанавливаем команду
+                    dayButton.Command = _viewModel.DaySelectedCommand;
+                    
+                    // Применяем стиль в зависимости от того, текущий ли это день
+                    if (isCurrentMonth && day == today.Day)
+                    {
+                        dayButton.Style = (Style)Resources["CurrentDayButtonStyle"];
+                    }
+                    else
+                    {
+                        dayButton.Style = (Style)Resources["CalendarDayButtonStyle"];
+                    }
+                    
+                    // Добавляем кнопку в сетку
+                    CalendarGrid.Add(dayButton, col, row);
+                    
+                    // Переходим к следующей ячейке
+                    col++;
+                    if (col > 6)
+                    {
+                        col = 0;
+                        row++;
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Сгенерирована сетка для месяца {month:MMMM yyyy}, дней: {daysInMonth}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при генерации сетки календаря: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
             }
         }
         

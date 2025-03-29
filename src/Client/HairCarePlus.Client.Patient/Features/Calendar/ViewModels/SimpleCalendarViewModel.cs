@@ -25,8 +25,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _currentMonthDate, value))
                 {
+                    // Обновляем строковое представление месяца
+                    OnPropertyChanged(nameof(CurrentMonthYear));
+                    
                     // Явно уведомляем о смене месяца
                     CurrentMonthChanged?.Invoke(this, EventArgs.Empty);
+                    
+                    System.Diagnostics.Debug.WriteLine($"Месяц изменен на: {CurrentMonthYear}");
                 }
             }
         }
@@ -73,8 +78,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public SimpleCalendarViewModel()
         {
             Title = "Calendar";
-            CurrentMonthDate = DateTime.Today;
-            SelectedDate = DateTime.Today;
+            
+            // Устанавливаем текущую дату
+            var now = DateTime.Now;
+            CurrentMonthDate = new DateTime(now.Year, now.Month, 1); // Первый день текущего месяца
+            SelectedDate = now;
             
             // SelectedDayEvents уже инициализирован в поле
 
@@ -94,16 +102,36 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 System.Diagnostics.Debug.WriteLine($"Ошибка при загрузке первоначальных событий: {ex.Message}");
                 // Уже инициализировано пустым списком, поэтому ничего не делаем
             }
+            
+            System.Diagnostics.Debug.WriteLine($"SimpleCalendarViewModel инициализирован, текущий месяц: {CurrentMonthYear}");
         }
 
         private void ExecutePreviousMonth()
         {
-            CurrentMonthDate = CurrentMonthDate.AddMonths(-1);
+            try
+            {
+                // Переход к предыдущему месяцу
+                CurrentMonthDate = CurrentMonthDate.AddMonths(-1);
+                System.Diagnostics.Debug.WriteLine($"Переход к предыдущему месяцу: {CurrentMonthYear}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при переходе к предыдущему месяцу: {ex.Message}");
+            }
         }
 
         private void ExecuteNextMonth()
         {
-            CurrentMonthDate = CurrentMonthDate.AddMonths(1);
+            try
+            {
+                // Переход к следующему месяцу
+                CurrentMonthDate = CurrentMonthDate.AddMonths(1);
+                System.Diagnostics.Debug.WriteLine($"Переход к следующему месяцу: {CurrentMonthYear}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при переходе к следующему месяцу: {ex.Message}");
+            }
         }
 
         private void ExecuteDaySelected(string dayString)
@@ -143,14 +171,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void ExecuteGoToToday()
         {
-            CurrentMonthDate = DateTime.Today;
-            SelectedDate = DateTime.Today;
-            LoadEventsForSelectedDay();
+            try
+            {
+                var today = DateTime.Today;
+                
+                // Если месяц другой, переключаем на месяц с сегодняшним днем
+                if (CurrentMonthDate.Year != today.Year || CurrentMonthDate.Month != today.Month)
+                {
+                    CurrentMonthDate = new DateTime(today.Year, today.Month, 1);
+                }
+                
+                SelectedDate = today;
+                LoadEventsForSelectedDay();
+                
+                System.Diagnostics.Debug.WriteLine($"Переход к сегодняшнему дню: {today:yyyy-MM-dd}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при переходе к сегодняшнему дню: {ex.Message}");
+            }
         }
         
         private void ExecuteBackToMonthView()
         {
             IsMonthViewVisible = true;
+            System.Diagnostics.Debug.WriteLine("Возврат к месячному виду");
         }
         
         // Заглушка для загрузки событий выбранного дня
