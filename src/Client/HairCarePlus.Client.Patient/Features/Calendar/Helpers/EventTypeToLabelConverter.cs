@@ -11,10 +11,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
             {
                 return eventType switch
                 {
-                    EventType.Medication => "MEDICATION",
+                    EventType.MedicationTreatment => "MEDICATION",
                     EventType.Photo => "PHOTO",
-                    EventType.Restriction => "RESTRICTION",
-                    EventType.Instruction => "INSTRUCTION",
+                    EventType.CriticalWarning => "RESTRICTION",
+                    EventType.VideoInstruction => "INSTRUCTION",
+                    EventType.MedicalVisit => "MEDICAL VISIT",
+                    EventType.GeneralRecommendation => "RECOMMENDATION",
                     _ => "EVENT"
                 };
             }

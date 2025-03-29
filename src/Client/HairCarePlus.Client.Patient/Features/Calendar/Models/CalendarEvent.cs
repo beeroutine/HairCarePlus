@@ -4,10 +4,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
 {
     public enum EventType
     {
-        Medication,
-        Photo,
-        Restriction,
-        Instruction
+        MedicationTreatment,  // Лекарства и процедуры лечения (было Medication)
+        MedicalVisit,         // Осмотры, визиты в клинику (новый тип)
+        Photo,                // Фотоотчёты (без изменений)
+        VideoInstruction,     // Видео-инструкции (было Instruction)
+        GeneralRecommendation,// Общие рекомендации и заметки (новый тип)
+        CriticalWarning       // Критические предупреждения (было Restriction)
     }
 
     public enum TimeOfDay
@@ -15,6 +17,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         Morning,
         Afternoon,
         Evening
+    }
+
+    public enum EventPriority
+    {
+        Low,
+        Normal,
+        High,
+        Critical
     }
 
     public class CalendarEvent
@@ -29,6 +39,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public bool IsCompleted { get; set; }
         public TimeSpan? ReminderTime { get; set; }
         public DateTime? ExpirationDate { get; set; } // For restrictions
+        public EventPriority Priority { get; set; } = EventPriority.Normal;
 
         // Свойство для определения, является ли событие длительным
         public bool IsMultiDay => EndDate.HasValue && EndDate.Value > Date;
@@ -37,5 +48,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public int DurationInDays => EndDate.HasValue 
             ? (EndDate.Value - Date).Days + 1 
             : 1;
+            
+        // Свойство для определения, нужно ли отображать время для события
+        // Показываем время только для событий с лекарствами, а для остальных - иконку
+        public bool HasTime => EventType == EventType.MedicationTreatment;
     }
 } 

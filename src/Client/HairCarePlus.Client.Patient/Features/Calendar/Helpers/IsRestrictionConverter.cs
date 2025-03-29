@@ -9,7 +9,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
         {
             if (value is EventType eventType)
             {
-                return eventType == EventType.Restriction;
+                return eventType == EventType.CriticalWarning;
             }
             
             return false;

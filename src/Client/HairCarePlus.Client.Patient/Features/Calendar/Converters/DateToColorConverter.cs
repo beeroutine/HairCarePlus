@@ -9,14 +9,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is DateTime date)
-            {
-                if (date.Date == DateTime.Today)
-                {
-                    return Application.Current.Resources["TodayColor"];
-                }
-            }
-            
+            // Default transparent background
             return Colors.Transparent;
         }
 

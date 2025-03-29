@@ -39,5 +39,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
         /// Gets events requiring notification
         /// </summary>
         Task<IEnumerable<CalendarEvent>> GetPendingNotificationEventsAsync();
+        
+        /// <summary>
+        /// Gets events that are overdue (date in the past and not completed)
+        /// </summary>
+        Task<IEnumerable<CalendarEvent>> GetOverdueEventsAsync();
     }
 } 

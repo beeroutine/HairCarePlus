@@ -5,6 +5,7 @@
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:calendarHelpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
+             xmlns:dailyRoutineConverters="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.Converters"
              x:Class="HairCarePlus.Client.Patient.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -12,6 +13,14 @@
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/ChatStyles.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Icons/icons.xaml" />
+                <ResourceDictionary>
+                    <converters:DateToSelectionColorConverter x:Key="DateToSelectionColorConverter" />
+                    <converters:DateToTextColorConverter x:Key="DateToTextColorConverter" />
+                    <converters:DateToColorConverter x:Key="DateToColorConverter" />
+                    <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
+                    <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter" />
+                </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
             
             <!-- App Color Palette -->
@@ -45,16 +54,21 @@
             <Color x:Key="EventIndicatorColor">#6962AD</Color>
 
             <!-- Event Type Colors -->
-            <Color x:Key="MedicationColor">#42A5F5</Color>
-            <Color x:Key="PhotoColor">#AB47BC</Color>
-            <Color x:Key="RestrictionColor">#FF6B6B</Color>
-            <Color x:Key="InstructionColor">#66BB6A</Color>
+            <Color x:Key="MedicationBlue">#2196F3</Color>
+            <Color x:Key="AppointmentGreen">#66BB6A</Color>
+            <Color x:Key="PhotoPurple">#AB47BC</Color>
+            <Color x:Key="VideoOrange">#FF9800</Color>
+            <Color x:Key="GeneralGray">#9E9E9E</Color>
+            <Color x:Key="CriticalRed">#FF5252</Color>
+            <Color x:Key="Gray50">#FAFAFA</Color>
 
             <!-- Event Card Background Colors (Translucent) -->
-            <Color x:Key="MedicationBackgroundColor">#182196F3</Color> 
-            <Color x:Key="PhotoBackgroundColor">#184CAF50</Color>
-            <Color x:Key="RestrictionBackgroundColor">#18F44336</Color>
-            <Color x:Key="InstructionBackgroundColor">#189C27B0</Color>
+            <Color x:Key="MedicationBackgroundColor">#182196F3</Color>
+            <Color x:Key="MedicalVisitBackgroundColor">#1866BB6A</Color>
+            <Color x:Key="PhotoBackgroundColor">#18AB47BC</Color>
+            <Color x:Key="VideoInstructionBackgroundColor">#18FF9800</Color>
+            <Color x:Key="GeneralRecommendationBackgroundColor">#189E9E9E</Color>
+            <Color x:Key="CriticalWarningBackgroundColor">#18FF5252</Color>
             
             <!-- Material Controls Colors -->
             <Color x:Key="CheckBoxColor">#6962AD</Color>
@@ -74,8 +88,7 @@
 
             <!-- Converters -->
             <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
-            <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
-            <converters:DateToColorConverter x:Key="DateToColorConverter" />
+            <calendarHelpers:BoolConverter x:Key="BoolConverter" />
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
             <commonConverters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
@@ -84,6 +97,9 @@
             <calendarHelpers:DoubleToPercentageConverter x:Key="DoubleToPercentageConverter" />
             <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
             <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
+            <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter" />
+            <dailyRoutineConverters:TaskTypeToColorConverter x:Key="TaskTypeToColorConverter" />
+            <dailyRoutineConverters:TaskTypeToIconConverter x:Key="TaskTypeToIconConverter" />
 
             <!-- Styles -->
             <Style x:Key="BaseFrameStyle" TargetType="Frame">
@@ -190,6 +206,9 @@
             <Color x:Key="SelectedDayBackgroundLight">#EFE9FF</Color>
             <Color x:Key="SelectedDayBackgroundDark">#3E3663</Color>
             <Color x:Key="TodayIndicatorColor">#6962AD</Color>
+
+            <!-- Add the Material Icons font resource -->
+            <FontImage x:Key="MaterialIcons" FontFamily="MaterialIcons" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

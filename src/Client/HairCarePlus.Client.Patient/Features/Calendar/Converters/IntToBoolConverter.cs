@@ -22,7 +22,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
         /// </summary>
         public bool Invert { get; set; } = false;
         
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is int intValue)
             {
@@ -34,7 +34,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return Invert;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             // This converter doesn't support converting back
             throw new NotImplementedException();

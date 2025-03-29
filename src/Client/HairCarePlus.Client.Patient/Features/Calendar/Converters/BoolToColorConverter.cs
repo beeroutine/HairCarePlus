@@ -7,17 +7,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class BoolToColorConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            if (value is bool isSelected && parameter is Color targetColor)
+            if (value is bool isCompleted)
             {
-                return isSelected ? targetColor : Colors.Transparent;
+                return isCompleted ? Colors.Gray : Colors.White;
             }
-            
-            return Colors.Transparent;
+            return Colors.White;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

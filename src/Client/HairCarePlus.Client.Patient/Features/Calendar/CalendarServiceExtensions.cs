@@ -10,6 +10,7 @@ using Microsoft.Maui.Controls;
 using static Microsoft.Maui.Controls.Routing;
 using HairCarePlus.Client.Patient.Features.Notifications.Services;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -24,8 +25,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(services));
             
             // Register services
-            services.AddSingleton<ICalendarService, CalendarService>();
-            services.AddSingleton<Calendar.Services.INotificationService, Calendar.Services.NotificationService>();
+            services.AddScoped<ICalendarService, CalendarService>();
+            services.AddScoped<IHairTransplantEventGenerator, HairTransplantEventGenerator>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();
@@ -36,9 +37,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             // Register ViewModels
             services.AddTransient<CalendarViewModel>();
             services.AddTransient<CleanCalendarViewModel>();
+            services.AddTransient<TodayViewModel>();
+            services.AddTransient<EventDetailViewModel>();
             
             // Register calendar views
             services.AddTransient<CalendarPage>();
+            services.AddTransient<TodayPage>();
+            services.AddTransient<EventDetailPage>();
+            
+            // Register converters as resources
+            RegisterConverters();
             
             return services;
         }
@@ -53,8 +61,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             
             // Register routes for calendar navigation
             RegisterRoute("calendar", typeof(CalendarPage));
+            RegisterRoute("today", typeof(TodayPage));
+            RegisterRoute("calendar/event", typeof(EventDetailPage));
             
             return builder;
+        }
+        
+        /// <summary>
+        /// Registers converters as application resources
+        /// </summary>
+        private static void RegisterConverters()
+        {
+            if (Application.Current?.Resources == null)
+                return;
+                
+            // Add converters to application resources if they don't exist
+            if (!Application.Current.Resources.ContainsKey("DateToSelectionColorConverter"))
+                Application.Current.Resources.Add("DateToSelectionColorConverter", new DateToSelectionColorConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("DateToTextColorConverter"))
+                Application.Current.Resources.Add("DateToTextColorConverter", new DateToTextColorConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("DateToColorConverter"))
+                Application.Current.Resources.Add("DateToColorConverter", new DateToColorConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("EventTypeToColorConverter"))
+                Application.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("EventTypeToIconConverter"))
+                Application.Current.Resources.Add("EventTypeToIconConverter", new EventTypeToIconConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("EventPriorityToColorConverter"))
+                Application.Current.Resources.Add("EventPriorityToColorConverter", new EventPriorityToColorConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("EventPriorityToIconConverter"))
+                Application.Current.Resources.Add("EventPriorityToIconConverter", new EventPriorityToIconConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("InvertedBoolConverter"))
+                Application.Current.Resources.Add("InvertedBoolConverter", new InvertedBoolConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
+                Application.Current.Resources.Add("DateHasEventTypeConverter", new Converters.DateHasEventTypeConverter());
+                
+            if (!Application.Current.Resources.ContainsKey("BoolConverter"))
+                Application.Current.Resources.Add("BoolConverter", new Helpers.BoolConverter());
         }
     }
 } 

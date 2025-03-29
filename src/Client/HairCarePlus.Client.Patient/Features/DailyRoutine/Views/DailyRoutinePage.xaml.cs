@@ -4,22 +4,18 @@ namespace HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
 
 public partial class DailyRoutinePage : ContentPage
 {
-    public DailyRoutinePage()
+    private readonly DailyRoutineViewModel _viewModel;
+
+    public DailyRoutinePage(DailyRoutineViewModel viewModel)
     {
         InitializeComponent();
-    }
-
-    public DailyRoutinePage(DailyRoutineViewModel viewModel) : this()
-    {
+        _viewModel = viewModel;
         BindingContext = viewModel;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (BindingContext is DailyRoutineViewModel viewModel)
-        {
-            await viewModel.LoadDataAsync();
-        }
+        await _viewModel.LoadDataCommand.ExecuteAsync(null);
     }
 } 

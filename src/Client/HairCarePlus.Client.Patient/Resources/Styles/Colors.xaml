@@ -6,8 +6,16 @@
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
+    <!-- Task Category Colors -->
+    <Color x:Key="MedicationBlue">#3E8EED</Color>
+    <Color x:Key="AppointmentGreen">#4CAF50</Color>
+    <Color x:Key="PhotoPurple">#9C27B0</Color>
+    <Color x:Key="VideoOrange">#FF9800</Color>
+    <Color x:Key="GeneralGray">#757575</Color>
+
+    <!-- Base Colors -->
+    <Color x:Key="Primary">#3E8EED</Color>
+    <Color x:Key="PrimaryDark">#1976D2</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
     <Color x:Key="Secondary">#DFD8F7</Color>
     <Color x:Key="SecondaryDarkText">#9880e5</Color>

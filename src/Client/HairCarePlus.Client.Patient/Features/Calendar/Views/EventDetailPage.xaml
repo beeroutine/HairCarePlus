@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
+             x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.EventDetailPage"
+             x:DataType="viewmodels:EventDetailViewModel"
+             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+             Title="Event Details">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
+            <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
+            <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
+            <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
+            <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
+            <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <StackLayout Padding="20">
+            <!-- Верхняя секция с цветом и иконкой типа события -->
+            <Frame HeightRequest="200" 
+                   Padding="0" 
+                   CornerRadius="10" 
+                   HasShadow="False" 
+                   BackgroundColor="{Binding Event.EventType, Converter={StaticResource EventTypeToColorConverter}}">
+                <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+                    <!-- Статус завершения -->
+                    <Label Grid.Row="0" 
+                           Text="{Binding Event.IsCompleted, StringFormat='{0}'}" 
+                           TextColor="White" 
+                           FontSize="16" 
+                           FontAttributes="Bold"
+                           HorizontalOptions="End" />
+                    
+                    <!-- Иконка события -->
+                    <Label Grid.Row="1" 
+                           Text="{Binding Event.EventType, Converter={StaticResource EventTypeToIconConverter}}" 
+                           FontFamily="MaterialIcons"
+                           FontSize="80" 
+                           TextColor="White" 
+                           HorizontalOptions="Center" 
+                           VerticalOptions="Center" />
+                    
+                    <!-- Название события -->
+                    <Label Grid.Row="2" 
+                           Text="{Binding Event.Title}" 
+                           TextColor="White" 
+                           FontSize="28" 
+                           FontAttributes="Bold" 
+                           HorizontalOptions="Center" />
+                </Grid>
+            </Frame>
+
+            <!-- Основная информация -->
+            <StackLayout Spacing="20" Margin="0,20,0,0">
+                <!-- Дата и время -->
+                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="10">
+                        <Label Grid.Row="0" Grid.Column="0" 
+                               Text="&#xE8DF;" 
+                               FontFamily="MaterialIcons" 
+                               FontSize="24" 
+                               TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}" 
+                               VerticalOptions="Center" />
+                        
+                        <Label Grid.Row="0" Grid.Column="1" 
+                               Text="{Binding Event.Date, StringFormat='{0:dddd, MMMM d, yyyy}'}" 
+                               FontSize="18" 
+                               FontAttributes="Bold" 
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                        
+                        <!-- Информация о времени суток -->
+                        <Label Grid.Row="1" Grid.Column="0" 
+                               Text="&#xE163;" 
+                               FontFamily="MaterialIcons" 
+                               FontSize="24" 
+                               TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}" 
+                               VerticalOptions="Center" />
+                        
+                        <Label Grid.Row="1" Grid.Column="1" 
+                               Text="{Binding Event.TimeOfDay, Converter={StaticResource TimeOfDayToStringConverter}}" 
+                               FontSize="18" 
+                               TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
+                    </Grid>
+                </Frame>
+
+                <!-- Приоритет -->
+                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
+                        <Label Grid.Column="0" 
+                               Text="&#xE8B0;" 
+                               FontFamily="MaterialIcons" 
+                               FontSize="24" 
+                               TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}" 
+                               VerticalOptions="Center" />
+                        
+                        <Grid Grid.Column="1" ColumnDefinitions="Auto,*">
+                            <Frame Grid.Column="0"
+                                   Padding="8,4"
+                                   CornerRadius="4"
+                                   BackgroundColor="{Binding Event.Priority, Converter={StaticResource EventPriorityToColorConverter}}"
+                                   VerticalOptions="Center">
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding Event.Priority, Converter={StaticResource EventPriorityToIconConverter}}"
+                                           FontFamily="MaterialIcons"
+                                           FontSize="20"
+                                           TextColor="White"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding Event.Priority}"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           TextColor="White"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Frame>
+                        </Grid>
+                    </Grid>
+                </Frame>
+
+                <!-- Описание -->
+                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" RowDefinitions="Auto,Auto" RowSpacing="10">
+                        <Label Grid.Row="0" Grid.Column="0" 
+                               Text="&#xE8F0;" 
+                               FontFamily="MaterialIcons" 
+                               FontSize="24" 
+                               TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}" 
+                               VerticalOptions="Start" />
+                        
+                        <StackLayout Grid.Row="0" Grid.Column="1" Spacing="8">
+                            <Label Text="Description" 
+                                   FontSize="16" 
+                                   FontAttributes="Bold" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
+                            <Label Text="{Binding Event.Description}" 
+                                   FontSize="18" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                        </StackLayout>
+                    </Grid>
+                </Frame>
+
+                <!-- Кнопки действий -->
+                <StackLayout Spacing="15" Margin="0,20,0,0">
+                    <Button Text="Mark as Completed" 
+                            Command="{Binding ToggleCompletionCommand}" 
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            FontAttributes="Bold"
+                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InvertedBoolConverter}}" />
+                    
+                    <Button Text="Mark as Incomplete" 
+                            Command="{Binding ToggleCompletionCommand}" 
+                            BackgroundColor="{StaticResource Secondary}"
+                            TextColor="White"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            FontAttributes="Bold"
+                            IsVisible="{Binding Event.IsCompleted}" />
+                    
+                    <Button Text="Postpone Event" 
+                            Command="{Binding PostponeCommand}" 
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray800}}"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            FontAttributes="Bold"
+                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InvertedBoolConverter}}" />
+                </StackLayout>
+            </StackLayout>
+        </StackLayout>
+    </ScrollView>
+</ContentPage> 

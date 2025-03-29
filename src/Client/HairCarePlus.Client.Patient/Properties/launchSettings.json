@@ -3,6 +3,14 @@
     "Windows Machine": {
       "commandName": "MsixPackage",
       "nativeDebugging": false
+    },
+    "iOS": {
+      "commandName": "Device",
+      "targetProject": "iOS"
+    },
+    "Android": {
+      "commandName": "Device",
+      "targetProject": "Android"
     }
   }
 }

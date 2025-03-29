@@ -45,6 +45,7 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 				fonts.AddFont("FontAwesome/FontAwesome.ttf", "FontAwesome");
+				fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
 			});
 
 		// Register Services
@@ -82,6 +83,18 @@ public static class MauiProgram
 
 		// Register Calendar Feature
 		builder.Services.AddCalendarServices();
+
+		// Register ViewModels
+		builder.Services.AddTransient<CalendarViewModel>();
+		builder.Services.AddTransient<FullCalendarViewModel>();
+		builder.Services.AddTransient<TodayViewModel>();
+		builder.Services.AddTransient<EventDetailViewModel>();
+
+		// Register Pages
+		builder.Services.AddTransient<CalendarPage>();
+		builder.Services.AddTransient<FullCalendarPage>();
+		builder.Services.AddTransient<TodayPage>();
+		builder.Services.AddTransient<EventDetailPage>();
 
 		// No need to manually register routes here since we're doing it in RegisterCalendarRoutes()
 

@@ -385,7 +385,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     // Create timers for active restrictions
                     var activeRestrictionTimers = new List<RestrictTimer>();
-                    foreach (var restriction in restrictions.Where(r => r.EventType == EventType.Restriction))
+                    foreach (var restriction in restrictions.Where(r => r.EventType == EventType.CriticalWarning))
                     {
                         // Only add restrictions that haven't expired
                         if (restriction.ExpirationDate.HasValue && restriction.ExpirationDate.Value > DateTime.Now)
@@ -449,10 +449,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     // Устанавливаем наличие различных типов событий
                     if (hasEvents)
                     {
-                        calendarDayVM.HasMedication = eventsForDay.Any(e => e.EventType == EventType.Medication);
+                        calendarDayVM.HasMedication = eventsForDay.Any(e => e.EventType == EventType.MedicationTreatment);
                         calendarDayVM.HasPhoto = eventsForDay.Any(e => e.EventType == EventType.Photo);
-                        calendarDayVM.HasRestriction = eventsForDay.Any(e => e.EventType == EventType.Restriction);
-                        calendarDayVM.HasInstruction = eventsForDay.Any(e => e.EventType == EventType.Instruction);
+                        calendarDayVM.HasRestriction = eventsForDay.Any(e => e.EventType == EventType.CriticalWarning);
+                        calendarDayVM.HasInstruction = eventsForDay.Any(e => e.EventType == EventType.VideoInstruction);
                     }
 
                     calendarDays.Add(calendarDayVM);
@@ -481,7 +481,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
                 
                 // If this is a restriction that just got completed, refresh the active restrictions
-                if (calendarEvent.EventType == EventType.Restriction)
+                if (calendarEvent.EventType == EventType.CriticalWarning)
                 {
                     await LoadActiveRestrictionsAsync();
                 }

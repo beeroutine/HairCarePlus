@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    
+    <!-- Medication Icon -->
+    <x:String x:Key="MedicationIcon">M9,3V15H15V3H9M12,14A1,1 0 0,1 11,13A1,1 0 0,1 12,12A1,1 0 0,1 13,13A1,1 0 0,1 12,14M13,10H11V5H13V10M12,2A1,1 0 0,1 13,3A1,1 0 0,1 12,4A1,1 0 0,1 11,3A1,1 0 0,1 12,2Z</x:String>
+
+    <!-- Photo Icon -->
+    <x:String x:Key="PhotoIcon">M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z</x:String>
+
+    <!-- Video Icon -->
+    <x:String x:Key="VideoIcon">M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z</x:String>
+
+    <!-- Appointment Icon -->
+    <x:String x:Key="AppointmentIcon">M19,3H18V1H16V3H8V1H6V3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,19H5V8H19V19M5,6V5H19V6H5M10.56,17.46L16.5,11.53L15.43,10.47L10.56,15.34L8.45,13.23L7.39,14.29L10.56,17.46Z</x:String>
+
+    <!-- General Icon -->
+    <x:String x:Key="GeneralIcon">M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z</x:String>
+
+    <!-- Warning Icon -->
+    <x:String x:Key="WarningIcon">M13,14H11V10H13M13,18H11V16H13M1,21H23L12,2L1,21Z</x:String>
+
+</ResourceDictionary> 

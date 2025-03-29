@@ -54,10 +54,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
 
                 string resourceKey = eventType switch
                 {
-                    EventType.Medication => medicationColorKey,
+                    EventType.MedicationTreatment => medicationColorKey,
                     EventType.Photo => photoColorKey,
-                    EventType.Restriction => restrictionColorKey,
-                    EventType.Instruction => instructionColorKey,
+                    EventType.CriticalWarning => restrictionColorKey,
+                    EventType.VideoInstruction => instructionColorKey,
                     _ => defaultColorKey
                 };
                 
@@ -69,10 +69,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                 // Запасные цвета, если ресурсы не найдены
                 return eventType switch
                 {
-                    EventType.Medication => Color.FromArgb("#2196F3"),
+                    EventType.MedicationTreatment => Color.FromArgb("#2196F3"),
                     EventType.Photo => Color.FromArgb("#4CAF50"),
-                    EventType.Restriction => Color.FromArgb("#F44336"),
-                    EventType.Instruction => Color.FromArgb("#9C27B0"),
+                    EventType.CriticalWarning => Color.FromArgb("#F44336"),
+                    EventType.VideoInstruction => Color.FromArgb("#9C27B0"),
                     _ => Colors.Gray
                 };
             }
@@ -83,10 +83,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                 // Запасные цвета в случае исключения
                 return eventType switch
                 {
-                    EventType.Medication => Color.FromArgb("#2196F3"),
+                    EventType.MedicationTreatment => Color.FromArgb("#2196F3"),
                     EventType.Photo => Color.FromArgb("#4CAF50"),
-                    EventType.Restriction => Color.FromArgb("#F44336"),
-                    EventType.Instruction => Color.FromArgb("#9C27B0"),
+                    EventType.CriticalWarning => Color.FromArgb("#F44336"),
+                    EventType.VideoInstruction => Color.FromArgb("#9C27B0"),
                     _ => Colors.Gray
                 };
             }
@@ -155,7 +155,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
         {
             if (value is EventType eventType)
             {
-                return eventType != EventType.Restriction;
+                return eventType != EventType.CriticalWarning;
             }
             
             return true; // По умолчанию показываем чекбокс
@@ -188,10 +188,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
 
                 string resourceKey = eventType switch
                 {
-                    EventType.Medication => medicationColorKey,
+                    EventType.MedicationTreatment => medicationColorKey,
                     EventType.Photo => photoColorKey,
-                    EventType.Restriction => restrictionColorKey,
-                    EventType.Instruction => instructionColorKey,
+                    EventType.CriticalWarning => restrictionColorKey,
+                    EventType.VideoInstruction => instructionColorKey,
                     _ => defaultColorKey
                 };
                 
@@ -203,10 +203,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                 // Запасные цвета, если ресурсы не найдены
                 return eventType switch
                 {
-                    EventType.Medication => Color.FromArgb("#182196F3"), 
+                    EventType.MedicationTreatment => Color.FromArgb("#182196F3"), 
                     EventType.Photo => Color.FromArgb("#184CAF50"),
-                    EventType.Restriction => Color.FromArgb("#18F44336"),
-                    EventType.Instruction => Color.FromArgb("#189C27B0"),
+                    EventType.CriticalWarning => Color.FromArgb("#18F44336"),
+                    EventType.VideoInstruction => Color.FromArgb("#189C27B0"),
                     _ => Colors.Transparent
                 };
             }

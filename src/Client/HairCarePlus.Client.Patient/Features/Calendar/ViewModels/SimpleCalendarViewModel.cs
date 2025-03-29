@@ -262,10 +262,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             return eventType switch
             {
-                EventType.Medication => "Прием лекарства",
+                EventType.MedicationTreatment => "Прием лекарства",
                 EventType.Photo => "Фотоотчет",
-                EventType.Restriction => "Ограничение",
-                EventType.Instruction => "Инструкция",
+                EventType.CriticalWarning => "Ограничение",
+                EventType.VideoInstruction => "Инструкция",
                 _ => "Событие"
             };
         }

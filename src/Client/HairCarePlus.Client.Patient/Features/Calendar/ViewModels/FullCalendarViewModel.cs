@@ -57,13 +57,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public bool HasEvents => Events.Count > 0;
         
-        public bool HasMedicationEvents => Events.Any(e => e.EventType == EventType.Medication);
+        public bool HasMedicationEvents => Events.Any(e => e.EventType == EventType.MedicationTreatment);
         
         public bool HasPhotoEvents => Events.Any(e => e.EventType == EventType.Photo);
         
-        public bool HasRestrictionEvents => Events.Any(e => e.EventType == EventType.Restriction);
+        public bool HasRestrictionEvents => Events.Any(e => e.EventType == EventType.CriticalWarning);
         
-        public bool HasInstructionEvents => Events.Any(e => e.EventType == EventType.Instruction);
+        public bool HasInstructionEvents => Events.Any(e => e.EventType == EventType.VideoInstruction);
         
         public bool HasExcessEvents => Events.Count > 3;
         

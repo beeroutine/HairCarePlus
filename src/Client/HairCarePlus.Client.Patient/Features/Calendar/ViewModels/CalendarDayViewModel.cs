@@ -426,31 +426,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             
             // Определяем, является ли текущий день частью диапазона ограничений или медикаментов
             IsPartOfMedicationRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Medication && 
+                e.EventType == EventType.MedicationTreatment && 
                 e.Date <= Date && 
                 (e.ExpirationDate == null || e.ExpirationDate >= Date));
                 
             IsPartOfRestrictionRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Restriction && 
+                e.EventType == EventType.CriticalWarning && 
                 e.Date <= Date && 
                 (e.ExpirationDate == null || e.ExpirationDate >= Date));
                 
             // Определяем, является ли текущий день первым или последним в диапазоне
             IsFirstDayInMedicationRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Medication && 
+                e.EventType == EventType.MedicationTreatment && 
                 e.Date.Date == Date.Date);
                 
             IsLastDayInMedicationRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Medication && 
+                e.EventType == EventType.MedicationTreatment && 
                 e.ExpirationDate.HasValue && 
                 e.ExpirationDate.Value.Date == Date.Date);
                 
             IsFirstDayInRestrictionRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Restriction && 
+                e.EventType == EventType.CriticalWarning && 
                 e.Date.Date == Date.Date);
                 
             IsLastDayInRestrictionRange = _monthEvents.Any(e => 
-                e.EventType == EventType.Restriction && 
+                e.EventType == EventType.CriticalWarning && 
                 e.ExpirationDate.HasValue && 
                 e.ExpirationDate.Value.Date == Date.Date);
         }
@@ -472,10 +472,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             TotalEvents = _dayEvents.Count;
             
             // Определяем типы событий
-            HasMedication = _dayEvents.Any(e => e.EventType == EventType.Medication);
+            HasMedication = _dayEvents.Any(e => e.EventType == EventType.MedicationTreatment);
             HasPhoto = _dayEvents.Any(e => e.EventType == EventType.Photo);
-            HasRestriction = _dayEvents.Any(e => e.EventType == EventType.Restriction);
-            HasInstruction = _dayEvents.Any(e => e.EventType == EventType.Instruction);
+            HasRestriction = _dayEvents.Any(e => e.EventType == EventType.CriticalWarning);
+            HasInstruction = _dayEvents.Any(e => e.EventType == EventType.VideoInstruction);
         }
 
         private List<CalendarEvent> GenerateTestMonthEvents()
@@ -493,7 +493,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 Description = "Избегайте интенсивных физических нагрузок",
                 Date = startDate,
                 ExpirationDate = startDate.AddDays(7),
-                EventType = EventType.Restriction,
+                EventType = EventType.CriticalWarning,
                 TimeOfDay = TimeOfDay.Morning
             });
             
@@ -505,7 +505,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 Description = "По 1 таблетке 2 раза в день",
                 Date = startDate.AddDays(8),
                 ExpirationDate = startDate.AddDays(15),
-                EventType = EventType.Medication,
+                EventType = EventType.MedicationTreatment,
                 TimeOfDay = TimeOfDay.Morning
             });
             
@@ -526,7 +526,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Title = "Прием лекарства",
                     Description = "Антибиотик широкого спектра",
                     Date = Date,
-                    EventType = EventType.Medication,
+                    EventType = EventType.MedicationTreatment,
                     TimeOfDay = TimeOfDay.Morning
                 });
                 
@@ -557,7 +557,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Title = "Тестовое событие",
                     Date = today,
                     TimeOfDay = TimeOfDay.Morning,
-                    EventType = EventType.Medication
+                    EventType = EventType.MedicationTreatment
                 });
                 
                 // Обновляем UI

@@ -20,12 +20,12 @@
     </Shell.Resources>
 
     <TabBar>
-        <!-- Прогресс лечения - главная страница -->
-        <Tab Title="Progress">
+        <!-- Today - главная страница -->
+        <Tab Title="Today">
             <ShellContent
-                Title="My Progress"
-                ContentTemplate="{DataTemplate treatment:TreatmentProgressPage}"
-                Route="progress" />
+                Title="Today"
+                ContentTemplate="{DataTemplate calendar:TodayPage}"
+                Route="today" />
         </Tab>
 
         <!-- Календарь -->

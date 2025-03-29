@@ -1,5 +1,9 @@
 ﻿using HairCarePlus.Client.Patient.Features.Profile.Views;
 using HairCarePlus.Client.Patient.Features.Doctor.Views;
+using HairCarePlus.Client.Patient.Features.Calendar.Views;
+using Microsoft.Maui.Controls;
+using System;
+using System.Diagnostics;
 
 namespace HairCarePlus.Client.Patient;
 
@@ -7,19 +11,67 @@ public partial class AppShell : Shell
 {
 	public AppShell()
 	{
-		InitializeComponent();
-		RegisterRoutes();
+		try
+		{
+			Debug.WriteLine("AppShell constructor start");
+			InitializeComponent();
+			Debug.WriteLine("AppShell InitializeComponent completed");
+			
+			RegisterRoutes();
+			Debug.WriteLine("AppShell RegisterRoutes completed");
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Exception in AppShell constructor: {ex.Message}");
+			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+		}
 	}
 
 	private void RegisterRoutes()
 	{
-		Routing.RegisterRoute("profile", typeof(ProfilePage));
-		Routing.RegisterRoute("//chat", typeof(DoctorChatPage));
-		// Здесь будут добавляться другие маршруты по мере разработки
+		try
+		{
+			Debug.WriteLine("RegisterRoutes start");
+			
+			// Профиль
+			Routing.RegisterRoute(nameof(ProfilePage), typeof(ProfilePage));
+			Debug.WriteLine("Registered route for ProfilePage");
+			
+			// Чат с доктором
+			Routing.RegisterRoute(nameof(DoctorChatPage), typeof(DoctorChatPage));
+			Debug.WriteLine("Registered route for DoctorChatPage");
+			
+			// Календарь и страницы календаря
+			Routing.RegisterRoute(nameof(TodayPage), typeof(TodayPage));
+			Debug.WriteLine("Registered route for TodayPage");
+			
+			Routing.RegisterRoute(nameof(CalendarPage), typeof(CalendarPage));
+			Debug.WriteLine("Registered route for CalendarPage");
+			
+			Routing.RegisterRoute(nameof(EventDetailPage), typeof(EventDetailPage));
+			Debug.WriteLine("Registered route for EventDetailPage");
+			
+			Debug.WriteLine("RegisterRoutes completed successfully");
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Exception in RegisterRoutes: {ex.Message}");
+			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+		}
 	}
 
 	private async void OnChatToolbarItemClicked(object sender, EventArgs e)
 	{
-		await Shell.Current.GoToAsync("doctorChat");
+		try
+		{
+			Debug.WriteLine("OnChatToolbarItemClicked start");
+			await Shell.Current.GoToAsync(nameof(DoctorChatPage));
+			Debug.WriteLine("Navigated to DoctorChatPage");
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Exception in OnChatToolbarItemClicked: {ex.Message}");
+			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+		}
 	}
 }

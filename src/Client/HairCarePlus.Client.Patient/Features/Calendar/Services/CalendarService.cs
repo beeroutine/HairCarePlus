@@ -13,19 +13,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
     {
         private readonly HttpClient _httpClient;
         private readonly INetworkService _networkService;
+        private readonly IHairTransplantEventGenerator _eventGenerator;
         private readonly string _baseApiUrl = "api/calendar";
         private readonly bool _useMockData = true; // Set to true to use mock data instead of API
 
-        public CalendarService(HttpClient httpClient, INetworkService networkService)
+        public CalendarService(HttpClient httpClient, INetworkService networkService, IHairTransplantEventGenerator eventGenerator)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _networkService = networkService ?? throw new ArgumentNullException(nameof(networkService));
+            _eventGenerator = eventGenerator ?? throw new ArgumentNullException(nameof(eventGenerator));
             
             // Set base address if not already set
             if (_httpClient.BaseAddress == null)
             {
                 _httpClient.BaseAddress = new Uri("http://localhost:5281/");
             }
+            
+            // Устанавливаем демо-дату трансплантации волос для генерации событий
+            _eventGenerator.SetTransplantDate(DateTime.Today.AddDays(-1));
         }
 
         public async Task<IEnumerable<CalendarEvent>> GetEventsForDateAsync(DateTime date)
@@ -113,7 +118,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
                 string apiUrl = $"{_baseApiUrl}/restrictions/active";
                 var restrictions = await _httpClient.GetFromJsonAsync<List<CalendarEvent>>(apiUrl);
                 return restrictions?
-                    .Where(r => r.EventType == EventType.Restriction && 
+                    .Where(r => r.EventType == EventType.CriticalWarning && 
                                 (r.ExpirationDate == null || r.ExpirationDate > DateTime.Now))
                     .ToList() ?? new List<CalendarEvent>();
             }
@@ -149,6 +154,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
                 return GetMockPendingNotifications();
             }
         }
+        
+        public async Task<IEnumerable<CalendarEvent>> GetOverdueEventsAsync()
+        {
+            try
+            {
+                // Check for network connectivity
+                if (!await _networkService.IsConnectedAsync() || _useMockData)
+                {
+                    // Return mock overdue events
+                    return GetMockOverdueEvents();
+                }
+                
+                string apiUrl = $"{_baseApiUrl}/events/overdue";
+                var events = await _httpClient.GetFromJsonAsync<List<CalendarEvent>>(apiUrl);
+                return events ?? new List<CalendarEvent>();
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error in GetOverdueEventsAsync: {ex.Message}");
+                // Return mock data on error
+                return GetMockOverdueEvents();
+            }
+        }
 
         public async Task<IEnumerable<CalendarEvent>> GetEventsForMonthAsync(int year, int month)
         {
@@ -175,189 +204,60 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
 
         #region Mock Data Methods
 
-        private List<CalendarEvent> GetMockEventsForDate(DateTime date)
+        private IEnumerable<CalendarEvent> GetMockEventsForDate(DateTime date)
         {
-            // Get events from the mock data that match the requested date
-            return GetAllMockEvents()
-                .Where(e => e.Date.Date == date.Date)
-                .ToList();
+            // Используем новый генератор событий вместо прежней логики
+            return _eventGenerator.GenerateEventsForDate(date);
         }
-
-        private List<CalendarEvent> GetMockEventsForDateRange(DateTime startDate, DateTime endDate)
+        
+        private IEnumerable<CalendarEvent> GetMockEventsForDateRange(DateTime startDate, DateTime endDate)
         {
-            // Get events from the mock data that fall within the date range
-            return GetAllMockEvents()
-                .Where(e => e.Date.Date >= startDate.Date && e.Date.Date <= endDate.Date)
-                .ToList();
+            // Используем новый генератор событий вместо прежней логики
+            return _eventGenerator.GenerateEventsForDateRange(startDate, endDate);
         }
 
         private List<CalendarEvent> GetMockActiveRestrictions()
         {
-            return GetAllMockEvents()
-                .Where(e => e.EventType == EventType.Restriction && 
-                          (e.ExpirationDate == null || e.ExpirationDate > DateTime.Now))
+            // Получить ограничения из всех событий за последние 90 дней
+            var allEvents = _eventGenerator.GenerateEventsForDateRange(DateTime.Today.AddDays(-90), DateTime.Today.AddDays(30));
+            
+            // Выбрать только активные ограничения (события типа CriticalWarning, которые ещё не истекли)
+            return allEvents
+                .Where(e => e.EventType == EventType.CriticalWarning && 
+                           (e.EndDate == null || e.EndDate >= DateTime.Now))
                 .ToList();
         }
-
+        
         private List<CalendarEvent> GetMockPendingNotifications()
         {
-            return GetAllMockEvents()
-                .Where(e => e.Date.Date == DateTime.Today && !e.IsCompleted)
+            // Получить события на ближайшие 2 дня для уведомлений
+            var events = _eventGenerator.GenerateEventsForDateRange(DateTime.Today, DateTime.Today.AddDays(2));
+            
+            // Выбрать события с высоким приоритетом для уведомлений
+            return events
+                .Where(e => e.Priority == EventPriority.High || e.Priority == EventPriority.Critical)
                 .ToList();
         }
-
+        
+        private List<CalendarEvent> GetMockOverdueEvents()
+        {
+            // Получить события за последние 10 дней
+            var events = _eventGenerator.GenerateEventsForDateRange(DateTime.Today.AddDays(-10), DateTime.Today.AddDays(-1));
+            
+            // Выбрать невыполненные события
+            return events
+                .Where(e => !e.IsCompleted)
+                .ToList();
+        }
+        
         private List<CalendarEvent> GetAllMockEvents()
         {
-            // Current date for reference
-            var today = DateTime.Today;
-            var currentMonth = new DateTime(today.Year, today.Month, 1);
-            
-            // Create a list of mock calendar events
-            var events = new List<CalendarEvent>();
-            
-            // Today's events
-            events.Add(new CalendarEvent
-            {
-                Id = 1,
-                Title = "Утренний приём лекарств",
-                Description = "Принять лекарство с завтраком",
-                Date = today,
-                EventType = EventType.Medication,
-                TimeOfDay = TimeOfDay.Morning,
-                ReminderTime = new TimeSpan(8, 0, 0),
-                IsCompleted = false
-            });
-            
-            events.Add(new CalendarEvent
-            {
-                Id = 2,
-                Title = "Вечерний приём лекарств",
-                Description = "Принять лекарство перед сном",
-                Date = today,
-                EventType = EventType.Medication,
-                TimeOfDay = TimeOfDay.Evening,
-                ReminderTime = new TimeSpan(20, 0, 0),
-                IsCompleted = false
-            });
-            
-            // Tomorrow's events
-            events.Add(new CalendarEvent
-            {
-                Id = 3,
-                Title = "Мытьё головы",
-                Description = "Следовать назначенной процедуре мытья головы",
-                Date = today.AddDays(1),
-                EventType = EventType.Instruction,
-                TimeOfDay = TimeOfDay.Morning,
-                ReminderTime = new TimeSpan(9, 0, 0),
-                IsCompleted = false
-            });
-            
-            // Add more events across different days
-            for (int i = 1; i <= 28; i++)
-            {
-                // Add medication events on even days
-                if (i % 2 == 0)
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        Id = 100 + i,
-                        Title = "Приём лекарств",
-                        Description = "Утренний приём лекарств",
-                        Date = new DateTime(today.Year, today.Month, i),
-                        EventType = EventType.Medication,
-                        TimeOfDay = TimeOfDay.Morning,
-                        IsCompleted = i < today.Day
-                    });
-                }
-                
-                // Add photo reports on days divisible by 5
-                if (i % 5 == 0)
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        Id = 200 + i,
-                        Title = "Фотоотчёт",
-                        Description = "Сделать фото головы со всех сторон",
-                        Date = new DateTime(today.Year, today.Month, i),
-                        EventType = EventType.Photo,
-                        TimeOfDay = TimeOfDay.Afternoon,
-                        IsCompleted = i < today.Day
-                    });
-                }
-                
-                // Add restrictions on days divisible by 7
-                if (i % 7 == 0)
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        Id = 300 + i,
-                        Title = "Ограничение физической активности",
-                        Description = "Избегать интенсивных физических нагрузок",
-                        Date = new DateTime(today.Year, today.Month, i),
-                        EventType = EventType.Restriction,
-                        TimeOfDay = TimeOfDay.Morning,
-                        ExpirationDate = new DateTime(today.Year, today.Month, i).AddDays(3),
-                        IsCompleted = false
-                    });
-                }
-                
-                // Add instructions on days divisible by 3
-                if (i % 3 == 0)
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        Id = 400 + i,
-                        Title = "Инструкция по уходу",
-                        Description = "Специальный уход за кожей головы",
-                        Date = new DateTime(today.Year, today.Month, i),
-                        EventType = EventType.Instruction,
-                        TimeOfDay = TimeOfDay.Evening,
-                        IsCompleted = i < today.Day
-                    });
-                }
-            }
-            
-            // Previous month events
-            for (int i = 25; i <= 31; i++)
-            {
-                var previousMonthDate = currentMonth.AddMonths(-1).AddDays(i - 1);
-                if (previousMonthDate.Month == currentMonth.AddMonths(-1).Month)
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        Id = 500 + i,
-                        Title = "Приём лекарств",
-                        Description = "Ежедневный приём лекарств",
-                        Date = previousMonthDate,
-                        EventType = EventType.Medication,
-                        TimeOfDay = TimeOfDay.Morning,
-                        IsCompleted = true
-                    });
-                }
-            }
-            
-            // Next month events
-            for (int i = 1; i <= 10; i++)
-            {
-                events.Add(new CalendarEvent
-                {
-                    Id = 600 + i,
-                    Title = $"Плановый осмотр {i}",
-                    Description = "Плановый осмотр у врача",
-                    Date = currentMonth.AddMonths(1).AddDays(i - 1),
-                    EventType = i % 4 == 0 ? EventType.Instruction :
-                                i % 3 == 0 ? EventType.Photo :
-                                i % 2 == 0 ? EventType.Restriction : EventType.Medication,
-                    TimeOfDay = i % 3 == 0 ? TimeOfDay.Morning :
-                                i % 2 == 0 ? TimeOfDay.Afternoon : TimeOfDay.Evening,
-                    IsCompleted = false
-                });
-            }
-            
-            return events;
+            // Получить события за весь период (последние 90 дней + ближайшие 90 дней)
+            return _eventGenerator.GenerateEventsForDateRange(
+                DateTime.Today.AddDays(-90), 
+                DateTime.Today.AddDays(90)).ToList();
         }
-
+        
         #endregion
     }
 } 
