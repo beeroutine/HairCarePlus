@@ -77,7 +77,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             PreviousMonthCommand = new Command(ExecutePreviousMonth);
             NextMonthCommand = new Command(ExecuteNextMonth);
-            DaySelectedCommand = new Command<DateTime>(ExecuteDaySelected);
+            DaySelectedCommand = new Command<string>(ExecuteDaySelected);
             GoToTodayCommand = new Command(ExecuteGoToToday);
             BackToMonthViewCommand = new Command(ExecuteBackToMonthView);
             
@@ -95,11 +95,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             CurrentMonthDate = CurrentMonthDate.AddMonths(1);
         }
 
-        private void ExecuteDaySelected(DateTime date)
+        private void ExecuteDaySelected(string dayString)
         {
-            SelectedDate = date;
-            LoadEventsForSelectedDay();
-            IsMonthViewVisible = false;
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"ExecuteDaySelected: {dayString}");
+                
+                if (!int.TryParse(dayString, out int day))
+                {
+                    System.Diagnostics.Debug.WriteLine($"Не удалось преобразовать день '{dayString}' в число");
+                    return;
+                }
+                
+                // Создаем дату из текущего месяца и выбранного дня
+                var newDate = new DateTime(CurrentMonthDate.Year, CurrentMonthDate.Month, day);
+                SelectedDate = newDate;
+                
+                System.Diagnostics.Debug.WriteLine($"Выбрана дата: {SelectedDate:yyyy-MM-dd}");
+                
+                LoadEventsForSelectedDay();
+                IsMonthViewVisible = false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка при выборе дня: {ex.Message}");
+            }
         }
 
         private void ExecuteGoToToday()
