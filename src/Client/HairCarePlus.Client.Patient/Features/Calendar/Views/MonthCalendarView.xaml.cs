@@ -19,6 +19,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly Dictionary<DateTime, Frame> _dateCells = new();
         private SimpleCalendarViewModel? _previousViewModel;
         private SimpleCalendarViewModel? ViewModel => BindingContext as SimpleCalendarViewModel;
+        
+        // Событие для передачи информации об ошибке родительскому элементу
+        public event EventHandler<Exception> ErrorOccurred;
 
         public MonthCalendarView()
         {
@@ -147,124 +150,122 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 var cells = CalendarGrid.Children.OfType<Frame>().ToList();
                 var currentDate = firstDayOfCalendar;
                 
+                if (cells == null || !cells.Any())
+                {
+                    // Если ячейки не созданы, создаем их заново
+                    CreateCalendarCells();
+                    cells = CalendarGrid.Children.OfType<Frame>().ToList();
+                    
+                    if (cells == null || !cells.Any())
+                    {
+                        System.Diagnostics.Debug.WriteLine("Не удалось создать ячейки календаря");
+                        // Вызываем событие с ошибкой
+                        ErrorOccurred?.Invoke(this, new InvalidOperationException("Не удалось создать ячейки календаря"));
+                        return;
+                    }
+                }
+                
                 foreach (var cell in cells)
                 {
-                    // Очищаем содержимое ячейки
-                    var grid = cell.Content as Grid;
-                    if (grid == null) continue;
-                    
-                    grid.Children.Clear();
-                    
-                    // Определяем, является ли ячейка текущим днем
-                    bool isToday = currentDate.Date == DateTime.Today;
-                    bool isSelected = ViewModel != null && currentDate.Date == ViewModel.SelectedDate.Date;
-                    bool isCurrentMonth = currentDate.Month == currentMonth.Month;
-                    
-                    // Устанавливаем стиль фона ячейки в зависимости от ее типа
-                    cell.BackgroundColor = Colors.Transparent;
-                    cell.Opacity = isCurrentMonth ? 1.0 : 0.5;
-                    
-                    // Создаем контейнер для содержимого дня
-                    var contentStack = new VerticalStackLayout 
-                    { 
-                        Spacing = 4,
-                        HorizontalOptions = LayoutOptions.Fill,
-                        VerticalOptions = LayoutOptions.Fill,
-                        Padding = new Thickness(2)
-                    };
-                    
-                    // Номер дня
-                    Label dayLabel;
-                    
-                    // Определяем стиль метки дня
-                    if (isToday || isSelected)
+                    try
                     {
-                        // Для текущего или выбранного дня используем круглую рамку
-                        var todayBorder = new Border
-                        {
-                            Style = isSelected 
-                                ? (Style)Resources["SelectedCellStyle"] 
-                                : (Style)Resources["TodayCellStyle"],
-                            HorizontalOptions = LayoutOptions.Center
-                        };
+                        // Очищаем содержимое ячейки
+                        var grid = cell.Content as Grid;
+                        if (grid == null) continue;
                         
-                        dayLabel = new Label
-                        {
-                            Text = currentDate.Day.ToString(),
-                            TextColor = isSelected ? Colors.White : (isCurrentMonth 
-                                ? (Color)Application.Current.Resources["TextPrimaryColor"] 
-                                : (Color)Application.Current.Resources["Gray500"]),
-                            HorizontalOptions = LayoutOptions.Center,
-                            VerticalOptions = LayoutOptions.Center,
-                            FontSize = 16,
-                            FontAttributes = FontAttributes.Bold
-                        };
+                        grid.Children.Clear();
                         
-                        todayBorder.Content = dayLabel;
-                        contentStack.Add(todayBorder);
-                    }
-                    else
-                    {
-                        // Для обычных дней просто отображаем номер
-                        dayLabel = new Label
-                        {
-                            Text = currentDate.Day.ToString(),
-                            Style = isCurrentMonth 
-                                ? (Style)Resources["DayNumberStyle"] 
-                                : (Style)Resources["OtherMonthDayStyle"],
-                            HorizontalOptions = LayoutOptions.Center
-                        };
-                        contentStack.Add(dayLabel);
-                    }
-                    
-                    // Пример добавления индикаторов событий - просто показываем случайные индикаторы для наглядности нового дизайна
-                    // В реальном коде здесь должно быть получение событий из сервиса или через ViewModel
-                    if (new Random().Next(10) > 6 && isCurrentMonth) // Примерно 30% дней будут иметь индикаторы
-                    {
-                        var indicatorsLayout = new HorizontalStackLayout
-                        {
+                        // Определяем, является ли ячейка текущим днем
+                        bool isToday = currentDate.Date == DateTime.Today;
+                        bool isSelected = ViewModel != null && currentDate.Date == ViewModel.SelectedDate.Date;
+                        bool isCurrentMonth = currentDate.Month == currentMonth.Month;
+                        
+                        // Устанавливаем стиль фона ячейки в зависимости от ее типа
+                        cell.BackgroundColor = Colors.Transparent;
+                        cell.Opacity = isCurrentMonth ? 1.0 : 0.5;
+                        
+                        // Создаем контейнер для содержимого дня
+                        var contentStack = new VerticalStackLayout 
+                        { 
                             Spacing = 4,
-                            HorizontalOptions = LayoutOptions.Center,
-                            Margin = new Thickness(0, 2, 0, 0)
+                            HorizontalOptions = LayoutOptions.Fill,
+                            VerticalOptions = LayoutOptions.Fill,
+                            Padding = new Thickness(2)
                         };
                         
-                        // Случайное количество разных типов индикаторов
-                        var rnd = new Random(currentDate.Day + currentDate.Month * 100); // Используем дату как seed для стабильных результатов
-                        int eventTypes = rnd.Next(1, 5); // от 1 до 4 типов
+                        // Номер дня
+                        Label dayLabel;
                         
-                        var styles = new (Style, int)[] 
+                        // Определяем стиль метки дня
+                        if (isToday || isSelected)
                         {
-                            ((Style)Resources["MedicationDotStyle"], 0),
-                            ((Style)Resources["PhotoDotStyle"], 1),
-                            ((Style)Resources["RestrictionDotStyle"], 2),
-                            ((Style)Resources["InstructionDotStyle"], 3)
-                        };
-                        
-                        var selectedStyles = styles
-                            .OrderBy(x => rnd.Next()) // перемешиваем
-                            .Take(eventTypes); // берем нужное количество
-                        
-                        foreach (var (style, _) in selectedStyles)
+                            // Для текущего или выбранного дня используем круглую рамку
+                            var todayBorder = new Border
+                            {
+                                Style = isSelected 
+                                    ? (Style)Resources["SelectedCellStyle"] 
+                                    : (Style)Resources["TodayCellStyle"],
+                                HorizontalOptions = LayoutOptions.Center
+                            };
+                            
+                            dayLabel = new Label
+                            {
+                                Text = currentDate.Day.ToString(),
+                                TextColor = isSelected ? Colors.White : (isCurrentMonth 
+                                    ? (Color)Application.Current.Resources["TextPrimaryColor"] 
+                                    : (Color)Application.Current.Resources["Gray500"]),
+                                HorizontalOptions = LayoutOptions.Center,
+                                VerticalOptions = LayoutOptions.Center,
+                                FontSize = 16,
+                                FontAttributes = FontAttributes.Bold
+                            };
+                            
+                            todayBorder.Content = dayLabel;
+                            contentStack.Add(todayBorder);
+                        }
+                        else
                         {
-                            var dot = new BoxView { Style = style };
-                            indicatorsLayout.Add(dot);
+                            // Для обычных дней просто отображаем номер
+                            dayLabel = new Label
+                            {
+                                Text = currentDate.Day.ToString(),
+                                Style = isCurrentMonth 
+                                    ? (Style)Resources["DayNumberStyle"] 
+                                    : (Style)Resources["OtherMonthDayStyle"],
+                                HorizontalOptions = LayoutOptions.Center
+                            };
+                            contentStack.Add(dayLabel);
                         }
                         
-                        contentStack.Add(indicatorsLayout);
+                        // Обновляем BindingContext ячейки
+                        cell.BindingContext = currentDate;
+                        
+                        // Добавляем содержимое в ячейку
+                        grid.Children.Add(contentStack);
+                        
+                        // Переходим к следующему дню
+                        currentDate = currentDate.AddDays(1);
                     }
-                    
-                    grid.Children.Add(contentStack);
-                    
-                    // Устанавливаем контекст привязки
-                    cell.BindingContext = currentDate;
-                    
-                    // Переходим к следующему дню
-                    currentDate = currentDate.AddDays(1);
+                    catch (Exception cellEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Ошибка при обработке ячейки календаря: {cellEx.Message}");
+                        // Вызываем событие с ошибкой ячейки, но продолжаем обработку
+                        ErrorOccurred?.Invoke(this, cellEx);
+                        // Продолжаем с другими ячейками
+                        currentDate = currentDate.AddDays(1);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in RefreshCalendarDays: {ex}");
+                System.Diagnostics.Debug.WriteLine($"Ошибка в RefreshCalendarDays: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"InnerException: {ex.InnerException.Message}");
+                }
+                
+                // Вызываем событие с ошибкой
+                ErrorOccurred?.Invoke(this, ex);
             }
         }
 
@@ -290,7 +291,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 RowDefinitions =
                 {
                     new RowDefinition { Height = GridLength.Star },
-                    new RowDefinition { Height = GridLength.Auto }
+                    new RowDefinition { Height = GridLength.Auto },
+                    new RowDefinition { Height = GridLength.Auto }  // Для длительных событий
                 },
                 RowSpacing = 2,
                 Padding = new Thickness(0),
@@ -299,14 +301,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 VerticalOptions = LayoutOptions.Fill
             };
             
-            // Создаем фон ячейки
-            var frame = new Frame
+            // Создаем фон ячейки с границей
+            var cellBorder = new Border
             {
                 Style = (Style)Resources["CalendarCellStyle"],
                 HorizontalOptions = LayoutOptions.Fill,
                 VerticalOptions = LayoutOptions.Fill
             };
-            cellGrid.Add(frame);
+            cellGrid.Add(cellBorder);
             
             // Создаем контейнер для содержимого дня
             var contentGrid = new Grid
@@ -317,29 +319,42 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     new RowDefinition { Height = GridLength.Auto }
                 },
                 RowSpacing = 4,
-                Padding = new Thickness(2),
+                Padding = new Thickness(4, 4, 4, 4),
                 BackgroundColor = Colors.Transparent
             };
             
             // Номер дня с выделением для текущего дня или выбранного дня
-            if (day.IsSelected || day.IsToday)
+            if (day.IsToday)
             {
-                var border = new Border
+                var todayBorder = new Border
                 {
-                    Style = day.IsSelected ? 
-                        (Style)Resources["SelectedCellStyle"] : 
-                        (Style)Resources["TodayCellStyle"]
+                    Style = (Style)Resources["TodayCellStyle"]
                 };
                 
                 var dayLabel = new Label
                 {
                     Text = day.DayText,
-                    Style = (Style)Resources["DayNumberStyle"],
-                    TextColor = day.IsSelected ? Colors.White : null
+                    Style = (Style)Resources["TodayNumberStyle"]
                 };
                 
-                border.Content = dayLabel;
-                contentGrid.Add(border, 0, 0);
+                todayBorder.Content = dayLabel;
+                contentGrid.Add(todayBorder, 0, 0);
+            }
+            else if (day.IsSelected)
+            {
+                var selectedBorder = new Border
+                {
+                    Style = (Style)Resources["SelectedCellStyle"]
+                };
+                
+                var dayLabel = new Label
+                {
+                    Text = day.DayText,
+                    Style = (Style)Resources["DayNumberStyle"]
+                };
+                
+                selectedBorder.Content = dayLabel;
+                contentGrid.Add(selectedBorder, 0, 0);
             }
             else
             {
@@ -348,7 +363,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     Text = day.DayText,
                     Style = day.IsCurrentMonth ? 
                         (Style)Resources["DayNumberStyle"] : 
-                        (Style)Resources["OtherMonthDayStyle"]
+                        (Style)Resources["OtherMonthDayStyle"],
+                    HorizontalOptions = LayoutOptions.Start,
+                    Margin = new Thickness(8, 4, 0, 0)
                 };
                 contentGrid.Add(dayLabel, 0, 0);
             }
@@ -361,22 +378,177 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     Style = (Style)Resources["EventIndicatorsContainerStyle"]
                 };
                 
-                if (day.HasMedication)
-                    indicatorsContainer.Add(new BoxView { Style = (Style)Resources["MedicationDotStyle"] });
+                if (day.HasMedication && !day.IsPartOfMedicationRange)
+                {
+                    // Для приема лекарств используем синий круг
+                    var indicator = new Border
+                    {
+                        BackgroundColor = Color.FromArgb("#42A5F5"),
+                        WidthRequest = 6,
+                        HeightRequest = 6,
+                        Stroke = Colors.Transparent,
+                        StrokeThickness = 0,
+                        StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+                        {
+                            CornerRadius = new CornerRadius(3)
+                        },
+                        HorizontalOptions = LayoutOptions.Center
+                    };
+                    indicatorsContainer.Add(indicator);
+                }
                 
                 if (day.HasPhoto)
-                    indicatorsContainer.Add(new BoxView { Style = (Style)Resources["PhotoDotStyle"] });
+                {
+                    // Для фото можно использовать иконку фотоаппарата, если она доступна
+                    // или фиолетовый круг как запасной вариант
+                    var photoIndicator = new Border
+                    {
+                        BackgroundColor = Color.FromArgb("#AB47BC"),
+                        WidthRequest = 6,
+                        HeightRequest = 6,
+                        Stroke = Colors.Transparent,
+                        StrokeThickness = 0,
+                        StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+                        {
+                            CornerRadius = new CornerRadius(3)
+                        },
+                        HorizontalOptions = LayoutOptions.Center
+                    };
+                    indicatorsContainer.Add(photoIndicator);
+                }
                 
-                if (day.HasRestriction)
-                    indicatorsContainer.Add(new BoxView { Style = (Style)Resources["RestrictionDotStyle"] });
+                if (day.HasRestriction && !day.IsPartOfRestrictionRange)
+                {
+                    var restrictionIndicator = new Border
+                    {
+                        BackgroundColor = Color.FromArgb("#FF6B6B"),
+                        WidthRequest = 6,
+                        HeightRequest = 6,
+                        Stroke = Colors.Transparent,
+                        StrokeThickness = 0,
+                        StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+                        {
+                            CornerRadius = new CornerRadius(3)
+                        },
+                        HorizontalOptions = LayoutOptions.Center
+                    };
+                    indicatorsContainer.Add(restrictionIndicator);
+                }
                 
                 if (day.HasInstruction)
-                    indicatorsContainer.Add(new BoxView { Style = (Style)Resources["InstructionDotStyle"] });
+                {
+                    var instructionIndicator = new Border
+                    {
+                        BackgroundColor = Color.FromArgb("#66BB6A"),
+                        WidthRequest = 6,
+                        HeightRequest = 6,
+                        Stroke = Colors.Transparent,
+                        StrokeThickness = 0,
+                        StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
+                        {
+                            CornerRadius = new CornerRadius(3)
+                        },
+                        HorizontalOptions = LayoutOptions.Center
+                    };
+                    indicatorsContainer.Add(instructionIndicator);
+                }
                 
-                contentGrid.Add(indicatorsContainer, 0, 1);
+                if (indicatorsContainer.Children.Any())
+                {
+                    contentGrid.Add(indicatorsContainer, 0, 1);
+                }
             }
             
             cellGrid.Add(contentGrid);
+            
+            // Добавляем индикаторы длительных событий
+            var rangesLayout = new VerticalStackLayout
+            {
+                Spacing = 2,
+                Padding = new Thickness(0),
+                HorizontalOptions = LayoutOptions.Fill
+            };
+            
+            // Диапазон приема медикаментов (синий)
+            if (day.IsPartOfMedicationRange)
+            {
+                var rangeStyle = (Style)Resources["MedicationRangeStyle"];
+                Style shapeStyle;
+                
+                if (day.IsFirstDayInMedicationRange)
+                    shapeStyle = (Style)Resources["RangeStartStyle"];
+                else if (day.IsLastDayInMedicationRange)
+                    shapeStyle = (Style)Resources["RangeEndStyle"];
+                else
+                    shapeStyle = (Style)Resources["RangeMiddleStyle"];
+                
+                var border = new Border
+                {
+                    Style = rangeStyle
+                };
+                MergeStyles(border, shapeStyle);
+                
+                rangesLayout.Add(border);
+            }
+            
+            // Диапазон ограничений (красный) - более широкая полоса с текстом Restrictions
+            if (day.IsPartOfRestrictionRange)
+            {
+                var rangeStyle = (Style)Resources["RestrictionRangeStyle"];
+                Style shapeStyle;
+                
+                if (day.IsFirstDayInRestrictionRange)
+                {
+                    shapeStyle = (Style)Resources["RangeStartStyle"];
+                    
+                    // Если это первый день, добавляем подпись "Restrictions"
+                    var restrictionLabel = new Label
+                    {
+                        Text = "Restrictions",
+                        Style = (Style)Resources["RangeLabelStyle"]
+                    };
+                    
+                    var restrictionContainer = new Grid();
+                    
+                    var restrictionBorder = new Border
+                    {
+                        Style = rangeStyle,
+                        Content = restrictionLabel
+                    };
+                    MergeStyles(restrictionBorder, shapeStyle);
+                    
+                    rangesLayout.Add(restrictionBorder);
+                }
+                else if (day.IsLastDayInRestrictionRange)
+                {
+                    shapeStyle = (Style)Resources["RangeEndStyle"];
+                    
+                    var border = new Border
+                    {
+                        Style = rangeStyle
+                    };
+                    MergeStyles(border, shapeStyle);
+                    
+                    rangesLayout.Add(border);
+                }
+                else
+                {
+                    shapeStyle = (Style)Resources["RangeMiddleStyle"];
+                    
+                    var border = new Border
+                    {
+                        Style = rangeStyle
+                    };
+                    MergeStyles(border, shapeStyle);
+                    
+                    rangesLayout.Add(border);
+                }
+            }
+            
+            if (day.IsPartOfMedicationRange || day.IsPartOfRestrictionRange)
+            {
+                cellGrid.Add(rangesLayout, 0, 2);
+            }
             
             // Добавляем обработчик нажатия
             var tapGestureRecognizer = new TapGestureRecognizer();
@@ -390,6 +562,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             cellGrid.GestureRecognizers.Add(tapGestureRecognizer);
             
             return cellGrid;
+        }
+
+        // Вспомогательный метод для объединения стилей
+        private void MergeStyles(Border target, Style additionalStyle)
+        {
+            foreach (var setter in additionalStyle.Setters)
+            {
+                if (setter is Setter setterInstance)
+                {
+                    target.SetValue(setterInstance.Property, setterInstance.Value);
+                }
+            }
         }
     }
     
