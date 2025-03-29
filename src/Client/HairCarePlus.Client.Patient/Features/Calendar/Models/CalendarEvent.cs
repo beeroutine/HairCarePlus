@@ -21,6 +21,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
     {
         public int Id { get; set; }
         public DateTime Date { get; set; }
+        public DateTime? EndDate { get; set; } // Конечная дата для длительных событий
         public string Title { get; set; }
         public string Description { get; set; }
         public EventType EventType { get; set; }
@@ -28,5 +29,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public bool IsCompleted { get; set; }
         public TimeSpan? ReminderTime { get; set; }
         public DateTime? ExpirationDate { get; set; } // For restrictions
+
+        // Свойство для определения, является ли событие длительным
+        public bool IsMultiDay => EndDate.HasValue && EndDate.Value > Date;
+
+        // Длительность события в днях
+        public int DurationInDays => EndDate.HasValue 
+            ? (EndDate.Value - Date).Days + 1 
+            : 1;
     }
 } 

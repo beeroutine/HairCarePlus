@@ -19,6 +19,15 @@
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<SelfContained>false</SelfContained>
+
+		<!-- iOS specific -->
+		<CodesignKey Condition="'$(TargetFramework)' == 'net8.0-ios'">iPhone Developer</CodesignKey>
+		<CodesignProvision Condition="'$(TargetFramework)' == 'net8.0-ios'"></CodesignProvision>
+		<CodesignEntitlements Condition="'$(TargetFramework)' == 'net8.0-ios'">Platforms/iOS/Entitlements.plist</CodesignEntitlements>
+		<RuntimeIdentifier Condition="'$(TargetFramework)' == 'net8.0-ios'">iossimulator-x64</RuntimeIdentifier>
+		<MtouchDebug Condition="'$(Configuration)' == 'Debug' And '$(TargetFramework)' == 'net8.0-ios'">true</MtouchDebug>
+		<MtouchInterpreter Condition="'$(Configuration)' == 'Debug' And '$(TargetFramework)' == 'net8.0-ios'">all</MtouchInterpreter>
 
 		<!-- Display name -->
 		<ApplicationTitle>HairCarePlus.Client.Patient</ApplicationTitle>
@@ -78,6 +87,14 @@
 
 	<ItemGroup>
 	  <Folder Include="Features\Calendar\" />
+	</ItemGroup>
+
+	<ItemGroup Condition="$(TargetFramework.Contains('-ios'))">
+		<BundleResource Include="Platforms\iOS\Resources\**" />
+		<InterfaceDefinition Include="Platforms\iOS\*.storyboard" />
+		<None Include="Platforms\iOS\Entitlements.plist" />
+		<None Include="Platforms\iOS\Info.plist" />
+		<None Include="Platforms\iOS\PrivacyManifest.xcprivacy" />
 	</ItemGroup>
 
 </Project>

@@ -9,6 +9,9 @@ using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using Microsoft.Maui.Controls;
 using INotificationsService = HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces.INotificationService;
+using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
+using Microsoft.Maui.ApplicationModel;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -106,6 +109,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly ICalendarService _calendarService;
         private readonly INotificationsService _notificationService;
         private readonly IEventAggregationService _eventAggregationService;
+        private readonly ILogger<FullCalendarViewModel> _logger;
 
         private DateTime _currentMonthDate;
         private DateTime _selectedDate;
@@ -113,6 +117,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private ObservableCollection<AdaptiveDayViewModel> _days = new();
         private ObservableCollection<DayEventsGroup> _dayEventsGroups = new();
         private bool _hasEvents;
+        private string _errorMessage;
+        private bool _hasError;
 
         public DateTime CurrentMonthDate
         {
@@ -166,6 +172,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _hasEvents, value);
         }
 
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
+        }
+
+        public bool HasError
+        {
+            get => _hasError;
+            set => SetProperty(ref _hasError, value);
+        }
+
         public ICommand PreviousMonthCommand { get; }
         public ICommand NextMonthCommand { get; }
         public ICommand DaySelectedCommand { get; }
@@ -177,13 +195,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public FullCalendarViewModel(
             ICalendarService calendarService,
             INotificationsService notificationService,
-            IEventAggregationService eventAggregationService)
+            IEventAggregationService eventAggregationService,
+            ILogger<FullCalendarViewModel>? logger = null)
         {
             Title = "Календарь";
             _calendarService = calendarService ?? throw new ArgumentNullException(nameof(calendarService));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
             _eventAggregationService = eventAggregationService ?? throw new ArgumentNullException(nameof(eventAggregationService));
-
+            _logger = logger;
+            
+            _logger?.LogInformation("FullCalendarViewModel constructor called");
+            
             CurrentMonthDate = DateTime.Today;
             SelectedDate = DateTime.Today;
 
@@ -200,6 +222,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             DayEventsGroups.Add(new DayEventsGroup { TimeOfDay = TimeOfDay.Afternoon });
             DayEventsGroups.Add(new DayEventsGroup { TimeOfDay = TimeOfDay.Evening });
 
+            _logger?.LogInformation("Commands initialized");
+            
+            // Загружаем данные
             Task.Run(RefreshCalendarAsync);
         }
 
@@ -252,13 +277,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
+                HasError = false;
+                ErrorMessage = string.Empty;
                 IsBusy = true;
+                
+                _logger?.LogInformation("Refreshing calendar data");
+                
                 await LoadMonthEventsAsync();
                 await LoadDayEventsAsync();
+                
+                _logger?.LogInformation("Calendar refreshed successfully");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error refreshing calendar: {ex}");
+                _logger?.LogError(ex, "Error refreshing calendar");
+                HasError = true;
+                ErrorMessage = "Произошла ошибка при загрузке календаря. Пожалуйста, попробуйте снова.";
+                
+                // Отображаем уведомление об ошибке
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    return Application.Current.MainPage.DisplayAlert("Ошибка", ErrorMessage, "OK");
+                });
             }
             finally
             {
@@ -270,6 +310,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
+                _logger?.LogInformation($"Loading events for month {CurrentMonthDate:yyyy-MM}");
+                
                 // Очищаем предыдущую коллекцию
                 Days.Clear();
                 
@@ -282,6 +324,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Получаем события для месяца
                 var events = await _calendarService.GetEventsForMonthAsync(CurrentMonthDate.Year, CurrentMonthDate.Month);
                 
+                _logger?.LogInformation($"Retrieved {events?.Count() ?? 0} events for month {CurrentMonthDate:yyyy-MM}");
+                
                 // Создаем дни календаря на весь период отображения (42 дня - 6 недель)
                 var currentDate = firstDayOfCalendar;
                 for (int i = 0; i < 42; i++)
@@ -293,16 +337,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         IsToday = currentDate.Date == DateTime.Today,
                         IsSelected = currentDate.Date == SelectedDate.Date,
                         Events = new ObservableCollection<CalendarEvent>(
-                            events.Where(e => e.Date.Date == currentDate.Date).ToList())
+                            events?.Where(e => e.Date.Date == currentDate.Date)?.ToList() ?? new List<CalendarEvent>())
                     };
                     
                     Days.Add(day);
                     currentDate = currentDate.AddDays(1);
                 }
+                
+                _logger?.LogInformation("Successfully populated calendar days");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading month events: {ex}");
+                _logger?.LogError(ex, $"Error loading month events for {CurrentMonthDate:yyyy-MM}");
+                HasError = true;
+                ErrorMessage = "Произошла ошибка при загрузке календаря. Пожалуйста, попробуйте снова.";
+                throw; // Перебрасываем исключение для обработки в RefreshCalendarAsync
             }
         }
 
@@ -310,13 +359,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
+                _logger?.LogInformation($"Loading events for day {SelectedDate:yyyy-MM-dd}");
+                
                 // Получаем события для выбранного дня
                 var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
                 
+                _logger?.LogInformation($"Retrieved {events?.Count() ?? 0} events for day {SelectedDate:yyyy-MM-dd}");
+                
                 // Группируем события по времени суток
-                var morningEvents = events.Where(e => e.TimeOfDay == TimeOfDay.Morning).ToList();
-                var afternoonEvents = events.Where(e => e.TimeOfDay == TimeOfDay.Afternoon).ToList();
-                var eveningEvents = events.Where(e => e.TimeOfDay == TimeOfDay.Evening).ToList();
+                var morningEvents = events?.Where(e => e.TimeOfDay == TimeOfDay.Morning)?.ToList() ?? new List<CalendarEvent>();
+                var afternoonEvents = events?.Where(e => e.TimeOfDay == TimeOfDay.Afternoon)?.ToList() ?? new List<CalendarEvent>();
+                var eveningEvents = events?.Where(e => e.TimeOfDay == TimeOfDay.Evening)?.ToList() ?? new List<CalendarEvent>();
                 
                 // Обновляем группы
                 DayEventsGroups[0].Events = new ObservableCollection<CalendarEvent>(morningEvents);
@@ -324,11 +377,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 DayEventsGroups[2].Events = new ObservableCollection<CalendarEvent>(eveningEvents);
                 
                 // Обновляем флаг наличия событий
-                HasEvents = events.Any();
+                HasEvents = events?.Any() ?? false;
+                
+                _logger?.LogInformation("Successfully loaded day events");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading day events: {ex}");
+                _logger?.LogError(ex, $"Error loading day events for {SelectedDate:yyyy-MM-dd}");
+                HasError = true;
+                ErrorMessage = "Произошла ошибка при загрузке событий. Пожалуйста, попробуйте снова.";
+                throw; // Перебрасываем исключение для обработки в RefreshCalendarAsync
             }
         }
     }

@@ -38,5 +38,9 @@
 	<string>This app needs access to photos to select images from your library.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app needs access to photos to save images to your library.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>This app needs access to your calendar to display and manage treatment events.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>This app needs access to your reminders to schedule treatment reminder notifications.</string>
 </dict>
 </plist>

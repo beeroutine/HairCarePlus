@@ -96,7 +96,8 @@ public static class MauiProgram
 #endif
 
 #if DEBUG
-		builder.Logging.AddDebug();
+		builder.Logging.AddDebug()
+			.SetMinimumLevel(LogLevel.Debug);
 #endif
 
 		var app = builder.Build();
