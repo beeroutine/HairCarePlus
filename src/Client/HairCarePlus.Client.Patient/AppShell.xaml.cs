@@ -1,6 +1,7 @@
 ﻿using HairCarePlus.Client.Patient.Features.Profile.Views;
 using HairCarePlus.Client.Patient.Features.Doctor.Views;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
+using HairCarePlus.Client.Patient.Features.TreatmentProgress.Views;
 using Microsoft.Maui.Controls;
 using System;
 using System.Diagnostics;
@@ -50,6 +51,10 @@ public partial class AppShell : Shell
 			
 			Routing.RegisterRoute(nameof(EventDetailPage), typeof(EventDetailPage));
 			Debug.WriteLine("Registered route for EventDetailPage");
+			
+			// Прогресс лечения
+			Routing.RegisterRoute("TreatmentProgressPage", typeof(HairCarePlus.Client.Patient.Features.TreatmentProgress.Views.TreatmentProgressPage));
+			Debug.WriteLine("Registered route for TreatmentProgressPage");
 			
 			Debug.WriteLine("RegisterRoutes completed successfully");
 		}

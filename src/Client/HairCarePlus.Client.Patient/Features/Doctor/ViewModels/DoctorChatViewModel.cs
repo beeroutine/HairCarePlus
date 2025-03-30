@@ -285,7 +285,7 @@ namespace HairCarePlus.Client.Patient.Features.Doctor.ViewModels
 
         private async Task GoBack()
         {
-            await Shell.Current.GoToAsync("//progress");
+            await Shell.Current.GoToAsync("//today");
         }
     }
 } 
