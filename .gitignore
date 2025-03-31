@@ -23,6 +23,19 @@ bld/
 *.cache
 *.csproj.user
 *.pubxml.user
+*.vspscc
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.lib
+*.sbr
 
 # Rider specific
 .idea/
@@ -36,6 +49,8 @@ bld/
 .idea.*/
 *.rider.project.restore.info
 *.rider.project.model.nuget.info
+.idea/**/contentModel.xml
+.idea/**/modules.xml
 
 # MAUI specific
 .mfractor/
@@ -46,6 +61,16 @@ Resource.designer.cs
 *.AssemblyAttributes.cs
 *.AssemblyInfo.cs
 *.GeneratedMSBuildEditorConfig.editorconfig
+*.designer.cs
+*.Designer.cs
+*.designer.vb
+*.Designer.vb
+**/[Pp]latforms/**/[Gg]enerated/*.cs
+**/[Pp]latforms/**/[Gg]enerated/*.xml
+**/*.g.cs
+**/*.g.i.cs
+**/*.g.resources
+**/*.binlog
 
 # Android build outputs
 **/bin/Debug/net*-android/*.apk
@@ -56,6 +81,11 @@ Resource.designer.cs
 *.apk
 *.ap_
 *.dex
+*.class
+*.jks
+*.keystore
+google-services.json
+*.hprof
 
 # iOS build outputs
 *.ipa
@@ -71,6 +101,17 @@ xcuserdata/
 *.xccheckout
 *.xcscmblueprint
 *.xcuserstate
+*.xcworkspace
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+DerivedData/
+.idea/workspace.xml
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
 
 # macOS specific
 .DS_Store
@@ -84,6 +125,16 @@ xcuserdata/
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.swp
+.DS_Store?
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # IDE - VSCode
 .vscode/*
@@ -91,6 +142,7 @@ xcuserdata/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.code-workspace
 
 # NuGet
 *.nuget.props
@@ -98,6 +150,12 @@ xcuserdata/
 project.lock.json
 project.assets.json
 *.nupkg
+# NuGet Symbol Packages
+*.snupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
 
 # Test Results
 TestResults/
@@ -105,16 +163,51 @@ TestResults/
 *.trx
 *.coverage
 *.coveragexml
+*.opencover.xml
+*.dotCover
 
 # Temporary Files
 *.tmp
 *.temp
 *.swp
 *~
+*.~*
+*.bak
+*.orig
 
 # Environment Files
 *.env
 .env.local
 .env.development.local
 .env.test.local
-.env.production.local 
+.env.production.local
+appsettings.*.json
+!appsettings.json
+!appsettings.Example.json
+
+# Build and Debug Artifacts
+*.binlog
+.builds/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+*.dotCover
+*.GhostDoc.xml
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+
+# Database
+*.mdf
+*.ldf
+*.ndf
+*.sqlite
+*.sqlite3
+*.db
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/ 
