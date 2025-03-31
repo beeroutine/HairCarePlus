@@ -19,17 +19,43 @@ bld/
 *.user
 *.userosscache
 *.sln.docstates
+*.suo
+*.cache
+*.csproj.user
+*.pubxml.user
+
+# Rider specific
+.idea/
+*.sln.iml
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+*.DotSettings.user
+.idea.*/
+*.rider.project.restore.info
+*.rider.project.model.nuget.info
 
 # MAUI specific
 .mfractor/
 .localhistory/
-.idea/
 *.userprefs
+Resource.designer.cs
+*.assets.cache
+*.AssemblyAttributes.cs
+*.AssemblyInfo.cs
+*.GeneratedMSBuildEditorConfig.editorconfig
 
 # Android build outputs
 **/bin/Debug/net*-android/*.apk
 **/bin/Release/net*-android/*.apk
-Resource.designer.cs
+**/[Bb]in/**/*.apk
+**/[Oo]bj/**/*.apk
+*.aab
+*.apk
+*.ap_
+*.dex
 
 # iOS build outputs
 *.ipa
@@ -41,6 +67,10 @@ Resource.designer.cs
 *.provisionprofile
 *.certSigningRequest
 *.cer
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xcuserstate
 
 # macOS specific
 .DS_Store
@@ -62,6 +92,29 @@ Resource.designer.cs
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Rider
-.idea/
-*.sln.iml 
+# NuGet
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.assets.json
+*.nupkg
+
+# Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*~
+
+# Environment Files
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 
