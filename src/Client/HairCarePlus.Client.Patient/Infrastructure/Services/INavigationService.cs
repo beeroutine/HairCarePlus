@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace HairCarePlus.Client.Patient.Infrastructure.Services
 {
     public interface INavigationService
@@ -7,5 +9,6 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
         Task NavigateBackAsync();
         Task NavigateToMainAsync();
         Task NavigateToLoginAsync();
+        Task GoBackAsync();
     }
 } 

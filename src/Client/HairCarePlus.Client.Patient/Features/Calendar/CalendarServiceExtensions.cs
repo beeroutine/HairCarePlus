@@ -35,13 +35,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             services.AddSingleton<IEventAggregationService, EventAggregationService>();
             
             // Register ViewModels
-            services.AddTransient<CalendarViewModel>();
-            services.AddTransient<CleanCalendarViewModel>();
             services.AddTransient<TodayViewModel>();
             services.AddTransient<EventDetailViewModel>();
             
             // Register calendar views
-            services.AddTransient<CalendarPage>();
             services.AddTransient<TodayPage>();
             services.AddTransient<EventDetailPage>();
             
@@ -60,7 +57,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(builder));
             
             // Register routes for calendar navigation
-            RegisterRoute("calendar", typeof(CalendarPage));
             RegisterRoute("today", typeof(TodayPage));
             RegisterRoute("calendar/event", typeof(EventDetailPage));
             

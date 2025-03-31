@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Models"
-             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Converters"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Models"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Converters"
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
-             xmlns:doctorBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Behaviors"
-             x:Class="HairCarePlus.Client.Patient.Features.Doctor.Views.DoctorChatPage"
+             xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
+             x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
              NavigationPage.HasNavigationBar="False">
@@ -69,7 +69,7 @@
                        Margin="8,8,8,0"
                        VerticalScrollBarVisibility="Never">
             <CollectionView.Behaviors>
-                <doctorBehaviors:KeyboardBehavior />
+                <chatBehaviors:KeyboardBehavior />
             </CollectionView.Behaviors>
             <CollectionView.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />

@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using Microsoft.Maui.Controls;
+
 namespace HairCarePlus.Client.Patient.Infrastructure.Services;
 
 public class NavigationService : INavigationService
@@ -29,5 +32,10 @@ public class NavigationService : INavigationService
     public async Task NavigateToLoginAsync()
     {
         await Shell.Current.GoToAsync("//login");
+    }
+
+    public async Task GoBackAsync()
+    {
+        await Shell.Current.GoToAsync("..");
     }
 } 

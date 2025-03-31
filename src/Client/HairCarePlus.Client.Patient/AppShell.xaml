@@ -3,10 +3,8 @@
     x:Class="HairCarePlus.Client.Patient.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:treatment="clr-namespace:HairCarePlus.Client.Patient.Features.TreatmentProgress.Views"
     xmlns:calendar="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
-    xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoReport.Views"
-    xmlns:doctor="clr-namespace:HairCarePlus.Client.Patient.Features.Doctor.Views"
+    xmlns:chat="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="True"
     Title="HairCarePlus">
@@ -28,27 +26,11 @@
                 Route="today" />
         </Tab>
 
-        <!-- Календарь -->
-        <Tab Title="Calendar">
-            <ShellContent
-                Title="Calendar"
-                ContentTemplate="{DataTemplate calendar:CalendarPage}"
-                Route="calendar" />
-        </Tab>
-
-        <!-- Фотоотчеты -->
-        <Tab Title="Photos">
-            <ShellContent
-                Title="Photo Reports"
-                ContentTemplate="{DataTemplate photo:PhotoReportPage}"
-                Route="photos" />
-        </Tab>
-
-        <!-- Чат -->
+        <!-- Chat -->
         <Tab Title="Chat">
             <ShellContent
                 Title="Chat"
-                ContentTemplate="{DataTemplate doctor:DoctorChatPage}"
+                ContentTemplate="{DataTemplate chat:ChatPage}"
                 Route="chat" />
         </Tab>
     </TabBar>

@@ -5,7 +5,6 @@
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:calendarHelpers="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Helpers"
-             xmlns:dailyRoutineConverters="clr-namespace:HairCarePlus.Client.Patient.Features.DailyRoutine.Converters"
              x:Class="HairCarePlus.Client.Patient.App">
     <Application.Resources>
         <ResourceDictionary>
@@ -98,8 +97,6 @@
             <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
             <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter" />
-            <dailyRoutineConverters:TaskTypeToColorConverter x:Key="TaskTypeToColorConverter" />
-            <dailyRoutineConverters:TaskTypeToIconConverter x:Key="TaskTypeToIconConverter" />
 
             <!-- Styles -->
             <Style x:Key="BaseFrameStyle" TargetType="Frame">

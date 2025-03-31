@@ -1,13 +1,13 @@
 using Microsoft.Maui.Controls;
-using HairCarePlus.Client.Patient.Features.Doctor.ViewModels;
+using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
-namespace HairCarePlus.Client.Patient.Features.Doctor.Views;
+namespace HairCarePlus.Client.Patient.Features.Chat.Views;
 
-public partial class DoctorChatPage : ContentPage
+public partial class ChatPage : ContentPage
 {
-    private readonly DoctorChatViewModel _viewModel;
+    private readonly ChatViewModel _viewModel;
 
-    public DoctorChatPage(DoctorChatViewModel viewModel)
+    public ChatPage(ChatViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
@@ -45,9 +45,9 @@ public partial class DoctorChatPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (BindingContext is DoctorChatViewModel viewModel)
+        if (BindingContext is ChatViewModel viewModel)
         {
-            await viewModel.LoadDataAsync();
+            await viewModel.LoadDataCommand.ExecuteAsync(null);
         }
     }
 } 

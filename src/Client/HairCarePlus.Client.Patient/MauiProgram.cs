@@ -1,14 +1,5 @@
-﻿using HairCarePlus.Client.Patient.Features.Profile.Services;
-using HairCarePlus.Client.Patient.Features.Profile.ViewModels;
-using HairCarePlus.Client.Patient.Features.Profile.Views;
-using HairCarePlus.Client.Patient.Features.PhotoReport.ViewModels;
-using HairCarePlus.Client.Patient.Features.PhotoReport.Views;
-using HairCarePlus.Client.Patient.Features.Doctor.ViewModels;
-using HairCarePlus.Client.Patient.Features.Doctor.Views;
-using HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels;
-using HairCarePlus.Client.Patient.Features.TreatmentProgress.Views;
-using HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels;
-using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
+﻿using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
+using HairCarePlus.Client.Patient.Features.Chat.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar;
@@ -52,7 +43,6 @@ public static class MauiProgram
 		builder.Services.AddSingleton<INavigationService, NavigationService>();
 		builder.Services.AddSingleton<INetworkService, NetworkService>();
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
-		builder.Services.AddSingleton<IProfileService, ProfileService>();
 		
 		// Register HttpClient
 		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
@@ -68,35 +58,19 @@ public static class MauiProgram
 #endif
 
 		// Register Pages and ViewModels
-		builder.Services.AddTransient<ProfilePage>();
-		builder.Services.AddTransient<ProfileViewModel>();
-		builder.Services.AddTransient<PhotoReportPage>();
-		builder.Services.AddTransient<PhotoReportViewModel>();
-		builder.Services.AddTransient<DoctorChatPage>();
-		builder.Services.AddTransient<DoctorChatViewModel>();
-		builder.Services.AddTransient<DailyRoutinePage>();
-		builder.Services.AddTransient<DailyRoutineViewModel>();
-
-		// Register Treatment Progress
-		builder.Services.AddTransient<TreatmentProgressPage>();
-		builder.Services.AddTransient<TreatmentProgressViewModel>();
+		builder.Services.AddTransient<ChatPage>();
+		builder.Services.AddTransient<ChatViewModel>();
 
 		// Register Calendar Feature
 		builder.Services.AddCalendarServices();
 
 		// Register ViewModels
-		builder.Services.AddTransient<CalendarViewModel>();
-		builder.Services.AddTransient<FullCalendarViewModel>();
 		builder.Services.AddTransient<TodayViewModel>();
 		builder.Services.AddTransient<EventDetailViewModel>();
 
 		// Register Pages
-		builder.Services.AddTransient<CalendarPage>();
-		builder.Services.AddTransient<FullCalendarPage>();
 		builder.Services.AddTransient<TodayPage>();
 		builder.Services.AddTransient<EventDetailPage>();
-
-		// No need to manually register routes here since we're doing it in RegisterCalendarRoutes()
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
@@ -124,25 +98,23 @@ public static class MauiProgram
 		// Calendar services
 		services.AddSingleton<ICalendarService, CalendarService>();
 		services.AddSingleton<INotificationService, NotificationService>();
-		
-		// Other services
-		// ...
 	}
 	
 	private static void RegisterViewModels(IServiceCollection services)
 	{
 		// Calendar
-		services.AddTransient<CalendarViewModel>();
-		services.AddTransient<CleanCalendarViewModel>();
-		services.AddTransient<RestrictionTimersViewModel>();
+		services.AddTransient<TodayViewModel>();
+		services.AddTransient<EventDetailViewModel>();
+		
+		// Chat
+		services.AddTransient<ChatViewModel>();
 		
 		// Calendar views
-		services.AddTransient<CalendarPage>();
-		services.AddTransient<MonthCalendarView>();
-		services.AddTransient<RestrictionTimersView>();
+		services.AddTransient<TodayPage>();
+		services.AddTransient<EventDetailPage>();
 		
-		// Other view models and views
-		// ...
+		// Chat views
+		services.AddTransient<ChatPage>();
 	}
 	
 	private static void RegisterConverters(IServiceCollection services)

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
 
-namespace HairCarePlus.Client.Patient.Features.Doctor.Behaviors;
+namespace HairCarePlus.Client.Patient.Features.Chat.Behaviors;
 
 public class KeyboardBehavior : Behavior<CollectionView>
 {
