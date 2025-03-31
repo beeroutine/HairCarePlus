@@ -98,7 +98,15 @@
 	<PropertyGroup Condition="$(TargetFramework.Contains('-ios'))">
 		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">ios-arm64</RuntimeIdentifier>
 		<CodesignKey>Apple Development</CodesignKey>
+		<AutomaticCodesigning>true</AutomaticCodesigning>
 		<CodesignEntitlements>Platforms/iOS/Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+	  <CodesignKey>iPhone Developer</CodesignKey>
+	  <MtouchDebug>true</MtouchDebug>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+	  <CodesignKey>iPhone Developer</CodesignKey>
 	</PropertyGroup>
 
 </Project>
