@@ -3,6 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net8.0-android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -21,19 +22,12 @@
 		<Nullable>enable</Nullable>
 		<SelfContained>false</SelfContained>
 
-		<!-- iOS specific -->
-		<CodesignKey Condition="'$(TargetFramework)' == 'net8.0-ios'">iPhone Developer</CodesignKey>
-		<CodesignProvision Condition="'$(TargetFramework)' == 'net8.0-ios'"></CodesignProvision>
-		<CodesignEntitlements Condition="'$(TargetFramework)' == 'net8.0-ios'">Platforms/iOS/Entitlements.plist</CodesignEntitlements>
-		<RuntimeIdentifier Condition="'$(TargetFramework)' == 'net8.0-ios'">iossimulator-x64</RuntimeIdentifier>
-		<MtouchDebug Condition="'$(Configuration)' == 'Debug' And '$(TargetFramework)' == 'net8.0-ios'">true</MtouchDebug>
-		<MtouchInterpreter Condition="'$(Configuration)' == 'Debug' And '$(TargetFramework)' == 'net8.0-ios'">all</MtouchInterpreter>
-
 		<!-- Display name -->
-		<ApplicationTitle>HairCarePlus.Client.Patient</ApplicationTitle>
+		<ApplicationTitle>HairCare+ Patient</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.haircareplus.client.patient</ApplicationId>
+		<ApplicationId>com.haircareplus.patient</ApplicationId>
+		<ApplicationIdGuid>5F05E0E4-8F6F-4F0D-8E69-9BF88B8866D6</ApplicationIdGuid>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -99,5 +93,12 @@
 		<None Include="Platforms\iOS\Info.plist" />
 		<None Include="Platforms\iOS\PrivacyManifest.xcprivacy" />
 	</ItemGroup>
+
+	<!-- iOS specific -->
+	<PropertyGroup Condition="$(TargetFramework.Contains('-ios'))">
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">ios-arm64</RuntimeIdentifier>
+		<CodesignKey>Apple Development</CodesignKey>
+		<CodesignEntitlements>Platforms/iOS/Entitlements.plist</CodesignEntitlements>
+	</PropertyGroup>
 
 </Project>
