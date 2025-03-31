@@ -26,7 +26,7 @@
 		<ApplicationTitle>HairCare+ Patient</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.haircareplus.patient</ApplicationId>
+		<ApplicationId>com.companyname.haircareplus.client.patient</ApplicationId>
 		<ApplicationIdGuid>5F05E0E4-8F6F-4F0D-8E69-9BF88B8866D6</ApplicationIdGuid>
 
 		<!-- Versions -->
@@ -97,16 +97,10 @@
 	<!-- iOS specific -->
 	<PropertyGroup Condition="$(TargetFramework.Contains('-ios'))">
 		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">ios-arm64</RuntimeIdentifier>
-		<CodesignKey>Apple Development</CodesignKey>
-		<AutomaticCodesigning>true</AutomaticCodesigning>
-		<CodesignEntitlements>Platforms/iOS/Entitlements.plist</CodesignEntitlements>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-	  <CodesignKey>iPhone Developer</CodesignKey>
 	  <MtouchDebug>true</MtouchDebug>
 	</PropertyGroup>
-	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-	  <CodesignKey>iPhone Developer</CodesignKey>
-	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' " />
 
 </Project>
