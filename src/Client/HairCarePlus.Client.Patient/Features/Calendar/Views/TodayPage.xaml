@@ -95,18 +95,18 @@
 
             <!-- Event Item Template -->
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
-                <Frame Margin="0,0,0,8" 
-                       Padding="15"
-                       CornerRadius="18"
+                <Frame Margin="0,4,0,0" 
+                       Padding="12"
+                       CornerRadius="12"
                        BorderColor="Transparent"
-                       BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
-                       HasShadow="{OnPlatform iOS=True, Default=False}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                       BackgroundColor="{AppThemeBinding Light=#F5F9FD, Dark=#1A2530}"
+                       HasShadow="False">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
-                               WidthRequest="38"
-                               HeightRequest="38"
-                               CornerRadius="19"
+                               WidthRequest="36"
+                               HeightRequest="36"
+                               CornerRadius="18"
                                Padding="0"
                                HasShadow="False"
                                BorderColor="Transparent"
@@ -115,7 +115,7 @@
                                VerticalOptions="Start">
                             <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                    FontFamily="MaterialIcons"
-                                   FontSize="20"
+                                   FontSize="18"
                                    TextColor="White"
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"/>
@@ -128,7 +128,7 @@
                                    Margin="0,0,0,2"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                             <Label Text="{Binding Title}"
-                                   FontSize="17"
+                                   FontSize="16"
                                    FontAttributes="None"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                             <Label Text="{Binding Description}"
@@ -138,9 +138,9 @@
 
                         <!-- Completion Circle -->
                         <Frame Grid.Column="2"
-                               WidthRequest="24"
-                               HeightRequest="24"
-                               CornerRadius="12"
+                               WidthRequest="22"
+                               HeightRequest="22"
+                               CornerRadius="11"
                                Padding="0"
                                HasShadow="False"
                                BorderColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
@@ -223,7 +223,7 @@
             <CollectionView ItemsSource="{Binding FlattenedEvents}"
                           ItemTemplate="{StaticResource EventTemplate}"
                           EmptyView="{StaticResource EmptyViewTemplate}"
-                          Margin="16,4,16,16">
+                          Margin="16,8,16,16">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                 </CollectionView.ItemsLayout>
