@@ -176,39 +176,57 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*" Padding="0">
-        <!-- Main Content -->
-        <ScrollView Grid.Row="0" Grid.RowSpan="2">
-            <VerticalStackLayout Spacing="15" Padding="16,16,16,16">
-                <!-- Header -->
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="{Binding FormattedSelectedDate}" 
-                           FontSize="30"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                    <Label Text="{Binding DaysSinceTransplant}" 
-                           FontSize="16"
-                           TextColor="{StaticResource Gray500}"/>
+        <!-- Fixed Header -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+               BorderColor="Transparent"
+               CornerRadius="0"
+               Margin="0,0,0,8"
+               Padding="0"
+               HasShadow="True">
+            <Grid Padding="16,8,16,12">
+                <VerticalStackLayout Spacing="12">
+                    <!-- Date Header -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="{Binding FormattedSelectedDate}" 
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                               Margin="0,8,0,0"/>
+                        <Label Text="{Binding DaysSinceTransplant}" 
+                               FontSize="16"
+                               TextColor="{StaticResource Gray500}"/>
+                    </VerticalStackLayout>
+
+                    <!-- Horizontal Day Ticker -->
+                    <ScrollView HorizontalScrollBarVisibility="Never" 
+                              VerticalScrollBarVisibility="Never"
+                              Orientation="Horizontal">
+                        <CollectionView ItemsSource="{Binding CalendarDays}"
+                                      ItemTemplate="{StaticResource DateTemplate}"
+                                      HeightRequest="70"
+                                      Margin="0,4,0,0">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4"/>
+                            </CollectionView.ItemsLayout>
+                        </CollectionView>
+                    </ScrollView>
                 </VerticalStackLayout>
+            </Grid>
+        </Frame>
 
-                <!-- Horizontal Day Ticker -->
-                <CollectionView ItemsSource="{Binding CalendarDays}"
-                              ItemTemplate="{StaticResource DateTemplate}"
-                              HeightRequest="70"
-                              Margin="0,5,0,10">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4"/>
-                    </CollectionView.ItemsLayout>
-                </CollectionView>
-
-                <!-- Events List -->
-                <CollectionView ItemsSource="{Binding FlattenedEvents}"
-                              ItemTemplate="{StaticResource EventTemplate}"
-                              EmptyView="{StaticResource EmptyViewTemplate}">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
-                    </CollectionView.ItemsLayout>
-                </CollectionView>
-            </VerticalStackLayout>
+        <!-- Scrollable Content -->
+        <ScrollView Grid.Row="1" 
+                   HorizontalScrollBarVisibility="Never"
+                   VerticalScrollBarVisibility="Never">
+            <CollectionView ItemsSource="{Binding FlattenedEvents}"
+                          ItemTemplate="{StaticResource EventTemplate}"
+                          EmptyView="{StaticResource EmptyViewTemplate}"
+                          Margin="16,4,16,16">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
+                </CollectionView.ItemsLayout>
+            </CollectionView>
         </ScrollView>
     </Grid>
 </ContentPage> 
