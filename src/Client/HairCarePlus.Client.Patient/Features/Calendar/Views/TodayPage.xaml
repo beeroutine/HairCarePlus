@@ -7,7 +7,7 @@
              xmlns:system="clr-namespace:System;assembly=netstandard"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
-             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Title="Today">
 
     <ContentPage.Resources>
@@ -97,10 +97,10 @@
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
                 <Frame Margin="0,0,0,8" 
                        Padding="15"
-                       CornerRadius="12"
+                       CornerRadius="18"
                        BorderColor="Transparent"
-                       BackgroundColor="{AppThemeBinding Light={StaticResource Gray50}, Dark={StaticResource Gray900}}"
-                       HasShadow="False">
+                       BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                       HasShadow="{OnPlatform iOS=True, Default=False}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
@@ -126,14 +126,14 @@
                             <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
                                    FontSize="12"
                                    Margin="0,0,0,2"
-                                   TextColor="{StaticResource Gray500}"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                             <Label Text="{Binding Title}"
-                                   FontSize="16"
+                                   FontSize="17"
                                    FontAttributes="None"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                             <Label Text="{Binding Description}"
                                    FontSize="14"
-                                   TextColor="{StaticResource Gray500}"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                         </VerticalStackLayout>
 
                         <!-- Completion Circle -->
@@ -143,7 +143,7 @@
                                CornerRadius="12"
                                Padding="0"
                                HasShadow="False"
-                               BorderColor="{StaticResource Gray300}"
+                               BorderColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
                                BackgroundColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}"
                                HorizontalOptions="End"
                                VerticalOptions="Start">
@@ -178,12 +178,12 @@
     <Grid RowDefinitions="Auto,*" Padding="0">
         <!-- Fixed Header -->
         <Frame Grid.Row="0" 
-               BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+               BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
                BorderColor="Transparent"
                CornerRadius="0"
-               Margin="0,0,0,8"
+               Margin="0"
                Padding="0"
-               HasShadow="True">
+               HasShadow="{OnPlatform iOS=True, Default=False}">
             <Grid Padding="16,8,16,12">
                 <VerticalStackLayout Spacing="12">
                     <!-- Date Header -->
@@ -195,7 +195,7 @@
                                Margin="0,8,0,0"/>
                         <Label Text="{Binding DaysSinceTransplant}" 
                                FontSize="16"
-                               TextColor="{StaticResource Gray500}"/>
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                     </VerticalStackLayout>
 
                     <!-- Horizontal Day Ticker -->
@@ -218,7 +218,8 @@
         <!-- Scrollable Content -->
         <ScrollView Grid.Row="1" 
                    HorizontalScrollBarVisibility="Never"
-                   VerticalScrollBarVisibility="Never">
+                   VerticalScrollBarVisibility="Never"
+                   BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
             <CollectionView ItemsSource="{Binding FlattenedEvents}"
                           ItemTemplate="{StaticResource EventTemplate}"
                           EmptyView="{StaticResource EmptyViewTemplate}"
