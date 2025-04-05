@@ -102,6 +102,17 @@
                                 Color="{StaticResource VideoOrange}"
                                 IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
                     </HorizontalStackLayout>
+                    
+                    <!-- Добавляем обработчик долгого нажатия -->
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer 
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
+                            CommandParameter="{Binding .}" />
+                        <TapGestureRecognizer 
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
+                            CommandParameter="{Binding .}"
+                            NumberOfTapsRequired="2" />
+                    </Grid.GestureRecognizers>
                 </Grid>
             </DataTemplate>
 
@@ -177,10 +188,18 @@
             
             <!-- No events template -->
             <DataTemplate x:Key="EmptyViewTemplate">
-                <StackLayout HorizontalOptions="Center" VerticalOptions="Center" Padding="20">
+                <StackLayout VerticalOptions="CenterAndExpand" 
+                             HorizontalOptions="CenterAndExpand" 
+                             Padding="20">
+                    <Image Source="empty_calendar.png"
+                           WidthRequest="60"
+                           HeightRequest="60"
+                           Opacity="0.6"
+                           IsVisible="false" />
                     <Label Text="No events scheduled for this day" 
                            HorizontalTextAlignment="Center"
                            FontSize="16"
+                           Margin="0,20,0,0"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
                 </StackLayout>
             </DataTemplate>
@@ -217,9 +236,7 @@
                         <CollectionView x:Name="daysCollection"
                                       ItemsSource="{Binding CalendarDays}"
                                       SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
-                                      SelectionMode="Single"
-                                      SelectionChangedCommand="{Binding SelectDateCommand}"
-                                      SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}"
+                                      SelectionMode="None"
                                       HeightRequest="70"
                                       Margin="0,4,0,0">
                             <CollectionView.ItemTemplate>
@@ -302,6 +319,17 @@
                                                     Color="{StaticResource VideoOrange}"
                                                     IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
                                         </HorizontalStackLayout>
+                                        
+                                        <!-- Добавляем обработчик долгого нажатия -->
+                                        <Grid.GestureRecognizers>
+                                            <TapGestureRecognizer 
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
+                                                CommandParameter="{Binding .}" />
+                                            <TapGestureRecognizer 
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
+                                                CommandParameter="{Binding .}"
+                                                NumberOfTapsRequired="2" />
+                                        </Grid.GestureRecognizers>
                                     </Grid>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
@@ -321,8 +349,23 @@
                    BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
             <CollectionView ItemsSource="{Binding FlattenedEvents}"
                           ItemTemplate="{StaticResource EventTemplate}"
-                          EmptyView="{StaticResource EmptyViewTemplate}"
                           Margin="16,8,16,16">
+                <CollectionView.EmptyView>
+                    <StackLayout VerticalOptions="CenterAndExpand" 
+                                 HorizontalOptions="CenterAndExpand" 
+                                 Padding="20">
+                        <Image Source="empty_calendar.png"
+                               WidthRequest="60"
+                               HeightRequest="60"
+                               Opacity="0.6"
+                               IsVisible="false" />
+                        <Label Text="No events scheduled for this day" 
+                               HorizontalTextAlignment="Center"
+                               FontSize="16"
+                               Margin="0,20,0,0"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                    </StackLayout>
+                </CollectionView.EmptyView>
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                 </CollectionView.ItemsLayout>

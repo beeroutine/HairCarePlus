@@ -25,8 +25,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 BindingContext = _viewModel;
                 Debug.WriteLine("BindingContext set to TodayViewModel");
                 
-                // Добавляем обработчик изменения выбранного элемента в CollectionView
-                daysCollection.SelectionChanged += OnDaysCollectionSelectionChanged;
+                // Добавляем обработчик изменения SelectedDate в ViewModel
+                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             }
             catch (Exception ex)
             {
@@ -46,11 +46,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 if (_viewModel != null)
                 {
                     DateTime currentDate = _viewModel.SelectedDate;
-                    _viewModel.SelectedDate = currentDate;
                     
-                    // Проверяем текущий выбранный элемент в CollectionView
+                    // Проверяем текущий выбранный элемент
                     Debug.WriteLine($"Current SelectedDate in ViewModel: {_viewModel.SelectedDate.ToShortDateString()}");
-                    Debug.WriteLine($"Current SelectedItem in CollectionView: {daysCollection.SelectedItem}");
                     
                     // Программно обновляем визуальное состояние при загрузке страницы
                     // Это необходимо, так как VisualStateManager может не сработать автоматически 
@@ -63,21 +61,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         await _viewModel.LoadTodayEventsAsync();
                         await _viewModel.LoadEventCountsForVisibleDaysAsync();
                         await _viewModel.CheckOverdueEventsAsync();
-                        
-                        // Добавляем отладочную информацию о загруженных событиях
-                        var events = _viewModel.FlattenedEvents;
-                        Debug.WriteLine($"Loaded {events?.Count ?? 0} events for date {currentDate.ToShortDateString()}");
-                        if (events != null && events.Any())
-                        {
-                            foreach (var evt in events)
-                            {
-                                Debug.WriteLine($"Event: {evt.Title}, Type: {evt.EventType}, Time: {evt.Date.ToShortTimeString()}");
-                            }
-                        }
-                        else
-                        {
-                            Debug.WriteLine("No events found for selected date");
-                        }
                     });
                     
                     Debug.WriteLine($"TodayPage OnAppearing refreshed selected date: {currentDate}");
@@ -90,15 +73,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        private void OnDaysCollectionSelectionChanged(object sender, SelectionChangedEventArgs e)
+        protected override void OnDisappearing()
         {
-            if (e.CurrentSelection.FirstOrDefault() is DateTime selectedDate)
+            base.OnDisappearing();
+            
+            // Отписываемся от событий при уходе со страницы
+            if (_viewModel != null)
             {
-                Debug.WriteLine($"CollectionView selection changed to: {selectedDate.ToShortDateString()}");
-                Debug.WriteLine($"ViewModel SelectedDate: {_viewModel.SelectedDate.ToShortDateString()}");
-                
-                // Найдем выбранный элемент и изменим его визуальное состояние программно
-                UpdateSelectedDateVisualState(e.CurrentSelection.FirstOrDefault() as DateTime?);
+                _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+        }
+        
+        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // Когда SelectedDate изменяется, обновляем визуальное состояние
+            if (e.PropertyName == nameof(TodayViewModel.SelectedDate))
+            {
+                UpdateSelectedDateVisualState(_viewModel.SelectedDate);
             }
         }
         
@@ -119,7 +110,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
                 
                 // Для каждого видимого элемента, проверяем, является ли он выбранным
-                foreach (var container in daysCollection.GetVisualTreeDescendants().OfType<Grid>())
+                foreach (var container in daysCollection.GetVisualTreeDescendants().OfType<Grid>().Where(g => g.BindingContext is DateTime))
                 {
                     if (container.BindingContext is DateTime containerDate)
                     {
@@ -130,19 +121,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         
                         // Применяем состояния ко всем элементам в иерархии
                         VisualStateManager.GoToState(container, visualState);
-                        
-                        // Находим Frame и Label внутри элемента
-                        var frame = container.Children.FirstOrDefault(c => c is Frame) as Frame;
-                        if (frame != null)
-                        {
-                            VisualStateManager.GoToState(frame, visualState);
-                            
-                            var label = frame.Content as Label;
-                            if (label != null)
-                            {
-                                VisualStateManager.GoToState(label, visualState);
-                            }
-                        }
                     }
                 }
             }

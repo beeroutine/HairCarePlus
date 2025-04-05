@@ -151,22 +151,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     // Use proper way to dispatch async actions in MAUI
                     await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
                     {
-                        FlattenedEvents = new ObservableCollection<CalendarEvent>(events);
+                        // Всегда инициализируем коллекцию, даже если events пуст
+                        FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
                         OnPropertyChanged(nameof(FlattenedEvents));
                         return Task.CompletedTask;
                     });
                 }
                 else
                 {
-                    FlattenedEvents = new ObservableCollection<CalendarEvent>(events);
+                    // Всегда инициализируем коллекцию, даже если events пуст
+                    FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
                     OnPropertyChanged(nameof(FlattenedEvents));
                 }
                 
                 // Log loaded events for debugging
-                Debug.WriteLine($"LoadTodayEventsAsync: Loaded {events.Count()} events for {SelectedDate:yyyy-MM-dd}");
-                foreach (var evt in events)
+                Debug.WriteLine($"LoadTodayEventsAsync: Loaded {events?.Count() ?? 0} events for {SelectedDate:yyyy-MM-dd}");
+                if (events != null && events.Any())
                 {
-                    Debug.WriteLine($"Event: {evt.Title}, Type: {evt.EventType}, Time: {evt.Date:HH:mm}");
+                    foreach (var evt in events)
+                    {
+                        Debug.WriteLine($"Event: {evt.Title}, Type: {evt.EventType}, Time: {evt.Date:HH:mm}");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("No events found for this date");
                 }
             }
             catch (Exception ex)
@@ -178,12 +187,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
                     {
                         FlattenedEvents = new ObservableCollection<CalendarEvent>();
+                        OnPropertyChanged(nameof(FlattenedEvents));
                         return Task.CompletedTask;
                     });
                 }
                 else
                 {
                     FlattenedEvents = new ObservableCollection<CalendarEvent>();
+                    OnPropertyChanged(nameof(FlattenedEvents));
                 }
             }
         }
@@ -313,15 +324,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
             Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
             
-            SelectedDate = date;
-            
-            Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
-            Debug.WriteLine($"Loading events for date: {date.ToShortDateString()}");
-            
-            // Reload events for the selected date
-            await LoadTodayEventsAsync();
-            
-            Debug.WriteLine($"Events loaded: {FlattenedEvents?.Count ?? 0} events found");
+            if (SelectedDate.Date != date.Date)
+            {
+                SelectedDate = date;
+                // Явно вызываем уведомление об изменении, чтобы UI обновился
+                OnPropertyChanged(nameof(SelectedDate));
+                
+                Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
+                Debug.WriteLine($"Loading events for date: {date.ToShortDateString()}");
+                
+                // Reload events for the selected date
+                await LoadTodayEventsAsync();
+                
+                Debug.WriteLine($"Events loaded: {FlattenedEvents?.Count ?? 0} events found");
+            }
         }
         
         private async Task OpenMonthCalendarAsync(DateTime date)
@@ -329,11 +345,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             // Сохраняем выбранную дату перед переходом
             SelectedDate = date;
             
-            // В реальном приложении здесь был бы код для навигации к полному месячному календарю
-            // Например, с использованием Shell.Current.GoToAsync или INavigationService
-            
-            // Пример перехода к месячному календарю (заглушка для демонстрации):
-            await Shell.Current.GoToAsync("//calendar/month?date=" + date.ToString("yyyy-MM-dd"));
+            // Вместо навигации к несуществующей странице покажем сообщение
+            await Application.Current.MainPage.DisplayAlert(
+                "Календарь", 
+                $"Полный календарь для даты {date:dd.MM.yyyy} находится в разработке",
+                "OK");
         }
         
         // Переход к детальной странице события
