@@ -72,12 +72,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 return;
                 
             // Add converters to application resources if they don't exist
-            if (!Application.Current.Resources.ContainsKey("DateToSelectionColorConverter"))
-                Application.Current.Resources.Add("DateToSelectionColorConverter", new DateToSelectionColorConverter());
-                
-            if (!Application.Current.Resources.ContainsKey("DateToTextColorConverter"))
-                Application.Current.Resources.Add("DateToTextColorConverter", new DateToTextColorConverter());
-                
             if (!Application.Current.Resources.ContainsKey("DateToColorConverter"))
                 Application.Current.Resources.Add("DateToColorConverter", new DateToColorConverter());
                 
@@ -97,10 +91,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 Application.Current.Resources.Add("InvertedBoolConverter", new InvertedBoolConverter());
                 
             if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
-                Application.Current.Resources.Add("DateHasEventTypeConverter", new Converters.DateHasEventTypeConverter());
+                Application.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
                 
             if (!Application.Current.Resources.ContainsKey("BoolConverter"))
                 Application.Current.Resources.Add("BoolConverter", new Helpers.BoolConverter());
+
+            if (!Application.Current.Resources.ContainsKey("BoolToColorConverter"))
+                Application.Current.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
+
+            if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
+                Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
+
+            if (!Application.Current.Resources.ContainsKey("InverseBoolConverter"))
+                Application.Current.Resources.Add("InverseBoolConverter", new InverseBoolConverter());
         }
     }
 } 

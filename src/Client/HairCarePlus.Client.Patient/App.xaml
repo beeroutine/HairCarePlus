@@ -14,8 +14,6 @@
                 <ResourceDictionary Source="Resources/Styles/ChatStyles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Icons/icons.xaml" />
                 <ResourceDictionary>
-                    <converters:DateToSelectionColorConverter x:Key="DateToSelectionColorConverter" />
-                    <converters:DateToTextColorConverter x:Key="DateToTextColorConverter" />
                     <converters:DateToColorConverter x:Key="DateToColorConverter" />
                     <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
                     <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter" />
@@ -97,6 +95,8 @@
             <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
             <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter" />
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:IntToBoolConverter x:Key="IntToBoolConverter" />
 
             <!-- Styles -->
             <Style x:Key="BaseFrameStyle" TargetType="Frame">
