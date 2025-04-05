@@ -13,13 +13,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             {
                 if (date.Date == selectedDate.Date)
                 {
-                    return Application.Current.Resources["Primary"]; // Selected day - blue
+                    // Выбранный день - синий фон с большей непрозрачностью
+                    return Application.Current.Resources["Primary"]; 
                 }
-                else if (date.Date == DateTime.Today)
+                else if (date.Date == DateTime.Today && date.Date != selectedDate.Date)
                 {
-                    return Application.Current.Resources["Gray200"]; // Today - light gray
+                    // Сегодняшний день (если не выбран) - светло-серый
+                    return Application.Current.Resources["Gray200"]; 
                 }
-                return Colors.Transparent; // Other days - transparent
+                return Colors.Transparent; // Другие дни - прозрачный фон
             }
             return Colors.Transparent;
         }

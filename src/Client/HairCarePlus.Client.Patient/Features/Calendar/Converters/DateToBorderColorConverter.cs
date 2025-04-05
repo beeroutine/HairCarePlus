@@ -13,12 +13,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             {
                 if (currentDate.Date == selectedDate.Date)
                 {
-                    // Возвращаем акцентный цвет для выделения
-                    return Color.FromArgb("#2196F3"); // Primary blue
+                    // Более яркий и насыщенный цвет для границы выбранной даты
+                    return Application.Current.Resources["Primary"]; // Primary blue
                 }
-                else if (currentDate.Date == DateTime.Today)
+                else if (currentDate.Date == DateTime.Today && currentDate.Date != selectedDate.Date)
                 {
-                    // Возвращаем более нейтральный цвет для сегодняшнего дня
+                    // Возвращаем более нейтральный цвет для сегодняшнего дня (если он не выбран)
                     return Color.FromArgb("#BBDEFB"); // Light blue
                 }
             }

@@ -53,7 +53,8 @@
                            BorderColor="{Binding ., Converter={StaticResource DateToBorderColorConverter}}"
                            BackgroundColor="{Binding ., Converter={StaticResource DateToSelectionColorConverter}, ConverterParameter={Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate}}"
                            HorizontalOptions="Center"
-                           VerticalOptions="Center">
+                           VerticalOptions="Center"
+                           Scale="{Binding ., Converter={StaticResource DateToIsSelectedConverter}, ConverterParameter={Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate}}">
                         <Label Text="{Binding ., StringFormat='{0:%d}'}"
                                FontSize="14"
                                HorizontalOptions="Center"
@@ -188,7 +189,7 @@
                 <VerticalStackLayout Spacing="12">
                     <!-- Date Header -->
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="{Binding FormattedSelectedDate}" 
+                        <Label Text="{Binding FormattedTodayDate}" 
                                FontSize="32"
                                FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
@@ -202,10 +203,97 @@
                     <ScrollView HorizontalScrollBarVisibility="Never" 
                               VerticalScrollBarVisibility="Never"
                               Orientation="Horizontal">
-                        <CollectionView ItemsSource="{Binding CalendarDays}"
-                                      ItemTemplate="{StaticResource DateTemplate}"
+                        <CollectionView x:Name="daysCollection"
+                                      ItemsSource="{Binding CalendarDays}"
+                                      SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
+                                      SelectionMode="Single"
+                                      SelectionChangedCommand="{Binding SelectDateCommand}"
+                                      SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}"
                                       HeightRequest="70"
                                       Margin="0,4,0,0">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid x:Name="rootContainer" WidthRequest="45" HeightRequest="45" Padding="0" Margin="2,0">
+                                        <VisualStateManager.VisualStateGroups>
+                                            <VisualStateGroup Name="CommonStates">
+                                                <VisualState Name="Normal" />
+                                                <VisualState Name="Selected">
+                                                    <VisualState.Setters>
+                                                        <Setter Property="Frame.BackgroundColor" 
+                                                                TargetName="dayFrame" 
+                                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
+                                                        <Setter Property="Frame.BorderColor" 
+                                                                TargetName="dayFrame" 
+                                                                Value="Transparent" />
+                                                        <Setter Property="Label.TextColor" 
+                                                                TargetName="dayText" 
+                                                                Value="{StaticResource White}" />
+                                                        <Setter Property="Grid.Scale" Value="1.05" />
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                            </VisualStateGroup>
+                                        </VisualStateManager.VisualStateGroups>
+                                        
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Day of Week -->
+                                        <Label Grid.Row="0" 
+                                               Text="{Binding ., StringFormat='{0:ddd}'}"
+                                               FontSize="10"
+                                               TextColor="{StaticResource Gray500}"
+                                               HorizontalOptions="Center"
+                                               Margin="0,0,0,2"/>
+
+                                        <!-- Day number in circle -->
+                                        <Frame Grid.Row="1"
+                                               x:Name="dayFrame"
+                                               CornerRadius="16"
+                                               Padding="0"
+                                               WidthRequest="32"
+                                               HeightRequest="32"
+                                               BorderColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                               BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center">
+                                            <Label x:Name="dayText"
+                                                   Text="{Binding ., StringFormat='{0:%d}'}"
+                                                   FontSize="14"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                        </Frame>
+
+                                        <!-- Event Indicators -->
+                                        <HorizontalStackLayout Grid.Row="2"
+                                                             VerticalOptions="End" 
+                                                             HorizontalOptions="Center"
+                                                             Spacing="2"
+                                                             Margin="0,1,0,0">
+                                            <BoxView WidthRequest="4" 
+                                                    HeightRequest="4" 
+                                                    CornerRadius="2"
+                                                    Color="{StaticResource MedicationBlue}"
+                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.MedicationTreatment}}"/>
+                                            
+                                            <BoxView WidthRequest="4" 
+                                                    HeightRequest="4"
+                                                    CornerRadius="2"
+                                                    Color="{StaticResource PhotoPurple}"
+                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Photo}}"/>
+                                                    
+                                            <BoxView WidthRequest="4" 
+                                                    HeightRequest="4"
+                                                    CornerRadius="2"
+                                                    Color="{StaticResource VideoOrange}"
+                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
                             <CollectionView.ItemsLayout>
                                 <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4"/>
                             </CollectionView.ItemsLayout>

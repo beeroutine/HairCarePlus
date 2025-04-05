@@ -61,6 +61,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
+                    Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
                     Task.Run(async () => 
                     {
                         await LoadTodayEventsAsync();
@@ -74,6 +75,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         }
         
         public string FormattedSelectedDate => SelectedDate.ToString("ddd, MMM d");
+        
+        public string FormattedTodayDate => DateTime.Today.ToString("ddd, MMM d");
         
         public string DaysSinceTransplant
         {
@@ -307,8 +310,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private async Task SelectDateAsync(DateTime date)
         {
+            Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
+            Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
+            
             SelectedDate = date;
+            
+            Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
+            Debug.WriteLine($"Loading events for date: {date.ToShortDateString()}");
+            
+            // Reload events for the selected date
             await LoadTodayEventsAsync();
+            
+            Debug.WriteLine($"Events loaded: {FlattenedEvents?.Count ?? 0} events found");
         }
         
         private async Task OpenMonthCalendarAsync(DateTime date)

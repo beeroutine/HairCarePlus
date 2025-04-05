@@ -13,7 +13,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             {
                 if (date.Date == selectedDate.Date)
                 {
-                    return Colors.White; // Selected day - white text
+                    // Selected day - white text in dark theme, black text in light theme
+                    var requestedTheme = Application.Current?.RequestedTheme ?? AppTheme.Light;
+                    return requestedTheme == AppTheme.Dark 
+                        ? Colors.White 
+                        : Colors.Black;
                 }
                 else if (date.Date == DateTime.Today)
                 {
