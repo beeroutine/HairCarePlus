@@ -14,6 +14,8 @@
         <ResourceDictionary>
             <converters:EventIndicatorsConverter x:Key="EventIndicatorsConverter"/>
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter"/>
+            <converters:DateHasAnyEventConverter x:Key="DateHasAnyEventConverter"/>
+            <converters:DateHasAnyEventColorConverter x:Key="DateHasAnyEventColorConverter"/>
             <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
             <converters:TimeOfDayToColorConverter x:Key="TimeOfDayToColorConverter"/>
             <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
@@ -68,8 +70,8 @@
                            Padding="0"
                            WidthRequest="40"
                            HeightRequest="40"
-                           BorderColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                           BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}"
+                           BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
+                           BorderColor="Transparent"
                            HorizontalOptions="Center"
                            VerticalOptions="Center">
                         <Label x:Name="dayText"
@@ -77,7 +79,7 @@
                                FontSize="16"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                               TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                     </Frame>
 
                     <!-- Event Indicators -->
@@ -352,8 +354,8 @@
                                                Padding="0"
                                                WidthRequest="40"
                                                HeightRequest="40"
-                                               BorderColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                                               BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}"
+                                               BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
+                                               BorderColor="Transparent"
                                                HorizontalOptions="Center"
                                                VerticalOptions="Center">
                                             <Label x:Name="dayText"
@@ -361,7 +363,7 @@
                                                    FontSize="16"
                                                    HorizontalOptions="Center"
                                                    VerticalOptions="Center"
-                                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                                   TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                                         </Frame>
 
                                         <!-- Event Indicators -->
