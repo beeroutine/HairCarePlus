@@ -34,13 +34,13 @@
                                 <VisualState.Setters>
                                     <Setter Property="Frame.BackgroundColor" 
                                             TargetName="dayFrame" 
-                                            Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
+                                            Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                                     <Setter Property="Frame.BorderColor" 
                                             TargetName="dayFrame" 
                                             Value="Transparent" />
                                     <Setter Property="Label.TextColor" 
                                             TargetName="dayText" 
-                                            Value="{StaticResource White}" />
+                                            Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
                                     <Setter Property="Grid.Scale" Value="1.05" />
                                 </VisualState.Setters>
                             </VisualState>
@@ -68,7 +68,7 @@
                            Padding="0"
                            WidthRequest="40"
                            HeightRequest="40"
-                           BorderColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                           BorderColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                            BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center">
@@ -152,7 +152,7 @@
                                    FontSize="14"
                                    FontAttributes="Bold"
                                    Margin="0,0,0,2"
-                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Blue200Accent}}"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                             <Label Text="{Binding Title}"
                                    FontSize="16"
                                    FontAttributes="None"
@@ -166,7 +166,7 @@
                                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                                 <Label Text="Подробнее..."
                                        FontSize="13"
-                                       TextColor="{StaticResource Primary}"
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                        HorizontalOptions="End"
                                        VerticalOptions="End"
                                        IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
@@ -237,7 +237,7 @@
             <Grid Padding="16,8,16,12">
                 <VerticalStackLayout Spacing="12">
                     <!-- Updated Header Design with Day Circle and Month -->
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15" Margin="0,16,0,8">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="15" Margin="0,16,0,8">
                         <!-- Center: Circular Progress with Day Number and Day Name -->
                         <Grid Grid.Column="0"
                               HorizontalOptions="Start"
@@ -255,8 +255,8 @@
                                    
                             <!-- Progress Circle - colored border with opacity -->
                             <Frame BackgroundColor="Transparent"
-                                   BorderColor="{StaticResource Primary}"
-                                   CornerRadius="40"
+                                   BorderColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}"
+                                   CornerRadius="50"
                                    HasShadow="False"
                                    Padding="0"
                                    WidthRequest="{StaticResource CircleSize}"
@@ -283,17 +283,17 @@
                         </Grid>
                         
                         <!-- Right side: Month and transplant day info -->
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center" HorizontalOptions="Center">
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center" HorizontalOptions="End">
                             <Label Text="{Binding CurrentMonthName}"
-                                   FontSize="30"
+                                   FontSize="34"
                                    FontAttributes="Bold"
                                    VerticalOptions="Center"
-                                   HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                                   HorizontalOptions="End"
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                                    
                             <Label Text="{Binding DaysSinceTransplant}" 
                                    FontSize="14"
-                                   HorizontalOptions="Center"
+                                   HorizontalOptions="End"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                         </VerticalStackLayout>
                     </Grid>
@@ -318,13 +318,13 @@
                                                     <VisualState.Setters>
                                                         <Setter Property="Frame.BackgroundColor" 
                                                                 TargetName="dayFrame" 
-                                                                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
+                                                                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                                                         <Setter Property="Frame.BorderColor" 
                                                                 TargetName="dayFrame" 
                                                                 Value="Transparent" />
                                                         <Setter Property="Label.TextColor" 
                                                                 TargetName="dayText" 
-                                                                Value="{StaticResource White}" />
+                                                                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
                                                         <Setter Property="Grid.Scale" Value="1.05" />
                                                     </VisualState.Setters>
                                                 </VisualState>
@@ -352,7 +352,7 @@
                                                Padding="0"
                                                WidthRequest="40"
                                                HeightRequest="40"
-                                               BorderColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                               BorderColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                                BackgroundColor="{AppThemeBinding Light=Transparent, Dark=Transparent}"
                                                HorizontalOptions="Center"
                                                VerticalOptions="Center">
