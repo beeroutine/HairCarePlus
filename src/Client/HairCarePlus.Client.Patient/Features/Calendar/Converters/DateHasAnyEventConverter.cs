@@ -64,7 +64,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                         }
                     }
                     
-                    // Если параметр не TextColor, возвращаем булево значение наличия событий
+                    // Если параметр Shadow, возвращаем тень для дней с событиями
+                    if (parameter is string paramShadow && paramShadow == "Shadow")
+                    {
+                        if (hasEvents)
+                        {
+                            // Для дней с событиями возвращаем легкую тень
+                            return new Shadow
+                            {
+                                Brush = Application.Current?.RequestedTheme == AppTheme.Dark
+                                    ? Brush.White
+                                    : Brush.Black,
+                                Offset = new Point(0, 2),
+                                Radius = 4,
+                                Opacity = 0.3f
+                            };
+                        }
+                        else
+                        {
+                            // Для дней без событий возвращаем null (без тени)
+                            return null;
+                        }
+                    }
+                    
+                    // Если параметр не TextColor и не Shadow, возвращаем булево значение наличия событий
                     return hasEvents;
                 }
             }
@@ -78,6 +101,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                 return Application.Current?.RequestedTheme == AppTheme.Dark
                     ? Color.FromArgb("#BDBDBD")  // Gray400 для темной темы
                     : Color.FromArgb("#9E9E9E");  // Gray600 для светлой темы
+            }
+            else if (parameter is string paramShadowDefault && paramShadowDefault == "Shadow")
+            {
+                return null; // По умолчанию без тени
             }
             
             return false;

@@ -73,7 +73,8 @@
                            BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
                            BorderColor="Transparent"
                            HorizontalOptions="Center"
-                           VerticalOptions="Center">
+                           VerticalOptions="Center"
+                           Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
                         <Label x:Name="dayText"
                                Text="{Binding ., StringFormat='{0:%d}'}"
                                FontSize="16"
@@ -82,12 +83,22 @@
                                TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                     </Frame>
 
-                    <!-- Event Indicators -->
+                    <!-- Event Indicators bar -->
+                    <BoxView Grid.Row="2"
+                             HeightRequest="3"
+                             CornerRadius="1.5"
+                             WidthRequest="24"
+                             HorizontalOptions="Center"
+                             Margin="0,4,0,0"
+                             IsVisible="{Binding ., Converter={StaticResource DateHasAnyEventConverter}}"
+                             Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+
+                    <!-- Event Indicators details -->
                     <HorizontalStackLayout Grid.Row="2"
                                          VerticalOptions="End" 
                                          HorizontalOptions="Center"
                                          Spacing="3"
-                                         Margin="0,2,0,0">
+                                         Margin="0,10,0,0">
                         <BoxView WidthRequest="6" 
                                 HeightRequest="6" 
                                 CornerRadius="3"
@@ -128,7 +139,7 @@
                        BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
                        HasShadow="True"
                        Shadow="{OnPlatform iOS={StaticResource SmallShadow}}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
                                WidthRequest="40"
@@ -179,30 +190,6 @@
                                 </Label>
                             </Grid>
                         </VerticalStackLayout>
-
-                        <!-- Completion Circle (bigger) -->
-                        <Frame Grid.Column="2"
-                               WidthRequest="28"
-                               HeightRequest="28"
-                               CornerRadius="14"
-                               Padding="0"
-                               HasShadow="True"
-                               BorderColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
-                               BackgroundColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}"
-                               HorizontalOptions="End"
-                               VerticalOptions="Start">
-                            <Label FontFamily="MaterialIcons"
-                                   Text="&#xe86c;"
-                                   FontSize="18"
-                                   TextColor="{StaticResource White}"
-                                   IsVisible="{Binding IsCompleted}"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center"/>
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
-                                                     CommandParameter="{Binding .}"/>
-                            </Frame.GestureRecognizers>
-                        </Frame>
                     </Grid>
                 </Frame>
             </DataTemplate>
@@ -357,7 +344,8 @@
                                                BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
                                                BorderColor="Transparent"
                                                HorizontalOptions="Center"
-                                               VerticalOptions="Center">
+                                               VerticalOptions="Center"
+                                               Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
                                             <Label x:Name="dayText"
                                                    Text="{Binding ., StringFormat='{0:%d}'}"
                                                    FontSize="16"
@@ -366,12 +354,22 @@
                                                    TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                                         </Frame>
 
-                                        <!-- Event Indicators -->
+                                        <!-- Event Indicators bar -->
+                                        <BoxView Grid.Row="2"
+                                                 HeightRequest="3"
+                                                 CornerRadius="1.5"
+                                                 WidthRequest="24"
+                                                 HorizontalOptions="Center"
+                                                 Margin="0,4,0,0"
+                                                 IsVisible="{Binding ., Converter={StaticResource DateHasAnyEventConverter}}"
+                                                 Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+
+                                        <!-- Event Indicators details -->
                                         <HorizontalStackLayout Grid.Row="2"
                                                              VerticalOptions="End" 
                                                              HorizontalOptions="Center"
                                                              Spacing="3"
-                                                             Margin="0,2,0,0">
+                                                             Margin="0,10,0,0">
                                             <BoxView WidthRequest="6" 
                                                     HeightRequest="6" 
                                                     CornerRadius="3"
