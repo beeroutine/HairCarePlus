@@ -19,9 +19,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private ObservableCollection<DateTime> _calendarDays;
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
         private ObservableCollection<CalendarEvent> _flattenedEvents;
+        private ObservableCollection<CalendarEvent> _sortedEvents;
         private string _daysSinceTransplant;
         private Dictionary<DateTime, Dictionary<EventType, int>> _eventCountsByDate;
         private int _overdueEventsCount;
+        private double _completionProgress;
+        private int _completionPercentage;
         
         // Ключ для хранения выбранной даты в локальном хранилище
         private const string SelectedDateKey = "LastSelectedDate";
@@ -35,6 +38,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
             _overdueEventsCount = 0;
+            _completionProgress = 0;
+            _completionPercentage = 0;
             Title = "Today";
             
             // Initialize commands
@@ -43,6 +48,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             OpenMonthCalendarCommand = new Command<DateTime>(async (date) => await OpenMonthCalendarAsync(date));
             ViewEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ViewEventDetailsAsync(calendarEvent));
             PostponeEventCommand = new Command<CalendarEvent>(async (calendarEvent) => await PostponeEventAsync(calendarEvent));
+            ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
             
             // Initial data loading
             LoadCalendarDays();
@@ -102,6 +108,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _flattenedEvents, value);
         }
         
+        public ObservableCollection<CalendarEvent> SortedEvents
+        {
+            get => _sortedEvents;
+            set => SetProperty(ref _sortedEvents, value);
+        }
+        
         public Dictionary<DateTime, Dictionary<EventType, int>> EventCountsByDate
         {
             get => _eventCountsByDate;
@@ -114,11 +126,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _overdueEventsCount, value);
         }
         
+        public double CompletionProgress
+        {
+            get => _completionProgress;
+            set => SetProperty(ref _completionProgress, value);
+        }
+        
+        public int CompletionPercentage
+        {
+            get => _completionPercentage;
+            set => SetProperty(ref _completionPercentage, value);
+        }
+        
         public ICommand ToggleEventCompletionCommand { get; }
         public ICommand SelectDateCommand { get; }
         public ICommand OpenMonthCalendarCommand { get; }
         public ICommand ViewEventDetailsCommand { get; }
         public ICommand PostponeEventCommand { get; }
+        public ICommand ShowEventDetailsCommand { get; }
         
         private void LoadCalendarDays()
         {
@@ -153,7 +178,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     {
                         // Всегда инициализируем коллекцию, даже если events пуст
                         FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
+                        // Сортируем события по времени для отображения
+                        SortedEvents = new ObservableCollection<CalendarEvent>(
+                            (events ?? new List<CalendarEvent>())
+                            .OrderBy(e => e.Date.TimeOfDay)
+                            .ToList());
+                        // Вычисляем прогресс выполнения
+                        UpdateCompletionProgress();
                         OnPropertyChanged(nameof(FlattenedEvents));
+                        OnPropertyChanged(nameof(SortedEvents));
                         return Task.CompletedTask;
                     });
                 }
@@ -161,7 +194,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     // Всегда инициализируем коллекцию, даже если events пуст
                     FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
+                    // Сортируем события по времени для отображения
+                    SortedEvents = new ObservableCollection<CalendarEvent>(
+                        (events ?? new List<CalendarEvent>())
+                        .OrderBy(e => e.Date.TimeOfDay)
+                        .ToList());
+                    // Вычисляем прогресс выполнения
+                    UpdateCompletionProgress();
                     OnPropertyChanged(nameof(FlattenedEvents));
+                    OnPropertyChanged(nameof(SortedEvents));
                 }
                 
                 // Log loaded events for debugging
@@ -187,16 +228,52 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
                     {
                         FlattenedEvents = new ObservableCollection<CalendarEvent>();
+                        SortedEvents = new ObservableCollection<CalendarEvent>();
+                        UpdateCompletionProgress();
                         OnPropertyChanged(nameof(FlattenedEvents));
+                        OnPropertyChanged(nameof(SortedEvents));
                         return Task.CompletedTask;
                     });
                 }
                 else
                 {
                     FlattenedEvents = new ObservableCollection<CalendarEvent>();
+                    SortedEvents = new ObservableCollection<CalendarEvent>();
+                    UpdateCompletionProgress();
                     OnPropertyChanged(nameof(FlattenedEvents));
+                    OnPropertyChanged(nameof(SortedEvents));
                 }
             }
+        }
+        
+        private void UpdateCompletionProgress()
+        {
+            var events = FlattenedEvents;
+            if (events == null || events.Count == 0)
+            {
+                CompletionProgress = 0;
+                CompletionPercentage = 0;
+                return;
+            }
+            
+            int totalEvents = events.Count;
+            int completedEvents = events.Count(e => e.IsCompleted);
+            
+            CompletionProgress = (double)completedEvents / totalEvents;
+            CompletionPercentage = (int)(CompletionProgress * 100);
+        }
+        
+        // Метод для показа деталей события
+        private async Task ShowEventDetailsAsync(CalendarEvent calendarEvent)
+        {
+            if (calendarEvent == null)
+                return;
+                
+            // Пример отображения полных деталей события
+            await Application.Current.MainPage.DisplayAlert(
+                calendarEvent.Title,
+                calendarEvent.Description,
+                "OK");
         }
         
         public async Task LoadEventCountsForVisibleDaysAsync()
@@ -310,6 +387,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 // Перезагружаем события для обновления и правильной сортировки
                 await LoadTodayEventsAsync();
+                
+                // Обновляем прогресс выполнения
+                UpdateCompletionProgress();
                 
                 // Обновляем счетчик просроченных событий, если событие было просроченным
                 if (calendarEvent.Date.Date < DateTime.Today)

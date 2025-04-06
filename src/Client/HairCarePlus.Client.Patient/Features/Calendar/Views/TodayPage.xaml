@@ -103,7 +103,6 @@
                                 IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
                     </HorizontalStackLayout>
                     
-                    <!-- Добавляем обработчик долгого нажатия -->
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer 
                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
@@ -128,9 +127,9 @@
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
-                               WidthRequest="36"
-                               HeightRequest="36"
-                               CornerRadius="18"
+                               WidthRequest="40"
+                               HeightRequest="40"
+                               CornerRadius="20"
                                Padding="0"
                                HasShadow="False"
                                BorderColor="Transparent"
@@ -139,7 +138,7 @@
                                VerticalOptions="Start">
                             <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                    FontFamily="MaterialIcons"
-                                   FontSize="18"
+                                   FontSize="20"
                                    TextColor="White"
                                    HorizontalOptions="Center"
                                    VerticalOptions="Center"/>
@@ -148,32 +147,49 @@
                         <!-- Task Content -->
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start">
                             <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                   FontSize="12"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
                                    Margin="0,0,0,2"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Blue200Accent}}"/>
                             <Label Text="{Binding Title}"
                                    FontSize="16"
                                    FontAttributes="None"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                            <Label Text="{Binding Description}"
-                                   FontSize="14"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            <Grid>
+                                <Label x:Name="descriptionLabel"
+                                       Text="{Binding Description}"
+                                       FontSize="14"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                <Label Text="Подробнее..."
+                                       FontSize="13"
+                                       TextColor="{StaticResource Primary}"
+                                       HorizontalOptions="End"
+                                       VerticalOptions="End"
+                                       IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ShowEventDetailsCommand}"
+                                                             CommandParameter="{Binding .}"/>
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </Grid>
                         </VerticalStackLayout>
 
-                        <!-- Completion Circle -->
+                        <!-- Completion Circle (bigger) -->
                         <Frame Grid.Column="2"
-                               WidthRequest="22"
-                               HeightRequest="22"
-                               CornerRadius="11"
+                               WidthRequest="28"
+                               HeightRequest="28"
+                               CornerRadius="14"
                                Padding="0"
-                               HasShadow="False"
+                               HasShadow="True"
                                BorderColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
                                BackgroundColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}"
                                HorizontalOptions="End"
                                VerticalOptions="Start">
                             <Label FontFamily="MaterialIcons"
                                    Text="&#xe86c;"
-                                   FontSize="16"
+                                   FontSize="18"
                                    TextColor="{StaticResource White}"
                                    IsVisible="{Binding IsCompleted}"
                                    HorizontalOptions="Center"
@@ -218,10 +234,10 @@
                HasShadow="{OnPlatform iOS=True, Default=False}">
             <Grid Padding="16,8,16,12">
                 <VerticalStackLayout Spacing="12">
-                    <!-- Date Header -->
+                    <!-- Date Header - уменьшенный размер -->
                     <VerticalStackLayout Spacing="4">
                         <Label Text="{Binding FormattedTodayDate}" 
-                               FontSize="32"
+                               FontSize="28"
                                FontAttributes="Bold"
                                TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                Margin="0,8,0,0"/>
@@ -229,6 +245,25 @@
                                FontSize="16"
                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                     </VerticalStackLayout>
+
+                    <!-- Прогресс бар для выполненных задач -->
+                    <StackLayout Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+                        <Label Text="Выполнено:" 
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                        <ProgressBar Progress="{Binding CompletionProgress}" 
+                                     ProgressColor="{StaticResource Primary}"
+                                     HorizontalOptions="FillAndExpand"
+                                     HeightRequest="8"
+                                     VerticalOptions="Center"/>
+                        <Label Text="{Binding CompletionPercentage, StringFormat='{0}%'}" 
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               MinimumWidthRequest="40"
+                               HorizontalTextAlignment="End"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                    </StackLayout>
 
                     <!-- Horizontal Day Ticker -->
                     <ScrollView HorizontalScrollBarVisibility="Never" 
@@ -321,7 +356,6 @@
                                                     IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
                                         </HorizontalStackLayout>
                                         
-                                        <!-- Добавляем обработчик долгого нажатия -->
                                         <Grid.GestureRecognizers>
                                             <TapGestureRecognizer 
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
@@ -348,7 +382,7 @@
                    HorizontalScrollBarVisibility="Never"
                    VerticalScrollBarVisibility="Never"
                    BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
-            <CollectionView ItemsSource="{Binding FlattenedEvents}"
+            <CollectionView ItemsSource="{Binding SortedEvents}"
                           ItemTemplate="{StaticResource EventTemplate}"
                           Margin="16,8,16,16">
                 <CollectionView.EmptyView>
