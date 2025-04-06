@@ -21,6 +21,8 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+            <x:Double x:Key="CircleSize">100</x:Double>
             
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate">
@@ -234,36 +236,67 @@
                HasShadow="{OnPlatform iOS=True, Default=False}">
             <Grid Padding="16,8,16,12">
                 <VerticalStackLayout Spacing="12">
-                    <!-- Date Header - уменьшенный размер -->
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="{Binding FormattedTodayDate}" 
-                               FontSize="28"
-                               FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                               Margin="0,8,0,0"/>
-                        <Label Text="{Binding DaysSinceTransplant}" 
-                               FontSize="16"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                    </VerticalStackLayout>
-
-                    <!-- Прогресс бар для выполненных задач -->
-                    <StackLayout Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
-                        <Label Text="Выполнено:" 
-                               FontSize="14"
-                               VerticalOptions="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                        <ProgressBar Progress="{Binding CompletionProgress}" 
-                                     ProgressColor="{StaticResource Primary}"
-                                     HorizontalOptions="FillAndExpand"
-                                     HeightRequest="8"
-                                     VerticalOptions="Center"/>
-                        <Label Text="{Binding CompletionPercentage, StringFormat='{0}%'}" 
-                               FontSize="14"
-                               VerticalOptions="Center"
-                               MinimumWidthRequest="40"
-                               HorizontalTextAlignment="End"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                    </StackLayout>
+                    <!-- Updated Header Design with Day Circle and Month -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15" Margin="0,16,0,8">
+                        <!-- Center: Circular Progress with Day Number and Day Name -->
+                        <Grid Grid.Column="0"
+                              HorizontalOptions="Start"
+                              VerticalOptions="Center"
+                              WidthRequest="{StaticResource CircleSize}"
+                              HeightRequest="{StaticResource CircleSize}">
+                              
+                            <!-- Background Circle -->
+                            <Border StrokeShape="Ellipse"
+                                   Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                                   StrokeThickness="4"
+                                   BackgroundColor="Transparent"
+                                   WidthRequest="{StaticResource CircleSize}"
+                                   HeightRequest="{StaticResource CircleSize}"/>
+                                   
+                            <!-- Progress Circle - colored border with opacity -->
+                            <Frame BackgroundColor="Transparent"
+                                   BorderColor="{StaticResource Primary}"
+                                   CornerRadius="40"
+                                   HasShadow="False"
+                                   Padding="0"
+                                   WidthRequest="{StaticResource CircleSize}"
+                                   HeightRequest="{StaticResource CircleSize}"
+                                   Opacity="{Binding CompletionProgress}"/>
+                            
+                            <!-- Center Content -->
+                            <VerticalStackLayout HorizontalOptions="Center" 
+                                               VerticalOptions="Center"
+                                               Spacing="0">
+                                <!-- Day number (large) -->
+                                <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:%d}'}"
+                                       FontSize="40"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                
+                                <!-- Day of week (smaller) -->
+                                <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}"
+                                       FontSize="18"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                        
+                        <!-- Right side: Month and transplant day info -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center" HorizontalOptions="Center">
+                            <Label Text="{Binding CurrentMonthName}"
+                                   FontSize="30"
+                                   FontAttributes="Bold"
+                                   VerticalOptions="Center"
+                                   HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"/>
+                                   
+                            <Label Text="{Binding DaysSinceTransplant}" 
+                                   FontSize="14"
+                                   HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                        </VerticalStackLayout>
+                    </Grid>
 
                     <!-- Horizontal Day Ticker -->
                     <ScrollView HorizontalScrollBarVisibility="Never" 

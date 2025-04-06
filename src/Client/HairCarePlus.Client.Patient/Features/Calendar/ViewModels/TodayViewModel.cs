@@ -76,6 +76,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     });
                     OnPropertyChanged(nameof(FormattedSelectedDate));
                     OnPropertyChanged(nameof(DaysSinceTransplant));
+                    OnPropertyChanged(nameof(CurrentMonthName));
                 }
             }
         }
@@ -83,6 +84,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public string FormattedSelectedDate => SelectedDate.ToString("ddd, MMM d");
         
         public string FormattedTodayDate => DateTime.Today.ToString("ddd, MMM d");
+        
+        public string CurrentMonthName => SelectedDate.ToString("MMMM");
         
         public string DaysSinceTransplant
         {
