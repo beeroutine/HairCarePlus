@@ -7,18 +7,34 @@ public class MessageBackgroundConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is string senderId && parameter is string conversionType)
+        if (value is string senderId)
         {
-            switch (conversionType.ToLower())
+            // Логирование для отладки
+            System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter.Convert: senderId={senderId}, targetType={targetType.Name}, parameter={parameter}");
+            
+            // Если параметр не указан, и тип назначения - Color, преобразуем SenderId в цвет
+            if (parameter == null && targetType == typeof(Microsoft.Maui.Graphics.Color))
             {
-                case "column":
-                    return senderId == "patient" ? 1 : 0;
-                case "alignment":
-                    return senderId == "patient" ? LayoutOptions.End : LayoutOptions.Start;
-                case "margin":
-                    return senderId == "patient" ? new Thickness(80, 0, 8, 0) : new Thickness(8, 0, 80, 0);
-                default:
-                    return null;
+                var color = senderId == "patient" 
+                    ? Colors.LightSkyBlue 
+                    : Colors.LightGreen;
+                System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter: Возвращаем цвет {color}");
+                return color;
+            }
+            
+            if (parameter is string conversionType)
+            {
+                switch (conversionType.ToLower())
+                {
+                    case "column":
+                        return senderId == "patient" ? 1 : 0;
+                    case "alignment":
+                        return senderId == "patient" ? LayoutOptions.End : LayoutOptions.Start;
+                    case "margin":
+                        return senderId == "patient" ? new Thickness(80, 0, 8, 0) : new Thickness(8, 0, 80, 0);
+                    default:
+                        return null;
+                }
             }
         }
         return null;

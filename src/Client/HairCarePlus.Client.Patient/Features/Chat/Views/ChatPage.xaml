@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Converters"
+             xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
@@ -14,10 +15,32 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter" />
+            <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
+            <commonConverters:EqualityConverter x:Key="EqualityConverter" />
             
             <Style x:Key="SelectedMessageFrame" TargetType="Frame">
                 <Setter Property="BorderColor" Value="{AppThemeBinding Light=#3B82F6, Dark=#60A5FA}" />
-                <Setter Property="Opacity" Value="0.9" />
+                <Setter Property="Opacity" Value="0.95" />
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#90C3FF, Dark=#2C4F7F}" />
+                <Setter Property="Shadow">
+                    <Setter.Value>
+                        <Shadow Brush="{AppThemeBinding Light=#3B82F6, Dark=#60A5FA}"
+                                Offset="0,0"
+                                Radius="6"
+                                Opacity="0.7" />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="MessageFrameStyle" TargetType="Frame">
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="HasShadow" Value="True" />
+                <Setter Property="Shadow" Value="{OnPlatform iOS={StaticResource SmallShadow}}" />
+                <Setter Property="BorderColor" Value="Transparent" />
+                <Setter Property="MaximumWidthRequest" Value="280" />
+                <Setter Property="CornerRadius" Value="18" />
             </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
@@ -84,18 +107,24 @@
 
                         <!-- Message -->
                         <Frame Grid.Column="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='column'}"
-                               Padding="12,8"
-                               HasShadow="True"
-                               Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
-                               BorderColor="Transparent"
-                               MaximumWidthRequest="280"
-                               CornerRadius="18"
+                               Style="{StaticResource MessageFrameStyle}"
                                BackgroundColor="{Binding SenderId, Mode=OneWay}"
                                HorizontalOptions="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='alignment'}"
                                Margin="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='margin'}">
+                            <Frame.Behaviors>
+                                <behaviors:VisualFeedbackBehavior />
+                            </Frame.Behaviors>
                             <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ReplyToMessageCommand}"
-                                                    CommandParameter="{Binding .}" />
+                                <!-- Нажатие для ответа на сообщение (только для сообщений от доктора) -->
+                                <TapGestureRecognizer 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HandleReplyToMessageCommand}"
+                                    CommandParameter="{Binding .}"
+                                    NumberOfTapsRequired="1" />
+                                
+                                <!-- Долгое нажатие для меню редактирования (только для сообщений пациента) -->
+                                <SwipeGestureRecognizer Direction="Left" 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditMessageCommand}"
+                                    CommandParameter="{Binding .}" />
                             </Frame.GestureRecognizers>
                             <Frame.Triggers>
                                 <DataTrigger TargetType="Frame"
@@ -114,6 +143,13 @@
                                            Binding="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ReplyToMessage}"
                                            Value="{Binding .}">
                                     <Setter Property="Style" Value="{StaticResource SelectedMessageFrame}" />
+                                    <Setter Property="Scale" Value="1.03" />
+                                    <Setter Property="BorderColor" Value="{AppThemeBinding Light=Red, Dark=OrangeRed}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Frame"
+                                           Binding="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditingMessage}"
+                                           Value="{Binding .}">
+                                    <Setter Property="BorderColor" Value="{StaticResource Primary}" />
                                 </DataTrigger>
                             </Frame.Triggers>
                             <VerticalStackLayout Spacing="2">
@@ -165,7 +201,7 @@
 
         <!-- Input Panel -->
         <Grid Grid.Row="1"
-              RowDefinitions="Auto,Auto"
+              RowDefinitions="Auto,Auto,Auto"
               BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
             
             <!-- Reply Preview -->
@@ -175,12 +211,20 @@
                    Margin="8,4,8,0"
                    Padding="12,8"
                    CornerRadius="12"
-                   BorderColor="Transparent">
+                   x:Name="ReplyIndicator"
+                   BorderColor="{StaticResource Primary}">
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="2">
-                        <Label Text="Reply to message"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                               FontSize="12"/>
+                        <StackLayout Orientation="Horizontal" Spacing="4">
+                            <Label Text="↩" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                   FontAttributes="Bold"
+                                   FontSize="14"/>
+                            <Label Text="Reply to doctor's message"
+                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                   FontAttributes="Bold"
+                                   FontSize="12"/>
+                        </StackLayout>
                         <Label Text="{Binding ReplyToMessage.Content}"
                                TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                FontSize="13"
@@ -200,9 +244,37 @@
                             VerticalOptions="Center"/>
                 </Grid>
             </Frame>
+            
+            <!-- Edit Message Preview -->
+            <Frame Grid.Row="1"
+                   IsVisible="{Binding EditingMessage, Converter={StaticResource IsNotNullConverter}}"
+                   BackgroundColor="{AppThemeBinding Light=#FEF9E7, Dark=#4D3C14}"
+                   Margin="8,4,8,0"
+                   Padding="12,8"
+                   CornerRadius="12"
+                   BorderColor="Transparent">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Editing message"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                               FontSize="12"/>
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1"
+                            Text="×"
+                            Command="{Binding CancelEditCommand}"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                            FontSize="20"
+                            Padding="0"
+                            Margin="-8,-8,-8,-8"
+                            HeightRequest="36"
+                            WidthRequest="36"
+                            VerticalOptions="Center"/>
+                </Grid>
+            </Frame>
 
             <!-- Input Controls -->
-            <Grid Grid.Row="1"
+            <Grid Grid.Row="2"
                   ColumnDefinitions="44,*,44"
                   Padding="8,6,8,8">
                 <Button Grid.Column="0"

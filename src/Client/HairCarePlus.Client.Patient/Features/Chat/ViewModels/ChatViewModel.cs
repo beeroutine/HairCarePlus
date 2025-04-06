@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Patient.Features.Chat.Models;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using Microsoft.Maui.Controls;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -14,6 +15,22 @@ public partial class ChatViewModel : ObservableObject
 {
     private readonly INavigationService _navigationService;
     private readonly ILocalStorageService _localStorageService;
+    private readonly IKeyboardService _keyboardService;
+    private readonly Random _random = new Random();
+    public CollectionView MessagesCollectionView { get; set; }
+    private readonly string[] _doctorResponses = new[]
+    {
+        "How are you feeling today? It's important to monitor any discomfort during the recovery period.",
+        "Remember to follow the post-operative care instructions for best results.",
+        "Don't hesitate to send me photos if you notice anything unusual.",
+        "Make sure you're applying the prescribed ointment as directed.",
+        "Are you experiencing any swelling or inflammation?",
+        "It's normal to have some mild discomfort during the first week post-transplant.",
+        "Have you been washing your hair according to the guidelines I provided?",
+        "Your recovery seems to be progressing well based on what you've shared.",
+        "You can expect the transplanted hair to shed within 2-3 weeks, don't be alarmed when this happens.",
+        "Are you taking your prescribed medications regularly?"
+    };
 
     [ObservableProperty]
     private ObservableCollection<ChatMessage> _messages;
@@ -24,13 +41,32 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private ChatMessage _replyToMessage;
 
+    [ObservableProperty]
+    private ChatMessage _editingMessage;
+
+    [ObservableProperty]
+    private Models.Doctor _doctor;
+
     public ChatViewModel(
         INavigationService navigationService,
-        ILocalStorageService localStorageService)
+        ILocalStorageService localStorageService,
+        IKeyboardService keyboardService)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
+        _keyboardService = keyboardService;
         Messages = new ObservableCollection<ChatMessage>();
+        
+        // Инициализация врача для отображения информации
+        Doctor = new Models.Doctor
+        {
+            Id = "doctor1",
+            Name = "Dr. Sarah Johnson",
+            Specialty = "Hair Transplant Specialist",
+            PhotoUrl = "doctor_profile.png",
+            IsOnline = true,
+            LastSeen = DateTime.Now
+        };
     }
 
     [RelayCommand]
@@ -44,7 +80,7 @@ public partial class ChatViewModel : ObservableObject
             { 
                 Content = "Welcome to HairCare+! How can I help you today?",
                 SenderId = "doctor",
-                Timestamp = DateTime.Now
+                Timestamp = DateTime.Now.AddMinutes(-5)
             });
         }
         catch (Exception ex)
@@ -61,19 +97,38 @@ public partial class ChatViewModel : ObservableObject
 
         try
         {
-            var message = new ChatMessage
+            if (EditingMessage != null)
             {
-                Content = MessageText,
-                SenderId = "patient",
-                Timestamp = DateTime.Now,
-                ReplyTo = ReplyToMessage
-            };
+                // Редактирование существующего сообщения
+                int index = Messages.IndexOf(EditingMessage);
+                if (index >= 0)
+                {
+                    EditingMessage.Content = MessageText;
+                    Messages[index] = EditingMessage; // Для обновления UI
+                    MessageText = string.Empty;
+                    EditingMessage = null;
+                }
+            }
+            else
+            {
+                // Отправка нового сообщения
+                var message = new ChatMessage
+                {
+                    Content = MessageText,
+                    SenderId = "patient",
+                    Timestamp = DateTime.Now,
+                    ReplyTo = ReplyToMessage
+                };
 
-            Messages.Add(message);
-            MessageText = string.Empty;
-            ReplyToMessage = null;
+                Messages.Add(message);
+                MessageText = string.Empty;
+                ReplyToMessage = null;
 
-            // TODO: Send message to API
+                // Симуляция ответа врача через 1-3 секунды
+                await SimulateDoctorResponseAsync();
+            }
+
+            // TODO: Синхронизация с API
         }
         catch (Exception ex)
         {
@@ -82,15 +137,73 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ReplyToMessageCommand(ChatMessage message)
+    private async Task HandleReplyToMessage(ChatMessage message)
     {
-        ReplyToMessage = message;
+        // Добавляем логирование для отладки
+        System.Diagnostics.Debug.WriteLine($"=== HandleReplyToMessage вызван: {message?.Content}");
+        System.Diagnostics.Debug.WriteLine($"=== SenderId: {message?.SenderId}");
+        
+        if (message == null)
+        {
+            System.Diagnostics.Debug.WriteLine("=== ОШИБКА: message == null");
+            return;
+        }
+        
+        // Нельзя отвечать на сообщение при редактировании
+        if (EditingMessage != null)
+        {
+            System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: EditingMessage != null");
+            return;
+        }
+        
+        // Проверка, что это сообщение от доктора (нельзя отвечать на свои сообщения)
+        if (message.SenderId == "patient")
+        {
+            System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: SenderId == patient");
+            await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
+            return;
+        }
+        
+        try 
+        {
+            // Устанавливаем сообщение для ответа
+            ReplyToMessage = message;
+            System.Diagnostics.Debug.WriteLine($"=== ReplyToMessage установлен: {ReplyToMessage?.Content}");
+            
+            // Прокрутка списка к концу
+            await ScrollToBottom();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"=== ОШИБКА: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"=== {ex.StackTrace}");
+        }
     }
 
     [RelayCommand]
     private void CancelReply()
     {
         ReplyToMessage = null;
+    }
+
+    [RelayCommand]
+    private void EditMessage(ChatMessage message)
+    {
+        if (message == null || message.SenderId != "patient") return;
+        
+        // Отменяем режим ответа при редактировании
+        ReplyToMessage = null;
+        
+        // Включаем режим редактирования
+        EditingMessage = message;
+        MessageText = message.Content;
+    }
+
+    [RelayCommand]
+    private void CancelEditCommand()
+    {
+        EditingMessage = null;
+        MessageText = string.Empty;
     }
 
     [RelayCommand]
@@ -116,6 +229,62 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private void HideKeyboard()
     {
-        // TODO: Implement keyboard hiding
+        _keyboardService?.HideKeyboard();
+    }
+    
+    // Симуляция ответа от врача
+    private async Task SimulateDoctorResponseAsync()
+    {
+        try
+        {
+            // Задержка перед ответом (1-3 секунды)
+            await Task.Delay(_random.Next(1000, 3000));
+            
+            // Выбор случайного ответа
+            string responseContent = _doctorResponses[_random.Next(_doctorResponses.Length)];
+            
+            // 30% вероятность ответа на последнее сообщение пациента
+            var latestPatientMessage = Messages.LastOrDefault(m => m.SenderId == "patient");
+            bool shouldReply = _random.NextDouble() < 0.3 && latestPatientMessage != null;
+            
+            var doctorResponse = new ChatMessage
+            {
+                Content = responseContent,
+                SenderId = "doctor",
+                Timestamp = DateTime.Now,
+                ReplyTo = shouldReply ? latestPatientMessage : null
+            };
+            
+            // Добавляем ответ врача в основном потоке
+            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+            {
+                Messages.Add(doctorResponse);
+            });
+        }
+        catch (Exception)
+        {
+            // Ошибки симуляции игнорируем
+        }
+    }
+
+    // Метод для прокрутки к концу списка сообщений
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            if (MessagesCollectionView != null && Messages.Count > 0)
+            {
+                // Прокрутка к последнему сообщению
+                await Task.Delay(100); // Небольшая задержка, чтобы UI обновился
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                {
+                    MessagesCollectionView.ScrollTo(Messages.Last(), animate: true);
+                });
+            }
+        }
+        catch (Exception)
+        {
+            // Игнорируем ошибки при прокрутке
+        }
     }
 } 
