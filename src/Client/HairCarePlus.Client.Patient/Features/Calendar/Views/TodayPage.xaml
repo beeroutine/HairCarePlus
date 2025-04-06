@@ -120,10 +120,11 @@
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
                 <Frame Margin="0,4,0,0" 
                        Padding="12"
-                       CornerRadius="12"
+                       CornerRadius="18"
                        BorderColor="Transparent"
-                       BackgroundColor="{AppThemeBinding Light=#F5F9FD, Dark=#1A2530}"
-                       HasShadow="False">
+                       BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                       HasShadow="True"
+                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
