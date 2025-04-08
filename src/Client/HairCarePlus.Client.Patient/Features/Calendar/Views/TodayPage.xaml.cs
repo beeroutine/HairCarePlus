@@ -5,14 +5,17 @@ using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Maui.Controls;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
     public partial class TodayPage : ContentPage
     {
+        private readonly ILogger<TodayPage> _logger;
+        private bool _isLoaded;
         private TodayViewModel _viewModel;
         
-        public TodayPage()
+        public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
             try
             {
@@ -20,10 +23,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 InitializeComponent();
                 Debug.WriteLine("TodayPage InitializeComponent completed");
                 
-                _viewModel = ServiceHelper.GetService<TodayViewModel>();
-                Debug.WriteLine("TodayViewModel retrieved from ServiceHelper");
+                _viewModel = viewModel;
+                Debug.WriteLine("TodayViewModel retrieved from constructor");
                 BindingContext = _viewModel;
                 Debug.WriteLine("BindingContext set to TodayViewModel");
+                
+                _logger = logger;
+                _logger.LogInformation("TodayPage instance created");
                 
                 // Добавляем обработчик изменения SelectedDate в ViewModel
                 _viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -35,12 +41,26 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        protected override void OnAppearing()
+        protected override async void OnAppearing()
         {
             try
             {
                 Debug.WriteLine("TodayPage OnAppearing start");
                 base.OnAppearing();
+                _logger.LogInformation("TodayPage OnAppearing called");
+                
+                if (!_isLoaded)
+                {
+                    _isLoaded = true;
+                    if (BindingContext is TodayViewModel viewModel)
+                    {
+                        // Загрузка данных выполняется только один раз при первом появлении страницы
+                        _logger.LogInformation("First time loading data for TodayPage");
+                        await viewModel.LoadTodayEventsAsync();
+                        await viewModel.LoadEventCountsForVisibleDaysAsync();
+                        await viewModel.CheckOverdueEventsAsync();
+                    }
+                }
                 
                 // Refresh selected date when returning to this page
                 if (_viewModel != null)
@@ -55,14 +75,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     // при первоначальной загрузке
                     UpdateSelectedDateVisualState(_viewModel.SelectedDate);
                     
-                    // Принудительная загрузка данных
-                    Task.Run(async () => 
-                    {
-                        await _viewModel.LoadTodayEventsAsync();
-                        await _viewModel.LoadEventCountsForVisibleDaysAsync();
-                        await _viewModel.CheckOverdueEventsAsync();
-                    });
-                    
                     Debug.WriteLine($"TodayPage OnAppearing refreshed selected date: {currentDate}");
                 }
             }
@@ -76,6 +88,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
+            _logger.LogInformation("TodayPage OnDisappearing called");
             
             // Отписываемся от событий при уходе со страницы
             if (_viewModel != null)
@@ -102,24 +115,37 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 Debug.WriteLine($"UpdateSelectedDateVisualState called for date: {selectedDate.Value.ToShortDateString()}");
                 
-                // Получаем контейнер выбранного элемента
                 if (daysCollection.ItemTemplate == null)
                 {
                     Debug.WriteLine("ItemTemplate is null");
                     return;
                 }
+
+                // Get only visible containers using ItemsLayout information
+                var visibleContainers = daysCollection.LogicalChildren
+                    .OfType<Grid>()
+                    .Where(g => g.BindingContext is DateTime && g.IsVisible)
+                    .ToList();
+
+                if (!visibleContainers.Any())
+                {
+                    Debug.WriteLine("No visible containers found");
+                    return;
+                }
                 
-                // Для каждого видимого элемента, проверяем, является ли он выбранным
-                foreach (var container in daysCollection.GetVisualTreeDescendants().OfType<Grid>().Where(g => g.BindingContext is DateTime))
+                foreach (var container in visibleContainers)
                 {
                     if (container.BindingContext is DateTime containerDate)
                     {
                         bool isSelected = containerDate.Date == selectedDate.Value.Date;
-                        Debug.WriteLine($"Container found for date: {containerDate.ToShortDateString()}, IsSelected: {isSelected}");
+                        
+                        // Only log if selected to reduce noise
+                        if (isSelected)
+                        {
+                            Debug.WriteLine($"Updating container for date: {containerDate.ToShortDateString()}, IsSelected: {isSelected}");
+                        }
                         
                         var visualState = isSelected ? "Selected" : "Normal";
-                        
-                        // Применяем состояния ко всем элементам в иерархии
                         VisualStateManager.GoToState(container, visualState);
                     }
                 }

@@ -23,7 +23,11 @@
             <ShellContent
                 Title="Today"
                 ContentTemplate="{DataTemplate calendar:TodayPage}"
-                Route="today" />
+                Route="today"
+                Shell.NavBarIsVisible="True"
+                Shell.TabBarIsVisible="True"
+                Shell.FlyoutBehavior="Disabled"
+                Shell.PresentationMode="ModalNotAnimated" />
         </Tab>
 
         <!-- Chat -->

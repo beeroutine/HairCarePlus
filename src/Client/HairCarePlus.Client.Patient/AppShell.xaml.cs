@@ -3,6 +3,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Maui.Controls;
 using System;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HairCarePlus.Client.Patient;
 
@@ -13,6 +14,8 @@ public partial class AppShell : Shell
 		try
 		{
 			Debug.WriteLine("AppShell constructor start");
+			
+			// Инициализация компонентов
 			InitializeComponent();
 			Debug.WriteLine("AppShell InitializeComponent completed");
 			
@@ -25,7 +28,7 @@ public partial class AppShell : Shell
 			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
 		}
 	}
-
+	
 	private void RegisterRoutes()
 	{
 		try

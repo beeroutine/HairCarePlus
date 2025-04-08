@@ -26,6 +26,13 @@
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
             <x:Double x:Key="CircleSize">100</x:Double>
             
+            <!-- Layout Resources -->
+            <LinearItemsLayout x:Key="HorizontalLinearLayout" 
+                             Orientation="Horizontal" 
+                             ItemSpacing="5"
+                             SnapPointsType="MandatorySingle"
+                             SnapPointsAlignment="Center"/>
+            
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate">
                 <Grid x:Name="rootContainer" WidthRequest="55" HeightRequest="55" Padding="0" Margin="3,0">
@@ -284,6 +291,16 @@
                                    FontSize="14"
                                    HorizontalOptions="End"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    
+                            <!-- Diagnostic button -->
+                            <Button Text="⚙️ Diagnostic Stats" 
+                                    Command="{Binding ShowDiagnosticsCommand}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}"
+                                    FontSize="12"
+                                    Padding="8,2"
+                                    HorizontalOptions="End"
+                                    Margin="0,8,0,0"/>
                         </VerticalStackLayout>
                     </Grid>
 
@@ -300,7 +317,8 @@
                                       ItemSizingStrategy="MeasureFirstItem"
                                       ItemsUpdatingScrollMode="KeepLastItemInView"
                                       RemainingItemsThreshold="5"
-                                      RemainingItemsThresholdReachedCommand="{Binding LoadMoreDatesCommand}">
+                                      RemainingItemsThresholdReachedCommand="{Binding LoadMoreDatesCommand}"
+                                      ItemsLayout="{StaticResource HorizontalLinearLayout}">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid x:Name="rootContainer" WidthRequest="55" HeightRequest="55" Padding="0" Margin="3,0">
@@ -405,9 +423,6 @@
                                     </Grid>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
-                            <CollectionView.ItemsLayout>
-                                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="5"/>
-                            </CollectionView.ItemsLayout>
                         </CollectionView>
                     </ScrollView>
                 </VerticalStackLayout>
@@ -467,39 +482,26 @@
         </Grid>
 
         <!-- Scrollable Content -->
-        <ScrollView Grid.Row="1" 
-                   HorizontalScrollBarVisibility="Never"
-                   VerticalScrollBarVisibility="Never"
-                   BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
-            <CollectionView ItemsSource="{Binding SortedEvents}"
-                          ItemTemplate="{StaticResource EventTemplate}"
-                          Margin="16,8,16,16">
-                <CollectionView.EmptyView>
-                    <Frame BackgroundColor="Transparent"
-                           CornerRadius="10"
-                           Padding="0"
-                           HasShadow="False"
-                           BorderColor="Transparent">
-                        <StackLayout VerticalOptions="CenterAndExpand" 
-                                   HorizontalOptions="CenterAndExpand" 
-                                   Padding="20">
-                            <Image Source="empty_calendar.png"
-                                   WidthRequest="60"
-                                   HeightRequest="60"
-                                   Opacity="0.6"
-                                   IsVisible="false" />
-                            <Label Text="No events scheduled for this day" 
-                                   HorizontalTextAlignment="Center"
-                                   FontSize="16"
-                                   Margin="0,20,0,0"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                        </StackLayout>
-                    </Frame>
-                </CollectionView.EmptyView>
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
-                </CollectionView.ItemsLayout>
-            </CollectionView>
+        <ScrollView x:Name="EventsScrollView"
+                  Grid.Row="1"
+                  IsVisible="{Binding IsContentVisible}"
+                  HorizontalScrollBarVisibility="Never"
+                  VerticalScrollBarVisibility="Never"
+                  BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
+            <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                       Command="{Binding RefreshCommand}">
+                <CollectionView ItemsSource="{Binding SortedEvents}"
+                              SelectionMode="None"
+                              ItemsUpdatingScrollMode="KeepLastItemInView"
+                              ItemTemplate="{StaticResource EventTemplate}"
+                              EmptyView="{StaticResource EmptyViewTemplate}"
+                              ItemSizingStrategy="MeasureFirstItem"
+                              Margin="16,8,16,16">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
+                    </CollectionView.ItemsLayout>
+                </CollectionView>
+            </RefreshView>
         </ScrollView>
     </Grid>
 </ContentPage> 

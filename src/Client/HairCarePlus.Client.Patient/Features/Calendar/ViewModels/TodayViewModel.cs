@@ -11,6 +11,8 @@ using Microsoft.Maui.Controls;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Text;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -42,6 +44,39 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private string _loadingStatus;
         private const int MaxRetryAttempts = 3;
         private const int BatchSize = 10;
+        private const int RefreshTimeoutMilliseconds = 30000; // 30 seconds timeout
+        // Предопределенные интервалы для retry (в миллисекундах): 1s, 2s, 4s
+        private static readonly int[] RetryDelays = { 1000, 2000, 4000 };
+        private SemaphoreSlim _refreshSemaphore = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource _refreshCancellationTokenSource;
+
+        private bool _isRefreshing;
+        private const string SelectedDateKey = "LastSelectedDate";
+        
+        private DateTime _lastRefreshTime = DateTime.MinValue;
+        private readonly TimeSpan _throttleInterval = TimeSpan.FromMilliseconds(300); // Минимальный интервал между запросами
+        private readonly Dictionary<DateTime, DateTimeOffset> _lastCacheUpdateTimes = new Dictionary<DateTime, DateTimeOffset>();
+        private readonly object _cacheUpdateLock = new object();
+        
+        // Диагностические счетчики для тестирования эффективности
+        private static int _totalRequests = 0;
+        private static int _cacheHits = 0;
+        private static int _cacheMisses = 0;
+        private static int _throttledRequests = 0;
+        private static int _concurrentRejections = 0;
+        
+        // Диагностические счетчики для дополнительных метрик
+        private int _eventCountsRequests = 0;
+        private int _eventCountsCacheHits = 0;
+        private int _eventCountsBatchRequests = 0;
+        
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set => SetProperty(ref _isRefreshing, value);
+        }
+
+        public ICommand RefreshCommand { get; private set; }
 
         public enum LoadingState
         {
@@ -64,12 +99,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     OnPropertyChanged(nameof(CurrentLoadingState));
                     OnPropertyChanged(nameof(IsLoading));
                     OnPropertyChanged(nameof(HasError));
+                    OnPropertyChanged(nameof(IsContentVisible));
                 }
             }
         }
 
         public bool IsLoading => CurrentLoadingState == LoadingState.Loading;
         public bool HasError => CurrentLoadingState == LoadingState.Error;
+        public bool IsContentVisible => CurrentLoadingState != LoadingState.Loading && CurrentLoadingState != LoadingState.Error;
 
         public int LoadingProgress
         {
@@ -97,9 +134,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        // Keys for local storage
-        private const string SelectedDateKey = "LastSelectedDate";
-        
         public TodayViewModel(ICalendarService calendarService, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
@@ -121,6 +155,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             Title = "Today";
             
             // Initialize commands
+            RefreshCommand = new Command(async () => await RefreshDataAsync());
             ToggleEventCompletionCommand = new Command<CalendarEvent>(async (calendarEvent) => await ToggleEventCompletionAsync(calendarEvent));
             SelectDateCommand = new Command<DateTime>(async (date) => await SelectDateAsync(date));
             OpenMonthCalendarCommand = new Command<DateTime>(async (date) => await OpenMonthCalendarAsync(date));
@@ -128,6 +163,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             PostponeEventCommand = new Command<CalendarEvent>(async (calendarEvent) => await PostponeEventAsync(calendarEvent));
             ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
+            ShowDiagnosticsCommand = new Command(async () => await ShowDiagnosticsAsync());
             
             // Initial data loading
             LoadCalendarDays();
@@ -136,6 +172,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await LoadTodayEventsAsync();
                 await LoadEventCountsForVisibleDaysAsync();
                 await CheckOverdueEventsAsync();
+                
+                // Запись в лог начальной диагностики
+                _logger.LogInformation("Initial diagnostics: Cache size: {CacheSize}, Hits: {CacheHits}, Misses: {CacheMisses}", 
+                    _eventCache.Count, _cacheHits, _cacheMisses);
             });
         }
         
@@ -404,36 +444,82 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private async Task<List<CalendarEvent>> LoadEventsWithRetryAsync(DateTime date, CancellationToken cancellationToken)
         {
-            int retryCount = 0;
-            while (retryCount < MaxRetryAttempts)
+            List<CalendarEvent> events = null;
+            Exception lastException = null;
+            bool success = false;
+            
+            _logger.LogDebug("Starting LoadEventsWithRetryAsync for {Date}", date.ToShortDateString());
+            
+            for (int retryCount = 0; retryCount < MaxRetryAttempts; retryCount++)
             {
                 try
                 {
-                    var events = await _calendarService.GetEventsForDateAsync(date);
+                    // Проверяем отмену перед каждой попыткой
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogInformation("LoadEventsWithRetryAsync cancelled before attempt {RetryCount}", retryCount);
+                        throw new OperationCanceledException(cancellationToken);
+                    }
+                    
+                    // Если это не первая попытка, добавляем задержку
                     if (retryCount > 0)
                     {
-                        _logger.LogInformation("Successfully loaded events for {Date} after {RetryCount} retries", date.ToShortDateString(), retryCount);
+                        _logger.LogInformation("Retry {RetryCount}/{MaxRetries} for {Date} after delay of {Delay}ms", 
+                            retryCount, MaxRetryAttempts, date.ToShortDateString(), RetryDelays[retryCount - 1]);
+                        await Task.Delay(RetryDelays[retryCount - 1], cancellationToken);
                     }
-                    return events?.ToList() ?? new List<CalendarEvent>();
+                    
+                    // Выполняем попытку загрузки
+                    events = (await _calendarService.GetEventsForDateAsync(date)).ToList();
+                    
+                    // Если дошли сюда - загрузка успешна
+                    success = true;
+                    
+                    if (retryCount > 0)
+                    {
+                        _logger.LogInformation("Successfully loaded {Count} events for {Date} after {RetryCount} retries", 
+                            events.Count, date.ToShortDateString(), retryCount);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Successfully loaded {Count} events for {Date} on first attempt", 
+                            events.Count, date.ToShortDateString());
+                    }
+                    
+                    // Выходим из цикла при успешной загрузке
+                    break;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("LoadEventsWithRetryAsync was cancelled during attempt {RetryCount}", retryCount);
+                    throw; // Пробрасываем исключение отмены
                 }
                 catch (Exception ex)
                 {
-                    retryCount++;
-                    _logger.LogWarning(ex, "Error loading events for {Date}. Retry {RetryCount}/{MaxRetries}", date.ToShortDateString(), retryCount, MaxRetryAttempts);
+                    lastException = ex;
                     
-                    if (retryCount >= MaxRetryAttempts)
+                    if (retryCount == MaxRetryAttempts - 1)
                     {
-                        _logger.LogError(ex, "Failed to load events for {Date} after {MaxRetries} retries", date.ToShortDateString(), MaxRetryAttempts);
-                        throw;
+                        // Это была последняя попытка
+                        _logger.LogError(ex, "Final retry {RetryCount}/{MaxRetries} failed for {Date}", 
+                            retryCount, MaxRetryAttempts, date.ToShortDateString());
                     }
-
-                    // Exponential backoff
-                    var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount));
-                    await Task.Delay(delay, cancellationToken);
+                    else
+                    {
+                        _logger.LogWarning(ex, "Retry {RetryCount}/{MaxRetries} failed for {Date}", 
+                            retryCount, MaxRetryAttempts, date.ToShortDateString());
+                    }
                 }
             }
-
-            return new List<CalendarEvent>();
+            
+            // Если все попытки завершились неудачей, выбрасываем последнее исключение
+            if (!success && lastException != null)
+            {
+                _logger.LogError(lastException, "All retries failed for {Date}", date.ToShortDateString());
+                throw lastException;
+            }
+            
+            return events ?? new List<CalendarEvent>();
         }
         
         private void UpdateEventCountsForDate(DateTime date, List<CalendarEvent> events)
@@ -469,40 +555,224 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public async Task LoadTodayEventsAsync()
         {
+            // Защита от слишком частых запросов (throttling)
+            var now = DateTime.UtcNow;
+            if ((now - _lastRefreshTime) < _throttleInterval)
+            {
+                _throttledRequests++;
+                _logger.LogDebug("Request throttled. Last refresh was {ElapsedTime}ms ago. Total throttled: {ThrottledRequests}", 
+                    (now - _lastRefreshTime).TotalMilliseconds, _throttledRequests);
+                return;
+            }
+            
+            // Проверка, активен ли уже другой запрос
+            if (!await _refreshSemaphore.WaitAsync(0))
+            {
+                _concurrentRejections++;
+                _logger.LogInformation("Refresh operation already in progress. Total rejections: {ConcurrentRejections}", _concurrentRejections);
+                return;
+            }
+            
             try
             {
-                _logger.LogInformation($"Loading events for date: {SelectedDate:yyyy-MM-dd}");
+                _totalRequests++;
+                _lastRefreshTime = now;
+                _logger.LogDebug("Starting LoadTodayEventsAsync request #{TotalRequests}", _totalRequests);
                 
-                // Load events for the selected date
-                var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
+                // Отмена предыдущих операций
+                _refreshCancellationTokenSource?.Cancel();
+                _refreshCancellationTokenSource?.Dispose();
+                _refreshCancellationTokenSource = new CancellationTokenSource(RefreshTimeoutMilliseconds);
+                var cancellationToken = _refreshCancellationTokenSource.Token;
                 
-                // Update UI on the main thread
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
+                // Проверка кэша перед загрузкой
+                DateTime selectedDateKey = SelectedDate.Date;
+                if (_eventCache.TryGetValue(selectedDateKey, out var cachedEvents) && 
+                    _lastCacheUpdateTimes.TryGetValue(selectedDateKey, out var lastUpdateTime))
                 {
-                    FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
-                    SortedEvents = new ObservableCollection<CalendarEvent>(
-                        (events ?? new List<CalendarEvent>())
-                        .OrderBy(e => e.Date.TimeOfDay)
-                        .ToList());
-                    UpdateCompletionProgress();
-                    OnPropertyChanged(nameof(FlattenedEvents));
-                    OnPropertyChanged(nameof(SortedEvents));
-                });
+                    // Если кэш обновлялся недавно (менее 1 минуты назад), используем его
+                    if ((DateTimeOffset.Now - lastUpdateTime) <= TimeSpan.FromMinutes(1))
+                    {
+                        _cacheHits++;
+                        _logger.LogInformation("Using cached data for {Date}, cached {TimeAgo} seconds ago. Cache hits: {CacheHits}/{TotalRequests} ({HitPercentage}%)", 
+                            selectedDateKey.ToShortDateString(), 
+                            (DateTimeOffset.Now - lastUpdateTime).TotalSeconds,
+                            _cacheHits, _totalRequests,
+                            (int)((_cacheHits / (float)_totalRequests) * 100));
+                        
+                        await UpdateUIWithEvents(cachedEvents, cancellationToken);
+                        return;
+                    }
+                    
+                    // Если кэш существует, но устарел, обновляем UI сразу кэшированными данными,
+                    // а затем запускаем фоновое обновление
+                    await UpdateUIWithEvents(cachedEvents, cancellationToken);
+                    _logger.LogInformation("Using stale cache while refreshing for {Date}", selectedDateKey.ToShortDateString());
+                }
+                else
+                {
+                    _cacheMisses++;
+                    _logger.LogInformation("Cache miss for {Date}. Total misses: {CacheMisses}/{TotalRequests} ({MissPercentage}%)", 
+                        selectedDateKey.ToShortDateString(),
+                        _cacheMisses, _totalRequests,
+                        (int)((_cacheMisses / (float)_totalRequests) * 100));
+                }
                 
-                // Log loaded events
-                _logger.LogInformation($"Loaded {events?.Count() ?? 0} events for {SelectedDate:yyyy-MM-dd}");
+                List<CalendarEvent> events = null;
+                for (int retryCount = 0; retryCount <= MaxRetryAttempts; retryCount++)
+                {
+                    try
+                    {
+                        if (retryCount > 0)
+                        {
+                            _logger.LogInformation("Retrying load events for {Date} (Attempt {RetryCount}/{MaxRetries})", 
+                                selectedDateKey.ToShortDateString(), retryCount, MaxRetryAttempts);
+                        }
+                        else 
+                        {
+                            _logger.LogInformation("Loading events for {Date}", selectedDateKey.ToShortDateString());
+                        }
+                        
+                        // Загрузка событий для выбранной даты
+                        events = (await _calendarService.GetEventsForDateAsync(selectedDateKey)).ToList();
+                        
+                        // Проверка отмены
+                        cancellationToken.ThrowIfCancellationRequested();
+                        break; // Выход из цикла при успешной загрузке
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        _logger.LogWarning("Refresh operation cancelled");
+                        return; // Выходим без ошибки, операция просто отменена
+                    }
+                    catch (Exception ex) when (retryCount < MaxRetryAttempts)
+                    {
+                        _logger.LogWarning(ex, "Error loading events (Attempt {RetryCount}/{MaxRetries})", 
+                            retryCount + 1, MaxRetryAttempts + 1);
+                        
+                        await Task.Delay(RetryDelays[retryCount], cancellationToken);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to load events after all retry attempts");
+                        
+                        // Если есть кэшированные данные, используем их даже устаревшие, чтобы не показывать пустой экран
+                        if (_eventCache.TryGetValue(selectedDateKey, out cachedEvents))
+                        {
+                            _logger.LogInformation("Using stale cache after error for {Date}", selectedDateKey.ToShortDateString());
+                            await UpdateUIWithEvents(cachedEvents, cancellationToken);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("No cached data available for {Date} after error", selectedDateKey.ToShortDateString());
+                            // Обновляем UI с пустым списком событий
+                            await UpdateUIWithEvents(new List<CalendarEvent>(), cancellationToken);
+                        }
+                        
+                        // Показываем сообщение об ошибке только если нет кэша
+                        if (cachedEvents == null || !cachedEvents.Any())
+                        {
+                            await Application.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                            {
+                                await Application.Current.MainPage.DisplayAlert(
+                                    "Error",
+                                    "Failed to refresh events. Using cached data if available.",
+                                    "OK"
+                                );
+                            });
+                        }
+                        
+                        return;
+                    }
+                }
+                
+                // Если успешно загрузили данные, обновляем кэш и UI
+                if (events != null)
+                {
+                    // Обновление кэша атомарно
+                    lock (_cacheUpdateLock)
+                    {
+                        _eventCache[selectedDateKey] = events.ToList();
+                        _lastCacheUpdateTimes[selectedDateKey] = DateTimeOffset.Now;
+                    }
+                    
+                    await UpdateUIWithEvents(events, cancellationToken);
+                    _logger.LogInformation("Successfully loaded and cached {Count} events for {Date}", 
+                        events.Count(), selectedDateKey.ToShortDateString());
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error loading events for date {SelectedDate:yyyy-MM-dd}");
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
+                _logger.LogError(ex, "Unhandled error in LoadTodayEventsAsync");
+            }
+            finally
+            {
+                IsRefreshing = false;
+                
+                // Очищаем старые записи из кэша (старше 24 часов)
+                CleanupCacheEntries();
+                
+                // Освобождаем семафор
+                _refreshSemaphore.Release();
+            }
+        }
+        
+        // Вспомогательный метод для обновления UI с событиями
+        private async Task UpdateUIWithEvents(IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested) return;
+            
+            await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
+            {
+                var eventsList = events?.ToList() ?? new List<CalendarEvent>();
+                FlattenedEvents = new ObservableCollection<CalendarEvent>(eventsList);
+                SortedEvents = new ObservableCollection<CalendarEvent>(
+                    eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
+                    
+                UpdateCompletionProgress();
+                OnPropertyChanged(nameof(FlattenedEvents));
+                OnPropertyChanged(nameof(SortedEvents));
+            });
+        }
+        
+        // Метод для очистки устаревших записей в кэше
+        private void CleanupCacheEntries()
+        {
+            try
+            {
+                var now = DateTimeOffset.Now;
+                var keysToRemove = new List<DateTime>();
+                
+                lock (_cacheUpdateLock)
                 {
-                    FlattenedEvents = new ObservableCollection<CalendarEvent>();
-                    SortedEvents = new ObservableCollection<CalendarEvent>();
-                    UpdateCompletionProgress();
-                    OnPropertyChanged(nameof(FlattenedEvents));
-                    OnPropertyChanged(nameof(SortedEvents));
-                });
+                    // Удаляем записи старше 24 часов или если кэш слишком большой
+                    foreach (var entry in _lastCacheUpdateTimes)
+                    {
+                        if ((now - entry.Value) > TimeSpan.FromHours(24) || 
+                            entry.Key < DateTime.Today.AddDays(-30) || // старше 30 дней
+                            _lastCacheUpdateTimes.Count > 100) // ограничение количества записей
+                        {
+                            keysToRemove.Add(entry.Key);
+                        }
+                    }
+                    
+                    foreach (var key in keysToRemove)
+                    {
+                        _eventCache.Remove(key);
+                        _lastCacheUpdateTimes.Remove(key);
+                        _logger.LogDebug("Removed stale cache entry for {Date}", key.ToShortDateString());
+                    }
+                }
+                
+                if (keysToRemove.Count > 0)
+                {
+                    _logger.LogInformation("Cleaned up {Count} stale cache entries", keysToRemove.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error during cache cleanup");
             }
         }
         
@@ -539,36 +809,239 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public async Task LoadEventCountsForVisibleDaysAsync()
         {
             if (CalendarDays == null || !CalendarDays.Any())
-                return;
-
-            var startDate = CalendarDays.First();
-            var endDate = CalendarDays.Last();
-            
-            var allEvents = await _calendarService.GetEventsForDateRangeAsync(startDate, endDate);
-            var result = new Dictionary<DateTime, Dictionary<EventType, int>>();
-            
-            // Initialize dictionary for all days
-            foreach (var day in CalendarDays)
             {
-                result[day.Date] = new Dictionary<EventType, int>
+                _logger.LogWarning("LoadEventCountsForVisibleDaysAsync called with empty CalendarDays");
+                return;
+            }
+
+            try
+            {
+                _eventCountsRequests++;
+                _logger.LogInformation("LoadEventCountsForVisibleDaysAsync started (request #{Count}). Range: {StartDate} to {EndDate}", 
+                    _eventCountsRequests, 
+                    CalendarDays.First().ToShortDateString(), 
+                    CalendarDays.Last().ToShortDateString());
+                
+                // Создаем CancellationTokenSource с таймаутом
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var cancellationToken = cts.Token;
+                
+                // Подготовка результирующего словаря для всего диапазона дат
+                var result = new Dictionary<DateTime, Dictionary<EventType, int>>();
+                
+                // Инициализируем словарь для всех дней с нулевыми счетчиками
+                foreach (var day in CalendarDays)
                 {
-                    { EventType.MedicationTreatment, 0 },
-                    { EventType.Photo, 0 },
-                    { EventType.CriticalWarning, 0 },
-                    { EventType.VideoInstruction, 0 },
-                    { EventType.MedicalVisit, 0 },
-                    { EventType.GeneralRecommendation, 0 }
-                };
+                    result[day.Date] = new Dictionary<EventType, int>
+                    {
+                        { EventType.MedicationTreatment, 0 },
+                        { EventType.Photo, 0 },
+                        { EventType.CriticalWarning, 0 },
+                        { EventType.VideoInstruction, 0 },
+                        { EventType.MedicalVisit, 0 },
+                        { EventType.GeneralRecommendation, 0 }
+                    };
+                }
+                
+                // 1. Разделяем даты на "кэшированные" и "требующие загрузки"
+                var cachedDates = new List<DateTime>();
+                var datesToLoad = new List<DateTime>();
+                
+                foreach (var day in CalendarDays)
+                {
+                    var date = day.Date;
+                    if (_eventCache.ContainsKey(date) && 
+                        _lastCacheUpdateTimes.TryGetValue(date, out var lastUpdate) && 
+                        (DateTimeOffset.Now - lastUpdate) <= TimeSpan.FromMinutes(10))
+                    {
+                        // Дата уже есть в кэше и обновлялась недавно
+                        cachedDates.Add(date);
+                    }
+                    else
+                    {
+                        // Дата отсутствует в кэше или устарела
+                        datesToLoad.Add(date);
+                    }
+                }
+                
+                _logger.LogInformation("Dates analysis: {CachedCount} cached, {ToLoadCount} to load", 
+                    cachedDates.Count, datesToLoad.Count);
+                
+                // 2. Обрабатываем кэшированные даты (если они есть)
+                if (cachedDates.Any())
+                {
+                    _eventCountsCacheHits++;
+                    _logger.LogInformation("Using cached data for {Count} dates. Cache hit rate: {Rate}%", 
+                        cachedDates.Count, 
+                        (int)((_eventCountsCacheHits / (float)_eventCountsRequests) * 100));
+                    
+                    foreach (var date in cachedDates)
+                    {
+                        if (_eventCache.TryGetValue(date, out var events))
+                        {
+                            UpdateEventCounts(result, events);
+                        }
+                    }
+                }
+                
+                // 3. Группируем даты, требующие загрузки, в смежные диапазоны
+                if (datesToLoad.Any())
+                {
+                    var dateRanges = GroupDatesIntoRanges(datesToLoad);
+                    _logger.LogInformation("Grouped {DatesToLoad} dates into {RangeCount} request ranges", 
+                        datesToLoad.Count, dateRanges.Count);
+                    
+                    _eventCountsBatchRequests += dateRanges.Count;
+                    
+                    // 4. Загружаем данные для каждого диапазона дат
+                    foreach (var range in dateRanges)
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Loading events for date range: {StartDate} to {EndDate}", 
+                                range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
+                            
+                            // Загружаем данные для диапазона дат
+                            var rangeEvents = await _calendarService.GetEventsForDateRangeAsync(range.startDate, range.endDate);
+                            
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                _logger.LogWarning("Loading events was cancelled");
+                                break;
+                            }
+                            
+                            // Обновляем результаты для этого диапазона
+                            UpdateEventCounts(result, rangeEvents);
+                            
+                            // Обновляем кэш для каждой даты в диапазоне
+                            UpdateCacheForDateRange(range.startDate, range.endDate, rangeEvents);
+                            
+                            _logger.LogInformation("Successfully loaded {Count} events for range {StartDate} to {EndDate}",
+                                rangeEvents.Count(), range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error loading events for date range {StartDate} to {EndDate}", 
+                                range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
+                            
+                            // Продолжаем с другими диапазонами, но не прерываем выполнение метода
+                        }
+                    }
+                }
+                
+                // 5. Обновляем общий результат
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                {
+                    EventCountsByDate = result;
+                    OnPropertyChanged(nameof(EventCountsByDate));
+                });
+                
+                _logger.LogInformation("LoadEventCountsForVisibleDaysAsync completed. Processed {DateCount} dates", 
+                    result.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in LoadEventCountsForVisibleDaysAsync");
+                
+                // Возвращаем частичный результат, если он есть
+                if (EventCountsByDate == null || !EventCountsByDate.Any())
+                {
+                    // Если у нас совсем нет данных, создаем пустой результат
+                    var emptyResult = new Dictionary<DateTime, Dictionary<EventType, int>>();
+                    
+                    foreach (var day in CalendarDays)
+                    {
+                        emptyResult[day.Date] = new Dictionary<EventType, int>
+                        {
+                            { EventType.MedicationTreatment, 0 },
+                            { EventType.Photo, 0 },
+                            { EventType.CriticalWarning, 0 },
+                            { EventType.VideoInstruction, 0 },
+                            { EventType.MedicalVisit, 0 },
+                            { EventType.GeneralRecommendation, 0 }
+                        };
+                    }
+                    
+                    EventCountsByDate = emptyResult;
+                    OnPropertyChanged(nameof(EventCountsByDate));
+                }
+            }
+        }
+        
+        // Вспомогательный метод для группировки дат в смежные диапазоны
+        private List<(DateTime startDate, DateTime endDate)> GroupDatesIntoRanges(List<DateTime> dates)
+        {
+            if (dates == null || !dates.Any())
+                return new List<(DateTime, DateTime)>();
+                
+            var sortedDates = dates.OrderBy(d => d).ToList();
+            var result = new List<(DateTime startDate, DateTime endDate)>();
+            
+            DateTime rangeStart = sortedDates[0];
+            DateTime rangeEnd = rangeStart;
+            
+            for (int i = 1; i < sortedDates.Count; i++)
+            {
+                var currentDate = sortedDates[i];
+                
+                // Если текущая дата следует сразу за предыдущей, расширяем диапазон
+                if ((currentDate - rangeEnd).TotalDays <= 1)
+                {
+                    rangeEnd = currentDate;
+                }
+                else
+                {
+                    // Иначе закрываем текущий диапазон и начинаем новый
+                    result.Add((rangeStart, rangeEnd));
+                    rangeStart = currentDate;
+                    rangeEnd = currentDate;
+                }
             }
             
-            // Count events for each day and type
-            foreach (var evt in allEvents)
+            // Добавляем последний диапазон
+            result.Add((rangeStart, rangeEnd));
+            
+            return result;
+        }
+        
+        // Вспомогательный метод для обновления кэша для диапазона дат
+        private void UpdateCacheForDateRange(DateTime startDate, DateTime endDate, IEnumerable<CalendarEvent> events)
+        {
+            // Группируем события по датам
+            var eventsByDate = events.GroupBy(e => e.Date.Date)
+                                     .ToDictionary(g => g.Key, g => g.ToList());
+            
+            // Определяем все даты в диапазоне
+            var currentDate = startDate.Date;
+            while (currentDate <= endDate.Date)
             {
-                if (evt.IsMultiDay)
+                var dateEvents = eventsByDate.ContainsKey(currentDate)
+                    ? eventsByDate[currentDate]
+                    : new List<CalendarEvent>();
+                
+                // Обновляем кэш для этой даты
+                lock (_cacheUpdateLock)
                 {
-                    // Handle multi-day events
+                    _eventCache[currentDate] = dateEvents;
+                    _lastCacheUpdateTimes[currentDate] = DateTimeOffset.Now;
+                }
+                
+                currentDate = currentDate.AddDays(1);
+            }
+        }
+        
+        // Вспомогательный метод для обновления счетчиков событий
+        private void UpdateEventCounts(Dictionary<DateTime, Dictionary<EventType, int>> result, IEnumerable<CalendarEvent> events)
+        {
+            foreach (var evt in events)
+            {
+                if (evt.IsMultiDay && evt.EndDate.HasValue)
+                {
+                    // Обрабатываем многодневные события
                     var currentDate = evt.Date.Date;
-                    while (currentDate <= evt.EndDate.Value.Date)
+                    var endDate = evt.EndDate.Value.Date;
+                    
+                    while (currentDate <= endDate)
                     {
                         if (result.ContainsKey(currentDate))
                         {
@@ -579,16 +1052,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 }
                 else
                 {
-                    // Handle single-day events
-                    if (result.ContainsKey(evt.Date.Date))
+                    // Обрабатываем однодневные события
+                    var eventDate = evt.Date.Date;
+                    if (result.ContainsKey(eventDate))
                     {
-                        result[evt.Date.Date][evt.EventType]++;
+                        result[eventDate][evt.EventType]++;
                     }
                 }
             }
-            
-            EventCountsByDate = result;
-            OnPropertyChanged(nameof(EventCountsByDate));
         }
         
         public async Task CheckOverdueEventsAsync()
@@ -642,41 +1113,110 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             if (calendarEvent != null)
             {
-                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
-                
-                // Перезагружаем события для обновления и правильной сортировки
-                await LoadTodayEventsAsync();
-                
-                // Обновляем прогресс выполнения
-                UpdateCompletionProgress();
-                
-                // Обновляем счетчик просроченных событий, если событие было просроченным
-                if (calendarEvent.Date.Date < DateTime.Today)
+                try
                 {
-                    await CheckOverdueEventsAsync();
+                    // Сохраняем оригинальное состояние для отката в случае ошибки
+                    bool originalState = calendarEvent.IsCompleted;
+                    
+                    // Оптимистично меняем состояние сразу для быстрой реакции UI
+                    calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                    
+                    // Рассчитываем прогресс локально без перезагрузки всех данных
+                    UpdateCompletionProgress();
+                    
+                    // Обновляем только измененное событие, а не перезагружаем все
+                    try
+                    {
+                        await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
+                        
+                        // Обновляем кэш, а не загружаем все заново
+                        if (_eventCache.TryGetValue(SelectedDate.Date, out var cachedEvents))
+                        {
+                            // Обновляем кэш атомарно
+                            lock (_cacheUpdateLock)
+                            {
+                                // Находим и обновляем событие в кэше
+                                var eventToUpdate = cachedEvents.FirstOrDefault(e => e.Id == calendarEvent.Id);
+                                if (eventToUpdate != null)
+                                {
+                                    eventToUpdate.IsCompleted = calendarEvent.IsCompleted;
+                                    _lastCacheUpdateTimes[SelectedDate.Date] = DateTimeOffset.Now;
+                                }
+                            }
+                        }
+                        
+                        // Обновляем счетчик просроченных событий, если событие было просроченным
+                        if (calendarEvent.Date.Date < DateTime.Today)
+                        {
+                            await CheckOverdueEventsAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Откатываем изменение при ошибке
+                        _logger.LogError(ex, "Error toggling event completion");
+                        calendarEvent.IsCompleted = originalState;
+                        UpdateCompletionProgress();
+                        
+                        await Application.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                        {
+                            await Application.Current.MainPage.DisplayAlert(
+                                "Error",
+                                "Failed to update event status. Please try again.",
+                                "OK"
+                            );
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unexpected error in ToggleEventCompletionAsync");
                 }
             }
         }
         
         private async Task SelectDateAsync(DateTime date)
         {
+            if (date.Date == SelectedDate.Date)
+            {
+                _logger.LogDebug("SelectDateAsync: Same date selected, ignoring");
+                return;
+            }
+            
             Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
             Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
             
-            if (SelectedDate.Date != date.Date)
+            // Сохраняем старую дату для возможного отката
+            var previousDate = SelectedDate;
+            
+            try
             {
+                // Обновляем дату (это вызовет изменение UI)
                 SelectedDate = date;
-                // Явно вызываем уведомление об изменении, чтобы UI обновился
                 OnPropertyChanged(nameof(SelectedDate));
+                OnPropertyChanged(nameof(FormattedSelectedDate));
+                
+                // Сохраняем выбранную дату в настройках
+                SaveSelectedDate(date);
                 
                 Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
-                Debug.WriteLine($"Loading events for date: {date.ToShortDateString()}");
                 
-                // Reload events for the selected date
+                // Загружаем события для выбранной даты
                 await LoadTodayEventsAsync();
                 
                 Debug.WriteLine($"Events loaded: {FlattenedEvents?.Count ?? 0} events found");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error selecting date {Date}", date.ToShortDateString());
+                
+                // Возвращаем предыдущую дату в случае ошибки
+                if (previousDate != date)
+                {
+                    SelectedDate = previousDate;
+                    OnPropertyChanged(nameof(SelectedDate));
+                    OnPropertyChanged(nameof(FormattedSelectedDate));
+                }
             }
         }
         
@@ -760,6 +1300,106 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
             
             return null;
+        }
+
+        private async Task RefreshDataAsync()
+        {
+            if (IsRefreshing)
+                return;
+
+            try
+            {
+                IsRefreshing = true;
+                await LoadTodayEventsAsync();
+                await LoadEventCountsForVisibleDaysAsync();
+                await CheckOverdueEventsAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing data");
+                CurrentLoadingState = LoadingState.Error;
+                LoadingStatus = "Error refreshing data. Please try again.";
+            }
+            finally
+            {
+                IsRefreshing = false;
+            }
+        }
+
+        // Метод для получения диагностической информации
+        public string GetDiagnosticStats()
+        {
+            // Статистика для LoadTodayEventsAsync
+            var cacheSize = _eventCache.Count;
+            var cacheHitRate = _totalRequests > 0 ? (double)_cacheHits / _totalRequests * 100 : 0;
+            var efficiency = _totalRequests > 0 
+                ? (double)(_cacheHits + _throttledRequests + _concurrentRejections) / _totalRequests * 100 
+                : 0;
+            var savedRequests = _cacheHits + _throttledRequests + _concurrentRejections;
+            
+            // Статистика для LoadEventCountsForVisibleDaysAsync
+            var countsBatchEfficiency = _eventCountsRequests > 0 
+                ? (1 - (double)_eventCountsBatchRequests / (CalendarDays?.Count ?? 1)) * 100 
+                : 0;
+            var countsHitRate = _eventCountsRequests > 0
+                ? (double)_eventCountsCacheHits / _eventCountsRequests * 100
+                : 0;
+            var countsSavedRequests = (CalendarDays?.Count ?? 0) - _eventCountsBatchRequests;
+            
+            // Общая статистика кэширования
+            var totalCacheHits = _cacheHits + _eventCountsCacheHits;
+            var totalRequests = _totalRequests + _eventCountsRequests;
+            var totalSavedRequests = savedRequests + countsSavedRequests;
+            var overallEfficiency = totalRequests > 0
+                ? (double)totalSavedRequests / (totalRequests + totalSavedRequests) * 100
+                : 0;
+                
+            StringBuilder stats = new StringBuilder();
+            
+            // Заголовок
+            stats.AppendLine("📊 ДИАГНОСТИКА КЭШИРОВАНИЯ И СИНХРОНИЗАЦИИ 📊");
+            stats.AppendLine("===============================================");
+            
+            // Раздел 1: Общая статистика кэша
+            stats.AppendLine("📦 ОБЩАЯ СТАТИСТИКА КЭША:");
+            stats.AppendLine($"• Размер кэша: {cacheSize} записей");
+            stats.AppendLine($"• Общая эффективность: {overallEfficiency:F1}%");
+            stats.AppendLine($"• Всего предотвращено запросов: {totalSavedRequests}");
+            stats.AppendLine($"• Данные в кэше: {_eventCache.Count} дат");
+            stats.AppendLine();
+            
+            // Раздел 2: Статистика LoadTodayEventsAsync
+            stats.AppendLine("📅 СТАТИСТИКА ЗАГРУЗКИ СОБЫТИЙ ДНЯ:");
+            stats.AppendLine($"• Всего запросов: {_totalRequests}");
+            stats.AppendLine($"• Использовано кэша: {_cacheHits} ({cacheHitRate:F1}%)");
+            stats.AppendLine($"• Отклонено из-за throttling: {_throttledRequests}");
+            stats.AppendLine($"• Отклонено из-за семафора: {_concurrentRejections}");
+            stats.AppendLine($"• Эффективность: {efficiency:F1}%");
+            stats.AppendLine($"• Предотвращено запросов: {savedRequests}");
+            stats.AppendLine();
+            
+            // Раздел 3: Статистика LoadEventCountsForVisibleDaysAsync
+            if (_eventCountsRequests > 0)
+            {
+                stats.AppendLine("🔢 СТАТИСТИКА ЗАГРУЗКИ СЧЕТЧИКОВ:");
+                stats.AppendLine($"• Всего запросов счетчиков: {_eventCountsRequests}");
+                stats.AppendLine($"• Использовано кэша для дат: {_eventCountsCacheHits} ({countsHitRate:F1}%)");
+                stats.AppendLine($"• Всего батч-запросов: {_eventCountsBatchRequests}");
+                stats.AppendLine($"• Эффективность группировки: {countsBatchEfficiency:F1}%");
+                stats.AppendLine($"• Предотвращено запросов: {countsSavedRequests}");
+            }
+            
+            return stats.ToString();
+        }
+        
+        public ICommand ShowDiagnosticsCommand { get; private set; }
+        
+        private async Task ShowDiagnosticsAsync()
+        {
+            await Application.Current.MainPage.DisplayAlert(
+                "Диагностика синхронизации",
+                GetDiagnosticStats(),
+                "OK");
         }
     }
     

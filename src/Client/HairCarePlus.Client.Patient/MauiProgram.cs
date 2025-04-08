@@ -65,11 +65,11 @@ public static class MauiProgram
 		builder.Services.AddCalendarServices();
 
 		// Register ViewModels
-		builder.Services.AddTransient<TodayViewModel>();
+		builder.Services.AddSingleton<TodayViewModel>();
 		builder.Services.AddTransient<EventDetailViewModel>();
 
 		// Register Pages
-		builder.Services.AddTransient<TodayPage>();
+		builder.Services.AddSingleton<TodayPage>();
 		builder.Services.AddTransient<EventDetailPage>();
 
 #if IOS
