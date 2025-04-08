@@ -9,12 +9,15 @@ using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using Microsoft.Maui.Controls;
 using System.Diagnostics;
+using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
     public class TodayViewModel : BaseViewModel
     {
         private readonly ICalendarService _calendarService;
+        private readonly ILogger<TodayViewModel> _logger;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
@@ -25,21 +28,96 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private int _overdueEventsCount;
         private double _completionProgress;
         private int _completionPercentage;
+        private bool _isLoadingMore;
+        private const int InitialDaysToLoad = 90; // Changed from 38 to 90 days (3 months)
+        private const int DaysToLoadMore = 60; // Changed from 30 to 60 days (2 months)
+        private const int MaxTotalDays = 365; // New constant to prevent memory issues
+        private DateTime _lastLoadedDate;
+
+        // New fields for enhanced functionality
+        private readonly Dictionary<DateTime, List<CalendarEvent>> _eventCache;
+        private readonly TimeSpan _cacheExpiration = TimeSpan.FromHours(1);
+        private CancellationTokenSource? _loadingCancellationSource;
+        private int _loadingProgress;
+        private string _loadingStatus;
+        private const int MaxRetryAttempts = 3;
+        private const int BatchSize = 10;
+
+        public enum LoadingState
+        {
+            NotStarted,
+            Loading,
+            Completed,
+            Error
+        }
+
+        private LoadingState _loadingState;
         
-        // Ключ для хранения выбранной даты в локальном хранилище
+        public LoadingState CurrentLoadingState
+        {
+            get => _loadingState;
+            private set
+            {
+                if (_loadingState != value)
+                {
+                    _loadingState = value;
+                    OnPropertyChanged(nameof(CurrentLoadingState));
+                    OnPropertyChanged(nameof(IsLoading));
+                    OnPropertyChanged(nameof(HasError));
+                }
+            }
+        }
+
+        public bool IsLoading => CurrentLoadingState == LoadingState.Loading;
+        public bool HasError => CurrentLoadingState == LoadingState.Error;
+
+        public int LoadingProgress
+        {
+            get => _loadingProgress;
+            private set
+            {
+                if (_loadingProgress != value)
+                {
+                    _loadingProgress = value;
+                    OnPropertyChanged(nameof(LoadingProgress));
+                }
+            }
+        }
+
+        public string LoadingStatus
+        {
+            get => _loadingStatus;
+            private set
+            {
+                if (_loadingStatus != value)
+                {
+                    _loadingStatus = value;
+                    OnPropertyChanged(nameof(LoadingStatus));
+                }
+            }
+        }
+
+        // Keys for local storage
         private const string SelectedDateKey = "LastSelectedDate";
         
-        public TodayViewModel(ICalendarService calendarService)
+        public TodayViewModel(ICalendarService calendarService, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
+            _logger = logger;
             
-            // Восстанавливаем сохраненную дату или используем сегодняшний день
+            // Restore saved date or use today
             _selectedDate = LoadLastSelectedDate() ?? DateTime.Today;
+            _lastLoadedDate = DateTime.Today.AddDays(30); // Initial last loaded date
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
+            _eventCache = new Dictionary<DateTime, List<CalendarEvent>>();
             _overdueEventsCount = 0;
             _completionProgress = 0;
             _completionPercentage = 0;
+            _isLoadingMore = false;
+            _loadingProgress = 0;
+            _loadingStatus = string.Empty;
+            _loadingState = LoadingState.NotStarted;
             Title = "Today";
             
             // Initialize commands
@@ -49,6 +127,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             ViewEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ViewEventDetailsAsync(calendarEvent));
             PostponeEventCommand = new Command<CalendarEvent>(async (calendarEvent) => await PostponeEventAsync(calendarEvent));
             ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
+            LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
             
             // Initial data loading
             LoadCalendarDays();
@@ -147,105 +226,283 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand ViewEventDetailsCommand { get; }
         public ICommand PostponeEventCommand { get; }
         public ICommand ShowEventDetailsCommand { get; }
+        public ICommand LoadMoreDatesCommand { get; }
         
         private void LoadCalendarDays()
         {
-            // Generate a range of dates centered around the selected date
-            // Include -7 to +30 days to show some past dates as well
-            var startDate = DateTime.Today.AddDays(-7);
-            var days = Enumerable.Range(0, 38)
-                .Select(offset => startDate.AddDays(offset))
-                .ToList();
+            try
+            {
+                _logger.LogInformation("Starting LoadCalendarDays");
                 
-            CalendarDays = new ObservableCollection<DateTime>(days);
+                // Calculate the start date to be 7 days before today
+                var startDate = DateTime.Today.AddDays(-7);
+                _logger.LogInformation($"Start date: {startDate:yyyy-MM-dd}");
+
+                // Generate dates for the initial range
+                var days = new List<DateTime>();
+                for (int i = 0; i < InitialDaysToLoad; i++)
+                {
+                    days.Add(startDate.AddDays(i));
+                }
+                
+                CalendarDays = new ObservableCollection<DateTime>(days);
+                _lastLoadedDate = days.Last();
+                
+                _logger.LogInformation($"Loaded {days.Count} days from {days.First():yyyy-MM-dd} to {days.Last():yyyy-MM-dd}");
+
+                // Calculate days since transplant
+                var transplantDate = DateTime.Today.AddDays(-1);
+                var daysSince = (int)(DateTime.Today - transplantDate).TotalDays;
+                DaysSinceTransplant = $"Day {daysSince} post hair transplant";
+                
+                _logger.LogInformation("LoadCalendarDays completed successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in LoadCalendarDays");
+                // Initialize with empty collection in case of error
+                CalendarDays = new ObservableCollection<DateTime>();
+            }
+        }
+        
+        private async Task LoadMoreDatesAsync()
+        {
+            if (IsLoading) return;
+
+            try
+            {
+                _logger.LogInformation("Starting LoadMoreDatesAsync");
+                
+                // Check if we've reached the maximum allowed days
+                var totalDays = (CalendarDays.Last() - CalendarDays.First()).TotalDays;
+                _logger.LogInformation($"Current total days: {totalDays}");
+                
+                if (totalDays >= MaxTotalDays)
+                {
+                    _logger.LogInformation("Maximum calendar range reached");
+                    LoadingStatus = "Maximum calendar range reached";
+                    return;
+                }
+
+                // Cancel any existing loading operation
+                _loadingCancellationSource?.Cancel();
+                _loadingCancellationSource = new CancellationTokenSource();
+                var cancellationToken = _loadingCancellationSource.Token;
+
+                CurrentLoadingState = LoadingState.Loading;
+                LoadingProgress = 0;
+                LoadingStatus = "Preparing to load more dates...";
+
+                // Calculate new date range
+                var startDate = _lastLoadedDate.AddDays(1);
+                var endDate = startDate.AddDays(DaysToLoadMore - 1);
+                _logger.LogInformation($"Loading dates from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+
+                var totalDaysToLoad = (endDate - startDate).Days + 1;
+                var processedDays = 0;
+
+                // Generate new dates
+                var newDates = new List<DateTime>();
+                for (int i = 0; i < DaysToLoadMore; i++)
+                {
+                    newDates.Add(startDate.AddDays(i));
+                }
+
+                // Process dates in batches
+                for (int i = 0; i < newDates.Count; i += BatchSize)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException();
+                    }
+
+                    var batchDates = newDates.Skip(i).Take(BatchSize).ToList();
+                    LoadingStatus = $"Loading events for {batchDates[0]:MMM dd} - {batchDates[^1]:MMM dd}...";
+
+                    await LoadEventsForBatchAsync(batchDates, cancellationToken);
+
+                    processedDays += batchDates.Count;
+                    LoadingProgress = (int)((double)processedDays / totalDaysToLoad * 100);
+
+                    // Add new dates to collection on the main thread
+                    await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                    {
+                        foreach (var date in batchDates)
+                        {
+                            CalendarDays.Add(date);
+                        }
+                    });
+                }
+
+                // Update last loaded date
+                _lastLoadedDate = endDate;
+                CurrentLoadingState = LoadingState.Completed;
+                LoadingStatus = "Loading completed successfully";
+                _logger.LogInformation($"Successfully loaded {processedDays} new dates");
+
+                // Cleanup old cache entries
+                CleanupCache();
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Loading cancelled");
+                LoadingStatus = "Loading cancelled";
+                CurrentLoadingState = LoadingState.NotStarted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in LoadMoreDatesAsync");
+                LoadingStatus = "Error loading dates. Tap to retry.";
+                CurrentLoadingState = LoadingState.Error;
+            }
+            finally
+            {
+                _loadingCancellationSource?.Dispose();
+                _loadingCancellationSource = null;
+            }
+        }
+        
+        private async Task LoadEventsForBatchAsync(List<DateTime> dates, CancellationToken cancellationToken)
+        {
+            foreach (var date in dates)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException();
+                }
+
+                // Check cache first
+                if (_eventCache.TryGetValue(date, out var cachedEvents))
+                {
+                    var cacheAge = DateTime.Now - date;
+                    if (cacheAge <= _cacheExpiration)
+                    {
+                        // Use cached data
+                        _logger.LogInformation("Cache hit for date {Date}. Events count: {Count}", date.ToShortDateString(), cachedEvents.Count);
+                        UpdateEventCountsForDate(date, cachedEvents);
+                        continue;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Cache expired for date {Date}. Age: {Age}", date.ToShortDateString(), cacheAge);
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("Cache miss for date {Date}", date.ToShortDateString());
+                }
+
+                // Load from service with retry
+                var events = await LoadEventsWithRetryAsync(date, cancellationToken);
+                
+                // Update cache and counts
+                _eventCache[date] = events;
+                _logger.LogInformation("Cached {Count} events for date {Date}", events.Count, date.ToShortDateString());
+                UpdateEventCountsForDate(date, events);
+            }
+        }
+        
+        private async Task<List<CalendarEvent>> LoadEventsWithRetryAsync(DateTime date, CancellationToken cancellationToken)
+        {
+            int retryCount = 0;
+            while (retryCount < MaxRetryAttempts)
+            {
+                try
+                {
+                    var events = await _calendarService.GetEventsForDateAsync(date);
+                    if (retryCount > 0)
+                    {
+                        _logger.LogInformation("Successfully loaded events for {Date} after {RetryCount} retries", date.ToShortDateString(), retryCount);
+                    }
+                    return events?.ToList() ?? new List<CalendarEvent>();
+                }
+                catch (Exception ex)
+                {
+                    retryCount++;
+                    _logger.LogWarning(ex, "Error loading events for {Date}. Retry {RetryCount}/{MaxRetries}", date.ToShortDateString(), retryCount, MaxRetryAttempts);
+                    
+                    if (retryCount >= MaxRetryAttempts)
+                    {
+                        _logger.LogError(ex, "Failed to load events for {Date} after {MaxRetries} retries", date.ToShortDateString(), MaxRetryAttempts);
+                        throw;
+                    }
+
+                    // Exponential backoff
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount));
+                    await Task.Delay(delay, cancellationToken);
+                }
+            }
+
+            return new List<CalendarEvent>();
+        }
+        
+        private void UpdateEventCountsForDate(DateTime date, List<CalendarEvent> events)
+        {
+            if (!_eventCountsByDate.ContainsKey(date))
+            {
+                _eventCountsByDate[date] = new Dictionary<EventType, int>();
+            }
+
+            foreach (var eventType in Enum.GetValues<EventType>())
+            {
+                _eventCountsByDate[date][eventType] = events.Count(e => e.EventType == eventType);
+            }
+        }
+        
+        private void CleanupCache()
+        {
+            var oldestAllowedDate = DateTime.Today.AddDays(-30); // Keep last 30 days
+            var keysToRemove = _eventCache.Keys.Where(date => date < oldestAllowedDate).ToList();
             
-            // Calculate days since transplant based on a hardcoded transplant date
-            // In a real app, this would come from the patient's profile or medical record
-            var transplantDate = DateTime.Today.AddDays(-1); // Surgery was yesterday
-            var daysSince = (int)(DateTime.Today - transplantDate).TotalDays;
-            DaysSinceTransplant = $"Day {daysSince} post hair transplant";
+            if (keysToRemove.Any())
+            {
+                _logger.LogInformation("Cleaning up cache. Removing {Count} entries older than {Date}", 
+                    keysToRemove.Count, oldestAllowedDate.ToShortDateString());
+                
+                foreach (var key in keysToRemove)
+                {
+                    _eventCache.Remove(key);
+                    _eventCountsByDate.Remove(key);
+                }
+            }
         }
         
         public async Task LoadTodayEventsAsync()
         {
             try
             {
+                _logger.LogInformation($"Loading events for date: {SelectedDate:yyyy-MM-dd}");
+                
                 // Load events for the selected date
                 var events = await _calendarService.GetEventsForDateAsync(SelectedDate);
                 
                 // Update UI on the main thread
-                if (Application.Current?.MainPage?.Dispatcher != null)
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
                 {
-                    // Use proper way to dispatch async actions in MAUI
-                    await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
-                    {
-                        // Всегда инициализируем коллекцию, даже если events пуст
-                        FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
-                        // Сортируем события по времени для отображения
-                        SortedEvents = new ObservableCollection<CalendarEvent>(
-                            (events ?? new List<CalendarEvent>())
-                            .OrderBy(e => e.Date.TimeOfDay)
-                            .ToList());
-                        // Вычисляем прогресс выполнения
-                        UpdateCompletionProgress();
-                        OnPropertyChanged(nameof(FlattenedEvents));
-                        OnPropertyChanged(nameof(SortedEvents));
-                        return Task.CompletedTask;
-                    });
-                }
-                else
-                {
-                    // Всегда инициализируем коллекцию, даже если events пуст
                     FlattenedEvents = new ObservableCollection<CalendarEvent>(events ?? new List<CalendarEvent>());
-                    // Сортируем события по времени для отображения
                     SortedEvents = new ObservableCollection<CalendarEvent>(
                         (events ?? new List<CalendarEvent>())
                         .OrderBy(e => e.Date.TimeOfDay)
                         .ToList());
-                    // Вычисляем прогресс выполнения
                     UpdateCompletionProgress();
                     OnPropertyChanged(nameof(FlattenedEvents));
                     OnPropertyChanged(nameof(SortedEvents));
-                }
+                });
                 
-                // Log loaded events for debugging
-                Debug.WriteLine($"LoadTodayEventsAsync: Loaded {events?.Count() ?? 0} events for {SelectedDate:yyyy-MM-dd}");
-                if (events != null && events.Any())
-                {
-                    foreach (var evt in events)
-                    {
-                        Debug.WriteLine($"Event: {evt.Title}, Type: {evt.EventType}, Time: {evt.Date:HH:mm}");
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine("No events found for this date");
-                }
+                // Log loaded events
+                _logger.LogInformation($"Loaded {events?.Count() ?? 0} events for {SelectedDate:yyyy-MM-dd}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error in LoadTodayEventsAsync: {ex.Message}");
-                if (Application.Current?.MainPage?.Dispatcher != null)
-                {
-                    // Use proper way to dispatch async actions in MAUI
-                    await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
-                    {
-                        FlattenedEvents = new ObservableCollection<CalendarEvent>();
-                        SortedEvents = new ObservableCollection<CalendarEvent>();
-                        UpdateCompletionProgress();
-                        OnPropertyChanged(nameof(FlattenedEvents));
-                        OnPropertyChanged(nameof(SortedEvents));
-                        return Task.CompletedTask;
-                    });
-                }
-                else
+                _logger.LogError(ex, $"Error loading events for date {SelectedDate:yyyy-MM-dd}");
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
                 {
                     FlattenedEvents = new ObservableCollection<CalendarEvent>();
                     SortedEvents = new ObservableCollection<CalendarEvent>();
                     UpdateCompletionProgress();
                     OnPropertyChanged(nameof(FlattenedEvents));
                     OnPropertyChanged(nameof(SortedEvents));
-                }
+                });
             }
         }
         

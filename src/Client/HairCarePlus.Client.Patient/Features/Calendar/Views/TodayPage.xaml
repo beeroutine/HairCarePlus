@@ -294,9 +294,13 @@
                         <CollectionView x:Name="daysCollection"
                                       ItemsSource="{Binding CalendarDays}"
                                       SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
-                                      SelectionMode="None"
+                                      SelectionMode="Single"
                                       HeightRequest="80"
-                                      Margin="0,4,0,0">
+                                      Margin="0,4,0,0"
+                                      ItemSizingStrategy="MeasureFirstItem"
+                                      ItemsUpdatingScrollMode="KeepLastItemInView"
+                                      RemainingItemsThreshold="5"
+                                      RemainingItemsThresholdReachedCommand="{Binding LoadMoreDatesCommand}">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid x:Name="rootContainer" WidthRequest="55" HeightRequest="55" Padding="0" Margin="3,0">
@@ -410,6 +414,58 @@
             </Grid>
         </Frame>
 
+        <!-- Loading Indicator -->
+        <Grid Grid.Row="0" 
+              IsVisible="{Binding IsLoading}"
+              BackgroundColor="#80000000"
+              InputTransparent="False">
+            <Border StrokeShape="RoundRectangle 10"
+                    BackgroundColor="{StaticResource White}"
+                    Padding="20"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+                <VerticalStackLayout Spacing="10">
+                    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                     Color="{StaticResource Primary}"
+                                     HeightRequest="50"
+                                     WidthRequest="50"/>
+                    <Label Text="{Binding LoadingStatus}"
+                           TextColor="{StaticResource Primary}"
+                           HorizontalOptions="Center"/>
+                    <ProgressBar Progress="{Binding LoadingProgress, Converter={StaticResource ProgressConverter}}"
+                               ProgressColor="{StaticResource Primary}"
+                               HeightRequest="6"
+                               WidthRequest="200"/>
+                    <Label Text="{Binding LoadingProgress, StringFormat='{0}%'}"
+                           TextColor="{StaticResource Primary}"
+                           HorizontalOptions="Center"
+                           FontSize="12"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- Error State -->
+        <Grid Grid.Row="0" 
+              IsVisible="{Binding HasError}"
+              BackgroundColor="#80000000"
+              InputTransparent="False">
+            <Frame BackgroundColor="{StaticResource White}"
+                   CornerRadius="10"
+                   Padding="20"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding LoadingStatus}"
+                           TextColor="{StaticResource Error}"
+                           HorizontalOptions="Center"/>
+                    <Button Text="Retry"
+                            Command="{Binding LoadMoreDatesCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+        </Grid>
+
         <!-- Scrollable Content -->
         <ScrollView Grid.Row="1" 
                    HorizontalScrollBarVisibility="Never"
@@ -419,20 +475,26 @@
                           ItemTemplate="{StaticResource EventTemplate}"
                           Margin="16,8,16,16">
                 <CollectionView.EmptyView>
-                    <StackLayout VerticalOptions="CenterAndExpand" 
-                                 HorizontalOptions="CenterAndExpand" 
-                                 Padding="20">
-                        <Image Source="empty_calendar.png"
-                               WidthRequest="60"
-                               HeightRequest="60"
-                               Opacity="0.6"
-                               IsVisible="false" />
-                        <Label Text="No events scheduled for this day" 
-                               HorizontalTextAlignment="Center"
-                               FontSize="16"
-                               Margin="0,20,0,0"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                    </StackLayout>
+                    <Frame BackgroundColor="Transparent"
+                           CornerRadius="10"
+                           Padding="0"
+                           HasShadow="False"
+                           BorderColor="Transparent">
+                        <StackLayout VerticalOptions="CenterAndExpand" 
+                                   HorizontalOptions="CenterAndExpand" 
+                                   Padding="20">
+                            <Image Source="empty_calendar.png"
+                                   WidthRequest="60"
+                                   HeightRequest="60"
+                                   Opacity="0.6"
+                                   IsVisible="false" />
+                            <Label Text="No events scheduled for this day" 
+                                   HorizontalTextAlignment="Center"
+                                   FontSize="16"
+                                   Margin="0,20,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                        </StackLayout>
+                    </Frame>
                 </CollectionView.EmptyView>
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
