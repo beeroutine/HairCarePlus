@@ -1,9 +1,15 @@
+using System;
+using System.Threading.Tasks;
+using System.Text.Json;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
+
 namespace HairCarePlus.Client.Patient.Infrastructure.Services
 {
     public abstract class BaseApiService
     {
         protected readonly INetworkService NetworkService;
         protected readonly ILocalStorageService LocalStorageService;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         protected BaseApiService(
             INetworkService networkService,
@@ -11,6 +17,10 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
         {
             NetworkService = networkService;
             LocalStorageService = localStorageService;
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
         }
 
         protected virtual async Task<T> ExecuteApiCallAsync<T>(Func<Task<T>> apiCall)
@@ -35,12 +45,12 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
         protected virtual async Task<T> ExecuteWithCacheAsync<T>(
             string cacheKey,
             Func<Task<T>> apiCall,
-            TimeSpan? cacheExpiration = null)
+            TimeSpan? cacheExpiration = null) where T : class
         {
             try
             {
                 // Try to get from cache first
-                var cachedData = await LocalStorageService.GetAsync<CacheEntry<T>>(cacheKey);
+                var cachedData = await LocalStorageService.GetItemAsync<CacheEntry<T>>(cacheKey);
                 if (cachedData != null && !IsCacheExpired(cachedData, cacheExpiration))
                 {
                     return cachedData.Data;
@@ -50,7 +60,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
                 var result = await ExecuteApiCallAsync(apiCall);
 
                 // Cache the result
-                await LocalStorageService.SetAsync(cacheKey, new CacheEntry<T>
+                await LocalStorageService.SetItemAsync(cacheKey, new CacheEntry<T>
                 {
                     Data = result,
                     Timestamp = DateTime.UtcNow
@@ -61,7 +71,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
             catch (Exception ex)
             {
                 // If offline and we have cached data, return it regardless of expiration
-                var cachedData = await LocalStorageService.GetAsync<CacheEntry<T>>(cacheKey);
+                var cachedData = await LocalStorageService.GetItemAsync<CacheEntry<T>>(cacheKey);
                 if (cachedData != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"Using expired cache due to error: {ex.Message}");
@@ -83,7 +93,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
 
     internal class CacheEntry<T>
     {
-        public required T Data { get; set; }
+        public T Data { get; set; } = default!;
         public DateTime Timestamp { get; set; }
     }
 } 

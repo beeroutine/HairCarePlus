@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Patient.Features.Chat.Models;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Maui.Controls;
 using System.Linq;
 

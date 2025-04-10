@@ -1,6 +1,7 @@
 ﻿using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 using HairCarePlus.Client.Patient.Features.Chat.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar;
 using CommunityToolkit.Maui;
@@ -14,6 +15,7 @@ using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -42,7 +44,8 @@ public static class MauiProgram
 		// Register Services
 		builder.Services.AddSingleton<INavigationService, NavigationService>();
 		builder.Services.AddSingleton<INetworkService, NetworkService>();
-		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
+		builder.Services.AddSingleton<ILocalStorageService>(serviceProvider => 
+			new LocalStorageService());
 		
 		// Register HttpClient
 		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
