@@ -47,6 +47,11 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ILocalStorageService>(serviceProvider => 
 			new LocalStorageService());
 		
+		// Register Calendar Services
+		builder.Services.AddScoped<IHairTransplantEventService, HairTransplantEventService>();
+		builder.Services.AddScoped<IRestrictionService, RestrictionService>();
+		builder.Services.AddScoped<ICalendarService, CalendarServiceAdapter>();
+		
 		// Register HttpClient
 		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
 			BaseAddress = new Uri("http://localhost:5281/")
