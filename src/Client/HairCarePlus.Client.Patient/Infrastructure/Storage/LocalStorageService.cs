@@ -1,12 +1,16 @@
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.IO;
+using Microsoft.EntityFrameworkCore;
 
 namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 public class LocalStorageService : ILocalStorageService
 {
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _databasePath;
+    private AppDbContext? _dbContext;
 
     public LocalStorageService()
     {
@@ -14,12 +18,27 @@ public class LocalStorageService : ILocalStorageService
         {
             PropertyNameCaseInsensitive = true
         };
+
+        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "haircare.db");
+        _databasePath = dbPath;
+    }
+
+    public AppDbContext GetDbContext()
+    {
+        if (_dbContext == null)
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite($"Data Source={_databasePath}")
+                .Options;
+            _dbContext = new AppDbContext(options);
+        }
+        return _dbContext;
     }
 
     public async Task InitializeDatabaseAsync()
     {
-        // Initialize any required database setup
-        await Task.CompletedTask;
+        var context = GetDbContext();
+        await context.Database.MigrateAsync();
     }
 
     public async Task<T> GetItemAsync<T>(string key) where T : class
@@ -95,4 +114,13 @@ public class LocalStorageService : ILocalStorageService
             return false;
         }
     }
+
+    public async Task ClearDatabaseAsync()
+    {
+        var context = GetDbContext();
+        await context.Database.EnsureDeletedAsync();
+        await context.Database.MigrateAsync();
+    }
+
+    public string GetDatabasePath() => _databasePath;
 } 

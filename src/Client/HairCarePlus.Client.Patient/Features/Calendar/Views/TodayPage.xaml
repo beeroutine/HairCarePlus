@@ -122,7 +122,7 @@
                                 HeightRequest="6"
                                 CornerRadius="3"
                                 Color="{StaticResource VideoOrange}"
-                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
+                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Video}}"/>
                     </HorizontalStackLayout>
                     
                     <Grid.GestureRecognizers>
@@ -408,7 +408,7 @@
                                                     HeightRequest="6"
                                                     CornerRadius="3"
                                                     Color="{StaticResource VideoOrange}"
-                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
+                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Video}}"/>
                                         </HorizontalStackLayout>
                                         
                                         <Grid.GestureRecognizers>

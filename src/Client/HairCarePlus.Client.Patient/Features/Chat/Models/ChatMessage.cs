@@ -2,13 +2,43 @@ using System;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Models;
 
+public enum MessageType
+{
+    Text,
+    Image,
+    Video,
+    File,
+    System
+}
+
+public enum MessageStatus
+{
+    Sending,
+    Sent,
+    Delivered,
+    Read,
+    Failed
+}
+
 public class ChatMessage
 {
-    public string Content { get; set; }
-    public string SenderId { get; set; }
+    public int Id { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public DateTime SentAt { get; set; }
     public DateTime Timestamp { get; set; }
-    public ChatMessage ReplyTo { get; set; }
-    public string AttachmentUrl { get; set; }
+    public string SenderId { get; set; } = string.Empty;
+    public string? RecipientId { get; set; }
+    public MessageType Type { get; set; }
+    public MessageStatus Status { get; set; }
+    public bool IsRead { get; set; }
+    public string? AttachmentUrl { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public long? FileSize { get; set; }
+    public string? FileName { get; set; }
+    public string? MimeType { get; set; }
+    public DateTime? ReadAt { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public ChatMessage? ReplyTo { get; set; }
 }
 
 public class Doctor
@@ -29,11 +59,12 @@ public class Doctor
     }
 }
 
-public enum MessageType
+public enum AppointmentStatus
 {
-    Text,
-    Image,
-    Appointment
+    Requested,
+    Confirmed,
+    Cancelled,
+    Completed
 }
 
 public class Appointment
@@ -52,12 +83,4 @@ public class Appointment
         DateTime = DateTime.Now;
         Status = AppointmentStatus.Requested;
     }
-}
-
-public enum AppointmentStatus
-{
-    Requested,
-    Confirmed,
-    Cancelled,
-    Completed
 } 

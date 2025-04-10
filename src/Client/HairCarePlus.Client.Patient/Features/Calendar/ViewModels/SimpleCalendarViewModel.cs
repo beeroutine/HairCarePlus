@@ -134,7 +134,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        private void ExecuteDaySelected(string dayString)
+        private void ExecuteDaySelected(string? dayString)
         {
             try
             {
@@ -265,7 +265,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 EventType.MedicationTreatment => "Прием лекарства",
                 EventType.Photo => "Фотоотчет",
                 EventType.CriticalWarning => "Ограничение",
-                EventType.VideoInstruction => "Инструкция",
+                EventType.Video => "Инструкция",
                 _ => "Событие"
             };
         }

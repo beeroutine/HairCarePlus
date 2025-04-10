@@ -17,7 +17,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                     EventType.MedicationTreatment => Application.Current.Resources["MedicationBlue"],
                     EventType.MedicalVisit => Application.Current.Resources["AppointmentGreen"],
                     EventType.Photo => Application.Current.Resources["PhotoPurple"],
-                    EventType.VideoInstruction => Application.Current.Resources["VideoOrange"],
+                    EventType.Video => Application.Current.Resources["VideoOrange"],
                     EventType.GeneralRecommendation => Application.Current.Resources["GeneralGray"],
                     EventType.CriticalWarning => Colors.Red,
                     _ => Colors.Gray

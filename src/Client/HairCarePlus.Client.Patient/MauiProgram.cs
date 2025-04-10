@@ -2,6 +2,9 @@
 using HairCarePlus.Client.Patient.Features.Chat.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Infrastructure.Storage.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Security;
+using HairCarePlus.Client.Patient.Infrastructure.Media;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar;
 using CommunityToolkit.Maui;
@@ -13,9 +16,15 @@ using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
-using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Notifications.Services.Implementation;
+using System;
+using System.IO;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -41,29 +50,18 @@ public static class MauiProgram
 				fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
 			});
 
-		// Register Services
-		builder.Services.AddSingleton<INavigationService, NavigationService>();
-		builder.Services.AddSingleton<INetworkService, NetworkService>();
-		builder.Services.AddSingleton<ILocalStorageService>(serviceProvider => 
-			new LocalStorageService());
-		
-		// Register Calendar Services
-		builder.Services.AddScoped<IHairTransplantEventService, HairTransplantEventService>();
-		builder.Services.AddScoped<IRestrictionService, RestrictionService>();
-		builder.Services.AddScoped<ICalendarService, CalendarServiceAdapter>();
-		
-		// Register HttpClient
-		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
-			BaseAddress = new Uri("http://localhost:5281/")
-		});
-		
-#if ANDROID
-		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.Android.Services.VibrationService>();
-		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();
-#elif IOS
-		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.iOS.Services.VibrationService>();
-		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
-#endif
+		// Add services to the container
+		var dbPath = Path.Combine(FileSystem.AppDataDirectory, "haircare.db");
+		builder.Services.AddDbContext<AppDbContext>(options =>
+		{
+			options.UseSqlite($"Data Source={dbPath}");
+		}, ServiceLifetime.Singleton);
+
+		// Register services
+		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
+		builder.Services.AddSingleton<INotificationService, NotificationServiceImpl>();
+		builder.Services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
+		builder.Services.AddSingleton<IHairTransplantEventGenerator, HairTransplantEventGeneratorImpl>();
 
 		// Register Pages and ViewModels
 		builder.Services.AddTransient<ChatPage>();
@@ -104,8 +102,8 @@ public static class MauiProgram
 	private static void RegisterServices(IServiceCollection services)
 	{
 		// Calendar services
-		services.AddSingleton<ICalendarService, CalendarService>();
-		services.AddSingleton<INotificationService, NotificationService>();
+		services.AddSingleton<ICalendarService, CalendarServiceImpl>();
+		services.AddSingleton<INotificationService, NotificationServiceImpl>();
 	}
 	
 	private static void RegisterViewModels(IServiceCollection services)

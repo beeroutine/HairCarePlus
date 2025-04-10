@@ -63,7 +63,7 @@
             <Color x:Key="MedicationBackgroundColor">#182196F3</Color>
             <Color x:Key="MedicalVisitBackgroundColor">#1866BB6A</Color>
             <Color x:Key="PhotoBackgroundColor">#18AB47BC</Color>
-            <Color x:Key="VideoInstructionBackgroundColor">#18FF9800</Color>
+            <Color x:Key="VideoBackgroundColor">#18FF9800</Color>
             <Color x:Key="GeneralRecommendationBackgroundColor">#189E9E9E</Color>
             <Color x:Key="CriticalWarningBackgroundColor">#18FF5252</Color>
             

@@ -2,6 +2,8 @@ using System;
 using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementations;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,14 +27,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(services));
             
             // Register services
-            services.AddScoped<ICalendarService, CalendarService>();
-            services.AddScoped<IHairTransplantEventGenerator, HairTransplantEventGenerator>();
+            services.AddScoped<ICalendarService, CalendarServiceImpl>();
+            services.AddScoped<IHairTransplantEventGenerator, HairTransplantEventGeneratorImpl>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();
             
             // Register EventAggregationService
-            services.AddSingleton<IEventAggregationService, EventAggregationService>();
+            services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
             
             // Register ViewModels
             services.AddTransient<TodayViewModel>();

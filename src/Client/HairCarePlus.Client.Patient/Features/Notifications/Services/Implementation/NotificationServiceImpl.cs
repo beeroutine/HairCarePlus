@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using Microsoft.Maui.Controls;
 
-namespace HairCarePlus.Client.Patient.Features.Notifications.Services
+namespace HairCarePlus.Client.Patient.Features.Notifications.Services.Implementation
 {
-    public class NotificationService : INotificationService
+    public class NotificationServiceImpl : INotificationService
     {
         public async Task ShowSuccessAsync(string message)
         {

@@ -31,7 +31,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                 // Add indicator for each event type if count > 0
                 AddIndicatorIfNeeded(indicatorsLayout, viewModel, date, EventType.MedicationTreatment, "#4CAF50");
                 AddIndicatorIfNeeded(indicatorsLayout, viewModel, date, EventType.Photo, "#2196F3");
-                AddIndicatorIfNeeded(indicatorsLayout, viewModel, date, EventType.VideoInstruction, "#FF9800");
+                AddIndicatorIfNeeded(indicatorsLayout, viewModel, date, EventType.Video, "#FF9800");
                 AddIndicatorIfNeeded(indicatorsLayout, viewModel, date, EventType.CriticalWarning, "#F44336");
 
                 return indicatorsLayout;

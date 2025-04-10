@@ -328,44 +328,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private async Task LoadEventsForMonthAsync(int year, int month, bool forceRefresh = false)
         {
-            if (IsBusy && !forceRefresh) return;
-            
             try
             {
+                if (IsBusy && !forceRefresh)
+                    return;
+
                 IsBusy = true;
                 HasError = false;
+
+                var startDate = new DateTime(year, month, 1);
+                var endDate = startDate.AddMonths(1).AddDays(-1);
                 
-                // Get events for the month
+                // Create empty list for events
+                List<CalendarEvent> allEvents = new List<CalendarEvent>();
+                
+                // Load regular events
                 var events = await _calendarService.GetEventsForMonthAsync(year, month);
                 if (events != null)
                 {
-                    // Update the observable collection
-                    MainThread.BeginInvokeOnMainThread(() =>
-                    {
-                        EventsForMonth.Clear();
-                        foreach (var evnt in events)
-                        {
-                            EventsForMonth.Add(evnt);
-                        }
-                    });
+                    allEvents.AddRange(events);
                 }
                 
-                // Also load active restrictions
-                await LoadActiveRestrictionsAsync();
+                // Add restrictions
+                var restrictions = await _calendarService.GetActiveRestrictionsAsync();
+                if (restrictions != null)
+                {
+                    // Filter restrictions for current month
+                    var restrictionsInRange = restrictions.Where(r => 
+                        (r.Date.Year == year && r.Date.Month == month) || 
+                        (r.ExpirationDate.HasValue && 
+                         ((r.ExpirationDate.Value.Year == year && r.ExpirationDate.Value.Month == month) || 
+                          (r.Date <= startDate && r.ExpirationDate.Value >= endDate)))
+                    ).ToList();
+                    
+                    allEvents.AddRange(restrictionsInRange);
+                }
+
+                // Update the events collection
+                EventsForMonth = new ObservableCollection<CalendarEvent>(allEvents);
             }
             catch (Exception ex)
             {
                 HasError = true;
-                ErrorMessage = "Could not load calendar events. Please try again.";
-                System.Diagnostics.Debug.WriteLine($"Error in LoadEventsForMonthAsync: {ex.Message}");
-                
-                // Retry logic
-                if (RetryCount < MaxRetries)
-                {
-                    RetryCount++;
-                    await Task.Delay(500 * RetryCount); // Exponential backoff
-                    await LoadEventsForMonthAsync(year, month, forceRefresh);
-                }
+                ErrorMessage = "Failed to load events for month. Please try again.";
+                RetryCount++;
             }
             finally
             {
@@ -425,44 +431,38 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var firstDayOfCalendarView = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
 
                 var calendarDays = new ObservableCollection<CalendarDayViewModel>();
+                
                 for (int i = 0; i < 42; i++) // 6 weeks x 7 days
                 {
-                    var day = firstDayOfCalendarView.AddDays(i);
-                    var isCurrentMonth = day.Month == CurrentMonthDate.Month;
-                    var isToday = day.Date == DateTime.Today.Date;
-                    var isSelected = day.Date == SelectedDate.Date;
+                    var currentDate = firstDayOfCalendarView.AddDays(i);
+                    var eventsForDay = EventsForMonth.Where(e => 
+                        e.Date.Date == currentDate.Date || 
+                        (e.IsMultiDay && e.EndDate.HasValue && 
+                         currentDate.Date >= e.Date.Date && currentDate.Date <= e.EndDate.Value.Date)
+                    ).ToList();
 
-                    // Находим события для этого дня
-                    var eventsForDay = EventsForMonth.Where(e => e.Date.Date == day.Date).ToList();
-                    var hasEvents = eventsForDay.Any();
-                    
-                    var calendarDayVM = new CalendarDayViewModel
+                    var dayViewModel = new CalendarDayViewModel
                     {
-                        Date = day,
-                        IsCurrentMonth = isCurrentMonth,
-                        HasEvents = hasEvents,
-                        IsToday = isToday,
-                        IsSelected = isSelected,
-                        TotalEvents = eventsForDay.Count
+                        Date = currentDate,
+                        IsCurrentMonth = currentDate.Month == CurrentMonthDate.Month,
+                        IsToday = currentDate.Date == DateTime.Today,
+                        IsSelected = currentDate.Date == SelectedDate.Date,
+                        HasMedicationEvents = eventsForDay.Any(e => e.EventType == EventType.MedicationTreatment),
+                        HasPhotoEvents = eventsForDay.Any(e => e.EventType == EventType.Photo),
+                        HasVideoEvents = eventsForDay.Any(e => e.EventType == EventType.Video),
+                        HasRestrictionEvents = eventsForDay.Any(e => e.EventType == EventType.CriticalWarning),
+                        Events = new ObservableCollection<CalendarEvent>(eventsForDay)
                     };
 
-                    // Устанавливаем наличие различных типов событий
-                    if (hasEvents)
-                    {
-                        calendarDayVM.HasMedication = eventsForDay.Any(e => e.EventType == EventType.MedicationTreatment);
-                        calendarDayVM.HasPhoto = eventsForDay.Any(e => e.EventType == EventType.Photo);
-                        calendarDayVM.HasRestriction = eventsForDay.Any(e => e.EventType == EventType.CriticalWarning);
-                        calendarDayVM.HasInstruction = eventsForDay.Any(e => e.EventType == EventType.VideoInstruction);
-                    }
-
-                    calendarDays.Add(calendarDayVM);
+                    calendarDays.Add(dayViewModel);
                 }
 
                 CalendarDays = calendarDays;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in UpdateCalendarDays: {ex.Message}");
+                HasError = true;
+                ErrorMessage = "Failed to update calendar days. Please try again.";
             }
         }
 
@@ -474,11 +474,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 IsBusy = true;
                 
-                // Toggle completion status
+                // Toggle completion status locally first
                 calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
                 
                 // Update on server
-                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
+                var success = await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                
+                if (!success)
+                {
+                    // Revert the status change if server update failed
+                    calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                    HasError = true;
+                    ErrorMessage = "Could not update event status. Please try again.";
+                    return;
+                }
                 
                 // If this is a restriction that just got completed, refresh the active restrictions
                 if (calendarEvent.EventType == EventType.CriticalWarning)
@@ -493,7 +502,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 // Revert the status change on error
                 calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                
                 HasError = true;
                 ErrorMessage = "Could not update event status. Please try again.";
                 System.Diagnostics.Debug.WriteLine($"Error in MarkEventCompletedAsync: {ex.Message}");
@@ -501,6 +509,40 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             finally
             {
                 IsBusy = false;
+            }
+        }
+
+        public async Task ToggleEventCompletionAsync(CalendarEvent calendarEvent)
+        {
+            if (calendarEvent == null)
+                return;
+
+            try
+            {
+                var originalIsCompleted = calendarEvent.IsCompleted;
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+
+                var success = await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                
+                if (!success)
+                {
+                    calendarEvent.IsCompleted = originalIsCompleted; // Revert on failure
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await Shell.Current.DisplayAlert("Error", "Failed to update event status. Please try again.", "OK");
+                    });
+                }
+                
+                await RefreshAsync();
+            }
+            catch (Exception ex)
+            {
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted; // Revert the change
+                System.Diagnostics.Debug.WriteLine($"Error updating event status: {ex}");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to update event status. Please try again.", "OK");
+                });
             }
         }
     }

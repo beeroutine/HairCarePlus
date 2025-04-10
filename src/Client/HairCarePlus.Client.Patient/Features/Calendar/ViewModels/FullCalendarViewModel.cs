@@ -63,7 +63,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public bool HasRestrictionEvents => Events.Any(e => e.EventType == EventType.CriticalWarning);
         
-        public bool HasInstructionEvents => Events.Any(e => e.EventType == EventType.VideoInstruction);
+        public bool HasInstructionEvents => Events.Any(e => e.EventType == EventType.Video);
         
         public bool HasExcessEvents => Events.Count > 3;
         
@@ -261,15 +261,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             try
             {
+                var originalIsCompleted = calendarEvent.IsCompleted;
                 calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
                 
-                // Обновляем UI
+                var success = await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                
+                if (!success)
+                {
+                    calendarEvent.IsCompleted = originalIsCompleted; // Revert on failure
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await Shell.Current.DisplayAlert("Error", "Failed to update event status.", "OK");
+                    });
+                    return;
+                }
+                
+                // Update UI
                 OnPropertyChanged(nameof(DayEventsGroups));
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error marking event as completed: {ex}");
+                calendarEvent.IsCompleted = !calendarEvent.IsCompleted; // Revert the change
+                _logger?.LogError(ex, "Error marking event as completed");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to update event status.", "OK");
+                });
             }
         }
 

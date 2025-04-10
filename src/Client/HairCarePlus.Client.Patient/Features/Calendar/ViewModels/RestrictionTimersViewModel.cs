@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
-using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels

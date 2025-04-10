@@ -57,7 +57,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => medicationColorKey,
                     EventType.Photo => photoColorKey,
                     EventType.CriticalWarning => restrictionColorKey,
-                    EventType.VideoInstruction => instructionColorKey,
+                    EventType.Video => instructionColorKey,
                     _ => defaultColorKey
                 };
                 
@@ -72,7 +72,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => Color.FromArgb("#2196F3"),
                     EventType.Photo => Color.FromArgb("#4CAF50"),
                     EventType.CriticalWarning => Color.FromArgb("#F44336"),
-                    EventType.VideoInstruction => Color.FromArgb("#9C27B0"),
+                    EventType.Video => Color.FromArgb("#9C27B0"),
                     _ => Colors.Gray
                 };
             }
@@ -86,7 +86,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => Color.FromArgb("#2196F3"),
                     EventType.Photo => Color.FromArgb("#4CAF50"),
                     EventType.CriticalWarning => Color.FromArgb("#F44336"),
-                    EventType.VideoInstruction => Color.FromArgb("#9C27B0"),
+                    EventType.Video => Color.FromArgb("#9C27B0"),
                     _ => Colors.Gray
                 };
             }
@@ -191,7 +191,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => medicationColorKey,
                     EventType.Photo => photoColorKey,
                     EventType.CriticalWarning => restrictionColorKey,
-                    EventType.VideoInstruction => instructionColorKey,
+                    EventType.Video => instructionColorKey,
                     _ => defaultColorKey
                 };
                 
@@ -206,7 +206,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => Color.FromArgb("#182196F3"), 
                     EventType.Photo => Color.FromArgb("#184CAF50"),
                     EventType.CriticalWarning => Color.FromArgb("#18F44336"),
-                    EventType.VideoInstruction => Color.FromArgb("#189C27B0"),
+                    EventType.Video => Color.FromArgb("#189C27B0"),
                     _ => Colors.Transparent
                 };
             }

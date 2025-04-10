@@ -6,7 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
-using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using Microsoft.Maui.Controls;
 using System.Diagnostics;
 using System.Threading;
@@ -837,7 +837,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         { EventType.MedicationTreatment, 0 },
                         { EventType.Photo, 0 },
                         { EventType.CriticalWarning, 0 },
-                        { EventType.VideoInstruction, 0 },
+                        { EventType.Video, 0 },
                         { EventType.MedicalVisit, 0 },
                         { EventType.GeneralRecommendation, 0 }
                     };
@@ -956,7 +956,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             { EventType.MedicationTreatment, 0 },
                             { EventType.Photo, 0 },
                             { EventType.CriticalWarning, 0 },
-                            { EventType.VideoInstruction, 0 },
+                            { EventType.Video, 0 },
                             { EventType.MedicalVisit, 0 },
                             { EventType.GeneralRecommendation, 0 }
                         };
@@ -1115,27 +1115,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 try
                 {
-                    // Сохраняем оригинальное состояние для отката в случае ошибки
-                    bool originalState = calendarEvent.IsCompleted;
+                    // Capture original state for rollback
+                    var originalState = calendarEvent.IsCompleted;
                     
-                    // Оптимистично меняем состояние сразу для быстрой реакции UI
-                    calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                    
-                    // Рассчитываем прогресс локально без перезагрузки всех данных
-                    UpdateCompletionProgress();
-                    
-                    // Обновляем только измененное событие, а не перезагружаем все
                     try
                     {
-                        await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id, calendarEvent.IsCompleted);
+                        // Toggle state first
+                        calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                        UpdateCompletionProgress();
                         
-                        // Обновляем кэш, а не загружаем все заново
+                        // Call service with single parameter
+                        await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                        
+                        // Update cache if needed
                         if (_eventCache.TryGetValue(SelectedDate.Date, out var cachedEvents))
                         {
-                            // Обновляем кэш атомарно
+                            // Update cache atomically
                             lock (_cacheUpdateLock)
                             {
-                                // Находим и обновляем событие в кэше
+                                // Find and update event in cache
                                 var eventToUpdate = cachedEvents.FirstOrDefault(e => e.Id == calendarEvent.Id);
                                 if (eventToUpdate != null)
                                 {
@@ -1145,7 +1143,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             }
                         }
                         
-                        // Обновляем счетчик просроченных событий, если событие было просроченным
+                        // Update overdue events counter if needed
                         if (calendarEvent.Date.Date < DateTime.Today)
                         {
                             await CheckOverdueEventsAsync();
@@ -1153,7 +1151,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     }
                     catch (Exception ex)
                     {
-                        // Откатываем изменение при ошибке
+                        // Rollback on error
                         _logger.LogError(ex, "Error toggling event completion");
                         calendarEvent.IsCompleted = originalState;
                         UpdateCompletionProgress();

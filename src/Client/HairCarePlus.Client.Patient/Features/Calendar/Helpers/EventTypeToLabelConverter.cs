@@ -14,7 +14,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Helpers
                     EventType.MedicationTreatment => "MEDICATION",
                     EventType.Photo => "PHOTO",
                     EventType.CriticalWarning => "RESTRICTION",
-                    EventType.VideoInstruction => "INSTRUCTION",
+                    EventType.Video => "VIDEO",
                     EventType.MedicalVisit => "MEDICAL VISIT",
                     EventType.GeneralRecommendation => "RECOMMENDATION",
                     _ => "EVENT"

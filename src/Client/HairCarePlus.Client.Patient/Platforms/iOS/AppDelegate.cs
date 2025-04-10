@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient;
 

@@ -9,26 +9,25 @@ public class HairTransplantEvent
     public string Description { get; set; } = string.Empty;
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public bool IsCompleted { get; set; }
-    public bool IsNotified { get; set; }
     public EventType Type { get; set; }
     public EventPriority Priority { get; set; }
-    public TimeSpan Duration { get; set; }
+    public bool IsCompleted { get; set; }
+    public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ModifiedAt { get; set; }
+
+    public bool IsMultiDay => EndDate.Date > StartDate.Date;
+    public int DurationInDays => (EndDate.Date - StartDate.Date).Days + 1;
 }
 
 public enum EventType
 {
     Medication,
-    Checkup,
-    Washing,
-    Exercise,
-    Photo,
-    Restriction,
-    Warning,
     MedicalVisit,
-    Other
+    Photo,
+    Video,
+    Recommendation,
+    Warning
 }
 
 public enum EventPriority

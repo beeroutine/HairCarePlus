@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
-using HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using DomainEntities = HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Services;
@@ -27,107 +28,177 @@ public class CalendarServiceAdapter : ICalendarService
         _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
     }
 
-    public async Task<IEnumerable<CalendarEvent>> GetEventsForDateAsync(DateTime date)
+    public async Task<List<CalendarEvent>> GetEventsForDateAsync(DateTime date)
     {
         var events = await _eventService.GetEventsForDateAsync(date);
-        return events.Select(MapToCalendarEvent);
+        return events.Select(MapToCalendarEvent).ToList();
     }
 
-    public async Task<IEnumerable<CalendarEvent>> GetEventsForMonthAsync(int year, int month)
+    public async Task<List<CalendarEvent>> GetEventsForMonthAsync(int year, int month)
     {
         var startDate = new DateTime(year, month, 1);
         var endDate = startDate.AddMonths(1).AddDays(-1);
         var events = await _eventService.GetEventsForRangeAsync(startDate, endDate);
-        return events.Select(MapToCalendarEvent);
+        return events.Select(MapToCalendarEvent).ToList();
     }
 
-    public async Task<IEnumerable<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate)
+    public async Task<List<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate)
     {
         var events = await _eventService.GetEventsForRangeAsync(startDate, endDate);
-        return events.Select(MapToCalendarEvent);
+        return events.Select(MapToCalendarEvent).ToList();
     }
 
-    public async Task MarkEventAsCompletedAsync(int eventId, bool isCompleted)
-    {
-        // Примечание: здесь мы конвертируем int в Guid. В реальном приложении нужно
-        // реализовать правильное маппирование ID или обновить всю систему на использование Guid
-        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
-        if (isCompleted)
-        {
-            await _eventService.MarkEventAsCompletedAsync(guid);
-        }
-        else
-        {
-            var existingEvent = await _eventService.GetEventByIdAsync(guid);
-            if (existingEvent != null)
-            {
-                existingEvent.IsCompleted = false;
-                await _eventService.UpdateEventAsync(existingEvent);
-            }
-        }
-    }
-
-    public async Task<IEnumerable<CalendarEvent>> GetActiveRestrictionsAsync()
+    public async Task<List<CalendarEvent>> GetActiveRestrictionsAsync()
     {
         var restrictions = await _restrictionService.GetActiveRestrictionsAsync();
-        return restrictions.Select(MapToCalendarEvent);
+        return restrictions.Select(MapToCalendarEvent).ToList();
     }
 
-    public async Task<IEnumerable<CalendarEvent>> GetPendingNotificationEventsAsync()
+    public async Task<List<CalendarEvent>> GetPendingNotificationEventsAsync()
     {
         var events = await _eventService.GetPendingEventsAsync();
-        return events.Where(e => !e.IsNotified).Select(MapToCalendarEvent);
+        return events.Select(MapToCalendarEvent).ToList();
     }
 
-    public async Task<IEnumerable<CalendarEvent>> GetOverdueEventsAsync()
+    public async Task<List<CalendarEvent>> GetOverdueEventsAsync()
     {
+        var now = DateTime.UtcNow;
         var events = await _eventService.GetPendingEventsAsync();
         return events
-            .Where(e => e.StartDate < DateTime.Today && !e.IsCompleted)
-            .Select(MapToCalendarEvent);
+            .Where(e => e.StartDate < now.Date && !e.IsCompleted)
+            .Select(MapToCalendarEvent)
+            .ToList();
     }
 
-    private static CalendarEvent MapToCalendarEvent(HairTransplantEvent e)
+    public async Task<CalendarEvent> GetEventByIdAsync(int eventId)
+    {
+        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
+        var evt = await _eventService.GetEventByIdAsync(guid);
+        return evt != null ? MapToCalendarEvent(evt) : null;
+    }
+
+    public async Task<bool> MarkEventAsCompletedAsync(int eventId)
+    {
+        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
+        return await _eventService.MarkEventAsCompletedAsync(guid);
+    }
+
+    public async Task<bool> UpdateEventAsync(CalendarEvent calendarEvent)
+    {
+        var domainEvent = MapToDomainEvent(calendarEvent);
+        var result = await _eventService.UpdateEventAsync(domainEvent);
+        return result != null;
+    }
+
+    public async Task<bool> DeleteEventAsync(int eventId)
+    {
+        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
+        return await _eventService.DeleteEventAsync(guid);
+    }
+
+    public async Task<CalendarEvent> CreateEventAsync(CalendarEvent calendarEvent)
+    {
+        var domainEvent = MapToDomainEvent(calendarEvent);
+        var result = await _eventService.CreateEventAsync(domainEvent);
+        return MapToCalendarEvent(result);
+    }
+
+    public async Task<bool> SynchronizeEventsAsync()
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            var startDate = now.AddDays(-30);
+            var endDate = now.AddDays(30);
+            
+            // Get all events in range
+            var events = await GetEventsForDateRangeAsync(startDate, endDate);
+            
+            // Update last sync time
+            await _eventService.UpdateLastSyncTimeAsync(now);
+            
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static CalendarEvent MapToCalendarEvent(DomainEntities.HairTransplantEvent e)
     {
         return new CalendarEvent
         {
-            Id = int.Parse(e.Id.ToString().Substring(0, 8), System.Globalization.NumberStyles.HexNumber), // Временное решение для конвертации Guid в int
+            Id = int.Parse(e.Id.ToString().Substring(0, 8), System.Globalization.NumberStyles.HexNumber),
             Title = e.Title,
-            Description = e.Description,
-            Date = e.StartDate,
+            Description = e.Notes ?? string.Empty,
+            StartDate = e.StartDate,
             EndDate = e.EndDate,
             IsCompleted = e.IsCompleted,
             EventType = MapEventType(e.Type),
-            Priority = MapEventPriority(e.Priority),
+            Priority = GetEventPriority(e.Type),
             TimeOfDay = GetTimeOfDay(e.StartDate),
-            ReminderTime = e.Duration,
-            ExpirationDate = e.EndDate
+            ReminderTime = e.EndDate - e.StartDate,
+            CreatedAt = e.CreatedAt,
+            ModifiedAt = e.ModifiedAt
         };
     }
 
-    private static HairCarePlus.Client.Patient.Features.Calendar.Models.EventType MapEventType(Domain.Entities.EventType type)
+    private static DomainEntities.HairTransplantEvent MapToDomainEvent(CalendarEvent e)
+    {
+        return new DomainEntities.HairTransplantEvent
+        {
+            Id = new Guid(e.Id.ToString().PadLeft(32, '0')),
+            Title = e.Title,
+            Notes = e.Description,
+            StartDate = e.StartDate,
+            EndDate = e.EndDate ?? e.StartDate,
+            IsCompleted = e.IsCompleted,
+            Type = MapToDomainEventType(e.EventType),
+            CreatedAt = e.CreatedAt,
+            ModifiedAt = e.ModifiedAt
+        };
+    }
+
+    private static EventType MapEventType(DomainEntities.EventType type)
     {
         return type switch
         {
-            Domain.Entities.EventType.Medication => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.MedicationTreatment,
-            Domain.Entities.EventType.Checkup => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.MedicalVisit,
-            Domain.Entities.EventType.Washing => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.GeneralRecommendation,
-            Domain.Entities.EventType.Exercise => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.GeneralRecommendation,
-            Domain.Entities.EventType.Photo => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.Photo,
-            Domain.Entities.EventType.Restriction => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.CriticalWarning,
-            _ => HairCarePlus.Client.Patient.Features.Calendar.Models.EventType.GeneralRecommendation
+            DomainEntities.EventType.Medication => EventType.MedicationTreatment,
+            DomainEntities.EventType.MedicalVisit => EventType.MedicalVisit,
+            DomainEntities.EventType.Photo => EventType.Photo,
+            DomainEntities.EventType.Video => EventType.Video,
+            DomainEntities.EventType.Recommendation => EventType.GeneralRecommendation,
+            DomainEntities.EventType.Warning => EventType.CriticalWarning,
+            _ => EventType.GeneralRecommendation
         };
     }
 
-    private static HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority MapEventPriority(Domain.Entities.EventPriority priority)
+    private static DomainEntities.EventType MapToDomainEventType(EventType type)
     {
-        return priority switch
+        return type switch
         {
-            Domain.Entities.EventPriority.Low => HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority.Low,
-            Domain.Entities.EventPriority.Normal => HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority.Normal,
-            Domain.Entities.EventPriority.High => HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority.High,
-            Domain.Entities.EventPriority.Critical => HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority.Critical,
-            _ => HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority.Normal
+            EventType.MedicationTreatment => DomainEntities.EventType.Medication,
+            EventType.MedicalVisit => DomainEntities.EventType.MedicalVisit,
+            EventType.Photo => DomainEntities.EventType.Photo,
+            EventType.Video => DomainEntities.EventType.Video,
+            EventType.GeneralRecommendation => DomainEntities.EventType.Recommendation,
+            EventType.CriticalWarning => DomainEntities.EventType.Warning,
+            _ => DomainEntities.EventType.Recommendation
+        };
+    }
+
+    private static EventPriority GetEventPriority(DomainEntities.EventType type)
+    {
+        return type switch
+        {
+            DomainEntities.EventType.Warning => EventPriority.Critical,
+            DomainEntities.EventType.Medication => EventPriority.High,
+            DomainEntities.EventType.MedicalVisit => EventPriority.High,
+            DomainEntities.EventType.Photo => EventPriority.Normal,
+            DomainEntities.EventType.Video => EventPriority.Normal,
+            DomainEntities.EventType.Recommendation => EventPriority.Low,
+            _ => EventPriority.Normal
         };
     }
 
