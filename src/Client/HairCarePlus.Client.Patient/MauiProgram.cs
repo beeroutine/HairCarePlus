@@ -61,6 +61,12 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
 		builder.Services.AddSingleton<ISecureStorageService, SecureStorageService>();
 		builder.Services.AddSingleton<IFileSystemService, FileSystemService>();
+		builder.Services.AddSingleton<INavigationService, NavigationService>();
+#if ANDROID
+		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();
+#elif IOS
+		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
+#endif
 
 		// Register services
 		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
