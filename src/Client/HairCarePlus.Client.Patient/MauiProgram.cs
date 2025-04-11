@@ -57,6 +57,11 @@ public static class MauiProgram
 			options.UseSqlite($"Data Source={dbPath}");
 		}, ServiceLifetime.Singleton);
 
+		// Register infrastructure services
+		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
+		builder.Services.AddSingleton<ISecureStorageService, SecureStorageService>();
+		builder.Services.AddSingleton<IFileSystemService, FileSystemService>();
+
 		// Register services
 		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
 		builder.Services.AddSingleton<INotificationService, NotificationServiceImpl>();

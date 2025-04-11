@@ -1,11 +1,16 @@
 ﻿using Microsoft.Maui.Controls;
 using System;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 namespace HairCarePlus.Client.Patient;
 
 public partial class App : Application
 {
+	private readonly ILocalStorageService _storageService;
+	private bool _isDatabaseInitialized;
+
 	public App()
 	{
 		try
@@ -17,25 +22,35 @@ public partial class App : Application
 			MainPage = new AppShell();
 			Debug.WriteLine("AppShell initialized and set as MainPage");
 			
-			RegisterServices();
-			Debug.WriteLine("RegisterServices completed");
+			_storageService = IPlatformApplication.Current.Services.GetRequiredService<ILocalStorageService>();
+			Debug.WriteLine("LocalStorageService retrieved");
 		}
 		catch (Exception ex)
 		{
 			Debug.WriteLine($"Exception in App constructor: {ex.Message}");
 			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-			// You could set a simple error page here if needed
 		}
 	}
 
-	private void RegisterServices()
-	{
-		// Placeholder for any service registration that might be needed
-	}
-
-	protected override void OnStart()
+	protected override async void OnStart()
 	{
 		Debug.WriteLine("App.OnStart called");
+		try
+		{
+			if (!_isDatabaseInitialized)
+			{
+				Debug.WriteLine("Starting database initialization");
+				await _storageService.InitializeDatabaseAsync();
+				_isDatabaseInitialized = true;
+				Debug.WriteLine("Database initialization completed successfully");
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Error initializing database: {ex.Message}");
+			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+			// Consider showing an error message to the user here
+		}
 		base.OnStart();
 	}
 
