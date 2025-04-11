@@ -154,31 +154,55 @@
                             </Frame.Triggers>
                             <VerticalStackLayout Spacing="2">
                                 <!-- Reply Preview -->
-                                <Frame IsVisible="{Binding ReplyTo, Converter={StaticResource IsNotNullConverter}}"
-                                      Padding="8,4"
-                                      Margin="0,0,0,4"
-                                      CornerRadius="8"
-                                      BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
-                                      Opacity="0.9">
-                                    <VerticalStackLayout Spacing="2">
-                                        <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
-                                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                                               FontSize="12">
-                                            <Label.Triggers>
-                                                <DataTrigger TargetType="Label"
-                                                           Binding="{Binding ReplyTo.SenderId}"
-                                                           Value="patient">
-                                                    <Setter Property="Text" Value="Reply to you"/>
-                                                </DataTrigger>
-                                            </Label.Triggers>
-                                        </Label>
-                                        <Label Text="{Binding ReplyTo.Content}"
-                                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                                               FontSize="13"
-                                               MaxLines="2"
-                                               LineBreakMode="TailTruncation"/>
-                                    </VerticalStackLayout>
-                                </Frame>
+                                <Grid IsVisible="{Binding ReplyTo, Converter={StaticResource IsNotNullConverter}}"
+                                      Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="4" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Вертикальная полоса, связывающая с оригинальным сообщением -->
+                                    <BoxView Grid.Column="0" 
+                                             BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
+                                             CornerRadius="2"
+                                             Margin="0,2,0,2"
+                                             HorizontalOptions="Start" />
+                                     
+                                    <Frame Grid.Column="1"
+                                           Padding="6,3"
+                                           CornerRadius="8"
+                                           BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                                           Opacity="0.85"
+                                           BorderColor="Transparent"
+                                           HasShadow="False">
+                                        <StackLayout Orientation="Vertical" Spacing="2">
+                                            <StackLayout Orientation="Horizontal" Spacing="3">
+                                                <Image Source="{FontImageSource FontFamily=MaterialIcons, Glyph=&#xe15e;, Size=12, Color={AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}}"
+                                                       VerticalOptions="Center"
+                                                       Margin="0,0,0,0" />
+                                                <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
+                                                       TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
+                                                       FontSize="10"
+                                                       FontAttributes="Bold"
+                                                       VerticalOptions="Center">
+                                                    <Label.Triggers>
+                                                        <DataTrigger TargetType="Label"
+                                                                   Binding="{Binding ReplyTo.SenderId}"
+                                                                   Value="patient">
+                                                            <Setter Property="Text" Value="Reply to you"/>
+                                                        </DataTrigger>
+                                                    </Label.Triggers>
+                                                </Label>
+                                            </StackLayout>
+                                            <Label Text="{Binding ReplyTo.Content}"
+                                                   TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
+                                                   FontSize="11"
+                                                   MaxLines="1"
+                                                   LineBreakMode="TailTruncation"
+                                                   Margin="0,0,0,0"/>
+                                        </StackLayout>
+                                    </Frame>
+                                </Grid>
 
                                 <Label Text="{Binding Content}" 
                                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
@@ -205,45 +229,63 @@
               BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
             
             <!-- Reply Preview -->
-            <Frame Grid.Row="0"
-                   IsVisible="{Binding ReplyToMessage, Converter={StaticResource IsNotNullConverter}}"
-                   BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
-                   Margin="8,4,8,0"
-                   Padding="12,8"
-                   CornerRadius="12"
-                   x:Name="ReplyIndicator"
-                   BorderColor="{StaticResource Primary}">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Spacing="2">
-                        <StackLayout Orientation="Horizontal" Spacing="4">
-                            <Label Text="↩" 
-                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-                                   FontAttributes="Bold"
-                                   FontSize="14"/>
-                            <Label Text="Reply to doctor's message"
-                                   TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
-                                   FontAttributes="Bold"
-                                   FontSize="12"/>
-                        </StackLayout>
-                        <Label Text="{Binding ReplyToMessage.Content}"
-                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                               FontSize="13"
-                               MaxLines="1"
-                               LineBreakMode="TailTruncation"/>
-                    </VerticalStackLayout>
-                    <Button Grid.Column="1"
-                            Text="×"
-                            Command="{Binding CancelReplyCommand}"
-                            BackgroundColor="Transparent"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                            FontSize="20"
-                            Padding="0"
-                            Margin="-8,-8,-8,-8"
-                            HeightRequest="36"
-                            WidthRequest="36"
-                            VerticalOptions="Center"/>
-                </Grid>
-            </Frame>
+            <Grid Grid.Row="0"
+                  IsVisible="{Binding ReplyToMessage, Converter={StaticResource IsNotNullConverter}}"
+                  Margin="8,4,8,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="4" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- Вертикальная полоса слева -->
+                <BoxView Grid.Column="0" 
+                         BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
+                         CornerRadius="2"
+                         Margin="2,4,2,4"
+                         HorizontalOptions="Start" />
+                
+                <Frame Grid.Column="1"
+                       BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                       Opacity="0.85"
+                       Padding="10,6"
+                       CornerRadius="12"
+                       x:Name="ReplyIndicator"
+                       BorderColor="Transparent"
+                       HasShadow="{OnPlatform iOS=True, Android=False}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="2">
+                            <StackLayout Orientation="Horizontal" Spacing="3">
+                                <Image Source="{FontImageSource FontFamily=MaterialIcons, Glyph=&#xe15e;, Size=12, Color={AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}}"
+                                       VerticalOptions="Center" />
+                                <Label Text="Reply to doctor's message"
+                                       TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
+                                       FontAttributes="Bold"
+                                       FontSize="11"/>
+                            </StackLayout>
+                            <Label Text="{Binding ReplyToMessage.Content}"
+                                   TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
+                                   FontSize="12"
+                                   MaxLines="1"
+                                   LineBreakMode="TailTruncation"
+                                   Margin="0,1,0,0"/>
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1"
+                                Text="×"
+                                Command="{Binding CancelReplyCommand}"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light=#8E8E93, Dark=#636366}"
+                                FontSize="20"
+                                Padding="0"
+                                Margin="-8,-8,-8,-8"
+                                HeightRequest="36"
+                                WidthRequest="36"
+                                VerticalOptions="Center"/>
+                    </Grid>
+                </Frame>
+            </Grid>
             
             <!-- Edit Message Preview -->
             <Frame Grid.Row="1"
