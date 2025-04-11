@@ -20,8 +20,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementations
 
         public async Task<List<CalendarEvent>> GetEventsForDateAsync(DateTime date)
         {
+            var dayStart = date.Date;
+            var dayEnd = date.Date.AddDays(1).AddTicks(-1);
+            
             return await _dbContext.Events
-                .Where(e => e.StartDate.Date == date.Date)
+                .Where(e => e.StartDate >= dayStart && e.StartDate <= dayEnd)
                 .OrderBy(e => e.StartDate)
                 .ToListAsync();
         }
@@ -36,8 +39,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementations
 
         public async Task<List<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate)
         {
+            var rangeStart = startDate.Date;
+            var rangeEnd = endDate.Date.AddDays(1).AddTicks(-1);
+            
             return await _dbContext.Events
-                .Where(e => e.StartDate.Date >= startDate.Date && e.StartDate.Date <= endDate.Date)
+                .Where(e => e.StartDate >= rangeStart && e.StartDate <= rangeEnd)
                 .OrderBy(e => e.StartDate)
                 .ToListAsync();
         }

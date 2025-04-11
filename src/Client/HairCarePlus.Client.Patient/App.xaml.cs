@@ -9,6 +9,7 @@ namespace HairCarePlus.Client.Patient;
 public partial class App : Application
 {
 	private readonly ILocalStorageService _storageService;
+	private readonly IDataInitializer _dataInitializer;
 	private bool _isDatabaseInitialized;
 
 	public App()
@@ -24,6 +25,9 @@ public partial class App : Application
 			
 			_storageService = IPlatformApplication.Current.Services.GetRequiredService<ILocalStorageService>();
 			Debug.WriteLine("LocalStorageService retrieved");
+			
+			_dataInitializer = IPlatformApplication.Current.Services.GetRequiredService<IDataInitializer>();
+			Debug.WriteLine("DataInitializer retrieved");
 		}
 		catch (Exception ex)
 		{
@@ -43,6 +47,18 @@ public partial class App : Application
 				await _storageService.InitializeDatabaseAsync();
 				_isDatabaseInitialized = true;
 				Debug.WriteLine("Database initialization completed successfully");
+				
+				// Проверяем необходимость инициализации данных календаря
+				if (await _dataInitializer.NeedsInitializationAsync())
+				{
+					Debug.WriteLine("Starting calendar data initialization");
+					await _dataInitializer.InitializeDataAsync();
+					Debug.WriteLine("Calendar data initialization completed successfully");
+				}
+				else
+				{
+					Debug.WriteLine("Calendar data already initialized, skipping initialization");
+				}
 			}
 		}
 		catch (Exception ex)

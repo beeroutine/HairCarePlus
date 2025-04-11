@@ -68,6 +68,9 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
 		builder.Services.AddSingleton<IHairTransplantEventGenerator, HairTransplantEventGeneratorImpl>();
 
+		// Register data initializers
+		builder.Services.AddSingleton<IDataInitializer, CalendarDataInitializer>();
+
 		// Register Pages and ViewModels
 		builder.Services.AddTransient<ChatPage>();
 		builder.Services.AddTransient<ChatViewModel>();

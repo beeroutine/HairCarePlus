@@ -18,16 +18,22 @@ public class HairTransplantEventRepository : BaseRepository<HairTransplantEvent>
 
     public async Task<IEnumerable<HairTransplantEvent>> GetEventsForDateAsync(DateTime date)
     {
+        var dayStart = date.Date;
+        var dayEnd = date.Date.AddDays(1).AddTicks(-1);
+        
         return await DbSet
-            .Where(e => e.StartDate.Date <= date.Date && e.EndDate.Date >= date.Date)
+            .Where(e => e.StartDate <= dayEnd && e.EndDate >= dayStart)
             .OrderBy(e => e.StartDate)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<HairTransplantEvent>> GetEventsForRangeAsync(DateTime startDate, DateTime endDate)
     {
+        var rangeStart = startDate.Date;
+        var rangeEnd = endDate.Date.AddDays(1).AddTicks(-1);
+        
         return await DbSet
-            .Where(e => e.StartDate.Date <= endDate.Date && e.EndDate.Date >= startDate.Date)
+            .Where(e => e.StartDate <= rangeEnd && e.EndDate >= rangeStart)
             .OrderBy(e => e.StartDate)
             .ToListAsync();
     }
@@ -35,8 +41,10 @@ public class HairTransplantEventRepository : BaseRepository<HairTransplantEvent>
     public async Task<IEnumerable<HairTransplantEvent>> GetPendingEventsAsync()
     {
         var today = DateTime.UtcNow.Date;
+        var todayEnd = today.AddDays(1).AddTicks(-1);
+        
         return await DbSet
-            .Where(e => !e.IsCompleted && e.EndDate.Date >= today)
+            .Where(e => !e.IsCompleted && e.EndDate >= today)
             .OrderBy(e => e.StartDate)
             .ToListAsync();
     }
