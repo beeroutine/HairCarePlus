@@ -310,7 +310,8 @@
                               Orientation="Horizontal">
                         <CollectionView x:Name="daysCollection"
                                       ItemsSource="{Binding CalendarDays}"
-                                      SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
+                                      SelectionChangedCommand="{Binding SelectDateCommand}"
+                                      SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference daysCollection}}"
                                       SelectionMode="Single"
                                       HeightRequest="80"
                                       Margin="0,4,0,0"

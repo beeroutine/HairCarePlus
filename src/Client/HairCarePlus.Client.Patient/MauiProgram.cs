@@ -25,6 +25,7 @@ using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Implementation;
 using System;
 using System.IO;
+using System.Diagnostics;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -52,10 +53,18 @@ public static class MauiProgram
 
 		// Add services to the container
 		var dbPath = Path.Combine(FileSystem.AppDataDirectory, "haircare.db");
+		builder.Services.AddDbContextFactory<AppDbContext>(options =>
+		{
+			options.UseSqlite($"Data Source={dbPath}");
+			options.EnableSensitiveDataLogging();
+			options.LogTo(message => Debug.WriteLine(message));
+		});
 		builder.Services.AddDbContext<AppDbContext>(options =>
 		{
 			options.UseSqlite($"Data Source={dbPath}");
-		}, ServiceLifetime.Singleton);
+			options.EnableSensitiveDataLogging();
+			options.LogTo(message => Debug.WriteLine(message));
+		}, ServiceLifetime.Scoped);
 
 		// Register infrastructure services
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();

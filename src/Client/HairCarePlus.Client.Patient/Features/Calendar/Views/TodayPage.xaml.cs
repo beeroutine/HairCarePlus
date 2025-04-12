@@ -14,6 +14,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly ILogger<TodayPage> _logger;
         private bool _isLoaded;
         private TodayViewModel _viewModel;
+        private bool _isDataLoaded;
         
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -43,46 +44,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         protected override async void OnAppearing()
         {
-            try
+            base.OnAppearing();
+            _logger.LogInformation("TodayPage OnAppearing called");
+            
+            if (!_isDataLoaded)
             {
-                Debug.WriteLine("TodayPage OnAppearing start");
-                base.OnAppearing();
-                _logger.LogInformation("TodayPage OnAppearing called");
-                
-                if (!_isLoaded)
-                {
-                    _isLoaded = true;
-                    if (BindingContext is TodayViewModel viewModel)
-                    {
-                        // Загрузка данных выполняется только один раз при первом появлении страницы
-                        _logger.LogInformation("First time loading data for TodayPage");
-                        await viewModel.LoadTodayEventsAsync();
-                        await viewModel.LoadEventCountsForVisibleDaysAsync();
-                        await viewModel.CheckOverdueEventsAsync();
-                    }
-                }
-                
-                // Refresh selected date when returning to this page
-                if (_viewModel != null)
-                {
-                    DateTime currentDate = _viewModel.SelectedDate;
-                    
-                    // Проверяем текущий выбранный элемент
-                    Debug.WriteLine($"Current SelectedDate in ViewModel: {_viewModel.SelectedDate.ToShortDateString()}");
-                    
-                    // Программно обновляем визуальное состояние при загрузке страницы
-                    // Это необходимо, так как VisualStateManager может не сработать автоматически 
-                    // при первоначальной загрузке
-                    UpdateSelectedDateVisualState(_viewModel.SelectedDate);
-                    
-                    Debug.WriteLine($"TodayPage OnAppearing refreshed selected date: {currentDate}");
-                }
+                _logger.LogInformation("First time loading data for TodayPage");
+                // Delay data loading slightly to ensure DbContext is fully initialized
+                await Task.Delay(100); // Small delay to allow app initialization to complete
+                await _viewModel.LoadTodayEventsAsync();
+                await _viewModel.LoadEventCountsForVisibleDaysAsync();
+                _isDataLoaded = true;
             }
-            catch (Exception ex)
+            else
             {
-                Debug.WriteLine($"Exception in TodayPage OnAppearing: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger.LogInformation("Data already loaded, updating UI if needed");
+                // No specific refresh method available, just log the state
+                _logger.LogInformation("UI update skipped, no refresh method available");
             }
+            
+            // Update visual state for the selected date
+            UpdateSelectedDateVisualState(_viewModel.SelectedDate);
+            _logger.LogInformation("TodayPage OnAppearing completed");
         }
         
         protected override void OnDisappearing()

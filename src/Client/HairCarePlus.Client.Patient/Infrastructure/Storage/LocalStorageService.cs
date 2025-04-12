@@ -14,13 +14,14 @@ public class LocalStorageService : ILocalStorageService
 {
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly string _databasePath;
-    private AppDbContext? _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private const int MAX_RETRIES = 3;
     private const int RETRY_DELAY_MS = 1000;
     private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
 
-    public LocalStorageService()
+    public LocalStorageService(IDbContextFactory<AppDbContext> contextFactory)
     {
+        _contextFactory = contextFactory;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -32,92 +33,37 @@ public class LocalStorageService : ILocalStorageService
 
     public AppDbContext GetDbContext()
     {
-        if (_dbContext == null)
-        {
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseSqlite($"Data Source={_databasePath}")
-                .EnableSensitiveDataLogging()
-                .LogTo(message => Debug.WriteLine(message))
-                .Options;
-            _dbContext = new AppDbContext(options);
-        }
-        return _dbContext;
+        return _contextFactory.CreateDbContext();
     }
 
     public async Task InitializeDatabaseAsync()
     {
-        Debug.WriteLine("Starting database initialization in LocalStorageService");
-        
-        // Only allow one initialization operation at a time
-        await _initLock.WaitAsync();
-        
+        if (!await _initLock.WaitAsync(TimeSpan.FromSeconds(30)))
+        {
+            throw new TimeoutException("Could not acquire initialization lock");
+        }
+
         try
         {
-            var directory = Path.GetDirectoryName(_databasePath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            using var context = GetDbContext();
+            if (!await DoesDatabaseExistAsync())
             {
-                Directory.CreateDirectory(directory);
-                Debug.WriteLine($"Created directory: {directory}");
-            }
-
-            if (File.Exists(_databasePath))
-            {
-                Debug.WriteLine("Database file exists, checking for valid schema");
-                if (await VerifyDatabaseTablesExistAsync())
-                {
-                    Debug.WriteLine("Database schema verified, skipping initialization");
-                    return;
-                }
-                else
-                {
-                    Debug.WriteLine("Database file exists but schema is invalid, will recreate database");
-                    try
-                    {
-                        File.Delete(_databasePath);
-                        Debug.WriteLine("Deleted existing invalid database file");
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Failed to delete invalid database file: {ex.Message}");
-                    }
-                }
+                Debug.WriteLine("Database does not exist, creating...");
+                await CreateDatabaseWithSqliteAsync();
+                Debug.WriteLine("Database created successfully");
             }
             else
             {
-                Debug.WriteLine("Database file does not exist, will create new database");
-            }
-
-            var retryCount = 0;
-            while (retryCount < MAX_RETRIES)
-            {
-                try
+                Debug.WriteLine("Database exists, verifying schema...");
+                if (!await VerifyDatabaseTablesAsync())
                 {
-                    // Create database file directly with SQLite
+                    Debug.WriteLine("Database schema verification failed, recreating...");
                     await CreateDatabaseWithSqliteAsync();
-                    
-                    // Verify tables exist
-                    if (await VerifyDatabaseTablesExistAsync())
-                    {
-                        Debug.WriteLine("Database initialization completed successfully");
-                        break;
-                    }
-                    else
-                    {
-                        throw new Exception("Database tables verification failed");
-                    }
+                    Debug.WriteLine("Database recreated successfully");
                 }
-                catch (Exception ex)
+                else
                 {
-                    retryCount++;
-                    if (retryCount >= MAX_RETRIES)
-                    {
-                        Debug.WriteLine($"Database initialization failed after {MAX_RETRIES} attempts");
-                        throw new Exception($"Failed to initialize database after {MAX_RETRIES} attempts", ex);
-                    }
-                    
-                    Debug.WriteLine($"Attempt {retryCount} failed: {ex.Message}");
-                    Debug.WriteLine($"Retrying in {RETRY_DELAY_MS}ms...");
-                    await Task.Delay(RETRY_DELAY_MS);
+                    Debug.WriteLine("Database schema verified, skipping initialization");
                 }
             }
         }
@@ -307,4 +253,53 @@ public class LocalStorageService : ILocalStorageService
     }
 
     public string GetDatabasePath() => _databasePath;
+
+    private async Task<bool> DoesDatabaseExistAsync()
+    {
+        if (!File.Exists(_databasePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={_databasePath}");
+            await connection.OpenAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<bool> VerifyDatabaseTablesAsync()
+    {
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={_databasePath}");
+            await connection.OpenAsync();
+            
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT name FROM sqlite_master 
+                WHERE type='table' 
+                AND name IN ('Events', 'Messages')";
+            
+            using var reader = await command.ExecuteReaderAsync();
+            var tableCount = 0;
+            while (await reader.ReadAsync())
+            {
+                tableCount++;
+                Debug.WriteLine($"Found table: {reader.GetString(0)}");
+            }
+            
+            return tableCount == 2; // We need both Events and Messages tables
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error verifying database tables: {ex.Message}");
+            return false;
+        }
+    }
 } 
