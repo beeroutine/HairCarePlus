@@ -14,7 +14,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly ILogger<TodayPage> _logger;
         private bool _isLoaded;
         private TodayViewModel _viewModel;
-        private bool _isDataLoaded;
+        private bool _isDataLoaded = false;
         
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -50,10 +50,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (!_isDataLoaded)
             {
                 _logger.LogInformation("First time loading data for TodayPage");
-                // Delay data loading slightly to ensure DbContext is fully initialized
-                await Task.Delay(100); // Small delay to allow app initialization to complete
-                await _viewModel.LoadTodayEventsAsync();
-                await _viewModel.LoadEventCountsForVisibleDaysAsync();
+                // Add a small delay to ensure DbContext is fully initialized
+                await Task.Delay(100);
+                
+                // Use the ViewModel's dedicated method for initialization
+                await ((TodayViewModel)BindingContext).InitializeDataAsync();
+                
                 _isDataLoaded = true;
             }
             else

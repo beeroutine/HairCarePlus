@@ -70,6 +70,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private int _eventCountsCacheHits = 0;
         private int _eventCountsBatchRequests = 0;
         
+        private bool _isDataLoaded;
+        private bool _isRefreshingData;
+        
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
         public bool IsRefreshing
         {
             get => _isRefreshing;
@@ -104,7 +114,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        public bool IsLoading => CurrentLoadingState == LoadingState.Loading;
         public bool HasError => CurrentLoadingState == LoadingState.Error;
         public bool IsContentVisible => CurrentLoadingState != LoadingState.Loading && CurrentLoadingState != LoadingState.Error;
 
@@ -167,16 +176,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             
             // Initial data loading
             LoadCalendarDays();
-            Task.Run(async () => 
-            {
-                await LoadTodayEventsAsync();
-                await LoadEventCountsForVisibleDaysAsync();
-                await CheckOverdueEventsAsync();
-                
-                // Запись в лог начальной диагностики
-                _logger.LogInformation("Initial diagnostics: Cache size: {CacheSize}, Hits: {CacheHits}, Misses: {CacheMisses}", 
-                    _eventCache.Count, _cacheHits, _cacheMisses);
-            });
         }
         
         public DateTime SelectedDate
@@ -1398,6 +1397,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 "Диагностика синхронизации",
                 GetDiagnosticStats(),
                 "OK");
+        }
+
+        // Add a new public method that can be called to initialize data
+        public async Task InitializeDataAsync()
+        {
+            if (_isRefreshingData)
+                return;
+
+            _isRefreshingData = true;
+            IsLoading = true;
+
+            try
+            {
+                await LoadTodayEventsAsync();
+                await LoadEventCountsForVisibleDaysAsync();
+                await CheckOverdueEventsAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error loading initial data: {ex.Message}");
+            }
+            finally
+            {
+                _isRefreshingData = false;
+                IsLoading = false;
+            }
         }
     }
     
