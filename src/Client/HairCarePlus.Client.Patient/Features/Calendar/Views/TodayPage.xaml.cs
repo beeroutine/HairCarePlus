@@ -31,9 +31,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
                 _logger = logger;
                 _logger.LogInformation("TodayPage instance created");
-                
-                // Добавляем обработчик изменения SelectedDate в ViewModel
-                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             }
             catch (Exception ex)
             {
@@ -47,27 +44,47 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             base.OnAppearing();
             _logger.LogInformation("TodayPage OnAppearing called");
             
-            if (!_isDataLoaded)
+            // Subscribe to ViewModel changes when the page appears
+            if (_viewModel != null)
             {
-                _logger.LogInformation("First time loading data for TodayPage");
-                // Add a small delay to ensure DbContext is fully initialized
-                await Task.Delay(100);
-                
-                // Use the ViewModel's dedicated method for initialization
-                await ((TodayViewModel)BindingContext).InitializeDataAsync();
-                
-                _isDataLoaded = true;
-            }
-            else
-            {
-                _logger.LogInformation("Data already loaded, updating UI if needed");
-                // No specific refresh method available, just log the state
-                _logger.LogInformation("UI update skipped, no refresh method available");
+                _viewModel.PropertyChanged -= OnViewModelPropertyChanged; // Ensure clean state
+                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             }
             
-            // Update visual state for the selected date
-            UpdateSelectedDateVisualState(_viewModel.SelectedDate);
-            _logger.LogInformation("TodayPage OnAppearing completed");
+            try
+            {
+                // Clear both the CollectionView selection and visual states
+                if (daysCollection != null)
+                {
+                    daysCollection.SelectedItem = null;
+                }
+                
+                if (!_isDataLoaded)
+                {
+                    _logger.LogInformation("First time loading data for TodayPage");
+                    // Add a small delay to ensure DbContext is fully initialized
+                    await Task.Delay(100);
+                    
+                    // Use the ViewModel's dedicated method for initialization
+                    await ((TodayViewModel)BindingContext).InitializeDataAsync();
+                    
+                    _isDataLoaded = true;
+                }
+                else
+                {
+                    _logger.LogInformation("Data already loaded, updating UI if needed");
+                    // No specific refresh method available, just log the state
+                    _logger.LogInformation("UI update skipped, no refresh method available");
+                }
+                
+                // Update visual state for the selected date
+                UpdateSelectedDateVisualState(_viewModel.SelectedDate);
+                _logger.LogInformation("TodayPage OnAppearing completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in OnAppearing");
+            }
         }
         
         protected override void OnDisappearing()
