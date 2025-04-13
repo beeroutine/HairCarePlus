@@ -171,7 +171,7 @@
                                     <Frame Grid.Column="1"
                                            Padding="6,3"
                                            CornerRadius="8"
-                                           BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                                           BackgroundColor="{Binding ReplyTo.SenderId, Converter={StaticResource MessageBackgroundConverter}}"
                                            Opacity="0.85"
                                            BorderColor="Transparent"
                                            HasShadow="False">
@@ -248,7 +248,7 @@
                          HorizontalOptions="Start" />
                 
                 <Frame Grid.Column="1"
-                       BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                       BackgroundColor="{Binding ReplyToMessage.SenderId, Converter={StaticResource MessageBackgroundConverter}}"
                        Opacity="0.85"
                        Padding="10,6"
                        CornerRadius="12"
@@ -263,7 +263,20 @@
                                 <Label Text="Reply to doctor's message"
                                        TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
                                        FontAttributes="Bold"
-                                       FontSize="11"/>
+                                       FontSize="11">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label"
+                                                   Binding="{Binding ReplyToMessage.SenderId}"
+                                                   Value="patient">
+                                            <Setter Property="Text" Value="Reply to your message"/>
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Label"
+                                                   Binding="{Binding ReplyToMessage.SenderId}"
+                                                   Value="doctor">
+                                            <Setter Property="Text" Value="Reply to doctor's message"/>
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                             </StackLayout>
                             <Label Text="{Binding ReplyToMessage.Content}"
                                    TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
@@ -282,7 +295,8 @@
                                 Margin="-8,-8,-8,-8"
                                 HeightRequest="36"
                                 WidthRequest="36"
-                                VerticalOptions="Center"/>
+                                VerticalOptions="Center"
+                                IsVisible="True"/>
                     </Grid>
                 </Frame>
             </Grid>

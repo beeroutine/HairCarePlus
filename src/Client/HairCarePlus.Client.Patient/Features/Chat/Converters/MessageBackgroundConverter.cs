@@ -15,11 +15,20 @@ public class MessageBackgroundConverter : IValueConverter
             // Если параметр не указан, и тип назначения - Color, преобразуем SenderId в цвет
             if (parameter == null && targetType == typeof(Microsoft.Maui.Graphics.Color))
             {
-                var color = senderId == "patient" 
-                    ? Colors.LightSkyBlue 
-                    : Colors.LightGreen;
-                System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter: Возвращаем цвет {color}");
-                return color;
+                if (senderId == "patient")
+                {
+                    // Patient message colors
+                    return Application.Current?.RequestedTheme == AppTheme.Dark 
+                        ? Color.FromArgb("#1E2A35") // Dark blue for dark theme
+                        : Color.FromArgb("#EAF4FC"); // Light blue for light theme
+                }
+                else
+                {
+                    // Doctor message colors
+                    return Application.Current?.RequestedTheme == AppTheme.Dark 
+                        ? Color.FromArgb("#4D7B63") // Dark green for dark theme
+                        : Color.FromArgb("#A0DAB2"); // Light green for light theme
+                }
             }
             
             if (parameter is string conversionType)
