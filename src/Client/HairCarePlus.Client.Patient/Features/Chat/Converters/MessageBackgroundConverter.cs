@@ -12,23 +12,25 @@ public class MessageBackgroundConverter : IValueConverter
             // Логирование для отладки
             System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter.Convert: senderId={senderId}, targetType={targetType.Name}, parameter={parameter}");
             
-            // Если параметр не указан, и тип назначения - Color, преобразуем SenderId в цвет
-            if (parameter == null && targetType == typeof(Microsoft.Maui.Graphics.Color))
+            // Исправлено: всегда возвращать корректный цвет для patient/doctor, если targetType == Color
+            if ((targetType == typeof(Microsoft.Maui.Graphics.Color)) || (parameter is string p && p.ToLower() == "backgroundcolor"))
             {
                 if (senderId == "patient")
                 {
-                    // Patient message colors
-                    return Application.Current?.RequestedTheme == AppTheme.Dark 
-                        ? Color.FromArgb("#1E2A35") // Dark blue for dark theme
-                        : Color.FromArgb("#EAF4FC"); // Light blue for light theme
+                    return Application.Current?.RequestedTheme == AppTheme.Dark
+                        ? Color.FromArgb("#1E2A35")
+                        : Color.FromArgb("#EAF4FC");
                 }
-                else
+                else if (senderId == "doctor")
                 {
-                    // Doctor message colors
-                    return Application.Current?.RequestedTheme == AppTheme.Dark 
-                        ? Color.FromArgb("#4D7B63") // Dark green for dark theme
-                        : Color.FromArgb("#A0DAB2"); // Light green for light theme
+                    return Application.Current?.RequestedTheme == AppTheme.Dark
+                        ? Color.FromArgb("#4D7B63")
+                        : Color.FromArgb("#A0DAB2");
                 }
+                // fallback: neutral color
+                return Application.Current?.RequestedTheme == AppTheme.Dark
+                    ? Color.FromArgb("#222222")
+                    : Color.FromArgb("#F7F7F7");
             }
             
             if (parameter is string conversionType)

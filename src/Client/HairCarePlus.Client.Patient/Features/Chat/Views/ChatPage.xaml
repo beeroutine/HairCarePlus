@@ -109,7 +109,7 @@
                         <!-- Message -->
                         <Frame Grid.Column="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='column'}"
                                Style="{StaticResource MessageFrameStyle}"
-                               BackgroundColor="{Binding SenderId, Mode=OneWay}"
+                               BackgroundColor="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}}"
                                HorizontalOptions="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='alignment'}"
                                Margin="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='margin'}">
                             <Frame.Behaviors>
@@ -326,7 +326,7 @@
                     </VerticalStackLayout>
                     <Button Grid.Column="1"
                             Text="×"
-                            Command="{Binding CancelEditCommand}"
+                            Command="{Binding CancelReplyCommand}"
                             BackgroundColor="Transparent"
                             TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                             FontSize="20"
