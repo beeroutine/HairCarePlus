@@ -9,6 +9,7 @@ using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Maui.Controls;
 using System.Linq;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -17,6 +18,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly INavigationService _navigationService;
     private readonly ILocalStorageService _localStorageService;
     private readonly IKeyboardService _keyboardService;
+    private readonly IChatRepository _chatRepository;
     private readonly Random _random = new Random();
     public CollectionView MessagesCollectionView { get; set; }
     private readonly string[] _doctorResponses = new[]
@@ -51,11 +53,13 @@ public partial class ChatViewModel : ObservableObject
     public ChatViewModel(
         INavigationService navigationService,
         ILocalStorageService localStorageService,
-        IKeyboardService keyboardService)
+        IKeyboardService keyboardService,
+        IChatRepository chatRepository)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
         _keyboardService = keyboardService;
+        _chatRepository = chatRepository;
         Messages = new ObservableCollection<ChatMessage>();
         
         // Initialize doctor for display
@@ -75,14 +79,10 @@ public partial class ChatViewModel : ObservableObject
     {
         try
         {
-            // TODO: Load chat messages from local storage or API
             Messages.Clear();
-            Messages.Add(new ChatMessage 
-            { 
-                Content = "Welcome to HairCare+! How can I help you today?",
-                SenderId = "doctor",
-                Timestamp = DateTime.Now.AddMinutes(-5)
-            });
+            var messages = await _chatRepository.GetMessagesAsync("default_conversation");
+            foreach (var msg in messages.OrderBy(m => m.SentAt))
+                Messages.Add(msg);
         }
         catch (Exception ex)
         {
@@ -95,45 +95,59 @@ public partial class ChatViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(MessageText))
             return;
-
         try
         {
             if (EditingMessage != null)
             {
-                // Редактирование существующего сообщения
+                EditingMessage.Content = MessageText;
+                await _chatRepository.UpdateMessageAsync(EditingMessage);
                 int index = Messages.IndexOf(EditingMessage);
                 if (index >= 0)
                 {
-                    EditingMessage.Content = MessageText;
-                    Messages[index] = EditingMessage; // Для обновления UI
-                    MessageText = string.Empty;
-                    EditingMessage = null;
+                    Messages[index] = EditingMessage;
                 }
+                MessageText = string.Empty;
+                EditingMessage = null;
             }
             else
             {
-                // Отправка нового сообщения
                 var message = new ChatMessage
                 {
                     Content = MessageText,
                     SenderId = "patient",
-                    Timestamp = DateTime.Now,
+                    ConversationId = "default_conversation",
+                    SentAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = MessageStatus.Sending,
+                    SyncStatus = SyncStatus.NotSynced,
                     ReplyTo = ReplyToMessage
                 };
-
+                var localId = await _chatRepository.SaveMessageAsync(message);
+                message.LocalId = localId;
                 Messages.Add(message);
                 MessageText = string.Empty;
                 ReplyToMessage = null;
-
-                // Симуляция ответа врача через 1-3 секунды
-                await SimulateDoctorResponseAsync();
+                // Optionally: trigger sync service here
             }
-
-            // TODO: Синхронизация с API
         }
         catch (Exception ex)
         {
             await Application.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteMessage(ChatMessage message)
+    {
+        if (message == null) return;
+        try
+        {
+            await _chatRepository.DeleteMessageAsync(message.LocalId);
+            Messages.Remove(message);
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
         }
     }
 

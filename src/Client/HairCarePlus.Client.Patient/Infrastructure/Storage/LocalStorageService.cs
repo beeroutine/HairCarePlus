@@ -136,31 +136,38 @@ public class LocalStorageService : ILocalStorageService
                 Debug.WriteLine("Created Events table");
             }
             
-            // Create Messages table
+            // Create ChatMessages table (not Messages)
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Messages (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                CREATE TABLE IF NOT EXISTS ChatMessages (
+                    LocalId INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ServerMessageId TEXT,
+                    ConversationId TEXT NOT NULL,
                     Content TEXT NOT NULL,
                     SentAt TEXT NOT NULL,
-                    Timestamp TEXT NOT NULL,
+                    Timestamp TEXT,
                     SenderId TEXT NOT NULL,
                     RecipientId TEXT,
-                    Type INTEGER NOT NULL,
-                    Status INTEGER NOT NULL,
-                    IsRead INTEGER NOT NULL,
+                    Type INTEGER,
+                    Status INTEGER,
+                    SyncStatus INTEGER,
+                    IsRead INTEGER,
                     AttachmentUrl TEXT,
+                    LocalAttachmentPath TEXT,
                     ThumbnailUrl TEXT,
+                    LocalThumbnailPath TEXT,
                     FileSize INTEGER,
                     FileName TEXT,
                     MimeType TEXT,
                     ReadAt TEXT,
                     DeliveredAt TEXT,
-                    ReplyToId INTEGER
+                    ReplyToLocalId INTEGER,
+                    CreatedAt TEXT,
+                    LastModifiedAt TEXT
                 )";
                 await command.ExecuteNonQueryAsync();
-                Debug.WriteLine("Created Messages table");
+                Debug.WriteLine("Created ChatMessages table");
             }
             
             Debug.WriteLine("Database schema created successfully");

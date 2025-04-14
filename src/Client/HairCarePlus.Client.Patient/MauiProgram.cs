@@ -1,4 +1,5 @@
-﻿using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
+﻿using HairCarePlus.Client.Patient.Features.Chat;
+using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 using HairCarePlus.Client.Patient.Features.Chat.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
@@ -76,6 +77,9 @@ public static class MauiProgram
 #elif IOS
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
 #endif
+
+		// Register Chat Feature (IChatRepository, ChatRepository, etc.)
+		builder.Services.AddChatFeature();
 
 		// Register services
 		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
