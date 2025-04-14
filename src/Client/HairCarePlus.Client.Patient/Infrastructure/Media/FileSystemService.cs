@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace HairCarePlus.Client.Patient.Infrastructure.Media;
 
-public class FileSystemService : IFileSystemService
+public class FileSystemService : IMediaFileSystemService
 {
     private readonly string _cacheDirectory;
     private readonly string _mediaDirectory;
@@ -42,20 +42,18 @@ public class FileSystemService : IFileSystemService
         }
     }
 
-    public async Task<bool> DeleteFileAsync(string filePath)
+    public async Task DeleteFileAsync(string filePath)
     {
         try
         {
             if (await FileExistsAsync(filePath))
             {
                 File.Delete(filePath);
-                return true;
             }
-            return false;
         }
         catch (Exception)
         {
-            return false;
+            // Log error if needed
         }
     }
 
@@ -64,6 +62,41 @@ public class FileSystemService : IFileSystemService
         return await Task.FromResult(File.Exists(filePath));
     }
 
+    public async Task<string> GetLocalPathAsync(string fileName, string directory)
+    {
+        return await Task.FromResult(Path.Combine(directory, fileName));
+    }
+
+    public async Task CleanupDirectoryAsync(string directory, int maxAgeInDays = 30)
+    {
+        try
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-maxAgeInDays);
+            var directoryInfo = new DirectoryInfo(directory);
+
+            foreach (var file in directoryInfo.GetFiles())
+            {
+                if (file.LastWriteTimeUtc < cutoffDate)
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch (Exception)
+                    {
+                        // Log error if needed
+                    }
+                }
+            }
+            await Task.CompletedTask;
+        }
+        catch (Exception)
+        {
+            // Log error if needed
+        }
+    }
+
+    // Helper methods
     public async Task<long> GetFileSizeAsync(string filePath)
     {
         try
@@ -89,26 +122,7 @@ public class FileSystemService : IFileSystemService
 
     public async Task ClearCacheAsync()
     {
-        try
-        {
-            var directory = new DirectoryInfo(_cacheDirectory);
-            foreach (var file in directory.GetFiles())
-            {
-                try
-                {
-                    file.Delete();
-                }
-                catch (Exception)
-                {
-                    // Log error if needed
-                }
-            }
-            await Task.CompletedTask;
-        }
-        catch (Exception)
-        {
-            // Log error if needed
-        }
+        await CleanupDirectoryAsync(_cacheDirectory, 1); // Clean files older than 1 day
     }
 
     public async Task<long> GetDirectorySizeAsync(string directory)

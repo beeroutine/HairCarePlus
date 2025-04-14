@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 
-namespace HairCarePlus.Client.Patient.Infrastructure.Media;
+namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
 
-public interface IMediaFileSystemService
+public interface IStorageFileSystemService
 {
     Task<bool> FileExistsAsync(string path);
     Task DeleteFileAsync(string path);

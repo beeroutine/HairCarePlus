@@ -9,11 +9,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            if (value is bool isCompleted)
-            {
-                return isCompleted ? Colors.Gray : Colors.White;
-            }
-            return Colors.White;
+            if (value is not bool boolValue || parameter is not string options)
+                return Colors.Transparent;
+
+            var colors = options.Split('|');
+            if (colors.Length != 2)
+                return Colors.Transparent;
+
+            return boolValue ? Color.Parse(colors[0]) : Color.Parse(colors[1]);
         }
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

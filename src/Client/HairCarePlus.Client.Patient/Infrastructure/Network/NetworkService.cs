@@ -1,16 +1,19 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Maui.Networking;
+using Microsoft.Maui.ApplicationModel;
+using HairCarePlus.Client.Patient.Infrastructure.Services;
 
-namespace HairCarePlus.Client.Patient.Infrastructure.Services;
+namespace HairCarePlus.Client.Patient.Infrastructure.Network;
 
 public class NetworkService : INetworkService
 {
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    public NetworkService()
+    public NetworkService(HttpClient httpClient)
     {
-        _httpClient = new HttpClient();
+        _httpClient = httpClient;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -51,7 +54,7 @@ public class NetworkService : INetworkService
 
     public Task<bool> IsConnectedAsync()
     {
-        return Task.FromResult(Connectivity.NetworkAccess == NetworkAccess.Internet);
+        return Task.FromResult(Microsoft.Maui.Networking.NetworkAccess.Internet == Microsoft.Maui.Networking.Connectivity.Current.NetworkAccess);
     }
 
     public async Task<HttpResponseMessage> UploadFileAsync(string endpoint, Stream fileStream, string fileName, string contentType, IDictionary<string, string>? headers = null)

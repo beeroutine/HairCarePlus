@@ -1,13 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
-using HairCarePlus.Client.Patient.Features.Chat.Models;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
+using System;
+using System.IO;
 
 namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 public class AppDbContext : DbContext
 {
     public DbSet<CalendarEvent> Events { get; set; }
-    public DbSet<ChatMessage> Messages { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -35,10 +37,39 @@ public class AppDbContext : DbContext
         // Message configuration
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Content).IsRequired();
-            entity.Property(e => e.SentAt).IsRequired();
-            entity.Property(e => e.SenderId).IsRequired();
+            entity.ToTable("ChatMessages");
+            
+            entity.HasKey(e => e.LocalId);
+            
+            entity.HasIndex(e => e.ServerMessageId)
+                .IsUnique()
+                .HasFilter("[ServerMessageId] IS NOT NULL");
+                
+            entity.HasIndex(e => e.ConversationId);
+            entity.HasIndex(e => e.SentAt);
+            entity.HasIndex(e => e.SyncStatus);
+            
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasMaxLength(4000);
+                
+            entity.Property(e => e.SenderId)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            entity.Property(e => e.RecipientId)
+                .HasMaxLength(50);
+                
+            entity.Property(e => e.FileName)
+                .HasMaxLength(255);
+                
+            entity.Property(e => e.MimeType)
+                .HasMaxLength(100);
+                
+            entity.HasOne(e => e.ReplyTo)
+                .WithMany()
+                .HasForeignKey(e => e.ReplyToLocalId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 } 

@@ -7,6 +7,7 @@
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
+             xmlns:entities="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Domain.Entities"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
@@ -98,7 +99,7 @@
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:ChatMessage">
+                <DataTemplate x:DataType="entities:ChatMessage">
                     <Grid Padding="4,2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

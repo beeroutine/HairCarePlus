@@ -69,7 +69,7 @@ public static class MauiProgram
 		// Register infrastructure services
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
 		builder.Services.AddSingleton<ISecureStorageService, SecureStorageService>();
-		builder.Services.AddSingleton<IFileSystemService, FileSystemService>();
+		builder.Services.AddSingleton<IMediaFileSystemService, FileSystemService>();
 		builder.Services.AddSingleton<INavigationService, NavigationService>();
 #if ANDROID
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();

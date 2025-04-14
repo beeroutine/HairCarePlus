@@ -86,10 +86,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             return result;
         }
 
-        public async Task<IEnumerable<CalendarEvent>> ExpandMultiDayEventsAsync(IEnumerable<CalendarEvent> events)
+        public Task<IEnumerable<CalendarEvent>> ExpandMultiDayEventsAsync(IEnumerable<CalendarEvent> events)
         {
             // Implementation for expanding multi-day events if needed
-            return events.ToList();
+            return Task.FromResult(events.ToList() as IEnumerable<CalendarEvent>);
         }
 
         public async Task<IEnumerable<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate)

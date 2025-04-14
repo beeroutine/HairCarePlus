@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using HairCarePlus.Client.Patient.Features.Chat.Models;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Maui.Controls;
@@ -46,7 +46,7 @@ public partial class ChatViewModel : ObservableObject
     private ChatMessage _editingMessage;
 
     [ObservableProperty]
-    private Models.Doctor _doctor;
+    private Doctor _doctor;
 
     public ChatViewModel(
         INavigationService navigationService,
@@ -58,8 +58,8 @@ public partial class ChatViewModel : ObservableObject
         _keyboardService = keyboardService;
         Messages = new ObservableCollection<ChatMessage>();
         
-        // Инициализация врача для отображения информации
-        Doctor = new Models.Doctor
+        // Initialize doctor for display
+        Doctor = new Doctor
         {
             Id = "doctor1",
             Name = "Dr. Sarah Johnson",

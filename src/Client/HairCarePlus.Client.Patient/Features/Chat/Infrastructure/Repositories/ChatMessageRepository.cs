@@ -28,7 +28,7 @@ public class ChatMessageRepository : BaseRepository<ChatMessage>, IChatMessageRe
     public async Task<IEnumerable<ChatMessage>> GetUnreadMessagesAsync()
     {
         return await DbSet
-            .Where(m => m.Status == MessageStatus.Delivered && m.ReadTime == null)
+            .Where(m => m.Status == MessageStatus.Delivered && m.ReadAt == null)
             .OrderBy(m => m.CreatedAt)
             .ToListAsync();
     }
@@ -38,7 +38,7 @@ public class ChatMessageRepository : BaseRepository<ChatMessage>, IChatMessageRe
         var message = await DbSet.FindAsync(messageId);
         if (message != null)
         {
-            message.ReadTime = DateTime.UtcNow;
+            message.ReadAt = DateTime.UtcNow;
             message.Status = MessageStatus.Read;
             message.LastModifiedAt = DateTime.UtcNow;
             await Context.SaveChangesAsync();
