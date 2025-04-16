@@ -6,6 +6,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Maui.Controls;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -105,6 +106,56 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (e.PropertyName == nameof(TodayViewModel.SelectedDate))
             {
                 UpdateSelectedDateVisualState(_viewModel.SelectedDate);
+            }
+            
+            // Check if the scroll target property changed
+            if (e.PropertyName == nameof(TodayViewModel.ScrollToIndexTarget))
+            {
+                HandleScrollToIndexTargetChanged();
+            }
+        }
+        
+        private void HandleScrollToIndexTargetChanged()
+        {
+            if (_viewModel.ScrollToIndexTarget.HasValue)
+            {
+                var targetDate = _viewModel.ScrollToIndexTarget.Value;
+                // Reset the target immediately to prevent re-triggering 
+                // (though Dispatcher might make this less critical, it's safer)
+                _viewModel.ScrollToIndexTarget = null; 
+
+                _logger.LogInformation($"HandleScrollToIndexTargetChanged triggered for {targetDate.ToShortDateString()}");
+                try
+                {
+                    // Ensure this runs on the UI thread and potentially after a delay
+                    Dispatcher.DispatchAsync(async () => 
+                    {    
+                        // Maybe increase delay slightly more as a precaution?
+                        await Task.Delay(350); 
+                        
+                        // Define item width and spacing based on XAML
+                        const double itemWidth = 55.0;
+                        const double itemSpacing = 5.0;
+                        const double totalItemWidth = itemWidth + itemSpacing;
+                        
+                        var index = _viewModel.CalendarDays.IndexOf(targetDate.Date);
+                        
+                        if (index >= 0 && daysScrollView != null)
+                        {
+                            double horizontalOffset = index * totalItemWidth;
+                            _logger.LogInformation($"Scrolling daysScrollView to offset {horizontalOffset} for index {index} ({targetDate.ToShortDateString()})");
+                            await daysScrollView.ScrollToAsync(horizontalOffset, 0, true); // Scroll horizontally
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or daysScrollView is null.");
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error handling ScrollToIndexTarget change.");
+                }
             }
         }
         

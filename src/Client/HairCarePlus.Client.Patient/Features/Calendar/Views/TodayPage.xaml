@@ -276,6 +276,11 @@
                                        HorizontalOptions="Center"
                                        TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
                             </VerticalStackLayout>
+                            
+                            <!-- Add Tap Gesture Recognizer -->
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding GoToTodayCommand}"/>
+                            </Grid.GestureRecognizers>
                         </Grid>
                         
                         <!-- Right side: Month and transplant day info -->
@@ -305,7 +310,8 @@
                     </Grid>
 
                     <!-- Horizontal Day Ticker -->
-                    <ScrollView HorizontalScrollBarVisibility="Never" 
+                    <ScrollView x:Name="daysScrollView" 
+                              HorizontalScrollBarVisibility="Never" 
                               VerticalScrollBarVisibility="Never"
                               Orientation="Horizontal">
                         <CollectionView x:Name="daysCollection"

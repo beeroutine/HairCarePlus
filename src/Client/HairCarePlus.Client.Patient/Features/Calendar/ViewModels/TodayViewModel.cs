@@ -13,6 +13,8 @@ using System.Threading;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Text;
+using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Patient.Features.Calendar.Messages;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -87,6 +89,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         }
 
         public ICommand RefreshCommand { get; private set; }
+        public ICommand GoToTodayCommand { get; private set; }
 
         public enum LoadingState
         {
@@ -143,6 +146,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
+        // New property to signal scroll target
+        private DateTime? _scrollToIndexTarget;
+        public DateTime? ScrollToIndexTarget
+        {
+            get => _scrollToIndexTarget;
+            set => SetProperty(ref _scrollToIndexTarget, value);
+        }
+
         public TodayViewModel(ICalendarService calendarService, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
@@ -173,6 +184,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
             ShowDiagnosticsCommand = new Command(async () => await ShowDiagnosticsAsync());
+            GoToTodayCommand = new Command(ExecuteGoToToday);
             
             // Initial data loading
             LoadCalendarDays();
@@ -1422,6 +1434,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _isRefreshingData = false;
                 IsLoading = false;
+            }
+        }
+
+        private void ExecuteGoToToday()
+        {
+            try
+            {
+                _logger.LogInformation("GoToTodayCommand executed.");
+                // Set SelectedDate to trigger event loading and UI updates
+                SelectedDate = DateTime.Today;
+
+                // Set the target property to trigger scroll in the View
+                ScrollToIndexTarget = DateTime.Today;
+                // Log the value safely BEFORE it might be reset by the handler
+                _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing GoToTodayCommand.");
             }
         }
     }
