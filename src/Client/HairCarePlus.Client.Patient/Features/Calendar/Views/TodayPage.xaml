@@ -5,6 +5,7 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:system="clr-namespace:System;assembly=netstandard"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Behaviors"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
@@ -248,6 +249,11 @@
                           VerticalOptions="Center"
                           WidthRequest="{StaticResource CircleSize}"
                           HeightRequest="{StaticResource CircleSize}">
+                        
+                        <!-- Добавляем распознаватель жестов для прокрутки к сегодняшней дате -->
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToTodayCommand}" />
+                        </Grid.GestureRecognizers>
                           
                         <!-- Background Circle -->
                         <Border StrokeShape="Ellipse"
@@ -263,12 +269,13 @@
                                
                         <!-- Day Number and Day Name -->
                         <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-                            <Label Text="{Binding SelectedDate.Day}" 
+                            <!-- Дата всегда показывает сегодняшний день -->
+                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
                                    FontSize="32" 
                                    FontAttributes="Bold" 
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                    HorizontalTextAlignment="Center"/>
-                            <Label Text="{Binding SelectedDate, StringFormat='{0:ddd}'}" 
+                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}" 
                                    FontSize="14" 
                                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                                    HorizontalTextAlignment="Center"
@@ -295,7 +302,7 @@
                 </Grid>
 
                 <!-- Date Selector (Horizontal CollectionView) -->
-                <CollectionView x:Name="DateSelector"
+                <CollectionView x:Name="DateSelectorView"
                                 ItemsSource="{Binding SelectableDates}"
                                 SelectionMode="None"
                                 BackgroundColor="Transparent"
@@ -304,6 +311,11 @@
                                 HeightRequest="75" 
                                 HorizontalScrollBarVisibility="Never"
                                 VerticalScrollBarVisibility="Never">
+                    <CollectionView.Behaviors>
+                        <behaviors:DateSelectorBehavior 
+                            SelectedDate="{Binding SelectedDate}" 
+                            ScrollToTargetDate="{Binding ScrollToIndexTarget}" />
+                    </CollectionView.Behaviors>
                 </CollectionView>
                                 
             </VerticalStackLayout>

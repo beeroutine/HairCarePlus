@@ -1378,6 +1378,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 ScrollToIndexTarget = DateTime.Today;
                 // Log the value safely BEFORE it might be reset by the handler
                 _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
+                
+                // Make sure the date gets visually selected in the DateSelector
+                // by explicitly raising property changed for SelectedDate
+                OnPropertyChanged(nameof(SelectedDate));
             }
             catch (Exception ex)
             {
