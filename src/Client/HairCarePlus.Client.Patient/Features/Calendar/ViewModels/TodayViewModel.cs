@@ -799,40 +799,26 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private void CleanupCacheEntries()
         {
-            try
+            // Determine the oldest date we want to keep in the cache
+            var oldestKeepDate = DateTime.Today.AddDays(-_cacheExpiration.TotalDays); 
+
+            // Find keys (dates) that are older than the retention period
+            var keysToRemove = _eventCache.Keys
+                                      .Where(date => date.Date < oldestKeepDate.Date)
+                                      .ToList();
+            
+            if (keysToRemove.Any())
             {
-                var now = DateTimeOffset.Now;
-                var keysToRemove = new List<DateTime>();
-                
-                lock (_cacheUpdateLock)
+                _logger.LogInformation("Cleaning up {Count} stale cache entries older than {OldestDate}", 
+                                     keysToRemove.Count, oldestKeepDate.ToShortDateString());
+                                     
+                foreach (var key in keysToRemove)
                 {
-                    // Удаляем записи старше 24 часов или если кэш слишком большой
-                    foreach (var entry in _lastCacheUpdateTimes)
-                    {
-                        if ((now - entry.Value) > TimeSpan.FromHours(24) || 
-                            entry.Key < DateTime.Today.AddDays(-30) || // старше 30 дней
-                            _lastCacheUpdateTimes.Count > 100) // ограничение количества записей
-                        {
-                            keysToRemove.Add(entry.Key);
-                        }
-                    }
-                    
-                    foreach (var key in keysToRemove)
-                    {
-                        _eventCache.Remove(key);
-                        _lastCacheUpdateTimes.Remove(key);
-                        _logger.LogDebug("Removed stale cache entry for {Date}", key.ToShortDateString());
-                    }
+                    _eventCache.Remove(key);
+                    _lastCacheUpdateTimes.Remove(key);
+                    // Optionally remove from _eventCountsByDate as well if necessary
+                     _eventCountsByDate.Remove(key);
                 }
-                
-                if (keysToRemove.Count > 0)
-                {
-                    _logger.LogInformation("Cleaned up {Count} stale cache entries", keysToRemove.Count);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error during cache cleanup");
             }
         }
         

@@ -57,14 +57,24 @@ public static class MauiProgram
 		builder.Services.AddDbContextFactory<AppDbContext>(options =>
 		{
 			options.UseSqlite($"Data Source={dbPath}");
+			// Only enable sensitive data logging in DEBUG
+#if DEBUG
 			options.EnableSensitiveDataLogging();
-			options.LogTo(message => Debug.WriteLine(message));
+			// Comment out or reduce the LogTo level to avoid excessive logs
+			// options.LogTo(message => Debug.WriteLine(message), LogLevel.Information); // Example: Log only Information and above
+			// options.LogTo(Console.WriteLine, LogLevel.Warning); // Or log only warnings and above to console
+#endif
 		});
 		builder.Services.AddDbContext<AppDbContext>(options =>
 		{
 			options.UseSqlite($"Data Source={dbPath}");
+			// Only enable sensitive data logging in DEBUG
+#if DEBUG
 			options.EnableSensitiveDataLogging();
-			options.LogTo(message => Debug.WriteLine(message));
+			// Comment out or reduce the LogTo level to avoid excessive logs
+			// options.LogTo(message => Debug.WriteLine(message), LogLevel.Information);
+			// options.LogTo(Console.WriteLine, LogLevel.Warning);
+#endif
 		}, ServiceLifetime.Scoped);
 
 		// Register infrastructure services
@@ -117,7 +127,10 @@ public static class MauiProgram
 
 #if DEBUG
 		builder.Logging.AddDebug()
-			.SetMinimumLevel(LogLevel.Debug);
+			// Set minimum level for verbose EF Core categories to Information
+			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information) 
+			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Information)
+			.SetMinimumLevel(LogLevel.Debug); // Keep general minimum level as Debug for other logs
 #endif
 
 		var app = builder.Build();
