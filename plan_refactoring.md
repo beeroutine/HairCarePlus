@@ -48,6 +48,10 @@ HairCarePlus.Client.Patient/
    - Реализовать доменные сервисы
    - Добавить ICalendarDataInitializer.cs для первичной генерации
    - Добавить ICalendarSyncService.cs для синхронизации
+   - **Генерация событий**: используется JsonHairTransplantEventGenerator, который читает HairTransplantSchedule.json (Build Action: Content, Copy if newer). day=1 в json соответствует дню операции (DateTime.Today при инициализации), day=2 — следующий день и т.д. Диапазон генерации — 1 год. Генератор регистрируется в DI как Singleton:
+   ```csharp
+   services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
+   ```
 
 2. **Инфраструктурный слой**
    - Реализовать CalendarRepository
@@ -131,20 +135,6 @@ HairCarePlus.Client.Patient/
 ## 3. Infrastructure Layer
 
 ### 3.1 Storage
-```csharp
-Infrastructure/Storage/
-├── AppDbContext.cs
-├── Migrations/
-├── LocalStorageService.cs
-├── IDataInitializer.cs
-├── DataVersioning/
-│   ├── IVersionManager.cs
-│   └── VersionManager.cs
-└── Sync/
-    ├── ISyncManager.cs
-    └── SyncManager.cs
-```
-
 1. Настроить EF Core с SQLite
 2. Создать базовые репозитории
 3. Реализовать миграции

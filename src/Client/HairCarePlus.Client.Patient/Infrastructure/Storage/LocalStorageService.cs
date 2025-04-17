@@ -84,7 +84,7 @@ public class LocalStorageService : ILocalStorageService
             command.CommandText = @"
                 SELECT name FROM sqlite_master 
                 WHERE type='table' 
-                AND name IN ('Events', 'Messages')";
+                AND name IN ('Events', 'ChatMessages')";
             
             using var reader = await command.ExecuteReaderAsync();
             var tableCount = 0;
@@ -94,7 +94,7 @@ public class LocalStorageService : ILocalStorageService
                 Debug.WriteLine($"Found table: {reader.GetString(0)}");
             }
             
-            return tableCount == 2; // We need both Events and Messages tables
+            return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {
@@ -291,7 +291,7 @@ public class LocalStorageService : ILocalStorageService
             command.CommandText = @"
                 SELECT name FROM sqlite_master 
                 WHERE type='table' 
-                AND name IN ('Events', 'Messages')";
+                AND name IN ('Events', 'ChatMessages')";
             
             using var reader = await command.ExecuteReaderAsync();
             var tableCount = 0;
@@ -301,7 +301,7 @@ public class LocalStorageService : ILocalStorageService
                 Debug.WriteLine($"Found table: {reader.GetString(0)}");
             }
             
-            return tableCount == 2; // We need both Events and Messages tables
+            return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {

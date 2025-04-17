@@ -34,26 +34,35 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
         
         public async Task<bool> NeedsInitializationAsync()
         {
-            _logger.LogInformation("Checking if calendar data initialization is needed based on Preferences flag.");
-            
+            _logger.LogInformation("Checking if calendar data initialization is needed based on Preferences flag and database state.");
+
             try
             {
                 // Check the initialization flag in Preferences
                 bool isInitialized = Preferences.Get(DATA_INITIALIZED_KEY, false);
+
+                // If the flag says we are initialized, validate that data actually exists in DB
                 if (isInitialized)
                 {
-                    _logger.LogInformation("Calendar data is already initialized according to Preferences flag.");
-                    return false;
+                    var eventsCount = await _dbContext.Events.CountAsync();
+                    if (eventsCount > 0)
+                    {
+                        _logger.LogInformation("Calendar data is already initialized: Preferences flag set and database contains {EventsCount} events.", eventsCount);
+                        return false;
+                    }
+
+                    _logger.LogWarning("Preferences flag is set but no events found in database. Re‑initialization required.");
                 }
                 else
                 {
                     _logger.LogInformation("Initialization flag not found in Preferences. Initialization is needed.");
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking initialization flag in Preferences. Assuming initialization is needed.");
+                _logger.LogError(ex, "Error checking initialization status. Assuming initialization is needed.");
                 return true;
             }
         }
@@ -69,24 +78,26 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             
             try
             {
-                // Double-check the flag in Preferences to avoid race conditions
-                bool isInitialized = Preferences.Get(DATA_INITIALIZED_KEY, false);
-                if (isInitialized)
+                // Always clean existing events to avoid duplicates or stale data
+                var existingEvents = await _dbContext.Events.CountAsync(cancellationToken);
+                if (existingEvents > 0)
                 {
-                    _logger.LogInformation("Calendar data initialization skipped as it is already initialized.");
-                    return;
+                    _logger.LogInformation("Removing {ExistingEvents} existing events before re‑initialization.", existingEvents);
+                    _dbContext.Events.RemoveRange(_dbContext.Events);
+                    await _dbContext.SaveChangesAsync(cancellationToken);
                 }
 
                 // Generate and store events
                 _logger.LogInformation("Generating calendar events for initialization.");
                 var startDate = DateTime.Today;
-                var endDate = startDate.AddMonths(6); // Generate events for next 6 months
+                var endDate = startDate.AddDays(364); // Generate events for 1 year
                 var events = await _eventGenerator.GenerateEventsForPeriodAsync(startDate, endDate);
-                _logger.LogInformation("Generated {EventCount} events for initialization.", events.Count());
+                var total = events.Count();
+                _logger.LogInformation("Generated {EventCount} events for initialization.", total);
 
                 await _dbContext.Events.AddRangeAsync(events, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully saved {EventCount} events to the database.", events.Count());
+                _logger.LogInformation("Successfully saved {EventCount} events to the database.", total);
 
                 // Set the initialization flag in Preferences
                 Preferences.Set(DATA_INITIALIZED_KEY, true);

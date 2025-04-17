@@ -33,7 +33,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private double _completionProgress;
         private int _completionPercentage;
         private bool _isLoadingMore;
-        private const int InitialDaysToLoad = 90; // Changed from 38 to 90 days (3 months)
+        private const int InitialDaysToLoad = 365; // Было 90, теперь 365 дней (1 год)
         private const int DaysToLoadMore = 60; // Changed from 30 to 60 days (2 months)
         private const int MaxTotalDays = 365; // New constant to prevent memory issues
         private DateTime _lastLoadedDate;
@@ -285,11 +285,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _logger.LogInformation("Starting LoadCalendarDays");
                 
-                // Calculate the start date to be 7 days before today
-                var startDate = DateTime.Today.AddDays(-7);
+                // Начинаем с сегодняшней даты
+                var startDate = DateTime.Today;
                 _logger.LogInformation($"Start date: {startDate:yyyy-MM-dd}");
 
-                // Generate dates for the initial range
+                // Генерируем даты на год вперёд
                 var days = new List<DateTime>();
                 for (int i = 0; i < InitialDaysToLoad; i++)
                 {
@@ -301,10 +301,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 _logger.LogInformation($"Loaded {days.Count} days from {days.First():yyyy-MM-dd} to {days.Last():yyyy-MM-dd}");
 
-                // Calculate days since transplant
-                var transplantDate = DateTime.Today.AddDays(-1);
-                var daysSince = (int)(DateTime.Today - transplantDate).TotalDays;
-                DaysSinceTransplant = $"Day {daysSince} post hair transplant";
+                // Day 1 post hair transplant = сегодня
+                DaysSinceTransplant = $"Day 1 post hair transplant";
                 
                 _logger.LogInformation("LoadCalendarDays completed successfully");
             }
@@ -729,25 +727,43 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
         
-        // Вспомогательный метод для обновления UI с событиями
         private async Task UpdateUIWithEvents(IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested) return;
-            
-            await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
+
+            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
             {
                 var eventsList = events?.ToList() ?? new List<CalendarEvent>();
                 FlattenedEvents = new ObservableCollection<CalendarEvent>(eventsList);
                 SortedEvents = new ObservableCollection<CalendarEvent>(
                     eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
-                    
+
                 UpdateCompletionProgress();
                 OnPropertyChanged(nameof(FlattenedEvents));
                 OnPropertyChanged(nameof(SortedEvents));
+
+                // Логируем актуальное количество после обновления
+                _logger.LogDebug("UpdateUIWithEvents: Updated FlattenedEvents with {Count} events for date {Date}", FlattenedEvents.Count, SelectedDate.ToShortDateString());
             });
         }
         
-        // Метод для очистки устаревших записей в кэше
+        private void UpdateCompletionProgress()
+        {
+            var events = FlattenedEvents;
+            if (events == null || events.Count == 0)
+            {
+                CompletionProgress = 0;
+                CompletionPercentage = 0;
+                return;
+            }
+            
+            int totalEvents = events.Count;
+            int completedEvents = events.Count(e => e.IsCompleted);
+            
+            CompletionProgress = (double)completedEvents / totalEvents;
+            CompletionPercentage = (int)(CompletionProgress * 100);
+        }
+        
         private void CleanupCacheEntries()
         {
             try
@@ -787,24 +803,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
         
-        private void UpdateCompletionProgress()
-        {
-            var events = FlattenedEvents;
-            if (events == null || events.Count == 0)
-            {
-                CompletionProgress = 0;
-                CompletionPercentage = 0;
-                return;
-            }
-            
-            int totalEvents = events.Count;
-            int completedEvents = events.Count(e => e.IsCompleted);
-            
-            CompletionProgress = (double)completedEvents / totalEvents;
-            CompletionPercentage = (int)(CompletionProgress * 100);
-        }
-        
-        // Метод для показа деталей события
         private async Task ShowEventDetailsAsync(CalendarEvent calendarEvent)
         {
             if (calendarEvent == null)
@@ -979,7 +977,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
         
-        // Вспомогательный метод для группировки дат в смежные диапазоны
         private List<(DateTime startDate, DateTime endDate)> GroupDatesIntoRanges(List<DateTime> dates)
         {
             if (dates == null || !dates.Any())
@@ -1015,33 +1012,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             return result;
         }
         
-        // Вспомогательный метод для обновления кэша для диапазона дат
         private void UpdateCacheForDateRange(DateTime startDate, DateTime endDate, IEnumerable<CalendarEvent> events)
         {
-            // Группируем события по датам
-            var eventsByDate = events.GroupBy(e => e.Date.Date)
+            var eventsList = events?.ToList() ?? new List<CalendarEvent>();
+            if (!eventsList.Any()) return; // Если событий нет, ничего не делаем с кэшем
+
+            // Группируем ПОЛУЧЕННЫЕ события по датам
+            var eventsByDate = eventsList.GroupBy(e => e.Date.Date)
                                      .ToDictionary(g => g.Key, g => g.ToList());
-            
-            // Определяем все даты в диапазоне
-            var currentDate = startDate.Date;
-            while (currentDate <= endDate.Date)
+
+            // Обновляем кэш ТОЛЬКО для тех дат, для которых пришли события
+            lock (_cacheUpdateLock)
             {
-                var dateEvents = eventsByDate.ContainsKey(currentDate)
-                    ? eventsByDate[currentDate]
-                    : new List<CalendarEvent>();
-                
-                // Обновляем кэш для этой даты
-                lock (_cacheUpdateLock)
+                foreach (var kvp in eventsByDate)
                 {
-                    _eventCache[currentDate] = dateEvents;
-                    _lastCacheUpdateTimes[currentDate] = DateTimeOffset.Now;
+                    var date = kvp.Key;
+                    var dateEvents = kvp.Value;
+                    // Только если дата попадает в запрошенный диапазон (на всякий случай)
+                    if (date >= startDate.Date && date <= endDate.Date)
+                    {
+                        _eventCache[date] = dateEvents; // Обновляем/добавляем запись в кэш
+                        _lastCacheUpdateTimes[date] = DateTimeOffset.Now;
+                    }
                 }
-                
-                currentDate = currentDate.AddDays(1);
             }
+            // Мы НЕ итерируем по всем датам диапазона и НЕ перезаписываем кэш пустыми списками.
         }
         
-        // Вспомогательный метод для обновления счетчиков событий
         private void UpdateEventCounts(Dictionary<DateTime, Dictionary<EventType, int>> result, IEnumerable<CalendarEvent> events)
         {
             foreach (var evt in events)
@@ -1087,7 +1084,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
         
-        // Проверяет, является ли событие просроченным
         public bool IsEventOverdue(CalendarEvent evt)
         {
             if (evt == null)
@@ -1191,34 +1187,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger.LogDebug("SelectDateAsync: Same date selected, ignoring");
                 return;
             }
-            
+
             Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
             Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
-            
+
             // Сохраняем старую дату для возможного отката
             var previousDate = SelectedDate;
-            
+
             try
             {
                 // Обновляем дату (это вызовет изменение UI)
                 SelectedDate = date;
                 OnPropertyChanged(nameof(SelectedDate));
                 OnPropertyChanged(nameof(FormattedSelectedDate));
-                
+
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
-                
+
                 Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
-                
+
                 // Загружаем события для выбранной даты
                 await LoadTodayEventsAsync();
-                
-                Debug.WriteLine($"Events loaded: {FlattenedEvents?.Count ?? 0} events found");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error selecting date {Date}", date.ToShortDateString());
-                
+
                 // Возвращаем предыдущую дату в случае ошибки
                 if (previousDate != date)
                 {

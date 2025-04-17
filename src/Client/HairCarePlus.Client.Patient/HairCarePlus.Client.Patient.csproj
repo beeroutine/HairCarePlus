@@ -108,4 +108,9 @@
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' " />
 
+	<!-- Include hair transplant schedule as Maui asset to be accessible via FileSystem.OpenAppPackageFileAsync -->
+	<ItemGroup>
+	  <MauiAsset Include="Features\Calendar\Data\HairTransplantSchedule.json" LogicalName="HairTransplantSchedule.json" />
+	</ItemGroup>
+
 </Project>

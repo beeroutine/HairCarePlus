@@ -85,7 +85,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
 		builder.Services.AddSingleton<INotificationService, NotificationServiceImpl>();
 		builder.Services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
-		builder.Services.AddSingleton<IHairTransplantEventGenerator, HairTransplantEventGeneratorImpl>();
+		builder.Services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
 
 		// Register data initializers
 		builder.Services.AddSingleton<IDataInitializer, CalendarDataInitializer>();

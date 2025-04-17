@@ -122,10 +122,20 @@ builder.Services
   - Entities/HairTransplantEvent.cs - доменная модель
   - Repositories/ICalendarRepository.cs - контракт хранилища
 - **Services/**
-  - HairTransplantEventGenerator - генерация событий
+  - JsonHairTransplantEventGenerator — генерация событий на основе json-файла HairTransplantSchedule.json (day=1 соответствует дню операции, диапазон — 1 год)
 - **ViewModels/**
   - TodayViewModel - логика главного экрана
   - CalendarViewModel - управление календарём
+
+#### Генерация событий
+- Для генерации событий используется сервис `JsonHairTransplantEventGenerator`, который читает файл `HairTransplantSchedule.json` (Build Action: Content, Copy if newer).
+- Каждый объект day в json соответствует дню после операции: day=1 — день операции (DateTime.Today при инициализации), day=2 — следующий день и т.д.
+- Диапазон генерации — 365 дней (1 год).
+- Генератор регистрируется в DI как Singleton:
+  ```csharp
+  services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
+  ```
+- При первом запуске или сбросе Preferences ключа `CalendarDataInitialized` происходит инициализация событий на год вперёд.
 
 ### 2. Chat (Чат)
 #### Назначение
