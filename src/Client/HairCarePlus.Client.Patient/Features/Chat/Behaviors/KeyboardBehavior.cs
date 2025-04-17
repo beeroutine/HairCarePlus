@@ -9,8 +9,8 @@ namespace HairCarePlus.Client.Patient.Features.Chat.Behaviors;
 
 public class KeyboardBehavior : Behavior<CollectionView>
 {
-    private CollectionView _collectionView;
-    private IKeyboardService _keyboardService;
+    private CollectionView? _collectionView;
+    private IKeyboardService? _keyboardService;
 
     protected override void OnAttachedTo(CollectionView bindable)
     {
@@ -34,11 +34,12 @@ public class KeyboardBehavior : Behavior<CollectionView>
             _keyboardService.KeyboardHidden -= OnKeyboardHidden;
         }
         _collectionView = null;
+        _keyboardService = null;
     }
 
-    private void OnKeyboardShown(object sender, KeyboardEventArgs e)
+    private void OnKeyboardShown(object? sender, KeyboardEventArgs? e)
     {
-        if (_collectionView?.ItemsSource == null) return;
+        if (e == null || _collectionView?.ItemsSource == null) return;
 
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -52,9 +53,9 @@ public class KeyboardBehavior : Behavior<CollectionView>
         });
     }
 
-    private void OnKeyboardHidden(object sender, KeyboardEventArgs e)
+    private void OnKeyboardHidden(object? sender, KeyboardEventArgs? e)
     {
-        if (_collectionView?.ItemsSource == null) return;
+        if (e == null || _collectionView?.ItemsSource == null) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {

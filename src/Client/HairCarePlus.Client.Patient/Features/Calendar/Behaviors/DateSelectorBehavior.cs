@@ -1,14 +1,15 @@
 using Microsoft.Maui.Controls;
 using System;
 using System.Linq;
+using System.ComponentModel;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
 {
     public class DateSelectorBehavior : Behavior<CollectionView>
     {
-        private CollectionView _collectionView;
+        private CollectionView? _collectionView;
         private DateTime _lastScrolledDate;
-        private object _previousItemsSource;
+        private object? _previousItemsSource;
 
         public static readonly BindableProperty SelectedDateProperty =
             BindableProperty.Create(nameof(SelectedDate), typeof(DateTime), typeof(DateSelectorBehavior), 
@@ -91,15 +92,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
             }
             
             _collectionView = null;
+            _previousItemsSource = null;
             base.OnDetachingFrom(collectionView);
         }
         
-        private void CollectionView_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void CollectionView_PropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
-            if (e.PropertyName == nameof(CollectionView.ItemsSource))
+            if (e?.PropertyName == nameof(CollectionView.ItemsSource) && _collectionView != null)
             {
                 // ItemsSource has changed
-                if (_collectionView.ItemsSource != _previousItemsSource)
+                if (!ReferenceEquals(_collectionView.ItemsSource, _previousItemsSource))
                 {
                     _previousItemsSource = _collectionView.ItemsSource;
                     
@@ -116,39 +118,34 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
         {
             if (_collectionView?.ItemsSource == null) return;
 
-            // Find the date element in the collection view
-            var items = _collectionView.ItemsSource.Cast<object>().ToList();
-            for (int i = 0; i < items.Count; i++)
+            try 
             {
-                var item = items[i];
-                if (item is DateTime date && date.Date == selectedDate.Date)
+                var items = _collectionView.ItemsSource.Cast<object>().ToList();
+                if (!items.Any()) return;
+
+                foreach (var item in items)
                 {
-                    // Get the container for this item
+                    bool isSelected = item is DateTime date && date.Date == selectedDate.Date;
+                    
                     var container = _collectionView.GetVisualTreeDescendants()
                         .OfType<Grid>()
-                        .FirstOrDefault(g => g.BindingContext is DateTime d && d.Date == date.Date);
+                        .FirstOrDefault(g => g.BindingContext == item);
 
                     if (container != null)
                     {
-                        // Apply the selected visual state
-                        VisualStateManager.GoToState(container, "Selected");
+                        var targetState = isSelected ? "Selected" : "Normal";
+                        VisualStateManager.GoToState(container, targetState);
                         
-                        // Possibly scroll into view if not visible
-                        ScrollToDate(date);
+                        if (isSelected)
+                        {
+                            ScrollToDate(selectedDate);
+                        }
                     }
                 }
-                else
-                {
-                    // Reset other items to normal state
-                    var container = _collectionView.GetVisualTreeDescendants()
-                        .OfType<Grid>()
-                        .FirstOrDefault(g => g.BindingContext is DateTime d && d.Date == (item as DateTime?)?.Date);
-
-                    if (container != null)
-                    {
-                        VisualStateManager.GoToState(container, "Normal");
-                    }
-                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in UpdateSelectedItem: {ex.Message}");
             }
         }
 
@@ -156,15 +153,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
         {
             if (_collectionView?.ItemsSource == null) return;
 
-            var items = _collectionView.ItemsSource.Cast<object>().ToList();
-            for (int i = 0; i < items.Count; i++)
+            try
             {
-                if (items[i] is DateTime itemDate && itemDate.Date == date.Date)
+                var items = _collectionView.ItemsSource.Cast<object>().ToList();
+                int index = -1;
+                for (int i = 0; i < items.Count; i++)
                 {
-                    _collectionView.ScrollTo(i, position: ScrollToPosition.Center, animate: true);
-                    _lastScrolledDate = date;
-                    break;
+                    if (items[i] is DateTime itemDate && itemDate.Date == date.Date)
+                    {
+                        index = i;
+                        break;
+                    }
                 }
+                
+                if (index >= 0)
+                {
+                    _collectionView.Dispatcher.Dispatch(() => 
+                    {
+                        _collectionView.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
+                        _lastScrolledDate = date;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in ScrollToDate: {ex.Message}");
             }
         }
     }

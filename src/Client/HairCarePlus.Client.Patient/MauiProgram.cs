@@ -153,9 +153,17 @@ public static class MauiProgram
 	private static void RegisterConverters(IServiceCollection services)
 	{
 		// Register converters as resources
-		Application.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
-		Application.Current.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
-		Application.Current.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
-		Application.Current.Resources.Add("HasItemsConverter", new HasItemsConverter());
+		var currentApp = Application.Current;
+		if (currentApp != null)
+		{
+			currentApp.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
+			currentApp.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
+			currentApp.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
+			currentApp.Resources.Add("HasItemsConverter", new HasItemsConverter());
+		}
+		else 
+		{
+			System.Diagnostics.Debug.WriteLine("Error: Application.Current is null during converter registration.");
+		}
 	}
 }

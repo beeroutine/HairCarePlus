@@ -6,11 +6,11 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors;
 
 public class KeyboardBehavior : Behavior<ContentPage>
 {
-    private ContentPage _page;
-    private IKeyboardService _keyboardService;
+    private ContentPage? _page;
+    private IKeyboardService? _keyboardService;
     private bool _isKeyboardShown;
-    private Grid _mainGrid;
-    private View _inputPanel;
+    private Grid? _mainGrid;
+    private View? _inputPanel;
 
     protected override void OnAttachedTo(ContentPage page)
     {
@@ -46,11 +46,12 @@ public class KeyboardBehavior : Behavior<ContentPage>
         _page = null;
         _mainGrid = null;
         _inputPanel = null;
+        _keyboardService = null;
     }
 
-    private void OnKeyboardShown(object sender, KeyboardEventArgs e)
+    private void OnKeyboardShown(object? sender, KeyboardEventArgs? e)
     {
-        if (_isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
+        if (e == null || _isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
@@ -61,9 +62,9 @@ public class KeyboardBehavior : Behavior<ContentPage>
         });
     }
 
-    private void OnKeyboardHidden(object sender, KeyboardEventArgs e)
+    private void OnKeyboardHidden(object? sender, KeyboardEventArgs? e)
     {
-        if (!_isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
+        if (e == null || !_isKeyboardShown || _mainGrid == null || _inputPanel == null) return;
 
         MainThread.BeginInvokeOnMainThread(() =>
         {

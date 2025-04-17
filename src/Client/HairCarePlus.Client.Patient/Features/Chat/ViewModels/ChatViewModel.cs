@@ -20,7 +20,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly IKeyboardService _keyboardService;
     private readonly IChatRepository _chatRepository;
     private readonly Random _random = new Random();
-    public CollectionView MessagesCollectionView { get; set; }
+    public CollectionView MessagesCollectionView { get; set; } = default!;
     private readonly string[] _doctorResponses = new[]
     {
         "How are you feeling today? It's important to monitor any discomfort during the recovery period.",
@@ -39,13 +39,13 @@ public partial class ChatViewModel : ObservableObject
     private ObservableCollection<ChatMessage> _messages;
 
     [ObservableProperty]
-    private string _messageText;
+    private string _messageText = string.Empty;
 
     [ObservableProperty]
-    private ChatMessage _replyToMessage;
+    private ChatMessage? _replyToMessage = null;
 
     [ObservableProperty]
-    private ChatMessage _editingMessage;
+    private ChatMessage? _editingMessage = null;
 
     [ObservableProperty]
     private Doctor _doctor;
@@ -84,9 +84,12 @@ public partial class ChatViewModel : ObservableObject
             foreach (var msg in messages.OrderBy(m => m.SentAt))
                 Messages.Add(msg);
         }
-        catch (Exception ex)
+        catch (Exception /*ex*/)
         {
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to load chat messages", "OK");
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", "Failed to load chat messages", "OK");
+            }
         }
     }
 
@@ -127,12 +130,17 @@ public partial class ChatViewModel : ObservableObject
                 Messages.Add(message);
                 MessageText = string.Empty;
                 ReplyToMessage = null;
-                // Optionally: trigger sync service here
+                await SimulateDoctorResponseAsync();
             }
+            
+            await ScrollToBottom();
         }
-        catch (Exception ex)
+        catch (Exception /*ex*/)
         {
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
+            }
         }
     }
 
@@ -145,16 +153,18 @@ public partial class ChatViewModel : ObservableObject
             await _chatRepository.DeleteMessageAsync(message.LocalId);
             Messages.Remove(message);
         }
-        catch (Exception ex)
+        catch (Exception /*ex*/)
         {
-            await Application.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
+            }
         }
     }
 
     [RelayCommand]
     private async Task HandleReplyToMessage(ChatMessage message)
     {
-        // Добавляем логирование для отладки
         System.Diagnostics.Debug.WriteLine($"=== HandleReplyToMessage вызван: {message?.Content}");
         System.Diagnostics.Debug.WriteLine($"=== SenderId: {message?.SenderId}");
         
@@ -164,28 +174,27 @@ public partial class ChatViewModel : ObservableObject
             return;
         }
         
-        // Нельзя отвечать на сообщение при редактировании
         if (EditingMessage != null)
         {
             System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: EditingMessage != null");
             return;
         }
         
-        // Проверка, что это сообщение от доктора (нельзя отвечать на свои сообщения)
         if (message.SenderId == "patient")
         {
             System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: SenderId == patient");
-            await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
+            }
             return;
         }
         
         try 
         {
-            // Устанавливаем сообщение для ответа
             ReplyToMessage = message;
             System.Diagnostics.Debug.WriteLine($"=== ReplyToMessage установлен: {ReplyToMessage?.Content}");
             
-            // Прокрутка списка к концу
             await ScrollToBottom();
         }
         catch (Exception ex)
@@ -206,10 +215,8 @@ public partial class ChatViewModel : ObservableObject
     {
         if (message == null || message.SenderId != "patient") return;
         
-        // Отменяем режим ответа при редактировании
         ReplyToMessage = null;
         
-        // Включаем режим редактирования
         EditingMessage = message;
         MessageText = message.Content;
     }
@@ -230,15 +237,19 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenCamera()
     {
-        // TODO: Implement camera functionality
-        await Application.Current.MainPage.DisplayAlert("Coming Soon", "Camera functionality will be available soon", "OK");
+        if (Application.Current?.MainPage != null)
+        {
+            await Application.Current.MainPage.DisplayAlert("Coming Soon", "Camera functionality will be available soon", "OK");
+        }
     }
 
     [RelayCommand]
     private async Task ChoosePhoto()
     {
-        // TODO: Implement photo picker functionality
-        await Application.Current.MainPage.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
+        if (Application.Current?.MainPage != null)
+        {
+            await Application.Current.MainPage.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
+        }
     }
 
     [RelayCommand]
@@ -247,18 +258,14 @@ public partial class ChatViewModel : ObservableObject
         _keyboardService?.HideKeyboard();
     }
     
-    // Симуляция ответа от врача
     private async Task SimulateDoctorResponseAsync()
     {
         try
         {
-            // Задержка перед ответом (1-3 секунды)
             await Task.Delay(_random.Next(1000, 3000));
             
-            // Выбор случайного ответа
             string responseContent = _doctorResponses[_random.Next(_doctorResponses.Length)];
             
-            // 30% вероятность ответа на последнее сообщение пациента
             var latestPatientMessage = Messages.LastOrDefault(m => m.SenderId == "patient");
             bool shouldReply = _random.NextDouble() < 0.3 && latestPatientMessage != null;
             
@@ -266,15 +273,20 @@ public partial class ChatViewModel : ObservableObject
             {
                 Content = responseContent,
                 SenderId = "doctor",
-                Timestamp = DateTime.Now,
+                SentAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = MessageStatus.Delivered,
+                SyncStatus = SyncStatus.Synced,
                 ReplyTo = shouldReply ? latestPatientMessage : null
             };
             
-            // Добавляем ответ врача в основном потоке
-            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+            if (Application.Current?.MainPage != null)
             {
-                Messages.Add(doctorResponse);
-            });
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                {
+                    Messages.Add(doctorResponse);
+                });
+            }
         }
         catch (Exception)
         {
@@ -282,24 +294,19 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    // Метод для прокрутки к концу списка сообщений
     private async Task ScrollToBottom()
     {
         try
         {
-            if (MessagesCollectionView != null && Messages.Count > 0)
+            if (MessagesCollectionView?.ItemsSource != null && Messages.Any())
             {
-                // Прокрутка к последнему сообщению
-                await Task.Delay(100); // Небольшая задержка, чтобы UI обновился
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
-                {
-                    MessagesCollectionView.ScrollTo(Messages.Last(), animate: true);
-                });
+                await Task.Delay(50);
+                MessagesCollectionView.ScrollTo(Messages.Last(), position: ScrollToPosition.End, animate: true);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Игнорируем ошибки при прокрутке
+            System.Diagnostics.Debug.WriteLine($"Error scrolling to bottom: {ex.Message}");
         }
     }
 } 

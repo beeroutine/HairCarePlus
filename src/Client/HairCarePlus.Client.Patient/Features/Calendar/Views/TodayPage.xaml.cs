@@ -7,13 +7,13 @@ using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Maui.Controls;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.ComponentModel;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
     public partial class TodayPage : ContentPage
     {
         private readonly ILogger<TodayPage> _logger;
-        private bool _isLoaded;
         private TodayViewModel _viewModel;
         private bool _isDataLoaded = false;
         
@@ -51,13 +51,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged; // Ensure clean state
                 _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             }
+            else
+            {
+                _logger.LogWarning("ViewModel is null in OnAppearing, cannot subscribe to PropertyChanged.");
+            }
             
             try
             {
                 // Clear the CollectionView selection when the page appears
-                if (DateSelector != null)
+                if (DateSelectorView != null)
                 {
-                    DateSelector.SelectedItem = null;
+                    DateSelectorView.SelectedItem = null;
                 }
                 
                 if (!_isDataLoaded)
@@ -79,7 +83,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
                 
                 // Update visual state for the selected date
-                UpdateSelectedDateVisualState(_viewModel.SelectedDate);
+                if (_viewModel != null)
+                {
+                    UpdateSelectedDateVisualState(_viewModel.SelectedDate);
+                }
+                else
+                {
+                    _logger.LogWarning("ViewModel is null in OnAppearing, cannot update selected date visual state.");
+                }
                 _logger.LogInformation("TodayPage OnAppearing completed");
             }
             catch (Exception ex)
@@ -100,8 +111,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        private void OnViewModelPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
+            if (e == null || _viewModel == null) return;
+            
             // Когда SelectedDate изменяется, обновляем визуальное состояние
             if (e.PropertyName == nameof(TodayViewModel.SelectedDate))
             {
@@ -117,7 +130,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         private void HandleScrollToIndexTargetChanged()
         {
-            if (_viewModel.ScrollToIndexTarget.HasValue)
+            if (_viewModel?.ScrollToIndexTarget.HasValue ?? false)
             {
                 var targetDate = _viewModel.ScrollToIndexTarget.Value;
                 // Reset the target immediately to prevent re-triggering 
@@ -135,20 +148,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         
                         const double itemWidth = 55.0;
                         const double itemSpacing = 5.0;
-                        const double totalItemWidth = itemWidth + itemSpacing;
                         
-                        // Find index based on the collection bound to DateSelector
-                        var index = _viewModel.SelectableDates.IndexOf(targetDate.Date);
+                        // Find index based on the collection bound to DateSelectorView
+                        var index = _viewModel?.SelectableDates.IndexOf(targetDate.Date) ?? -1;
                         
-                        if (index >= 0 && DateSelector != null)
+                        if (index >= 0 && DateSelectorView != null && _viewModel != null)
                         {
-                            _logger.LogInformation($"Scrolling DateSelector to index {index} for {targetDate.ToShortDateString()}");
+                            _logger.LogInformation($"Scrolling DateSelectorView to index {index} for {targetDate.ToShortDateString()}");
                             // Use CollectionView.ScrollTo with index and specify position
-                            DateSelector.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
+                            DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
                         }
                         else
                         {
-                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelector is null.");
+                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelectorView is null or ViewModel is null.");
                         }
                     });
                 }
@@ -168,15 +180,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 Debug.WriteLine($"UpdateSelectedDateVisualState called for date: {selectedDate.Value.ToShortDateString()}");
                 
-                // Use the new DateSelector name
-                if (DateSelector.ItemTemplate == null)
+                // Use the new DateSelectorView name
+                if (DateSelectorView == null || DateSelectorView.ItemTemplate == null)
                 {
-                    Debug.WriteLine("ItemTemplate is null for DateSelector");
+                    Debug.WriteLine("ItemTemplate or DateSelectorView is null");
                     return;
                 }
 
-                // Get visible containers from DateSelector
-                var visibleContainers = DateSelector.LogicalChildren
+                // Get visible containers from DateSelectorView
+                var visibleContainers = DateSelectorView.LogicalChildren
                     .OfType<Grid>() // DateTemplate root is Grid
                     .Where(g => g.BindingContext is DateTime && g.IsVisible)
                     .ToList();
@@ -211,11 +223,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        private void OnCheckBoxChanged(object sender, CheckedChangedEventArgs e)
+        private void OnCheckBoxChanged(object? sender, CheckedChangedEventArgs e)
         {
-            var checkBox = (CheckBox)sender;
+            if (sender is not CheckBox checkBox) return;
+            
             var parent = checkBox.Parent;
-            VisualElement grid = null;
+            VisualElement? grid = null;
             
             // Traverse up the visual tree until we find a Grid
             while (parent != null && grid == null)
@@ -234,43 +247,45 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
             
             // Get the binding context and execute the command
-            if (checkBox.BindingContext is CalendarEvent calendarEvent)
+            if (checkBox.BindingContext is CalendarEvent calendarEvent && _viewModel != null)
             {
-                _viewModel.ToggleEventCompletionCommand.Execute(calendarEvent);
+                _viewModel.ToggleEventCompletionCommand?.Execute(calendarEvent);
             }
         }
         
-        private void OnCalendarDayLongPressed(object sender, EventArgs e)
+        private void OnCalendarDayLongPressed(object? sender, EventArgs e)
         {
             try
             {
-                if (sender is Grid grid && grid.BindingContext is DateTime date)
+                if (sender is Grid grid && grid.BindingContext is DateTime date && _viewModel != null)
                 {
-                    _viewModel.OpenMonthCalendarCommand.Execute(date);
+                    _viewModel.OpenMonthCalendarCommand?.Execute(date);
                     Debug.WriteLine($"OpenMonthCalendarCommand executed for date: {date.ToShortDateString()}");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Exception in OnCalendarDayLongPressed: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Error during long press on calendar day.");
             }
         }
         
-        private void OnEventTapped(object sender, TappedEventArgs e)
+        private void OnEventTapped(object? sender, TappedEventArgs e)
         {
             try
             {
-                if (sender is Grid grid && grid.BindingContext is CalendarEvent calendarEvent)
+                if (sender is Element element && element.BindingContext is CalendarEvent calendarEvent && _viewModel != null)
                 {
-                    _viewModel.ViewEventDetailsCommand.Execute(calendarEvent);
-                    Debug.WriteLine($"ViewEventDetailsCommand executed for event: {calendarEvent.Title}");
+                    _logger.LogInformation("Event tapped, executing ShowEventDetailsCommand for Event ID: {EventId}", calendarEvent.Id);
+                    _viewModel.ShowEventDetailsCommand?.Execute(calendarEvent);
+                }
+                else
+                {
+                    _logger.LogWarning("Event tapped but sender or its binding context is not a CalendarEvent, or ViewModel is null.");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Exception in OnEventTapped: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger.LogError(ex, "Error handling event tap.");
             }
         }
     }
