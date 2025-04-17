@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Text;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.Calendar.Messages;
+using Microsoft.Maui.Graphics;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -223,6 +224,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _calendarDays, value);
         }
         
+        public ObservableCollection<DateTime> SelectableDates => CalendarDays;
+        
         public ObservableCollection<GroupedCalendarEvents> TodayEvents
         {
             get => _todayEvents;
@@ -263,6 +266,43 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             get => _completionPercentage;
             set => SetProperty(ref _completionPercentage, value);
+        }
+        
+        // Restriction-related properties
+        private bool _hasActiveRestriction;
+        public bool HasActiveRestriction
+        {
+            get => _hasActiveRestriction;
+            set => SetProperty(ref _hasActiveRestriction, value);
+        }
+        
+        private Color _restrictionBackgroundColor = Colors.LightSalmon;
+        public Color RestrictionBackgroundColor
+        {
+            get => _restrictionBackgroundColor;
+            set => SetProperty(ref _restrictionBackgroundColor, value);
+        }
+        
+        private string _restrictionIcon = "warning.png";
+        public string RestrictionIcon
+        {
+            get => _restrictionIcon;
+            set => SetProperty(ref _restrictionIcon, value);
+        }
+        
+        private string _currentRestrictionText = "No active restrictions";
+        public string CurrentRestrictionText
+        {
+            get => _currentRestrictionText;
+            set => SetProperty(ref _currentRestrictionText, value);
+        }
+        
+        // Selected date events
+        private ObservableCollection<CalendarEvent> _eventsForSelectedDate;
+        public ObservableCollection<CalendarEvent> EventsForSelectedDate
+        {
+            get => _eventsForSelectedDate ?? (_eventsForSelectedDate = new ObservableCollection<CalendarEvent>());
+            set => SetProperty(ref _eventsForSelectedDate, value);
         }
         
         public ICommand ToggleEventCompletionCommand { get; }
@@ -728,10 +768,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 FlattenedEvents = new ObservableCollection<CalendarEvent>(eventsList);
                 SortedEvents = new ObservableCollection<CalendarEvent>(
                     eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
+                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(eventsList);
 
                 UpdateCompletionProgress();
                 OnPropertyChanged(nameof(FlattenedEvents));
                 OnPropertyChanged(nameof(SortedEvents));
+                OnPropertyChanged(nameof(EventsForSelectedDate));
 
                 // Логируем актуальное количество после обновления
                 _logger.LogDebug("UpdateUIWithEvents: Updated FlattenedEvents with {Count} events for date {Date}", FlattenedEvents.Count, SelectedDate.ToShortDateString());
@@ -1192,6 +1234,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 OnPropertyChanged(nameof(SelectedDate));
                 OnPropertyChanged(nameof(FormattedSelectedDate));
 
+                // Уведомляем о выбранной дате и вызываем ScrollToIndexTarget для центрирования
+                ScrollToIndexTarget = date;
+                
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
 
@@ -1307,6 +1352,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await LoadTodayEventsAsync();
                 await LoadEventCountsForVisibleDaysAsync();
                 await CheckOverdueEventsAsync();
+                await CheckAndLoadActiveRestrictionsAsync();
             }
             catch (Exception ex)
             {
@@ -1353,6 +1399,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await LoadTodayEventsAsync();
                 await LoadEventCountsForVisibleDaysAsync();
                 await CheckOverdueEventsAsync();
+                await CheckAndLoadActiveRestrictionsAsync();
             }
             catch (Exception ex)
             {
@@ -1362,6 +1409,55 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _isRefreshingData = false;
                 IsLoading = false;
+            }
+        }
+
+        private async Task CheckAndLoadActiveRestrictionsAsync()
+        {
+            try
+            {
+                // Get any active restrictions
+                var activeRestrictions = await _calendarService.GetActiveRestrictionsAsync();
+                
+                // Update UI properties based on restrictions
+                HasActiveRestriction = activeRestrictions != null && activeRestrictions.Any();
+                
+                if (HasActiveRestriction && activeRestrictions.Count > 0)
+                {
+                    // Use the most critical restriction if there are multiple
+                    var criticalRestriction = activeRestrictions.FirstOrDefault(r => r.EventType == EventType.CriticalWarning) 
+                                             ?? activeRestrictions.First();
+                    
+                    CurrentRestrictionText = criticalRestriction.Description;
+                    
+                    // Set appropriate colors based on restriction type
+                    switch (criticalRestriction.EventType)
+                    {
+                        case EventType.CriticalWarning:
+                            RestrictionBackgroundColor = Color.FromArgb("#FFEBEE"); // Light red
+                            RestrictionIcon = "warning.png";
+                            break;
+                        default:
+                            RestrictionBackgroundColor = Color.FromArgb("#FFF8E1"); // Light amber
+                            RestrictionIcon = "info.png";
+                            break;
+                    }
+                }
+                else
+                {
+                    // Default values when no restrictions
+                    CurrentRestrictionText = "No active restrictions";
+                    RestrictionBackgroundColor = Colors.LightSalmon;
+                    RestrictionIcon = "info.png";
+                }
+                
+                _logger.LogInformation("Active restrictions check completed. HasActiveRestriction: {HasActiveRestriction}", HasActiveRestriction);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking active restrictions");
+                HasActiveRestriction = false;
+                CurrentRestrictionText = "Unable to check restrictions";
             }
         }
     }

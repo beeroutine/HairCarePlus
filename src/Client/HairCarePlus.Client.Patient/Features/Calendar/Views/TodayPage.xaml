@@ -35,10 +35,19 @@
             
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate">
-                <Grid x:Name="rootContainer" WidthRequest="55" HeightRequest="55" Padding="0" Margin="3,0">
+                <Grid x:Name="rootContainer" 
+                       WidthRequest="55" 
+                       HeightRequest="60" 
+                       Padding="0" 
+                       Margin="3,0"
+                       BackgroundColor="Transparent">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal" />
+                            <VisualState Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="Transparent" />
+                                </VisualState.Setters>
+                            </VisualState>
                             <VisualState Name="Selected">
                                 <VisualState.Setters>
                                     <Setter Property="Frame.BackgroundColor" 
@@ -50,7 +59,8 @@
                                     <Setter Property="Label.TextColor" 
                                             TargetName="dayText" 
                                             Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                                    <Setter Property="Grid.Scale" Value="1.05" />
+                                    <Setter Property="Scale" Value="1.05" />
+                                    <Setter Property="BackgroundColor" Value="Transparent" />
                                 </VisualState.Setters>
                             </VisualState>
                         </VisualStateGroup>
@@ -64,48 +74,49 @@
 
                     <!-- Day of Week -->
                     <Label Grid.Row="0" 
-                           Text="{Binding ., StringFormat='{0:ddd}'}"
-                           FontSize="12"
-                           TextColor="{StaticResource Gray500}"
-                           HorizontalOptions="Center"
-                           Margin="0,0,0,2"/>
+                          Text="{Binding ., StringFormat='{0:ddd}'}"
+                          FontSize="12"
+                          TextColor="{StaticResource Gray500}"
+                          HorizontalOptions="Center"
+                          Margin="0,0,0,2"/>
 
                     <!-- Day number in circle -->
                     <Frame Grid.Row="1"
-                           x:Name="dayFrame"
-                           CornerRadius="20"
-                           Padding="0"
-                           WidthRequest="40"
-                           HeightRequest="40"
-                           BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
-                           BorderColor="Transparent"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center"
-                           Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
+                          x:Name="dayFrame"
+                          CornerRadius="20"
+                          Padding="0"
+                          WidthRequest="40"
+                          HeightRequest="40"
+                          BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
+                          BorderColor="Transparent"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"
+                          Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
                         <Label x:Name="dayText"
-                               Text="{Binding ., StringFormat='{0:%d}'}"
-                               FontSize="16"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
+                              Text="{Binding ., StringFormat='{0:%d}'}"
+                              FontSize="16"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center"
+                              TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                     </Frame>
 
                     <!-- Event Indicators bar -->
                     <BoxView Grid.Row="2"
-                             HeightRequest="3"
-                             CornerRadius="1.5"
-                             WidthRequest="24"
-                             HorizontalOptions="Center"
-                             Margin="0,4,0,0"
-                             IsVisible="{Binding ., Converter={StaticResource DateHasAnyEventConverter}}"
-                             Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                            HeightRequest="3"
+                            CornerRadius="1.5"
+                            WidthRequest="24"
+                            HorizontalOptions="Center"
+                            Margin="0,4,0,0"
+                            IsVisible="False"
+                            Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
 
                     <!-- Event Indicators details -->
                     <HorizontalStackLayout Grid.Row="2"
-                                         VerticalOptions="End" 
-                                         HorizontalOptions="Center"
-                                         Spacing="3"
-                                         Margin="0,10,0,0">
+                                        VerticalOptions="End" 
+                                        HorizontalOptions="Center"
+                                        Spacing="3"
+                                        Margin="0,10,0,0"
+                                        IsVisible="False">
                         <BoxView WidthRequest="6" 
                                 HeightRequest="6" 
                                 CornerRadius="3"
@@ -227,275 +238,114 @@
                CornerRadius="0"
                Margin="0"
                Padding="0"
-               HasShadow="{OnPlatform iOS=True, Default=False}">
-            <Grid Padding="16,8,16,12">
-                <VerticalStackLayout Spacing="12">
-                    <!-- Updated Header Design with Day Circle and Month -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8">
-                        <!-- Center: Circular Progress with Day Number and Day Name -->
-                        <Grid Grid.Column="0"
-                              HorizontalOptions="Start"
-                              VerticalOptions="Center"
-                              WidthRequest="{StaticResource CircleSize}"
-                              HeightRequest="{StaticResource CircleSize}">
-                              
-                            <!-- Background Circle -->
-                            <Border StrokeShape="Ellipse"
-                                   Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
-                                   StrokeThickness="4"
-                                   BackgroundColor="Transparent"
-                                   WidthRequest="{StaticResource CircleSize}"
-                                   HeightRequest="{StaticResource CircleSize}"/>
-                                   
-                            <!-- Progress Circle - colored border with opacity -->
-                            <Frame BackgroundColor="Transparent"
-                                   BorderColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}"
-                                   CornerRadius="50"
-                                   HasShadow="False"
-                                   Padding="0"
-                                   WidthRequest="{StaticResource CircleSize}"
-                                   HeightRequest="{StaticResource CircleSize}"
-                                   Opacity="{Binding CompletionProgress}"/>
-                            
-                            <!-- Center Content -->
-                            <VerticalStackLayout HorizontalOptions="Center" 
-                                               VerticalOptions="Center"
-                                               Spacing="0">
-                                <!-- Day number (large) -->
-                                <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:%d}'}"
-                                       FontSize="40"
-                                       FontAttributes="Bold"
-                                       HorizontalOptions="Center"
-                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                                
-                                <!-- Day of week (smaller) -->
-                                <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}"
-                                       FontSize="18"
-                                       HorizontalOptions="Center"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                            </VerticalStackLayout>
-                            
-                            <!-- Add Tap Gesture Recognizer -->
-                            <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding GoToTodayCommand}"/>
-                            </Grid.GestureRecognizers>
-                        </Grid>
-                        
-                        <!-- Right side: Month and Year on separate lines -->
-                        <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center" HorizontalOptions="End">
-                            <Label Text="{Binding CurrentMonthName}"
-                                   FontSize="34"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="End"
-                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                            <Label Text="{Binding CurrentYear}"
-                                   FontSize="24"
-                                   HorizontalOptions="End"
-                                   Margin="0,-4,0,0"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}"/>
+               HasShadow="False">
+            <VerticalStackLayout Padding="16,8,16,12" Spacing="12">
+                <!-- Updated Header Design: Date Circle Left, Month/Year Right -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8" VerticalOptions="Center">
+                    <!-- COL 0: Date Circle -->
+                    <Grid Grid.Column="0"
+                          HorizontalOptions="Start"
+                          VerticalOptions="Center"
+                          WidthRequest="{StaticResource CircleSize}"
+                          HeightRequest="{StaticResource CircleSize}">
+                          
+                        <!-- Background Circle -->
+                        <Border StrokeShape="Ellipse"
+                               Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                               StrokeThickness="4"
+                               BackgroundColor="Transparent"
+                               WidthRequest="{StaticResource CircleSize}"
+                               HeightRequest="{StaticResource CircleSize}"/>
+                               
+                        <!-- Progress Circle - Placeholder for actual progress binding -->
+                        <!-- Assuming you have progress logic, bind SkiaSharp or similar here -->
+                        <!-- <skia:SKCanvasView ... /> -->
+                               
+                        <!-- Day Number and Day Name -->
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                            <Label Text="{Binding SelectedDate.Day}" 
+                                   FontSize="32" 
+                                   FontAttributes="Bold" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                   HorizontalTextAlignment="Center"/>
+                            <Label Text="{Binding SelectedDate, StringFormat='{0:ddd}'}" 
+                                   FontSize="14" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                   HorizontalTextAlignment="Center"
+                                   Margin="0,-5,0,0"/>
                         </VerticalStackLayout>
                     </Grid>
 
-                    <!-- Horizontal Day Ticker -->
-                    <ScrollView x:Name="daysScrollView" 
-                              HorizontalScrollBarVisibility="Never" 
-                              VerticalScrollBarVisibility="Never"
-                              Orientation="Horizontal">
-                        <CollectionView x:Name="daysCollection"
-                                      ItemsSource="{Binding CalendarDays}"
-                                      SelectionChangedCommand="{Binding SelectDateCommand}"
-                                      SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference daysCollection}}"
-                                      SelectionMode="Single"
-                                      HeightRequest="80"
-                                      Margin="0,4,0,0"
-                                      ItemSizingStrategy="MeasureFirstItem"
-                                      ItemsUpdatingScrollMode="KeepLastItemInView"
-                                      RemainingItemsThreshold="5"
-                                      RemainingItemsThresholdReachedCommand="{Binding LoadMoreDatesCommand}"
-                                      ItemsLayout="{StaticResource HorizontalLinearLayout}">
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid x:Name="rootContainer" WidthRequest="55" HeightRequest="55" Padding="0" Margin="3,0">
-                                        <VisualStateManager.VisualStateGroups>
-                                            <VisualStateGroup Name="CommonStates">
-                                                <VisualState Name="Normal" />
-                                                <VisualState Name="Selected">
-                                                    <VisualState.Setters>
-                                                        <Setter Property="Frame.BackgroundColor" 
-                                                                TargetName="dayFrame" 
-                                                                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                                        <Setter Property="Frame.BorderColor" 
-                                                                TargetName="dayFrame" 
-                                                                Value="Transparent" />
-                                                        <Setter Property="Label.TextColor" 
-                                                                TargetName="dayText" 
-                                                                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                                                        <Setter Property="Grid.Scale" Value="1.05" />
-                                                    </VisualState.Setters>
-                                                </VisualState>
-                                            </VisualStateGroup>
-                                        </VisualStateManager.VisualStateGroups>
-                                        
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                    <!-- COL 1: Month (Large) and Year (Small) Right Aligned -->
+                    <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding SelectedDate, StringFormat='{0:MMMM}'}" 
+                                      FontSize="28" 
+                                      FontAttributes="Bold" 
+                                      TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                <Span Text=" "/>
+                                <Span Text="{Binding SelectedDate.Year}" 
+                                      FontSize="18" 
+                                      FontAttributes="None" 
+                                      TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Grid>
 
-                                        <!-- Day of Week -->
-                                        <Label Grid.Row="0" 
-                                               Text="{Binding ., StringFormat='{0:ddd}'}"
-                                               FontSize="12"
-                                               TextColor="{StaticResource Gray500}"
-                                               HorizontalOptions="Center"
-                                               Margin="0,0,0,2"/>
-
-                                        <!-- Day number in circle -->
-                                        <Frame Grid.Row="1"
-                                               x:Name="dayFrame"
-                                               CornerRadius="20"
-                                               Padding="0"
-                                               WidthRequest="40"
-                                               HeightRequest="40"
-                                               BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
-                                               BorderColor="Transparent"
-                                               HorizontalOptions="Center"
-                                               VerticalOptions="Center"
-                                               Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
-                                            <Label x:Name="dayText"
-                                                   Text="{Binding ., StringFormat='{0:%d}'}"
-                                                   FontSize="16"
-                                                   HorizontalOptions="Center"
-                                                   VerticalOptions="Center"
-                                                   TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
-                                        </Frame>
-
-                                        <!-- Event Indicators bar -->
-                                        <BoxView Grid.Row="2"
-                                                 HeightRequest="3"
-                                                 CornerRadius="1.5"
-                                                 WidthRequest="24"
-                                                 HorizontalOptions="Center"
-                                                 Margin="0,4,0,0"
-                                                 IsVisible="{Binding ., Converter={StaticResource DateHasAnyEventConverter}}"
-                                                 Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-
-                                        <!-- Event Indicators details -->
-                                        <HorizontalStackLayout Grid.Row="2"
-                                                             VerticalOptions="End" 
-                                                             HorizontalOptions="Center"
-                                                             Spacing="3"
-                                                             Margin="0,10,0,0">
-                                            <BoxView WidthRequest="6" 
-                                                    HeightRequest="6" 
-                                                    CornerRadius="3"
-                                                    Color="{StaticResource MedicationBlue}"
-                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.MedicationTreatment}}"/>
-                                            
-                                            <BoxView WidthRequest="6" 
-                                                    HeightRequest="6"
-                                                    CornerRadius="3"
-                                                    Color="{StaticResource PhotoPurple}"
-                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Photo}}"/>
-                                                    
-                                            <BoxView WidthRequest="6" 
-                                                    HeightRequest="6"
-                                                    CornerRadius="3"
-                                                    Color="{StaticResource VideoOrange}"
-                                                    IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Video}}"/>
-                                        </HorizontalStackLayout>
-                                        
-                                        <Grid.GestureRecognizers>
-                                            <TapGestureRecognizer 
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
-                                                CommandParameter="{Binding .}" />
-                                            <TapGestureRecognizer 
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
-                                                CommandParameter="{Binding .}"
-                                                NumberOfTapsRequired="2" />
-                                        </Grid.GestureRecognizers>
-                                    </Grid>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
-                        </CollectionView>
-                    </ScrollView>
-                </VerticalStackLayout>
-            </Grid>
+                <!-- Date Selector (Horizontal CollectionView) -->
+                <CollectionView x:Name="DateSelector"
+                                ItemsSource="{Binding SelectableDates}"
+                                SelectionMode="None"
+                                BackgroundColor="Transparent"
+                                ItemTemplate="{StaticResource DateTemplate}"
+                                ItemsLayout="{StaticResource HorizontalLinearLayout}"
+                                HeightRequest="75" 
+                                HorizontalScrollBarVisibility="Never"
+                                VerticalScrollBarVisibility="Never">
+                </CollectionView>
+                                
+            </VerticalStackLayout>
         </Frame>
 
-        <!-- Loading Indicator -->
-        <Grid Grid.Row="0" 
-              IsVisible="{Binding IsLoading}"
-              BackgroundColor="#80000000"
-              InputTransparent="False">
-            <Border StrokeShape="RoundRectangle 10"
-                    BackgroundColor="{StaticResource White}"
-                    Padding="20"
-                    HorizontalOptions="Center"
-                    VerticalOptions="Center">
-                <VerticalStackLayout Spacing="10">
-                    <ActivityIndicator IsRunning="{Binding IsLoading}"
-                                     Color="{StaticResource Primary}"
-                                     HeightRequest="50"
-                                     WidthRequest="50"/>
-                    <Label Text="{Binding LoadingStatus}"
-                           TextColor="{StaticResource Primary}"
-                           HorizontalOptions="Center"/>
-                    <ProgressBar Progress="{Binding LoadingProgress, Converter={StaticResource ProgressConverter}}"
-                               ProgressColor="{StaticResource Primary}"
-                               HeightRequest="6"
-                               WidthRequest="200"/>
-                    <Label Text="{Binding LoadingProgress, StringFormat='{0}%'}"
-                           TextColor="{StaticResource Primary}"
-                           HorizontalOptions="Center"
-                           FontSize="12"/>
-                </VerticalStackLayout>
-            </Border>
-        </Grid>
+        <!-- Main Content Area -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
+                
+                <!-- Restriction Area -->
+                <Border x:Name="RestrictionArea"
+                        IsVisible="{Binding HasActiveRestriction}"
+                        BackgroundColor="{Binding RestrictionBackgroundColor}"
+                        Padding="10" 
+                        Margin="0,5,0,5"
+                        StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0">
+                    <!-- Optional: Style with Shadow or Stroke -->
+                    <!-- HasShadow="True" Shadow="{StaticResource SmallShadow}" -->
+                    <HorizontalStackLayout Spacing="10">
+                        <Image Source="{Binding RestrictionIcon}"
+                               HeightRequest="20" 
+                               WidthRequest="20"
+                               VerticalOptions="Center"/>
+                        <Label Text="{Binding CurrentRestrictionText}"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" 
+                               FontSize="14"
+                               LineBreakMode="WordWrap"/>
+                    </HorizontalStackLayout>
+                </Border>
 
-        <!-- Error State -->
-        <Grid Grid.Row="0" 
-              IsVisible="{Binding HasError}"
-              BackgroundColor="#80000000"
-              InputTransparent="False">
-            <Frame BackgroundColor="{StaticResource White}"
-                   CornerRadius="10"
-                   Padding="20"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="{Binding LoadingStatus}"
-                           TextColor="{StaticResource Error}"
-                           HorizontalOptions="Center"/>
-                    <Button Text="Retry"
-                            Command="{Binding LoadMoreDatesCommand}"
-                            Style="{StaticResource PrimaryButton}"
-                            HorizontalOptions="Center"/>
-                </VerticalStackLayout>
-            </Frame>
-        </Grid>
-
-        <!-- Scrollable Content -->
-        <ScrollView x:Name="EventsScrollView"
-                  Grid.Row="1"
-                  IsVisible="{Binding IsContentVisible}"
-                  HorizontalScrollBarVisibility="Never"
-                  VerticalScrollBarVisibility="Never"
-                  BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
-            <RefreshView IsRefreshing="{Binding IsRefreshing}"
-                       Command="{Binding RefreshCommand}">
-                <CollectionView ItemsSource="{Binding SortedEvents}"
-                              SelectionMode="None"
-                              ItemsUpdatingScrollMode="KeepLastItemInView"
-                              ItemTemplate="{StaticResource EventTemplate}"
-                              EmptyView="{StaticResource EmptyViewTemplate}"
-                              ItemSizingStrategy="MeasureFirstItem"
-                              Margin="16,8,16,16">
+                <!-- Event List -->
+                <CollectionView ItemsSource="{Binding EventsForSelectedDate}"
+                                ItemTemplate="{StaticResource EventTemplate}"
+                                EmptyViewTemplate="{StaticResource EmptyViewTemplate}"
+                                VerticalOptions="FillAndExpand">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                     </CollectionView.ItemsLayout>
                 </CollectionView>
-            </RefreshView>
+            </VerticalStackLayout>
         </ScrollView>
     </Grid>
 </ContentPage> 

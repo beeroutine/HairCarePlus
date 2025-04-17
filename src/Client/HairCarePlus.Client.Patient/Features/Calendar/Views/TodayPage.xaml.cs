@@ -54,10 +54,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             
             try
             {
-                // Clear both the CollectionView selection and visual states
-                if (daysCollection != null)
+                // Clear the CollectionView selection when the page appears
+                if (DateSelector != null)
                 {
-                    daysCollection.SelectedItem = null;
+                    DateSelector.SelectedItem = null;
                 }
                 
                 if (!_isDataLoaded)
@@ -133,22 +133,22 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         // Maybe increase delay slightly more as a precaution?
                         await Task.Delay(350); 
                         
-                        // Define item width and spacing based on XAML
                         const double itemWidth = 55.0;
                         const double itemSpacing = 5.0;
                         const double totalItemWidth = itemWidth + itemSpacing;
                         
-                        var index = _viewModel.CalendarDays.IndexOf(targetDate.Date);
+                        // Find index based on the collection bound to DateSelector
+                        var index = _viewModel.SelectableDates.IndexOf(targetDate.Date);
                         
-                        if (index >= 0 && daysScrollView != null)
+                        if (index >= 0 && DateSelector != null)
                         {
-                            double horizontalOffset = index * totalItemWidth;
-                            _logger.LogInformation($"Scrolling daysScrollView to offset {horizontalOffset} for index {index} ({targetDate.ToShortDateString()})");
-                            await daysScrollView.ScrollToAsync(horizontalOffset, 0, true); // Scroll horizontally
+                            _logger.LogInformation($"Scrolling DateSelector to index {index} for {targetDate.ToShortDateString()}");
+                            // Use CollectionView.ScrollTo with index and specify position
+                            DateSelector.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
                         }
                         else
                         {
-                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or daysScrollView is null.");
+                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelector is null.");
                         }
                     });
                 }
@@ -168,15 +168,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 Debug.WriteLine($"UpdateSelectedDateVisualState called for date: {selectedDate.Value.ToShortDateString()}");
                 
-                if (daysCollection.ItemTemplate == null)
+                // Use the new DateSelector name
+                if (DateSelector.ItemTemplate == null)
                 {
-                    Debug.WriteLine("ItemTemplate is null");
+                    Debug.WriteLine("ItemTemplate is null for DateSelector");
                     return;
                 }
 
-                // Get only visible containers using ItemsLayout information
-                var visibleContainers = daysCollection.LogicalChildren
-                    .OfType<Grid>()
+                // Get visible containers from DateSelector
+                var visibleContainers = DateSelector.LogicalChildren
+                    .OfType<Grid>() // DateTemplate root is Grid
                     .Where(g => g.BindingContext is DateTime && g.IsVisible)
                     .ToList();
 
