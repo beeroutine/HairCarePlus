@@ -25,6 +25,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly ICalendarService _calendarService;
         private readonly ICalendarCacheService _cacheService;
         private readonly ICalendarLoader _eventLoader;
+        private readonly IProgressCalculator _progressCalculator;
         private readonly ILogger<TodayViewModel> _logger;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
@@ -154,11 +155,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _scrollToIndexTarget, value);
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, ILogger<TodayViewModel> logger)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
             _eventLoader = eventLoader;
+            _progressCalculator = progressCalculator;
             _logger = logger;
             
             // Restore saved date or use today
@@ -665,7 +667,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
                 EventsForSelectedDate = new ObservableCollection<CalendarEvent>(eventsList);
 
-                UpdateCompletionProgress();
+                var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
+                CompletionProgress = prog;
+                CompletionPercentage = percent;
                 OnPropertyChanged(nameof(FlattenedEvents));
                 OnPropertyChanged(nameof(SortedEvents));
                 OnPropertyChanged(nameof(EventsForSelectedDate));
@@ -673,23 +677,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Логируем актуальное количество после обновления
                 _logger.LogDebug("UpdateUIWithEvents: Updated FlattenedEvents with {Count} events for date {Date}", FlattenedEvents.Count, SelectedDate.ToShortDateString());
             });
-        }
-        
-        private void UpdateCompletionProgress()
-        {
-            var events = FlattenedEvents;
-            if (events == null || events.Count == 0)
-            {
-                CompletionProgress = 0;
-                CompletionPercentage = 0;
-                return;
-            }
-            
-            int totalEvents = events.Count;
-            int completedEvents = events.Count(e => e.IsCompleted);
-            
-            CompletionProgress = (double)completedEvents / totalEvents;
-            CompletionPercentage = (int)(CompletionProgress * 100);
         }
         
         private void CleanupCacheEntries()
@@ -1018,7 +1005,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     {
                         // Toggle state first
                         calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
-                        UpdateCompletionProgress();
                         
                         // Call service with single parameter
                         await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
@@ -1046,7 +1032,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         // Rollback on error
                         _logger.LogError(ex, "Error toggling event completion");
                         calendarEvent.IsCompleted = originalState;
-                        UpdateCompletionProgress();
                         
                         await Application.Current.MainPage.Dispatcher.DispatchAsync(async () =>
                         {
