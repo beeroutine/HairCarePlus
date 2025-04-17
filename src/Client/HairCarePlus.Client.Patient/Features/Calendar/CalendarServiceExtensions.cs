@@ -28,6 +28,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             
             // Register services
             services.AddScoped<ICalendarService, CalendarServiceImpl>();
+            services.AddSingleton<ICalendarCacheService, CalendarCacheService>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();

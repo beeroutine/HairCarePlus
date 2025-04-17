@@ -16,12 +16,14 @@ using System.Text;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.Calendar.Messages;
 using Microsoft.Maui.Graphics;
+using HairCarePlus.Client.Patient.Features.Calendar.Services;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
     public class TodayViewModel : BaseViewModel
     {
         private readonly ICalendarService _calendarService;
+        private readonly ICalendarCacheService _cacheService;
         private readonly ILogger<TodayViewModel> _logger;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
@@ -39,7 +41,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private DateTime _lastLoadedDate;
 
         // New fields for enhanced functionality
-        private readonly Dictionary<DateTime, List<CalendarEvent>> _eventCache;
         private readonly TimeSpan _cacheExpiration = TimeSpan.FromHours(1);
         private CancellationTokenSource? _loadingCancellationSource;
         private int _loadingProgress;
@@ -57,8 +58,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private DateTime _lastRefreshTime = DateTime.MinValue;
         private readonly TimeSpan _throttleInterval = TimeSpan.FromMilliseconds(300); // Минимальный интервал между запросами
-        private readonly Dictionary<DateTime, DateTimeOffset> _lastCacheUpdateTimes = new Dictionary<DateTime, DateTimeOffset>();
-        private readonly object _cacheUpdateLock = new object();
         
         // Диагностические счетчики для тестирования эффективности
         private static int _totalRequests = 0;
@@ -154,9 +153,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _scrollToIndexTarget, value);
         }
 
-        public TodayViewModel(ICalendarService calendarService, ILogger<TodayViewModel> logger)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
+            _cacheService = cacheService;
             _logger = logger;
             
             // Restore saved date or use today
@@ -164,7 +164,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _lastLoadedDate = DateTime.Today.AddDays(30); // Initial last loaded date
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
-            _eventCache = new Dictionary<DateTime, List<CalendarEvent>>();
             _overdueEventsCount = 0;
             _completionProgress = 0;
             _completionPercentage = 0;
@@ -423,7 +422,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger.LogInformation($"Successfully loaded {processedDays} new dates");
 
                 // Cleanup old cache entries
-                CleanupCache();
+                _cacheService.CleanupOldEntries(30);
             }
             catch (OperationCanceledException)
             {
@@ -454,31 +453,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 }
 
                 // Check cache first
-                if (_eventCache.TryGetValue(date, out var cachedEvents))
+                if (TryGetCache(date, out var cachedEvents, out var lastUpd) &&
+                    (DateTimeOffset.Now - lastUpd) <= _cacheExpiration)
                 {
-                    var cacheAge = DateTime.Now - date;
-                    if (cacheAge <= _cacheExpiration)
-                    {
-                        // Use cached data
-                        _logger.LogInformation("Cache hit for date {Date}. Events count: {Count}", date.ToShortDateString(), cachedEvents.Count);
-                        UpdateEventCountsForDate(date, cachedEvents);
-                        continue;
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Cache expired for date {Date}. Age: {Age}", date.ToShortDateString(), cacheAge);
-                    }
+                    // Use cached data
+                    _logger.LogInformation("Cache hit for date {Date}. Events count: {Count}", date.ToShortDateString(), cachedEvents.Count);
+                    UpdateEventCountsForDate(date, cachedEvents);
+                    continue;
                 }
-                else
-                {
-                    _logger.LogInformation("Cache miss for date {Date}", date.ToShortDateString());
-                }
+                _logger.LogInformation("Cache miss for date {Date}", date.ToShortDateString());
 
                 // Load from service with retry
                 var events = await LoadEventsWithRetryAsync(date, cancellationToken);
                 
                 // Update cache and counts
-                _eventCache[date] = events;
+                SetCache(date, events);
                 _logger.LogInformation("Cached {Count} events for date {Date}", events.Count, date.ToShortDateString());
                 UpdateEventCountsForDate(date, events);
             }
@@ -579,20 +568,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private void CleanupCache()
         {
-            var oldestAllowedDate = DateTime.Today.AddDays(-30); // Keep last 30 days
-            var keysToRemove = _eventCache.Keys.Where(date => date < oldestAllowedDate).ToList();
-            
-            if (keysToRemove.Any())
-            {
-                _logger.LogInformation("Cleaning up cache. Removing {Count} entries older than {Date}", 
-                    keysToRemove.Count, oldestAllowedDate.ToShortDateString());
-                
-                foreach (var key in keysToRemove)
-                {
-                    _eventCache.Remove(key);
-                    _eventCountsByDate.Remove(key);
-                }
-            }
+            _cacheService.CleanupOldEntries(30);
         }
         
         public async Task LoadTodayEventsAsync()
@@ -629,8 +605,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 // Проверка кэша перед загрузкой
                 DateTime selectedDateKey = SelectedDate.Date;
-                if (_eventCache.TryGetValue(selectedDateKey, out var cachedEvents) && 
-                    _lastCacheUpdateTimes.TryGetValue(selectedDateKey, out var lastUpdateTime))
+                if (TryGetCache(selectedDateKey, out var cachedEvents, out var lastUpdateTime))
                 {
                     // Если кэш обновлялся недавно (менее 1 минуты назад), используем его
                     if ((DateTimeOffset.Now - lastUpdateTime) <= TimeSpan.FromMinutes(1))
@@ -700,7 +675,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         _logger.LogError(ex, "Failed to load events after all retry attempts");
                         
                         // Если есть кэшированные данные, используем их даже устаревшие, чтобы не показывать пустой экран
-                        if (_eventCache.TryGetValue(selectedDateKey, out cachedEvents))
+                        if (TryGetCache(selectedDateKey, out cachedEvents, out _))
                         {
                             _logger.LogInformation("Using stale cache after error for {Date}", selectedDateKey.ToShortDateString());
                             await UpdateUIWithEvents(cachedEvents, cancellationToken);
@@ -733,11 +708,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 if (events != null)
                 {
                     // Обновление кэша атомарно
-                    lock (_cacheUpdateLock)
-                    {
-                        _eventCache[selectedDateKey] = events.ToList();
-                        _lastCacheUpdateTimes[selectedDateKey] = DateTimeOffset.Now;
-                    }
+                    SetCache(selectedDateKey, events);
                     
                     await UpdateUIWithEvents(events, cancellationToken);
                     _logger.LogInformation("Successfully loaded and cached {Count} events for {Date}", 
@@ -801,27 +772,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private void CleanupCacheEntries()
         {
-            // Determine the oldest date we want to keep in the cache
-            var oldestKeepDate = DateTime.Today.AddDays(-_cacheExpiration.TotalDays); 
-
-            // Find keys (dates) that are older than the retention period
-            var keysToRemove = _eventCache.Keys
-                                      .Where(date => date.Date < oldestKeepDate.Date)
-                                      .ToList();
-            
-            if (keysToRemove.Any())
-            {
-                _logger.LogInformation("Cleaning up {Count} stale cache entries older than {OldestDate}", 
-                                     keysToRemove.Count, oldestKeepDate.ToShortDateString());
-                                     
-                foreach (var key in keysToRemove)
-                {
-                    _eventCache.Remove(key);
-                    _lastCacheUpdateTimes.Remove(key);
-                    // Optionally remove from _eventCountsByDate as well if necessary
-                     _eventCountsByDate.Remove(key);
-                }
-            }
+            // Delegate cache cleanup to service
+            _cacheService.CleanupOldEntries(30);
         }
         
         private async Task ShowEventDetailsAsync(CalendarEvent calendarEvent)
@@ -880,8 +832,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 foreach (var day in CalendarDays)
                 {
                     var date = day.Date;
-                    if (_eventCache.ContainsKey(date) && 
-                        _lastCacheUpdateTimes.TryGetValue(date, out var lastUpdate) && 
+                    if (TryGetCache(date, out var cachedEvents, out var lastUpdate) &&
                         (DateTimeOffset.Now - lastUpdate) <= TimeSpan.FromMinutes(10))
                     {
                         // Дата уже есть в кэше и обновлялась недавно
@@ -907,7 +858,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     
                     foreach (var date in cachedDates)
                     {
-                        if (_eventCache.TryGetValue(date, out var events))
+                        if (TryGetCache(date, out var events, out _))
                         {
                             UpdateEventCounts(result, events);
                         }
@@ -1043,18 +994,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                                      .ToDictionary(g => g.Key, g => g.ToList());
 
             // Обновляем кэш ТОЛЬКО для тех дат, для которых пришли события
-            lock (_cacheUpdateLock)
+            foreach (var kvp in eventsByDate)
             {
-                foreach (var kvp in eventsByDate)
+                var date = kvp.Key;
+                var dateEvents = kvp.Value;
+                if (date >= startDate.Date && date <= endDate.Date)
                 {
-                    var date = kvp.Key;
-                    var dateEvents = kvp.Value;
-                    // Только если дата попадает в запрошенный диапазон (на всякий случай)
-                    if (date >= startDate.Date && date <= endDate.Date)
-                    {
-                        _eventCache[date] = dateEvents; // Обновляем/добавляем запись в кэш
-                        _lastCacheUpdateTimes[date] = DateTimeOffset.Now;
-                    }
+                    SetCache(date, dateEvents);
                 }
             }
             // Мы НЕ итерируем по всем датам диапазона и НЕ перезаписываем кэш пустыми списками.
@@ -1156,18 +1102,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
                         
                         // Update cache if needed
-                        if (_eventCache.TryGetValue(SelectedDate.Date, out var cachedEvents))
+                        if (TryGetCache(SelectedDate.Date, out var cachedEvents, out _))
                         {
-                            // Update cache atomically
-                            lock (_cacheUpdateLock)
+                            // Update cache list in service
+                            var eventToUpdate = cachedEvents.FirstOrDefault(e => e.Id == calendarEvent.Id);
+                            if (eventToUpdate != null)
                             {
-                                // Find and update event in cache
-                                var eventToUpdate = cachedEvents.FirstOrDefault(e => e.Id == calendarEvent.Id);
-                                if (eventToUpdate != null)
-                                {
-                                    eventToUpdate.IsCompleted = calendarEvent.IsCompleted;
-                                    _lastCacheUpdateTimes[SelectedDate.Date] = DateTimeOffset.Now;
-                                }
+                                eventToUpdate.IsCompleted = calendarEvent.IsCompleted;
+                                SetCache(SelectedDate.Date, cachedEvents);
                             }
                         }
                         
@@ -1452,6 +1394,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 CurrentRestrictionText = "Unable to check restrictions";
             }
         }
+
+        #region CacheHelpers
+        private bool TryGetCache(DateTime date, out List<CalendarEvent> events, out DateTimeOffset lastUpdate) =>
+            _cacheService.TryGet(date, out events, out lastUpdate);
+
+        private void SetCache(DateTime date, IEnumerable<CalendarEvent> events) => _cacheService.Set(date, events);
+        #endregion
     }
     
     // Класс для группировки событий по времени суток
