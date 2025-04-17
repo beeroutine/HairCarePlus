@@ -27,7 +27,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
         private ObservableCollection<CalendarEvent> _flattenedEvents;
         private ObservableCollection<CalendarEvent> _sortedEvents;
-        private string _daysSinceTransplant;
         private Dictionary<DateTime, Dictionary<EventType, int>> _eventCountsByDate;
         private int _overdueEventsCount;
         private double _completionProgress;
@@ -183,7 +182,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             PostponeEventCommand = new Command<CalendarEvent>(async (calendarEvent) => await PostponeEventAsync(calendarEvent));
             ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
-            ShowDiagnosticsCommand = new Command(async () => await ShowDiagnosticsAsync());
             GoToTodayCommand = new Command(ExecuteGoToToday);
             
             // Initial data loading
@@ -205,8 +203,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         SaveSelectedDate(value);
                     });
                     OnPropertyChanged(nameof(FormattedSelectedDate));
-                    OnPropertyChanged(nameof(DaysSinceTransplant));
                     OnPropertyChanged(nameof(CurrentMonthName));
+                    OnPropertyChanged(nameof(CurrentYear));
                 }
             }
         }
@@ -217,11 +215,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public string CurrentMonthName => SelectedDate.ToString("MMMM");
         
-        public string DaysSinceTransplant
-        {
-            get => _daysSinceTransplant;
-            set => SetProperty(ref _daysSinceTransplant, value);
-        }
+        public string CurrentYear => SelectedDate.ToString("yyyy");
         
         public ObservableCollection<DateTime> CalendarDays
         {
@@ -301,9 +295,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 _logger.LogInformation($"Loaded {days.Count} days from {days.First():yyyy-MM-dd} to {days.Last():yyyy-MM-dd}");
 
-                // Day 1 post hair transplant = сегодня
-                DaysSinceTransplant = $"Day 1 post hair transplant";
-                
                 _logger.LogInformation("LoadCalendarDays completed successfully");
             }
             catch (Exception ex)
@@ -1329,80 +1320,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        // Метод для получения диагностической информации
-        public string GetDiagnosticStats()
+        private void ExecuteGoToToday()
         {
-            // Статистика для LoadTodayEventsAsync
-            var cacheSize = _eventCache.Count;
-            var cacheHitRate = _totalRequests > 0 ? (double)_cacheHits / _totalRequests * 100 : 0;
-            var efficiency = _totalRequests > 0 
-                ? (double)(_cacheHits + _throttledRequests + _concurrentRejections) / _totalRequests * 100 
-                : 0;
-            var savedRequests = _cacheHits + _throttledRequests + _concurrentRejections;
-            
-            // Статистика для LoadEventCountsForVisibleDaysAsync
-            var countsBatchEfficiency = _eventCountsRequests > 0 
-                ? (1 - (double)_eventCountsBatchRequests / (CalendarDays?.Count ?? 1)) * 100 
-                : 0;
-            var countsHitRate = _eventCountsRequests > 0
-                ? (double)_eventCountsCacheHits / _eventCountsRequests * 100
-                : 0;
-            var countsSavedRequests = (CalendarDays?.Count ?? 0) - _eventCountsBatchRequests;
-            
-            // Общая статистика кэширования
-            var totalCacheHits = _cacheHits + _eventCountsCacheHits;
-            var totalRequests = _totalRequests + _eventCountsRequests;
-            var totalSavedRequests = savedRequests + countsSavedRequests;
-            var overallEfficiency = totalRequests > 0
-                ? (double)totalSavedRequests / (totalRequests + totalSavedRequests) * 100
-                : 0;
-                
-            StringBuilder stats = new StringBuilder();
-            
-            // Заголовок
-            stats.AppendLine("📊 ДИАГНОСТИКА КЭШИРОВАНИЯ И СИНХРОНИЗАЦИИ 📊");
-            stats.AppendLine("===============================================");
-            
-            // Раздел 1: Общая статистика кэша
-            stats.AppendLine("📦 ОБЩАЯ СТАТИСТИКА КЭША:");
-            stats.AppendLine($"• Размер кэша: {cacheSize} записей");
-            stats.AppendLine($"• Общая эффективность: {overallEfficiency:F1}%");
-            stats.AppendLine($"• Всего предотвращено запросов: {totalSavedRequests}");
-            stats.AppendLine($"• Данные в кэше: {_eventCache.Count} дат");
-            stats.AppendLine();
-            
-            // Раздел 2: Статистика LoadTodayEventsAsync
-            stats.AppendLine("📅 СТАТИСТИКА ЗАГРУЗКИ СОБЫТИЙ ДНЯ:");
-            stats.AppendLine($"• Всего запросов: {_totalRequests}");
-            stats.AppendLine($"• Использовано кэша: {_cacheHits} ({cacheHitRate:F1}%)");
-            stats.AppendLine($"• Отклонено из-за throttling: {_throttledRequests}");
-            stats.AppendLine($"• Отклонено из-за семафора: {_concurrentRejections}");
-            stats.AppendLine($"• Эффективность: {efficiency:F1}%");
-            stats.AppendLine($"• Предотвращено запросов: {savedRequests}");
-            stats.AppendLine();
-            
-            // Раздел 3: Статистика LoadEventCountsForVisibleDaysAsync
-            if (_eventCountsRequests > 0)
+            try
             {
-                stats.AppendLine("🔢 СТАТИСТИКА ЗАГРУЗКИ СЧЕТЧИКОВ:");
-                stats.AppendLine($"• Всего запросов счетчиков: {_eventCountsRequests}");
-                stats.AppendLine($"• Использовано кэша для дат: {_eventCountsCacheHits} ({countsHitRate:F1}%)");
-                stats.AppendLine($"• Всего батч-запросов: {_eventCountsBatchRequests}");
-                stats.AppendLine($"• Эффективность группировки: {countsBatchEfficiency:F1}%");
-                stats.AppendLine($"• Предотвращено запросов: {countsSavedRequests}");
+                _logger.LogInformation("GoToTodayCommand executed.");
+                // Set SelectedDate to trigger event loading and UI updates
+                SelectedDate = DateTime.Today;
+
+                // Set the target property to trigger scroll in the View
+                ScrollToIndexTarget = DateTime.Today;
+                // Log the value safely BEFORE it might be reset by the handler
+                _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
             }
-            
-            return stats.ToString();
-        }
-        
-        public ICommand ShowDiagnosticsCommand { get; private set; }
-        
-        private async Task ShowDiagnosticsAsync()
-        {
-            await Application.Current.MainPage.DisplayAlert(
-                "Диагностика синхронизации",
-                GetDiagnosticStats(),
-                "OK");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing GoToTodayCommand.");
+            }
         }
 
         // Add a new public method that can be called to initialize data
@@ -1428,25 +1362,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _isRefreshingData = false;
                 IsLoading = false;
-            }
-        }
-
-        private void ExecuteGoToToday()
-        {
-            try
-            {
-                _logger.LogInformation("GoToTodayCommand executed.");
-                // Set SelectedDate to trigger event loading and UI updates
-                SelectedDate = DateTime.Today;
-
-                // Set the target property to trigger scroll in the View
-                ScrollToIndexTarget = DateTime.Today;
-                // Log the value safely BEFORE it might be reset by the handler
-                _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error executing GoToTodayCommand.");
             }
         }
     }

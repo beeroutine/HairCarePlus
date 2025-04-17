@@ -155,9 +155,7 @@
                                Padding="0"
                                HasShadow="False"
                                BorderColor="Transparent"
-                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Start">
+                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}">
                             <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                    FontFamily="MaterialIcons"
                                    FontSize="20"
@@ -283,29 +281,18 @@
                             </Grid.GestureRecognizers>
                         </Grid>
                         
-                        <!-- Right side: Month and transplant day info -->
-                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center" HorizontalOptions="End">
+                        <!-- Right side: Month and Year on separate lines -->
+                        <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center" HorizontalOptions="End">
                             <Label Text="{Binding CurrentMonthName}"
                                    FontSize="34"
                                    FontAttributes="Bold"
-                                   VerticalOptions="Center"
                                    HorizontalOptions="End"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                                   
-                            <Label Text="{Binding DaysSinceTransplant}" 
-                                   FontSize="14"
+                            <Label Text="{Binding CurrentYear}"
+                                   FontSize="24"
                                    HorizontalOptions="End"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                    
-                            <!-- Diagnostic button -->
-                            <Button Text="⚙️ Diagnostic Stats" 
-                                    Command="{Binding ShowDiagnosticsCommand}"
-                                    BackgroundColor="Transparent"
-                                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}"
-                                    FontSize="12"
-                                    Padding="8,2"
-                                    HorizontalOptions="End"
-                                    Margin="0,8,0,0"/>
+                                   Margin="0,-4,0,0"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray200}}"/>
                         </VerticalStackLayout>
                     </Grid>
 
