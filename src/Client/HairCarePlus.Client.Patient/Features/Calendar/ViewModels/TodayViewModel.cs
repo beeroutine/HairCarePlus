@@ -24,6 +24,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
     {
         private readonly ICalendarService _calendarService;
         private readonly ICalendarCacheService _cacheService;
+        private readonly ICalendarLoader _eventLoader;
         private readonly ILogger<TodayViewModel> _logger;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
@@ -153,10 +154,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _scrollToIndexTarget, value);
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ILogger<TodayViewModel> logger)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
+            _eventLoader = eventLoader;
             _logger = logger;
             
             // Restore saved date or use today
@@ -464,93 +466,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger.LogInformation("Cache miss for date {Date}", date.ToShortDateString());
 
                 // Load from service with retry
-                var events = await LoadEventsWithRetryAsync(date, cancellationToken);
+                var events = await _eventLoader.LoadEventsForDateAsync(date, cancellationToken);
                 
                 // Update cache and counts
                 SetCache(date, events);
                 _logger.LogInformation("Cached {Count} events for date {Date}", events.Count, date.ToShortDateString());
                 UpdateEventCountsForDate(date, events);
             }
-        }
-        
-        private async Task<List<CalendarEvent>> LoadEventsWithRetryAsync(DateTime date, CancellationToken cancellationToken)
-        {
-            List<CalendarEvent> events = null;
-            Exception lastException = null;
-            bool success = false;
-            
-            _logger.LogDebug("Starting LoadEventsWithRetryAsync for {Date}", date.ToShortDateString());
-            
-            for (int retryCount = 0; retryCount < MaxRetryAttempts; retryCount++)
-            {
-                try
-                {
-                    // Проверяем отмену перед каждой попыткой
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        _logger.LogInformation("LoadEventsWithRetryAsync cancelled before attempt {RetryCount}", retryCount);
-                        throw new OperationCanceledException(cancellationToken);
-                    }
-                    
-                    // Если это не первая попытка, добавляем задержку
-                    if (retryCount > 0)
-                    {
-                        _logger.LogInformation("Retry {RetryCount}/{MaxRetries} for {Date} after delay of {Delay}ms", 
-                            retryCount, MaxRetryAttempts, date.ToShortDateString(), RetryDelays[retryCount - 1]);
-                        await Task.Delay(RetryDelays[retryCount - 1], cancellationToken);
-                    }
-                    
-                    // Выполняем попытку загрузки
-                    events = (await _calendarService.GetEventsForDateAsync(date)).ToList();
-                    
-                    // Если дошли сюда - загрузка успешна
-                    success = true;
-                    
-                    if (retryCount > 0)
-                    {
-                        _logger.LogInformation("Successfully loaded {Count} events for {Date} after {RetryCount} retries", 
-                            events.Count, date.ToShortDateString(), retryCount);
-                    }
-                    else
-                    {
-                        _logger.LogDebug("Successfully loaded {Count} events for {Date} on first attempt", 
-                            events.Count, date.ToShortDateString());
-                    }
-                    
-                    // Выходим из цикла при успешной загрузке
-                    break;
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    _logger.LogInformation("LoadEventsWithRetryAsync was cancelled during attempt {RetryCount}", retryCount);
-                    throw; // Пробрасываем исключение отмены
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                    
-                    if (retryCount == MaxRetryAttempts - 1)
-                    {
-                        // Это была последняя попытка
-                        _logger.LogError(ex, "Final retry {RetryCount}/{MaxRetries} failed for {Date}", 
-                            retryCount, MaxRetryAttempts, date.ToShortDateString());
-                    }
-                    else
-                    {
-                        _logger.LogWarning(ex, "Retry {RetryCount}/{MaxRetries} failed for {Date}", 
-                            retryCount, MaxRetryAttempts, date.ToShortDateString());
-                    }
-                }
-            }
-            
-            // Если все попытки завершились неудачей, выбрасываем последнее исключение
-            if (!success && lastException != null)
-            {
-                _logger.LogError(lastException, "All retries failed for {Date}", date.ToShortDateString());
-                throw lastException;
-            }
-            
-            return events ?? new List<CalendarEvent>();
         }
         
         private void UpdateEventCountsForDate(DateTime date, List<CalendarEvent> events)
