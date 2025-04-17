@@ -283,7 +283,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _restrictionBackgroundColor, value);
         }
         
-        private string _restrictionIcon = "warning.png";
+        // Using Material Icons glyphs instead of external PNG images to avoid missing-resource warnings
+        // "\ue002" – warning, "\ue88e" – info
+        private string _restrictionIcon = "\ue88e";
         public string RestrictionIcon
         {
             get => _restrictionIcon;
@@ -1425,11 +1427,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     {
                         case EventType.CriticalWarning:
                             RestrictionBackgroundColor = Color.FromArgb("#FFEBEE"); // Light red
-                            RestrictionIcon = "warning.png";
+                            RestrictionIcon = "\ue002"; // warning glyph
                             break;
                         default:
                             RestrictionBackgroundColor = Color.FromArgb("#FFF8E1"); // Light amber
-                            RestrictionIcon = "info.png";
+                            RestrictionIcon = "\ue88e"; // info glyph
                             break;
                     }
                 }
@@ -1438,7 +1440,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     // Default values when no restrictions
                     CurrentRestrictionText = "No active restrictions";
                     RestrictionBackgroundColor = Colors.LightSalmon;
-                    RestrictionIcon = "info.png";
+                    RestrictionIcon = "\ue88e"; // info glyph
                 }
                 
                 _logger.LogInformation("Active restrictions check completed. HasActiveRestriction: {HasActiveRestriction}", HasActiveRestriction);

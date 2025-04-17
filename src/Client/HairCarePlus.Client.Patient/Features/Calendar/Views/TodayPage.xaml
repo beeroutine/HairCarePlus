@@ -336,9 +336,11 @@
                     <!-- Optional: Style with Shadow or Stroke -->
                     <!-- HasShadow="True" Shadow="{StaticResource SmallShadow}" -->
                     <HorizontalStackLayout Spacing="10">
-                        <Image Source="{Binding RestrictionIcon}"
-                               HeightRequest="20" 
-                               WidthRequest="20"
+                        <!-- Replaced Image with Label using Material Icons font -->
+                        <Label Text="{Binding RestrictionIcon}"
+                               FontFamily="MaterialIcons"
+                               FontSize="20"
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                VerticalOptions="Center"/>
                         <Label Text="{Binding CurrentRestrictionText}"
                                VerticalOptions="Center"
