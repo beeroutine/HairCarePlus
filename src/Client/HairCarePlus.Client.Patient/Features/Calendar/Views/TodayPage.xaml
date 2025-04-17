@@ -233,7 +233,7 @@
             <Grid Padding="16,8,16,12">
                 <VerticalStackLayout Spacing="12">
                     <!-- Updated Header Design with Day Circle and Month -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="15" Margin="0,16,0,8">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8">
                         <!-- Center: Circular Progress with Day Number and Day Name -->
                         <Grid Grid.Column="0"
                               HorizontalOptions="Start"
