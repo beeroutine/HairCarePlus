@@ -126,10 +126,13 @@ public static class MauiProgram
 
 #if DEBUG
 		builder.Logging.AddDebug()
-			// Set minimum level for verbose EF Core categories to Information
-			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information) 
-			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Information)
-			.SetMinimumLevel(LogLevel.Debug); // Keep general minimum level as Debug for other logs
+			// Reduce verbosity of EF Core to minimise log overhead during development
+			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.Database.Transaction", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.Update", LogLevel.Warning)
+			// Keep other categories at Information for useful context without flooding the output
+			.SetMinimumLevel(LogLevel.Information);
 #endif
 
 		var app = builder.Build();
