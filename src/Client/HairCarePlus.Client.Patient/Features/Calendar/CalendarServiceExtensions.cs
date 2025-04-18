@@ -1,5 +1,4 @@
 using System;
-using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
@@ -28,7 +27,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(services));
             
             // Register services
-            services.AddScoped<ICalendarService, CalendarServiceAdapter>();
+            services.AddScoped<ICalendarService, HairTransplantEventService>();
             services.AddScoped<IHairTransplantEventService, HairTransplantEventService>();
             services.AddScoped<IRestrictionService, RestrictionService>();
             services.AddSingleton<ICalendarCacheService, CalendarCacheService>();
