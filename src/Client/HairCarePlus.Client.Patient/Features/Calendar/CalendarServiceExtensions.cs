@@ -100,9 +100,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
                 Application.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("BoolConverter"))
-                Application.Current.Resources.Add("BoolConverter", new Helpers.BoolConverter());
-
             if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
                 Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
         }

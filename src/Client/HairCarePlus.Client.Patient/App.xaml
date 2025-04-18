@@ -85,17 +85,13 @@
 
             <!-- Converters -->
             <commonConverters:BoolToColorConverter x:Key="BoolToColorConverter" />
-            <calendarHelpers:BoolConverter x:Key="BoolConverter" />
-            <commonConverters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
             <commonConverters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
             <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
             <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             <calendarHelpers:DoubleToPercentageConverter x:Key="DoubleToPercentageConverter" />
             <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
-            <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter" />
-            <converters:IntToBoolConverter x:Key="IntToBoolConverter" />
             <converters:ProgressConverter x:Key="ProgressConverter" />
 
             <!-- Styles -->
@@ -210,6 +206,9 @@
             <!-- Colors -->
             <Color x:Key="Error">#F14336</Color>
             <Color x:Key="Gray950">#141414</Color>
+
+            <!-- Removed unused BoolConverter, EventTypeToBackgroundConverter, IntToBoolConverter -->
+            <commonConverters:InverseBoolConverter x:Key="InverseBoolConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
