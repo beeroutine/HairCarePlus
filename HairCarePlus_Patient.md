@@ -103,8 +103,13 @@ HairCarePlus.Client.Patient/
 // MauiProgram.cs
 builder.Services
     .AddDbContext<AppDbContext>()
+    // Calendar feature
     .AddScoped<ICalendarRepository, CalendarRepository>()
+    .AddSingleton<IHairTransplantEventGenerator, HairTransplantEventGeneratorImpl>()
+    .AddScoped<IDataInitializer, CalendarDataInitializer>()
+    // Chat
     .AddScoped<IChatRepository, ChatRepository>()
+    // Core infrastructure
     .AddSingleton<ILocalStorageService, LocalStorageService>()
     .AddSingleton<ISecureStorageService, SecureStorageService>();
 ```
@@ -123,6 +128,9 @@ builder.Services
   - Repositories/ICalendarRepository.cs - контракт хранилища
 - **Services/**
   - JsonHairTransplantEventGenerator — генерация событий на основе json-файла HairTransplantSchedule.json (day=1 соответствует дню операции, диапазон — 1 год)
+  - CalendarDataInitializer.cs — первичная инициализация данных (реализация `IDataInitializer`)
+  - HairTransplantEventGeneratorImpl.cs — программная генерация событий (реализация `IHairTransplantEventGenerator`)
+  - IDataInitializer.cs — контракт инициализации базовых данных
 - **ViewModels/**
   - TodayViewModel - логика главного экрана
   - CalendarViewModel - управление календарём

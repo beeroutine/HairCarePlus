@@ -31,7 +31,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand ToggleCompletionCommand { get; }
         public ICommand PostponeCommand { get; }
 
-        public async Task LoadEventAsync(int eventId)
+        public async Task LoadEventAsync(Guid id)
         {
             try
             {
@@ -43,9 +43,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 // Для демонстрации используем временную заглушку
                 var events = await _calendarService.GetEventsForDateAsync(DateTime.Today);
-                Event = events.FirstOrDefault(e => e.Id == eventId) ?? new CalendarEvent
+                Event = events.FirstOrDefault(e => e.Id == id) ?? new CalendarEvent
                 {
-                    Id = eventId,
+                    Id = id,
                     Title = "Sample Event",
                     Description = "This is a sample event for demonstration purposes.",
                     Date = DateTime.Today,

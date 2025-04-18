@@ -70,17 +70,15 @@ public class CalendarServiceAdapter : ICalendarService
             .ToList();
     }
 
-    public async Task<CalendarEvent> GetEventByIdAsync(int eventId)
+    public async Task<CalendarEvent> GetEventByIdAsync(Guid id)
     {
-        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
-        var evt = await _eventService.GetEventByIdAsync(guid);
+        var evt = await _eventService.GetEventByIdAsync(id);
         return evt != null ? MapToCalendarEvent(evt) : null;
     }
 
-    public async Task<bool> MarkEventAsCompletedAsync(int eventId)
+    public async Task<bool> MarkEventAsCompletedAsync(Guid id)
     {
-        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
-        return await _eventService.MarkEventAsCompletedAsync(guid);
+        return await _eventService.MarkEventAsCompletedAsync(id);
     }
 
     public async Task<bool> UpdateEventAsync(CalendarEvent calendarEvent)
@@ -90,10 +88,9 @@ public class CalendarServiceAdapter : ICalendarService
         return result != null;
     }
 
-    public async Task<bool> DeleteEventAsync(int eventId)
+    public async Task<bool> DeleteEventAsync(Guid id)
     {
-        var guid = new Guid(eventId.ToString().PadLeft(32, '0'));
-        return await _eventService.DeleteEventAsync(guid);
+        return await _eventService.DeleteEventAsync(id);
     }
 
     public async Task<CalendarEvent> CreateEventAsync(CalendarEvent calendarEvent)
@@ -129,7 +126,7 @@ public class CalendarServiceAdapter : ICalendarService
     {
         return new CalendarEvent
         {
-            Id = int.Parse(e.Id.ToString().Substring(0, 8), System.Globalization.NumberStyles.HexNumber),
+            Id = e.Id,
             Title = e.Title,
             Description = e.Notes ?? string.Empty,
             StartDate = e.StartDate,
@@ -148,7 +145,7 @@ public class CalendarServiceAdapter : ICalendarService
     {
         return new DomainEntities.HairTransplantEvent
         {
-            Id = new Guid(e.Id.ToString().PadLeft(32, '0')),
+            Id = e.Id,
             Title = e.Title,
             Notes = e.Description,
             StartDate = e.StartDate,

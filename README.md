@@ -224,3 +224,8 @@ MyCollection = new ObservableCollection<T>(updatedList);
 - Обсуждайте все изменения с командой, чтобы сохранить согласованность.
 
 Спасибо за соблюдение принципов HairCare+!
+
+## 1.4 Последние изменения (апрель 2025)
+- Завершена базовая реализация модуля **Calendar**: генератор событий, репозиторий `CalendarRepository`, инициализатор `CalendarDataInitializer`. События отображаются в TodayPage.
+- В DI добавлены регистрации `IHairTransplantEventGenerator` и `IDataInitializer`.
+- Исправлена фильтрация однодневных событий без `EndDate`.

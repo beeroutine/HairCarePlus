@@ -3,7 +3,6 @@ using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
-using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementations;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +12,8 @@ using static Microsoft.Maui.Controls.Routing;
 using HairCarePlus.Client.Patient.Features.Notifications.Services;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
+using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
+using HairCarePlus.Client.Patient.Features.Calendar.Infrastructure.Repositories;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -27,10 +28,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(services));
             
             // Register services
-            services.AddScoped<ICalendarService, CalendarServiceImpl>();
+            services.AddScoped<ICalendarService, CalendarServiceAdapter>();
+            services.AddScoped<IHairTransplantEventService, HairTransplantEventService>();
+            services.AddScoped<IRestrictionService, RestrictionService>();
             services.AddSingleton<ICalendarCacheService, CalendarCacheService>();
             services.AddSingleton<ICalendarLoader, CalendarLoaderService>();
             services.AddSingleton<IProgressCalculator, ProgressCalculatorService>();
+            
+            // Register repository
+            services.AddScoped<ICalendarRepository, CalendarRepository>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();

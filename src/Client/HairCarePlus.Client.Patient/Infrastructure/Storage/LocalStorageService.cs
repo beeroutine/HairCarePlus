@@ -117,7 +117,7 @@ public class LocalStorageService : ILocalStorageService
             {
                 command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Events (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Id TEXT PRIMARY KEY,
                     Title TEXT NOT NULL,
                     Description TEXT NOT NULL,
                     Date TEXT NOT NULL,

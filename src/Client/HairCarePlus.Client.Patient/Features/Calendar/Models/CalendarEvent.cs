@@ -29,7 +29,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
 
     public class CalendarEvent
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public DateTime Date { get; set; }
@@ -58,6 +58,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         public CalendarEvent()
         {
             var now = DateTime.Now;
+            Id = Guid.NewGuid();
             Date = now;
             StartDate = now;
             CreatedAt = now;

@@ -36,9 +36,9 @@ public interface IEventAggregationService
     Task<IEnumerable<CalendarEvent>> GetEventsForDateAsync(DateTime date);
     Task<IEnumerable<CalendarEvent>> GetEventsForDateRangeAsync(DateTime startDate, DateTime endDate);
     Task<IEnumerable<CalendarEvent>> GetActiveRestrictionsAsync();
-    Task<CalendarEvent?> GetEventByIdAsync(int eventId);
-    Task<bool> MarkEventCompletedAsync(int eventId);
+    Task<CalendarEvent?> GetEventByIdAsync(Guid id);
+    Task<bool> MarkEventCompletedAsync(Guid id);
     Task<bool> UpdateEventAsync(CalendarEvent calendarEvent);
-    Task<bool> DeleteEventAsync(int eventId);
+    Task<bool> DeleteEventAsync(Guid id);
     Task<CalendarEvent> CreateEventAsync(CalendarEvent calendarEvent);
 } 

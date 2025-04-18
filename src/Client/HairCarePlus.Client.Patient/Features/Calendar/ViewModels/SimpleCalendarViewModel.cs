@@ -245,7 +245,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var eventType = (EventType)rand.Next(0, 4);
                 events.Add(new CalendarEvent
                 {
-                    Id = i + 1,
+                    Id = Guid.NewGuid(),
                     Title = GetTitleForEventType(eventType),
                     Description = "Описание события " + (i + 1),
                     Date = SelectedDate,

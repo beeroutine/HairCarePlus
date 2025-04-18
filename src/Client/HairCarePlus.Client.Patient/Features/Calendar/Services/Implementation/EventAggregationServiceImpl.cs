@@ -97,7 +97,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             return await GetEventsForDateRangeAsync(startDate, endDate, CancellationToken.None);
         }
 
-        public async Task<CalendarEvent> GetEventByIdAsync(int id)
+        public async Task<CalendarEvent> GetEventByIdAsync(Guid id)
         {
             int maxRetries = 5;
             int retryCount = 0;
@@ -227,7 +227,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             }
         }
 
-        public async Task<bool> MarkEventCompletedAsync(int eventId)
+        public async Task<bool> MarkEventCompletedAsync(Guid id)
         {
             int maxRetries = 5;
             int retryCount = 0;
@@ -238,7 +238,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
                 try
                 {
                     using var context = await _dbContextFactory.CreateDbContextAsync();
-                    var calendarEvent = await context.Events.FindAsync(eventId);
+                    var calendarEvent = await context.Events.FindAsync(id);
                     
                     if (calendarEvent == null)
                         return false;
@@ -265,7 +265,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Error marking event {EventId} as completed", eventId);
+                    _logger?.LogError(ex, "Error marking event {EventId} as completed", id);
                     return false;
                 }
             }
@@ -310,7 +310,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             }
         }
 
-        public async Task<bool> DeleteEventAsync(int id)
+        public async Task<bool> DeleteEventAsync(Guid id)
         {
             int maxRetries = 5;
             int retryCount = 0;

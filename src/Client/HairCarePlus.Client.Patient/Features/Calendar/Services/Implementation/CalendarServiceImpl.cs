@@ -63,14 +63,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             return events.Where(e => !e.IsCompleted && e.StartDate < now).ToList();
         }
 
-        public async Task<CalendarEvent> GetEventByIdAsync(int eventId)
+        public async Task<CalendarEvent> GetEventByIdAsync(Guid id)
         {
-            return await _eventAggregationService.GetEventByIdAsync(eventId);
+            return await _eventAggregationService.GetEventByIdAsync(id);
         }
 
-        public async Task<bool> MarkEventAsCompletedAsync(int eventId)
+        public async Task<bool> MarkEventAsCompletedAsync(Guid id)
         {
-            var calendarEvent = await GetEventByIdAsync(eventId);
+            var calendarEvent = await GetEventByIdAsync(id);
             if (calendarEvent == null) return false;
 
             calendarEvent.IsCompleted = true;
@@ -85,9 +85,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             return await _eventAggregationService.UpdateEventAsync(calendarEvent);
         }
 
-        public async Task<bool> DeleteEventAsync(int eventId)
+        public async Task<bool> DeleteEventAsync(Guid id)
         {
-            return await _eventAggregationService.DeleteEventAsync(eventId);
+            return await _eventAggregationService.DeleteEventAsync(id);
         }
 
         public async Task<CalendarEvent> CreateEventAsync(CalendarEvent calendarEvent)

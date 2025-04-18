@@ -167,16 +167,16 @@ public class EventAggregationService : IEventAggregationService
         return Task.FromResult<IEnumerable<CalendarEvent>>(new List<CalendarEvent>());
     }
 
-    public Task<CalendarEvent?> GetEventByIdAsync(int eventId)
+    public Task<CalendarEvent?> GetEventByIdAsync(Guid id)
     {
-        _logger?.LogInformation($"Getting event by ID: {eventId}");
+        _logger?.LogInformation($"Getting event by ID: {id}");
         // This is just a stub - implement actual logic
         return Task.FromResult<CalendarEvent?>(null);
     }
 
-    public Task<bool> MarkEventCompletedAsync(int eventId)
+    public Task<bool> MarkEventCompletedAsync(Guid id)
     {
-        _logger?.LogInformation($"Marking event {eventId} as completed");
+        _logger?.LogInformation($"Marking event {id} as completed");
         // This is just a stub - implement actual logic
         return Task.FromResult(false);
     }
@@ -188,9 +188,9 @@ public class EventAggregationService : IEventAggregationService
         return Task.FromResult(false);
     }
 
-    public Task<bool> DeleteEventAsync(int eventId)
+    public Task<bool> DeleteEventAsync(Guid id)
     {
-        _logger?.LogInformation($"Deleting event {eventId}");
+        _logger?.LogInformation($"Deleting event {id}");
         // This is just a stub - implement actual logic
         return Task.FromResult(false);
     }
