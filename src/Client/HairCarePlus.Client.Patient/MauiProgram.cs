@@ -27,6 +27,7 @@ using HairCarePlus.Client.Patient.Features.Notifications.Services.Implementation
 using System;
 using System.IO;
 using System.Diagnostics;
+using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
