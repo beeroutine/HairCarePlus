@@ -48,22 +48,34 @@ public class LocalStorageService : ILocalStorageService
             using var context = GetDbContext();
             if (!await DoesDatabaseExistAsync())
             {
+#if DEBUG
                 Debug.WriteLine("Database does not exist, creating...");
+#endif
                 await CreateDatabaseWithSqliteAsync();
+#if DEBUG
                 Debug.WriteLine("Database created successfully");
+#endif
             }
             else
             {
+#if DEBUG
                 Debug.WriteLine("Database exists, verifying schema...");
+#endif
                 if (!await VerifyDatabaseTablesAsync())
                 {
+#if DEBUG
                     Debug.WriteLine("Database schema verification failed, recreating...");
+#endif
                     await CreateDatabaseWithSqliteAsync();
+#if DEBUG
                     Debug.WriteLine("Database recreated successfully");
+#endif
                 }
                 else
                 {
+#if DEBUG
                     Debug.WriteLine("Database schema verified, skipping initialization");
+#endif
                 }
             }
         }
@@ -91,14 +103,18 @@ public class LocalStorageService : ILocalStorageService
             while (await reader.ReadAsync())
             {
                 tableCount++;
+#if DEBUG
                 Debug.WriteLine($"Found table: {reader.GetString(0)}");
+#endif
             }
             
             return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {
+#if DEBUG
             Debug.WriteLine($"Error verifying database tables: {ex.Message}");
+#endif
             return false;
         }
     }
@@ -107,7 +123,9 @@ public class LocalStorageService : ILocalStorageService
     {
         try
         {
+#if DEBUG
             Debug.WriteLine("Creating database tables using direct SQL commands");
+#endif
             
             using var connection = new SqliteConnection($"Data Source={_databasePath}");
             await connection.OpenAsync();
@@ -133,7 +151,9 @@ public class LocalStorageService : ILocalStorageService
                     ExpirationDate TEXT
                 )";
                 await command.ExecuteNonQueryAsync();
+#if DEBUG
                 Debug.WriteLine("Created Events table");
+#endif
             }
             
             // Create ChatMessages table (not Messages)
@@ -167,14 +187,20 @@ public class LocalStorageService : ILocalStorageService
                     LastModifiedAt TEXT
                 )";
                 await command.ExecuteNonQueryAsync();
+#if DEBUG
                 Debug.WriteLine("Created ChatMessages table");
+#endif
             }
             
+#if DEBUG
             Debug.WriteLine("Database schema created successfully");
+#endif
         }
         catch (Exception ex)
         {
+#if DEBUG
             Debug.WriteLine($"Error creating database with SQLite: {ex.Message}");
+#endif
             throw;
         }
     }
@@ -256,7 +282,9 @@ public class LocalStorageService : ILocalStorageService
         var context = GetDbContext();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
+#if DEBUG
         Debug.WriteLine("Database cleared and recreated");
+#endif
     }
 
     public string GetDatabasePath() => _databasePath;
@@ -298,14 +326,18 @@ public class LocalStorageService : ILocalStorageService
             while (await reader.ReadAsync())
             {
                 tableCount++;
+#if DEBUG
                 Debug.WriteLine($"Found table: {reader.GetString(0)}");
+#endif
             }
             
             return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {
+#if DEBUG
             Debug.WriteLine($"Error verifying database tables: {ex.Message}");
+#endif
             return false;
         }
     }

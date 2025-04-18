@@ -165,24 +165,32 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task HandleReplyToMessage(ChatMessage message)
     {
+#if DEBUG
         System.Diagnostics.Debug.WriteLine($"=== HandleReplyToMessage вызван: {message?.Content}");
         System.Diagnostics.Debug.WriteLine($"=== SenderId: {message?.SenderId}");
+#endif
         
         if (message == null)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine("=== ОШИБКА: message == null");
+#endif
             return;
         }
         
         if (EditingMessage != null)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: EditingMessage != null");
+#endif
             return;
         }
         
         if (message.SenderId == "patient")
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: SenderId == patient");
+#endif
             if (Application.Current?.MainPage != null)
             {
                 await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
@@ -193,14 +201,18 @@ public partial class ChatViewModel : ObservableObject
         try 
         {
             ReplyToMessage = message;
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"=== ReplyToMessage установлен: {ReplyToMessage?.Content}");
+#endif
             
             await ScrollToBottom();
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"=== ОШИБКА: {ex.Message}");
             System.Diagnostics.Debug.WriteLine($"=== {ex.StackTrace}");
+#endif
         }
     }
 
@@ -306,7 +318,9 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Error scrolling to bottom: {ex.Message}");
+#endif
         }
     }
 } 

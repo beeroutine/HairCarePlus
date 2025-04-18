@@ -199,7 +199,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
+#if DEBUG
                     Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
+#endif
                     Task.Run(async () => 
                     {
                         await LoadTodayEventsAsync();
@@ -1058,8 +1060,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 return;
             }
 
+#if DEBUG
             Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
             Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
+#endif
 
             // Сохраняем старую дату для возможного отката
             var previousDate = SelectedDate;
@@ -1077,7 +1081,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
 
+#if DEBUG
                 Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
+#endif
 
                 // Загружаем события для выбранной даты
                 await LoadTodayEventsAsync();
@@ -1244,7 +1250,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
             catch (Exception ex)
             {
+#if DEBUG
                 Debug.WriteLine($"Error loading initial data: {ex.Message}");
+#endif
             }
             finally
             {

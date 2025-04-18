@@ -23,7 +23,9 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 }
             }
             
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Присоединен к Frame");
+#endif
         }
 
         protected override void OnDetachingFrom(Frame bindable)
@@ -40,7 +42,9 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             }
             
             base.OnDetachingFrom(bindable);
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Отсоединен от Frame");
+#endif
         }
         
         private void OnFrameChildAdded(object? sender, ElementEventArgs? args)
@@ -49,7 +53,9 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             {
                 tapGesture.Tapped -= OnTapped;
                 tapGesture.Tapped += OnTapped;
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine("=== VisualFeedbackBehavior: Добавлен новый TapGestureRecognizer");
+#endif
             }
         }
 
@@ -73,12 +79,16 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 
                 if (frame == null)
                 {
+#if DEBUG
                     System.Diagnostics.Debug.WriteLine("=== VisualFeedbackBehavior: Не удалось определить Frame из sender.");
+#endif
                     return;
                 }
                 
                 // Логирование события тапа
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Tapped event fired на Frame hash: {frame.GetHashCode()}");
+#endif
                 
                 // Сохраняем исходный масштаб
                 double originalScale = frame.Scale;
@@ -88,13 +98,17 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 await frame.ScaleTo(originalScale, 150, Easing.SpringOut);
                 
                 // Логирование успешного завершения анимации
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Animation completed for Frame hash: {frame.GetHashCode()}");
+#endif
             }
             catch (Exception ex)
             {
                 // Логирование ошибок
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior ERROR: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"=== {ex.StackTrace}");
+#endif
             }
         }
     }
