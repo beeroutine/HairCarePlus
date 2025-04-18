@@ -84,9 +84,9 @@
             <Color x:Key="colorOnSurface">#212121</Color>
 
             <!-- Converters -->
-            <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <commonConverters:BoolToColorConverter x:Key="BoolToColorConverter" />
             <calendarHelpers:BoolConverter x:Key="BoolConverter" />
-            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <commonConverters:InverseBoolConverter x:Key="InverseBoolConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
             <commonConverters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
             <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
@@ -95,7 +95,6 @@
             <calendarHelpers:HasItemsConverter x:Key="HasItemsConverter" />
             <calendarHelpers:EventTypeToBackgroundConverter x:Key="EventTypeToBackgroundConverter" />
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter" />
-            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <converters:IntToBoolConverter x:Key="IntToBoolConverter" />
             <converters:ProgressConverter x:Key="ProgressConverter" />
 

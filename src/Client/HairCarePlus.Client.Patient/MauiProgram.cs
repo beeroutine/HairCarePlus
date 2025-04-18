@@ -92,7 +92,6 @@ public static class MauiProgram
 		builder.Services.AddChatFeature();
 
 		// Register services
-		builder.Services.AddSingleton<ICalendarService, CalendarServiceImpl>();
 		builder.Services.AddSingleton<INotificationService, NotificationServiceImpl>();
 		builder.Services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
 		builder.Services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
@@ -142,7 +141,6 @@ public static class MauiProgram
 	private static void RegisterServices(IServiceCollection services)
 	{
 		// Calendar services
-		services.AddSingleton<ICalendarService, CalendarServiceImpl>();
 		services.AddSingleton<INotificationService, NotificationServiceImpl>();
 	}
 	
@@ -170,7 +168,6 @@ public static class MauiProgram
 		if (currentApp != null)
 		{
 			currentApp.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
-			currentApp.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
 			currentApp.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
 			currentApp.Resources.Add("HasItemsConverter", new HasItemsConverter());
 		}

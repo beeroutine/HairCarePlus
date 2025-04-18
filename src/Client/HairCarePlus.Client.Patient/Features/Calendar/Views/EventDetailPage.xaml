@@ -17,7 +17,6 @@
             <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
-            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -154,7 +153,7 @@
                             CornerRadius="10"
                             HeightRequest="50"
                             FontAttributes="Bold"
-                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InvertedBoolConverter}}" />
+                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InverseBoolConverter}}" />
                     
                     <Button Text="Mark as Incomplete" 
                             Command="{Binding ToggleCompletionCommand}" 
@@ -172,7 +171,7 @@
                             CornerRadius="10"
                             HeightRequest="50"
                             FontAttributes="Bold"
-                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InvertedBoolConverter}}" />
+                            IsVisible="{Binding Event.IsCompleted, Converter={StaticResource InverseBoolConverter}}" />
                 </StackLayout>
             </StackLayout>
         </StackLayout>

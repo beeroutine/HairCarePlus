@@ -23,7 +23,6 @@
             <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
-            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
             <x:Double x:Key="CircleSize">100</x:Double>
             

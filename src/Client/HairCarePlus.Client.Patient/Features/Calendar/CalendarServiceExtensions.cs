@@ -97,23 +97,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             if (!Application.Current.Resources.ContainsKey("EventPriorityToIconConverter"))
                 Application.Current.Resources.Add("EventPriorityToIconConverter", new EventPriorityToIconConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("InvertedBoolConverter"))
-                Application.Current.Resources.Add("InvertedBoolConverter", new InvertedBoolConverter());
-                
             if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
                 Application.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
                 
             if (!Application.Current.Resources.ContainsKey("BoolConverter"))
                 Application.Current.Resources.Add("BoolConverter", new Helpers.BoolConverter());
 
-            if (!Application.Current.Resources.ContainsKey("BoolToColorConverter"))
-                Application.Current.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
-
             if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
                 Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
-
-            if (!Application.Current.Resources.ContainsKey("InverseBoolConverter"))
-                Application.Current.Resources.Add("InverseBoolConverter", new InverseBoolConverter());
         }
     }
 } 
