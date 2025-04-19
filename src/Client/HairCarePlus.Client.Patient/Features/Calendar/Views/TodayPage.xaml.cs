@@ -64,23 +64,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     DateSelectorView.SelectedItem = null;
                 }
                 
-                if (!_isDataLoaded)
-                {
-                    _logger.LogInformation("First time loading data for TodayPage");
-                    // Add a small delay to ensure DbContext is fully initialized
-                    await Task.Delay(100);
-                    
-                    // Use the ViewModel's dedicated method for initialization
-                    await ((TodayViewModel)BindingContext).InitializeDataAsync();
-                    
-                    _isDataLoaded = true;
-                }
-                else
-                {
-                    _logger.LogInformation("Data already loaded, updating UI if needed");
-                    // No specific refresh method available, just log the state
-                    _logger.LogInformation("UI update skipped, no refresh method available");
-                }
+                // Ленивая инициализация: вызываем EnsureLoadedAsync (отработает только первый раз)
+                await _viewModel.EnsureLoadedAsync();
                 
                 // Update visual state for the selected date
                 if (_viewModel != null)

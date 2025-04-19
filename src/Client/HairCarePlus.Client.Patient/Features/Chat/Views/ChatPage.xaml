@@ -46,10 +46,6 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <ContentPage.Behaviors>
-        <behaviors:KeyboardBehavior />
-    </ContentPage.Behaviors>
-
     <Shell.TitleView>
         <Grid ColumnDefinitions="80,*,80">
             <Button Text="←"
@@ -92,9 +88,6 @@
                        VerticalOptions="End"
                        Margin="8,8,8,0"
                        VerticalScrollBarVisibility="Never">
-            <CollectionView.Behaviors>
-                <chatBehaviors:KeyboardBehavior />
-            </CollectionView.Behaviors>
             <CollectionView.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>

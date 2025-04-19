@@ -13,6 +13,7 @@ using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
 using HairCarePlus.Client.Patient.Features.Calendar.Infrastructure.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -53,6 +54,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             
             // Register converters as resources
             RegisterConverters();
+            
+            // Data initializer & generators
+            services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
+            services.AddSingleton<IDataInitializer, CalendarDataInitializer>();
             
             return services;
         }

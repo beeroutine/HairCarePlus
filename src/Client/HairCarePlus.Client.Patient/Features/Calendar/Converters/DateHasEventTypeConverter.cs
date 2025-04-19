@@ -15,20 +15,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             {
                 if (value is DateTime date && parameter is EventType eventType)
                 {
-                    // Получаем текущую страницу
-                    var currentPage = Application.Current?.MainPage?.Handler?.MauiContext?.Services?.GetService(typeof(TodayPage)) as TodayPage;
+                    // Получаем текущую страницу из Shell без создания новой
+                    var currentPage = Shell.Current?.CurrentPage as TodayPage;
                     
-                    // Получаем ViewModel
                     if (currentPage?.BindingContext is TodayViewModel viewModel)
                     {
-                        // Проверяем, есть ли события указанного типа
+                        // Проверяем, есть ли события указанного типа в ViewModel
                         return viewModel.GetEventCount(date, eventType) > 0;
                     }
                     
-                    // Если страница или ViewModel не найдены, проверяем в текущем контексте привязки
-                    if (Application.Current?.MainPage?.BindingContext is TodayViewModel mainViewModel)
+                    // Fallback: попробовать получить ViewModel из текущей страницы, если это не TodayPage
+                    if (Shell.Current?.CurrentPage?.BindingContext is TodayViewModel fallbackVm)
                     {
-                        return mainViewModel.GetEventCount(date, eventType) > 0;
+                        return fallbackVm.GetEventCount(date, eventType) > 0;
                     }
                 }
                 

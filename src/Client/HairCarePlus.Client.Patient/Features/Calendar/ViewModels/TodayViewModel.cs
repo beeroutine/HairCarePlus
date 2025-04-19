@@ -188,8 +188,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
             GoToTodayCommand = new Command(ExecuteGoToToday);
             
-            // Initial data loading
+            // Lazy initialization – фактическая загрузка отложена до первого OnAppearing
+            _initializationTask = null;
+        }
+        
+        private Task? _initializationTask;
+        private readonly object _initLock = new();
+
+        public Task EnsureLoadedAsync()
+        {
+            lock (_initLock)
+            {
+                _initializationTask ??= LoadInitialAsync();
+                return _initializationTask;
+            }
+        }
+
+        private async Task LoadInitialAsync()
+        {
+            // 1. Загружаем календарные дни на год вперёд (синхронно как раньше)
             LoadCalendarDays();
+            // 2. Подгружаем события для выбранной today‑даты
+            await LoadTodayEventsAsync();
         }
         
         public DateTime SelectedDate
@@ -226,7 +246,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ObservableCollection<DateTime> CalendarDays
         {
             get => _calendarDays;
-            set => SetProperty(ref _calendarDays, value);
+            set
+            {
+                if (SetProperty(ref _calendarDays, value))
+                {
+                    // Notify that SelectableDates (alias) has changed as well
+                    OnPropertyChanged(nameof(SelectableDates));
+                }
+            }
         }
         
         public ObservableCollection<DateTime> SelectableDates => CalendarDays;

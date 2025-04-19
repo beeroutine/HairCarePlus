@@ -23,7 +23,6 @@ using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
-using HairCarePlus.Client.Patient.Features.Notifications.Services.Implementation;
 using System;
 using System.IO;
 using System.Diagnostics;
@@ -89,31 +88,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
 #endif
 
-		// Register Chat Feature (IChatRepository, ChatRepository, etc.)
-		builder.Services.AddChatFeature();
-
-		// Register services
-		builder.Services.AddSingleton<INotificationService, NotificationServiceImpl>();
-		builder.Services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
-		builder.Services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
-
-		// Register data initializers
-		builder.Services.AddSingleton<IDataInitializer, CalendarDataInitializer>();
-
-		// Register Pages and ViewModels
-		builder.Services.AddTransient<ChatPage>();
+		// Register Chat feature (repositories & sync) + presentation layer
+		builder.Services.AddChatFeature();             // domain & infrastructure (extension)
+		builder.Services.AddTransient<ChatPage>();     // UI
 		builder.Services.AddTransient<ChatViewModel>();
 
-		// Register Calendar Feature
+		// Register Calendar feature (handles its own DI, ViewModels и проч.)
 		builder.Services.AddCalendarServices();
-
-		// Register ViewModels
-		builder.Services.AddSingleton<TodayViewModel>();
-		builder.Services.AddTransient<EventDetailViewModel>();
-
-		// Register Pages
-		builder.Services.AddSingleton<TodayPage>();
-		builder.Services.AddTransient<EventDetailPage>();
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
@@ -142,42 +123,7 @@ public static class MauiProgram
 		return app;
 	}
 
-	private static void RegisterServices(IServiceCollection services)
-	{
-		// Calendar services
-		services.AddSingleton<INotificationService, NotificationServiceImpl>();
-	}
-	
-	private static void RegisterViewModels(IServiceCollection services)
-	{
-		// Calendar
-		services.AddTransient<TodayViewModel>();
-		services.AddTransient<EventDetailViewModel>();
-		
-		// Chat
-		services.AddTransient<ChatViewModel>();
-		
-		// Calendar views
-		services.AddTransient<TodayPage>();
-		services.AddTransient<EventDetailPage>();
-		
-		// Chat views
-		services.AddTransient<ChatPage>();
-	}
-	
-	private static void RegisterConverters(IServiceCollection services)
-	{
-		// Register converters as resources
-		var currentApp = Application.Current;
-		if (currentApp != null)
-		{
-			currentApp.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
-			currentApp.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
-			currentApp.Resources.Add("HasItemsConverter", new HasItemsConverter());
-		}
-		else 
-		{
-			System.Diagnostics.Debug.WriteLine("Error: Application.Current is null during converter registration.");
-		}
-	}
+	// NOTE: Presentation‑level converters for Calendar feature are registered inside
+	// CalendarServiceExtensions.RegisterConverters(). Additional converters can be
+	// placed there or in App.xaml resources; avoid duplicate registrations.
 }

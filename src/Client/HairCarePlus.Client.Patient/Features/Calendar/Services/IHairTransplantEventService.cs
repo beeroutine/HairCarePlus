@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Services;
 
