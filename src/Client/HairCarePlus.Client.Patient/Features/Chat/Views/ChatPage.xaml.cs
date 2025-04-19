@@ -1,23 +1,22 @@
 using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Views;
 
 public partial class ChatPage : ContentPage
 {
     private readonly ChatViewModel _viewModel;
+    private readonly ILogger<ChatPage> _logger;
 
-    public ChatPage(ChatViewModel viewModel)
+    public ChatPage(ChatViewModel viewModel, ILogger<ChatPage> logger)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _logger = logger;
         BindingContext = _viewModel;
         
-        // Логирование для отладки
-#if DEBUG
-        Debug.WriteLine("=== ChatPage: Инициализация страницы");
-#endif
+        _logger.LogDebug("ChatPage constructed");
 
         // Set up menu items
         var takePhotoItem = new MenuFlyoutItem
@@ -51,36 +50,27 @@ public partial class ChatPage : ContentPage
         _viewModel.MessagesCollectionView = MessagesCollection;
         
         // Добавляем обработчик событий для отладки взаимодействия с сообщениями
-#if DEBUG
-        MessagesCollection.SelectionChanged += (sender, e) => {
-            Debug.WriteLine("=== SelectionChanged в CollectionView");
+        MessagesCollection.SelectionChanged += (sender, e) =>
+        {
+            _logger.LogDebug("MessagesCollection SelectionChanged");
         };
-#else
-        MessagesCollection.SelectionChanged += (sender, e) => { };
-#endif
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-#if DEBUG
-        Debug.WriteLine("=== ChatPage: OnAppearing вызван");
-#endif
+        _logger.LogDebug("ChatPage OnAppearing");
         
         if (_viewModel != null)
         {
             await _viewModel.LoadDataCommand.ExecuteAsync(null);
-#if DEBUG
-            Debug.WriteLine("=== ChatPage: Данные загружены");
-#endif
+            _logger.LogDebug("ChatPage data loaded");
 
             // Убедимся, что ViewModel имеет доступ к CollectionView
             if (_viewModel.MessagesCollectionView == null)
             {
                 _viewModel.MessagesCollectionView = MessagesCollection;
-#if DEBUG
-                Debug.WriteLine("=== ChatPage: MessagesCollectionView присвоен в OnAppearing");
-#endif
+                _logger.LogDebug("MessagesCollectionView assigned in OnAppearing");
             }
         }
     }

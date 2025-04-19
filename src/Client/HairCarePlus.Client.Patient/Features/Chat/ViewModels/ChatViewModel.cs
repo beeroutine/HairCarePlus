@@ -10,6 +10,7 @@ using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Maui.Controls;
 using System.Linq;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -20,6 +21,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly IKeyboardService _keyboardService;
     private readonly IChatRepository _chatRepository;
     private readonly Random _random = new Random();
+    private readonly ILogger<ChatViewModel> _logger;
     public CollectionView MessagesCollectionView { get; set; } = default!;
     private readonly string[] _doctorResponses = new[]
     {
@@ -54,12 +56,14 @@ public partial class ChatViewModel : ObservableObject
         INavigationService navigationService,
         ILocalStorageService localStorageService,
         IKeyboardService keyboardService,
-        IChatRepository chatRepository)
+        IChatRepository chatRepository,
+        ILogger<ChatViewModel> logger)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
         _keyboardService = keyboardService;
         _chatRepository = chatRepository;
+        _logger = logger;
         Messages = new ObservableCollection<ChatMessage>();
         
         // Initialize doctor for display
@@ -165,32 +169,23 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task HandleReplyToMessage(ChatMessage message)
     {
-#if DEBUG
-        System.Diagnostics.Debug.WriteLine($"=== HandleReplyToMessage вызван: {message?.Content}");
-        System.Diagnostics.Debug.WriteLine($"=== SenderId: {message?.SenderId}");
-#endif
+        _logger.LogDebug("HandleReplyToMessage invoked. Content={Content}, SenderId={SenderId}", message?.Content, message?.SenderId);
         
         if (message == null)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine("=== ОШИБКА: message == null");
-#endif
+            _logger.LogDebug("HandleReplyToMessage: message == null");
             return;
         }
         
         if (EditingMessage != null)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: EditingMessage != null");
-#endif
+            _logger.LogDebug("HandleReplyToMessage cancelled: EditingMessage != null");
             return;
         }
         
         if (message.SenderId == "patient")
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine("=== ОТМЕНА: SenderId == patient");
-#endif
+            _logger.LogDebug("HandleReplyToMessage cancelled: SenderId == patient");
             if (Application.Current?.MainPage != null)
             {
                 await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
@@ -201,18 +196,13 @@ public partial class ChatViewModel : ObservableObject
         try 
         {
             ReplyToMessage = message;
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"=== ReplyToMessage установлен: {ReplyToMessage?.Content}");
-#endif
+            _logger.LogDebug("ReplyToMessage set: {Content}", ReplyToMessage?.Content);
             
             await ScrollToBottom();
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"=== ОШИБКА: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"=== {ex.StackTrace}");
-#endif
+            _logger.LogError(ex, "HandleReplyToMessage error");
         }
     }
 
@@ -318,9 +308,7 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Error scrolling to bottom: {ex.Message}");
-#endif
+            _logger.LogError(ex, "Error scrolling to bottom");
         }
     }
 } 
