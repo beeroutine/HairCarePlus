@@ -30,7 +30,7 @@
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
                              Orientation="Horizontal" 
                              ItemSpacing="5"
-                             SnapPointsType="MandatorySingle"
+                             SnapPointsType="None"
                              SnapPointsAlignment="Center"/>
             
             <!-- Date Selector Item Template -->
