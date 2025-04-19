@@ -27,6 +27,7 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
+using HairCarePlus.Client.Patient.Common.Startup;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -95,6 +96,9 @@ public static class MauiProgram
 
 		// Register Calendar feature (handles its own DI, ViewModels и проч.)
 		builder.Services.AddCalendarServices();
+
+		// Register startup tasks
+		builder.Services.AddStartupTasks();
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>

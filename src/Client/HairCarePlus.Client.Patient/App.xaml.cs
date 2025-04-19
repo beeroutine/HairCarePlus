@@ -1,17 +1,15 @@
 ﻿using Microsoft.Maui.Controls;
 using System;
 using Microsoft.Extensions.DependencyInjection;
-using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Common.Startup;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Common.Views;
 
 namespace HairCarePlus.Client.Patient;
 
 public partial class App : Application
 {
-	private readonly ILocalStorageService _storageService;
-	private readonly IDataInitializer _dataInitializer;
 	private readonly ILogger<App> _logger;
-	private bool _isDatabaseInitialized;
 
 	public App()
 	{
@@ -22,14 +20,9 @@ public partial class App : Application
 			InitializeComponent();
 			_logger.LogDebug("App InitializeComponent completed");
 			
-			MainPage = new AppShell();
-			_logger.LogDebug("AppShell initialized and set as MainPage");
-			
-			_storageService = IPlatformApplication.Current.Services.GetRequiredService<ILocalStorageService>();
-			_logger.LogDebug("LocalStorageService retrieved");
-			
-			_dataInitializer = IPlatformApplication.Current.Services.GetRequiredService<IDataInitializer>();
-			_logger.LogDebug("DataInitializer retrieved");
+			// Show loading screen while startup tasks execute
+			MainPage = new LoadingPage();
+			_logger.LogDebug("LoadingPage set as MainPage");
 		}
 		catch (Exception ex)
 		{
@@ -41,33 +34,23 @@ public partial class App : Application
 	protected override async void OnStart()
 	{
 		_logger.LogInformation("App.OnStart called");
+
 		try
 		{
-			if (!_isDatabaseInitialized)
+			var startupTasks = IPlatformApplication.Current.Services.GetServices<IStartupTask>();
+			foreach (var task in startupTasks)
 			{
-				_logger.LogInformation("Starting database initialization");
-				await _storageService.InitializeDatabaseAsync();
-				_isDatabaseInitialized = true;
-				_logger.LogInformation("Database initialization completed successfully");
-				
-				// Проверяем необходимость инициализации данных календаря
-				if (await _dataInitializer.NeedsInitializationAsync())
-				{
-					_logger.LogInformation("Starting calendar data initialization");
-					await _dataInitializer.InitializeDataAsync();
-					_logger.LogInformation("Calendar data initialization completed successfully");
-				}
-				else
-				{
-					_logger.LogInformation("Calendar data already initialized, skipping initialization");
-				}
+				await task.ExecuteAsync();
 			}
+
+			MainPage = new AppShell();
+			_logger.LogInformation("Startup tasks completed. AppShell displayed.");
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Error initializing database");
-			// Consider showing an error message to the user here
+			_logger.LogError(ex, "Error during startup tasks execution");
 		}
+
 		base.OnStart();
 	}
 
