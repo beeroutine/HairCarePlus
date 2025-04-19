@@ -15,28 +15,26 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     {
         private readonly ILogger<TodayPage> _logger;
         private TodayViewModel _viewModel;
-        private bool _isDataLoaded = false;
         
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
             try
             {
-                Debug.WriteLine("TodayPage constructor start");
+                _logger?.LogDebug("TodayPage constructor start");
                 InitializeComponent();
-                Debug.WriteLine("TodayPage InitializeComponent completed");
+                _logger?.LogDebug("TodayPage InitializeComponent completed");
                 
                 _viewModel = viewModel;
-                Debug.WriteLine("TodayViewModel retrieved from constructor");
+                _logger?.LogDebug("TodayViewModel retrieved from constructor");
                 BindingContext = _viewModel;
-                Debug.WriteLine("BindingContext set to TodayViewModel");
+                _logger?.LogDebug("BindingContext set to TodayViewModel");
                 
                 _logger = logger;
                 _logger.LogInformation("TodayPage instance created");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Exception in TodayPage constructor: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger?.LogError(ex, "Exception in TodayPage constructor");
             }
         }
         
@@ -163,12 +161,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
             try
             {
-                Debug.WriteLine($"UpdateSelectedDateVisualState called for date: {selectedDate.Value.ToShortDateString()}");
+                _logger?.LogDebug("UpdateSelectedDateVisualState called for date: {Date}", selectedDate.Value.ToShortDateString());
                 
                 // Use the new DateSelectorView name
                 if (DateSelectorView == null || DateSelectorView.ItemTemplate == null)
                 {
-                    Debug.WriteLine("ItemTemplate or DateSelectorView is null");
+                    _logger?.LogDebug("ItemTemplate or DateSelectorView is null");
                     return;
                 }
 
@@ -180,7 +178,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
                 if (!visibleContainers.Any())
                 {
-                    Debug.WriteLine("No visible containers found");
+                    _logger?.LogDebug("No visible containers found");
                     return;
                 }
                 
@@ -193,7 +191,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         // Only log if selected to reduce noise
                         if (isSelected)
                         {
-                            Debug.WriteLine($"Updating container for date: {containerDate.ToShortDateString()}, IsSelected: {isSelected}");
+                            _logger?.LogDebug("Updating container for date: {Date}, IsSelected: {IsSelected}", containerDate.ToShortDateString(), isSelected);
                         }
                         
                         var visualState = isSelected ? "Selected" : "Normal";
@@ -203,8 +201,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Exception in UpdateSelectedDateVisualState: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                _logger?.LogError(ex, "Exception in UpdateSelectedDateVisualState");
             }
         }
         
@@ -245,7 +242,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 if (sender is Grid grid && grid.BindingContext is DateTime date && _viewModel != null)
                 {
                     _viewModel.OpenMonthCalendarCommand?.Execute(date);
-                    Debug.WriteLine($"OpenMonthCalendarCommand executed for date: {date.ToShortDateString()}");
+                    _logger?.LogDebug("OpenMonthCalendarCommand executed for date: {Date}", date.ToShortDateString());
                 }
             }
             catch (Exception ex)

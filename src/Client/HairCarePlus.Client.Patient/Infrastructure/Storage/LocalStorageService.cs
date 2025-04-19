@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Microsoft.Data.Sqlite;
 using System.Threading;
 
@@ -18,10 +18,12 @@ public class LocalStorageService : ILocalStorageService
     private const int MAX_RETRIES = 3;
     private const int RETRY_DELAY_MS = 1000;
     private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
+    private readonly ILogger<LocalStorageService>? _logger;
 
-    public LocalStorageService(IDbContextFactory<AppDbContext> contextFactory)
+    public LocalStorageService(IDbContextFactory<AppDbContext> contextFactory, ILogger<LocalStorageService> logger)
     {
         _contextFactory = contextFactory;
+        _logger = logger;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -48,34 +50,22 @@ public class LocalStorageService : ILocalStorageService
             using var context = GetDbContext();
             if (!await DoesDatabaseExistAsync())
             {
-#if DEBUG
-                Debug.WriteLine("Database does not exist, creating...");
-#endif
+                _logger?.LogDebug("Database does not exist, creating...");
                 await CreateDatabaseWithSqliteAsync();
-#if DEBUG
-                Debug.WriteLine("Database created successfully");
-#endif
+                _logger?.LogDebug("Database created successfully");
             }
             else
             {
-#if DEBUG
-                Debug.WriteLine("Database exists, verifying schema...");
-#endif
+                _logger?.LogDebug("Database exists, verifying schema...");
                 if (!await VerifyDatabaseTablesAsync())
                 {
-#if DEBUG
-                    Debug.WriteLine("Database schema verification failed, recreating...");
-#endif
+                    _logger?.LogDebug("Database schema verification failed, recreating...");
                     await CreateDatabaseWithSqliteAsync();
-#if DEBUG
-                    Debug.WriteLine("Database recreated successfully");
-#endif
+                    _logger?.LogDebug("Database recreated successfully");
                 }
                 else
                 {
-#if DEBUG
-                    Debug.WriteLine("Database schema verified, skipping initialization");
-#endif
+                    _logger?.LogDebug("Database schema verified, skipping initialization");
                 }
             }
         }
@@ -103,18 +93,14 @@ public class LocalStorageService : ILocalStorageService
             while (await reader.ReadAsync())
             {
                 tableCount++;
-#if DEBUG
-                Debug.WriteLine($"Found table: {reader.GetString(0)}");
-#endif
+                _logger?.LogDebug("Found table: {Table}", reader.GetString(0));
             }
             
             return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {
-#if DEBUG
-            Debug.WriteLine($"Error verifying database tables: {ex.Message}");
-#endif
+            _logger?.LogDebug(ex, "Error verifying database tables");
             return false;
         }
     }
@@ -123,9 +109,7 @@ public class LocalStorageService : ILocalStorageService
     {
         try
         {
-#if DEBUG
-            Debug.WriteLine("Creating database tables using direct SQL commands");
-#endif
+            _logger?.LogDebug("Creating database tables using direct SQL commands");
             
             using var connection = new SqliteConnection($"Data Source={_databasePath}");
             await connection.OpenAsync();
@@ -151,9 +135,7 @@ public class LocalStorageService : ILocalStorageService
                     ExpirationDate TEXT
                 )";
                 await command.ExecuteNonQueryAsync();
-#if DEBUG
-                Debug.WriteLine("Created Events table");
-#endif
+                _logger?.LogDebug("Created Events table");
             }
             
             // Create ChatMessages table (not Messages)
@@ -187,20 +169,14 @@ public class LocalStorageService : ILocalStorageService
                     LastModifiedAt TEXT
                 )";
                 await command.ExecuteNonQueryAsync();
-#if DEBUG
-                Debug.WriteLine("Created ChatMessages table");
-#endif
+                _logger?.LogDebug("Created ChatMessages table");
             }
             
-#if DEBUG
-            Debug.WriteLine("Database schema created successfully");
-#endif
+            _logger?.LogDebug("Database schema created successfully");
         }
         catch (Exception ex)
         {
-#if DEBUG
-            Debug.WriteLine($"Error creating database with SQLite: {ex.Message}");
-#endif
+            _logger?.LogError(ex, "Error creating database with SQLite");
             throw;
         }
     }
@@ -282,9 +258,7 @@ public class LocalStorageService : ILocalStorageService
         var context = GetDbContext();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
-#if DEBUG
-        Debug.WriteLine("Database cleared and recreated");
-#endif
+        _logger?.LogDebug("Database cleared and recreated");
     }
 
     public string GetDatabasePath() => _databasePath;
@@ -326,18 +300,14 @@ public class LocalStorageService : ILocalStorageService
             while (await reader.ReadAsync())
             {
                 tableCount++;
-#if DEBUG
-                Debug.WriteLine($"Found table: {reader.GetString(0)}");
-#endif
+                _logger?.LogDebug("Found table: {Table}", reader.GetString(0));
             }
             
             return tableCount == 2; // We need both Events and ChatMessages tables
         }
         catch (Exception ex)
         {
-#if DEBUG
-            Debug.WriteLine($"Error verifying database tables: {ex.Message}");
-#endif
+            _logger?.LogDebug(ex, "Error verifying database tables");
             return false;
         }
     }

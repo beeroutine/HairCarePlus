@@ -5,17 +5,17 @@ using HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
-using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using System.Linq;
 // alias enums to avoid ambiguity between domain and storage
 using DomainEventType = HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities.EventType;
 using DomainEventPriority = HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities.EventPriority;
 using StorageEventType = HairCarePlus.Client.Patient.Features.Calendar.Models.EventType;
 using StorageEventPriority = HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Services;
 
-public class HairTransplantEventService : IHairTransplantEventService, ICalendarService
+public class HairTransplantEventService : ICalendarService
 {
     private readonly ICalendarRepository _repository;
     private readonly ILocalStorageService _localStorage;

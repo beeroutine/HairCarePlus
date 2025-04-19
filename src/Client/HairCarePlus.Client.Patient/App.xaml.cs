@@ -1,8 +1,8 @@
 ﻿using Microsoft.Maui.Controls;
 using System;
-using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Patient;
 
@@ -10,61 +10,62 @@ public partial class App : Application
 {
 	private readonly ILocalStorageService _storageService;
 	private readonly IDataInitializer _dataInitializer;
+	private readonly ILogger<App> _logger;
 	private bool _isDatabaseInitialized;
 
 	public App()
 	{
 		try
 		{
-			Debug.WriteLine("App constructor start");
+			_logger = IPlatformApplication.Current.Services.GetRequiredService<ILogger<App>>();
+			_logger.LogDebug("App constructor start");
 			InitializeComponent();
-			Debug.WriteLine("App InitializeComponent completed");
+			_logger.LogDebug("App InitializeComponent completed");
 			
 			MainPage = new AppShell();
-			Debug.WriteLine("AppShell initialized and set as MainPage");
+			_logger.LogDebug("AppShell initialized and set as MainPage");
 			
 			_storageService = IPlatformApplication.Current.Services.GetRequiredService<ILocalStorageService>();
-			Debug.WriteLine("LocalStorageService retrieved");
+			_logger.LogDebug("LocalStorageService retrieved");
 			
 			_dataInitializer = IPlatformApplication.Current.Services.GetRequiredService<IDataInitializer>();
-			Debug.WriteLine("DataInitializer retrieved");
+			_logger.LogDebug("DataInitializer retrieved");
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"Exception in App constructor: {ex.Message}");
-			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+			_logger.LogError(ex, "Exception in App constructor");
+			// Consider showing an error message to the user here
 		}
 	}
 
 	protected override async void OnStart()
 	{
-		Debug.WriteLine("App.OnStart called");
+		_logger.LogInformation("App.OnStart called");
 		try
 		{
 			if (!_isDatabaseInitialized)
 			{
-				Debug.WriteLine("Starting database initialization");
+				_logger.LogInformation("Starting database initialization");
 				await _storageService.InitializeDatabaseAsync();
 				_isDatabaseInitialized = true;
-				Debug.WriteLine("Database initialization completed successfully");
+				_logger.LogInformation("Database initialization completed successfully");
 				
 				// Проверяем необходимость инициализации данных календаря
 				if (await _dataInitializer.NeedsInitializationAsync())
 				{
-					Debug.WriteLine("Starting calendar data initialization");
+					_logger.LogInformation("Starting calendar data initialization");
 					await _dataInitializer.InitializeDataAsync();
-					Debug.WriteLine("Calendar data initialization completed successfully");
+					_logger.LogInformation("Calendar data initialization completed successfully");
 				}
 				else
 				{
-					Debug.WriteLine("Calendar data already initialized, skipping initialization");
+					_logger.LogInformation("Calendar data already initialized, skipping initialization");
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"Error initializing database: {ex.Message}");
-			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+			_logger.LogError(ex, "Error initializing database");
 			// Consider showing an error message to the user here
 		}
 		base.OnStart();
@@ -72,13 +73,13 @@ public partial class App : Application
 
 	protected override void OnSleep()
 	{
-		Debug.WriteLine("App.OnSleep called");
+		_logger.LogDebug("App.OnSleep called");
 		base.OnSleep();
 	}
 
 	protected override void OnResume()
 	{
-		Debug.WriteLine("App.OnResume called");
+		_logger.LogDebug("App.OnResume called");
 		base.OnResume();
 	}
 }
