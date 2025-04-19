@@ -1,20 +1,25 @@
 using System.Globalization;
 using Microsoft.Maui.Controls;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using HairCarePlus.Client.Patient.Common.Behaviors;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Converters;
 
 public class MessageBackgroundConverter : IValueConverter
 {
+    private static readonly ILogger<MessageBackgroundConverter> _logger =
+        ServiceHelper.GetService<ILogger<MessageBackgroundConverter>>() ?? NullLogger<MessageBackgroundConverter>.Instance;
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string senderId)
         {
-            System.Diagnostics.Debug.WriteLine("=== MessageBackgroundConverter.Convert: Value is null or not a string");
+            _logger.LogDebug("Convert: Value is null or not a string");
             return null;
         }
 
-        // Логирование для отладки
-        System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter.Convert: senderId={senderId}, targetType={targetType.Name}, parameter={parameter}");
+        _logger.LogDebug("Convert invoked. senderId={SenderId}, targetType={TargetType}, parameter={Parameter}", senderId, targetType.Name, parameter);
         
         // Determine current theme safely
         var currentApp = Application.Current;
@@ -48,11 +53,11 @@ public class MessageBackgroundConverter : IValueConverter
                     // Consider making Thickness calculation more robust or theme-dependent if needed
                     return senderId == "patient" ? new Thickness(80, 0, 8, 0) : new Thickness(8, 0, 80, 0);
                 default:
-                    System.Diagnostics.Debug.WriteLine($"=== MessageBackgroundConverter.Convert: Unknown parameter type: {conversionType}");
+                    _logger.LogDebug("Convert: Unknown parameter type: {Parameter}", conversionType);
                     return null; // Return null for unknown parameters
             }
         }
-         System.Diagnostics.Debug.WriteLine("=== MessageBackgroundConverter.Convert: Parameter is null or not a string");
+        _logger.LogDebug("Convert: Parameter is null or not a string");
         return null; // Return null if parameter is not a valid string or processing fails
     }
 

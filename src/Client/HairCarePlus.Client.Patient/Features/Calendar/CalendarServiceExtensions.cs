@@ -12,7 +12,7 @@ using HairCarePlus.Client.Patient.Features.Notifications.Services;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
-using HairCarePlus.Client.Patient.Features.Calendar.Infrastructure.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Features.Calendar.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
@@ -35,7 +35,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             services.AddSingleton<IProgressCalculator, ProgressCalculatorService>();
             
             // Register repository
-            services.AddScoped<ICalendarRepository, CalendarRepository>();
+            services.AddScoped<IHairTransplantEventRepository, CalendarRepository>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();

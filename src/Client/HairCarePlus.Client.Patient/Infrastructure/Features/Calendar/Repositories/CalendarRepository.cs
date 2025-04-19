@@ -9,9 +9,7 @@ using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Storage;
 
-namespace HairCarePlus.Client.Patient.Features.Calendar.Infrastructure.Repositories;
-
-using HairCarePlus.Client.Patient.Features.Calendar.Models;
+namespace HairCarePlus.Client.Patient.Infrastructure.Features.Calendar.Repositories;
 
 // Alias enums to avoid ambiguity between domain and storage versions
 using DomainEventType = HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities.EventType;
@@ -20,10 +18,10 @@ using StorageEventType = HairCarePlus.Client.Patient.Features.Calendar.Models.Ev
 using StorageEventPriority = HairCarePlus.Client.Patient.Features.Calendar.Models.EventPriority;
 
 /// <summary>
-/// EF Core backed implementation of <see cref="ICalendarRepository"/>.
+/// EF Core backed implementation of <see cref="IHairTransplantEventRepository"/>.
 /// Maps between the domain model (<see cref="HairTransplantEvent"/>) and the storage model (<see cref="CalendarEvent"/>).
 /// </summary>
-public sealed class CalendarRepository : ICalendarRepository
+public sealed class CalendarRepository : IHairTransplantEventRepository
 {
     private readonly AppDbContext _dbContext;
     private const string LAST_SYNC_PREFS_KEY = "Calendar_LastSyncUtc";
@@ -47,7 +45,7 @@ public sealed class CalendarRepository : ICalendarRepository
             CreatedAt = evt.CreatedAt,
             ModifiedAt = evt.ModifiedAt,
             IsCompleted = evt.IsCompleted,
-            Notes = evt.Description, // keeping Description duplicated as Notes for now
+            Notes = evt.Description,
             Type = evt.EventType switch
             {
                 StorageEventType.MedicationTreatment => DomainEventType.Medication,
@@ -106,7 +104,7 @@ public sealed class CalendarRepository : ICalendarRepository
 
     #endregion
 
-    #region ICalendarRepository implementation
+    #region IHairTransplantEventRepository implementation
 
     public async Task<IEnumerable<HairTransplantEvent>> GetEventsForDateAsync(DateTime date)
     {

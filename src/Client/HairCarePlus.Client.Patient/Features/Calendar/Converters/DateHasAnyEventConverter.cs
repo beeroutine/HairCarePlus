@@ -93,7 +93,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             }
             catch (Exception ex)
             {
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"Error in DateHasAnyEventConverter: {ex.Message}");
+#endif
             }
             
             if (parameter is string paramDefault && paramDefault == "TextColor")

@@ -8,7 +8,7 @@ using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Infrastructure.Storage.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace HairCarePlus.Client.Patient.Features.Chat.Infrastructure.Repositories;
+namespace HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 
 public class ChatMessageRepository : BaseRepository<ChatMessage>, IChatMessageRepository
 {

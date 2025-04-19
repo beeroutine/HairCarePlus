@@ -161,12 +161,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
             try
             {
+#if DEBUG
                 _logger?.LogDebug("UpdateSelectedDateVisualState called for date: {Date}", selectedDate.Value.ToShortDateString());
+#endif
                 
                 // Use the new DateSelectorView name
                 if (DateSelectorView == null || DateSelectorView.ItemTemplate == null)
                 {
+#if DEBUG
                     _logger?.LogDebug("ItemTemplate or DateSelectorView is null");
+#endif
                     return;
                 }
 
@@ -178,7 +182,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
                 if (!visibleContainers.Any())
                 {
+#if DEBUG
                     _logger?.LogDebug("No visible containers found");
+#endif
                     return;
                 }
                 
@@ -191,7 +197,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         // Only log if selected to reduce noise
                         if (isSelected)
                         {
+#if DEBUG
                             _logger?.LogDebug("Updating container for date: {Date}, IsSelected: {IsSelected}", containerDate.ToShortDateString(), isSelected);
+#endif
                         }
                         
                         var visualState = isSelected ? "Selected" : "Normal";

@@ -145,7 +145,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
             }
             catch (Exception ex)
             {
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"Error in UpdateSelectedItem: {ex.Message}");
+#endif
             }
         }
 
@@ -177,7 +179,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
             }
             catch (Exception ex)
             {
+#if DEBUG
                 System.Diagnostics.Debug.WriteLine($"Error in ScrollToDate: {ex.Message}");
+#endif
             }
         }
     }

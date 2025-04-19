@@ -2,7 +2,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
-using HairCarePlus.Client.Patient.Features.Chat.Infrastructure.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 using HairCarePlus.Client.Patient.Features.Chat.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Connectivity;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;

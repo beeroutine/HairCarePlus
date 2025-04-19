@@ -18,11 +18,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             }
 
             var resources = Microsoft.Maui.Controls.Application.Current?.Resources;
+#if DEBUG
             if (resources == null)
             {
                 System.Diagnostics.Debug.WriteLine("Warning: Application.Current or Resources is null in EventTypeToColorConverter.");
-                return defaultColor;
             }
+#endif
 
             string resourceKey = eventType switch
             {
@@ -49,7 +50,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                 return color;
             }
             
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Warning: Color resource key \"{resourceKey}\" not found for EventType {eventType}.");
+#endif
             return defaultColor;
         }
 

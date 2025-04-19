@@ -6,11 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
-using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Infrastructure.Media;
+using Microsoft.EntityFrameworkCore;
 
-namespace HairCarePlus.Client.Patient.Features.Chat.Infrastructure.Repositories;
+namespace HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 
 public class ChatRepository : IChatRepository
 {
@@ -100,7 +100,7 @@ public class ChatRepository : IChatRepository
             {
                 await _fileSystemService.DeleteFileAsync(message.LocalThumbnailPath);
             }
-            
+
             _dbContext.ChatMessages.Remove(message);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
@@ -198,12 +198,10 @@ public class ChatRepository : IChatRepository
             if (!string.IsNullOrEmpty(message.LocalAttachmentPath) && !await _fileSystemService.FileExistsAsync(message.LocalAttachmentPath))
             {
                 message.LocalAttachmentPath = null;
-                message.LastModifiedAt = DateTime.UtcNow;
             }
             if (!string.IsNullOrEmpty(message.LocalThumbnailPath) && !await _fileSystemService.FileExistsAsync(message.LocalThumbnailPath))
             {
                 message.LocalThumbnailPath = null;
-                message.LastModifiedAt = DateTime.UtcNow;
             }
         }
 

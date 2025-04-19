@@ -17,12 +17,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services;
 
 public class HairTransplantEventService : ICalendarService
 {
-    private readonly ICalendarRepository _repository;
+    private readonly IHairTransplantEventRepository _repository;
     private readonly ILocalStorageService _localStorage;
     private const string SYNC_TIME_KEY = "calendar_last_sync";
 
     public HairTransplantEventService(
-        ICalendarRepository repository,
+        IHairTransplantEventRepository repository,
         ILocalStorageService localStorage)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));

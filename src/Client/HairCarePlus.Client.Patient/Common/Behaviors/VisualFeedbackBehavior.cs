@@ -1,11 +1,16 @@
 using System;
-using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Maui.Controls;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
     public class VisualFeedbackBehavior : Behavior<Frame>
     {
+        private static readonly ILogger<VisualFeedbackBehavior> _logger =
+            ServiceHelper.GetService<ILogger<VisualFeedbackBehavior>>() ?? NullLogger<VisualFeedbackBehavior>.Instance;
+
         protected override void OnAttachedTo(Frame bindable)
         {
             base.OnAttachedTo(bindable);
@@ -23,9 +28,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 }
             }
             
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Присоединен к Frame");
-#endif
+            _logger.LogDebug("Attached to Frame");
         }
 
         protected override void OnDetachingFrom(Frame bindable)
@@ -42,9 +45,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             }
             
             base.OnDetachingFrom(bindable);
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Отсоединен от Frame");
-#endif
+            _logger.LogDebug("Detached from Frame");
         }
         
         private void OnFrameChildAdded(object? sender, ElementEventArgs? args)
@@ -53,9 +54,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             {
                 tapGesture.Tapped -= OnTapped;
                 tapGesture.Tapped += OnTapped;
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("=== VisualFeedbackBehavior: Добавлен новый TapGestureRecognizer");
-#endif
+                _logger.LogDebug("Added new TapGestureRecognizer");
             }
         }
 
@@ -79,16 +78,12 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 
                 if (frame == null)
                 {
-#if DEBUG
-                    System.Diagnostics.Debug.WriteLine("=== VisualFeedbackBehavior: Не удалось определить Frame из sender.");
-#endif
+                    _logger.LogDebug("Could not determine Frame from sender");
                     return;
                 }
                 
                 // Логирование события тапа
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Tapped event fired на Frame hash: {frame.GetHashCode()}");
-#endif
+                _logger.LogDebug("Tapped event fired on Frame hash: {Hash}", frame.GetHashCode());
                 
                 // Сохраняем исходный масштаб
                 double originalScale = frame.Scale;
@@ -98,17 +93,12 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 await frame.ScaleTo(originalScale, 150, Easing.SpringOut);
                 
                 // Логирование успешного завершения анимации
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior: Animation completed for Frame hash: {frame.GetHashCode()}");
-#endif
+                _logger.LogDebug("Animation completed for Frame hash: {Hash}", frame.GetHashCode());
             }
             catch (Exception ex)
             {
                 // Логирование ошибок
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"=== VisualFeedbackBehavior ERROR: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"=== {ex.StackTrace}");
-#endif
+                _logger.LogError(ex, "VisualFeedbackBehavior error");
             }
         }
     }

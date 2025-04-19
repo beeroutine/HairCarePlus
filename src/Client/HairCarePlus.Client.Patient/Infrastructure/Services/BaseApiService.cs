@@ -36,8 +36,10 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
             }
             catch (Exception ex)
             {
+#if DEBUG
                 // Log the error
                 System.Diagnostics.Debug.WriteLine($"API Error: {ex.Message}");
+#endif
                 throw;
             }
         }
@@ -74,7 +76,9 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
                 var cachedData = await LocalStorageService.GetItemAsync<CacheEntry<T>>(cacheKey);
                 if (cachedData != null)
                 {
+#if DEBUG
                     System.Diagnostics.Debug.WriteLine($"Using expired cache due to error: {ex.Message}");
+#endif
                     return cachedData.Data;
                 }
 

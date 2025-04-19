@@ -5,7 +5,11 @@ using HairCarePlus.Client.Patient.Features.Calendar.Domain.Entities;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
 
-public interface ICalendarRepository
+/// <summary>
+/// Canonical repository interface for hair‑transplant calendar events.
+/// Provides CRUD and sync‑related operations for <see cref="HairTransplantEvent"/>.
+/// </summary>
+public interface IHairTransplantEventRepository
 {
     Task<IEnumerable<HairTransplantEvent>> GetEventsForDateAsync(DateTime date);
     Task<IEnumerable<HairTransplantEvent>> GetEventsForRangeAsync(DateTime startDate, DateTime endDate);
