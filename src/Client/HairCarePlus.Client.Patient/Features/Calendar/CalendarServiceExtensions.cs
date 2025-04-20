@@ -1,7 +1,7 @@
 using System;
-using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +11,9 @@ using static Microsoft.Maui.Controls.Routing;
 using HairCarePlus.Client.Patient.Features.Notifications.Services;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
+using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Features.Calendar.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -25,28 +28,35 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(services));
             
             // Register services
-            services.AddScoped<ICalendarService, CalendarService>();
-            services.AddScoped<IHairTransplantEventGenerator, HairTransplantEventGenerator>();
+            services.AddScoped<ICalendarService, HairTransplantEventService>();
+            services.AddScoped<IRestrictionService, RestrictionService>();
+            services.AddSingleton<ICalendarCacheService, CalendarCacheService>();
+            services.AddSingleton<ICalendarLoader, CalendarLoaderService>();
+            services.AddSingleton<IProgressCalculator, ProgressCalculatorService>();
+            
+            // Register repository
+            services.AddScoped<IHairTransplantEventRepository, CalendarRepository>();
             
             // Register the Notifications.Services notification service
             services.AddSingleton<Notifications.Services.Interfaces.INotificationService, Notifications.Services.NotificationService>();
             
             // Register EventAggregationService
-            services.AddSingleton<IEventAggregationService, EventAggregationService>();
+            services.AddSingleton<IEventAggregationService, EventAggregationServiceImpl>();
             
             // Register ViewModels
-            services.AddTransient<CalendarViewModel>();
-            services.AddTransient<CleanCalendarViewModel>();
             services.AddTransient<TodayViewModel>();
             services.AddTransient<EventDetailViewModel>();
             
             // Register calendar views
-            services.AddTransient<CalendarPage>();
             services.AddTransient<TodayPage>();
             services.AddTransient<EventDetailPage>();
             
             // Register converters as resources
             RegisterConverters();
+            
+            // Data initializer & generators
+            services.AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>();
+            services.AddSingleton<IDataInitializer, CalendarDataInitializer>();
             
             return services;
         }
@@ -60,7 +70,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 throw new ArgumentNullException(nameof(builder));
             
             // Register routes for calendar navigation
-            RegisterRoute("calendar", typeof(CalendarPage));
             RegisterRoute("today", typeof(TodayPage));
             RegisterRoute("calendar/event", typeof(EventDetailPage));
             
@@ -76,12 +85,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 return;
                 
             // Add converters to application resources if they don't exist
-            if (!Application.Current.Resources.ContainsKey("DateToSelectionColorConverter"))
-                Application.Current.Resources.Add("DateToSelectionColorConverter", new DateToSelectionColorConverter());
-                
-            if (!Application.Current.Resources.ContainsKey("DateToTextColorConverter"))
-                Application.Current.Resources.Add("DateToTextColorConverter", new DateToTextColorConverter());
-                
             if (!Application.Current.Resources.ContainsKey("DateToColorConverter"))
                 Application.Current.Resources.Add("DateToColorConverter", new DateToColorConverter());
                 
@@ -97,14 +100,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             if (!Application.Current.Resources.ContainsKey("EventPriorityToIconConverter"))
                 Application.Current.Resources.Add("EventPriorityToIconConverter", new EventPriorityToIconConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("InvertedBoolConverter"))
-                Application.Current.Resources.Add("InvertedBoolConverter", new InvertedBoolConverter());
-                
             if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
-                Application.Current.Resources.Add("DateHasEventTypeConverter", new Converters.DateHasEventTypeConverter());
+                Application.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("BoolConverter"))
-                Application.Current.Resources.Add("BoolConverter", new Helpers.BoolConverter());
+            if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
+                Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
         }
     }
 } 

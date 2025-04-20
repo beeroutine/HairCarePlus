@@ -16,7 +16,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                     EventType.MedicationTreatment => "\ue855", // medication
                     EventType.MedicalVisit => "\ue8f9",        // medical_services
                     EventType.Photo => "\ue412",               // photo_camera
-                    EventType.VideoInstruction => "\ue04b",    // play_circle
+                    EventType.Video => "\ue04b",               // play_circle
                     EventType.GeneralRecommendation => "\ue88e", // info
                     EventType.CriticalWarning => "\ue002",     // warning
                     _ => "\ue88e" // info

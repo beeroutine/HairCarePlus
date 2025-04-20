@@ -1,15 +1,11 @@
-﻿using HairCarePlus.Client.Patient.Features.Profile.Services;
-using HairCarePlus.Client.Patient.Features.Profile.ViewModels;
-using HairCarePlus.Client.Patient.Features.Profile.Views;
-using HairCarePlus.Client.Patient.Features.PhotoReport.ViewModels;
-using HairCarePlus.Client.Patient.Features.PhotoReport.Views;
-using HairCarePlus.Client.Patient.Features.Doctor.ViewModels;
-using HairCarePlus.Client.Patient.Features.Doctor.Views;
-using HairCarePlus.Client.Patient.Features.TreatmentProgress.ViewModels;
-using HairCarePlus.Client.Patient.Features.TreatmentProgress.Views;
-using HairCarePlus.Client.Patient.Features.DailyRoutine.ViewModels;
-using HairCarePlus.Client.Patient.Features.DailyRoutine.Views;
+﻿using HairCarePlus.Client.Patient.Features.Chat;
+using HairCarePlus.Client.Patient.Features.Chat.ViewModels;
+using HairCarePlus.Client.Patient.Features.Chat.Views;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Infrastructure.Storage.Repositories;
+using HairCarePlus.Client.Patient.Infrastructure.Security;
+using HairCarePlus.Client.Patient.Infrastructure.Media;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar;
 using CommunityToolkit.Maui;
@@ -21,8 +17,17 @@ using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using System.Net.Http;
 using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
-using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
+using System;
+using System.IO;
+using System.Diagnostics;
+using HairCarePlus.Client.Patient.Features.Calendar.Converters;
+using HairCarePlus.Client.Patient.Common.Startup;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -48,55 +53,52 @@ public static class MauiProgram
 				fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
 			});
 
-		// Register Services
-		builder.Services.AddSingleton<INavigationService, NavigationService>();
-		builder.Services.AddSingleton<INetworkService, NetworkService>();
-		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
-		builder.Services.AddSingleton<IProfileService, ProfileService>();
-		
-		// Register HttpClient
-		builder.Services.AddSingleton<HttpClient>(serviceProvider => new HttpClient {
-			BaseAddress = new Uri("http://localhost:5281/")
+		// Add services to the container
+		var dbPath = Path.Combine(FileSystem.AppDataDirectory, "haircare.db");
+		builder.Services.AddDbContextFactory<AppDbContext>(options =>
+		{
+			options.UseSqlite($"Data Source={dbPath}");
+			// Only enable sensitive data logging in DEBUG
+#if DEBUG
+			options.EnableSensitiveDataLogging();
+			// Comment out or reduce the LogTo level to avoid excessive logs
+			// options.LogTo(message => Debug.WriteLine(message), LogLevel.Information); // Example: Log only Information and above
+			// options.LogTo(Console.WriteLine, LogLevel.Warning); // Or log only warnings and above to console
+#endif
 		});
-		
+		builder.Services.AddDbContext<AppDbContext>(options =>
+		{
+			options.UseSqlite($"Data Source={dbPath}");
+			// Only enable sensitive data logging in DEBUG
+#if DEBUG
+			options.EnableSensitiveDataLogging();
+			// Comment out or reduce the LogTo level to avoid excessive logs
+			// options.LogTo(message => Debug.WriteLine(message), LogLevel.Information);
+			// options.LogTo(Console.WriteLine, LogLevel.Warning);
+#endif
+		}, ServiceLifetime.Scoped);
+
+		// Register infrastructure services
+		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
+		builder.Services.AddSingleton<ISecureStorageService, SecureStorageService>();
+		builder.Services.AddSingleton<IMediaFileSystemService, FileSystemService>();
+		builder.Services.AddSingleton<INavigationService, NavigationService>();
 #if ANDROID
-		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.Android.Services.VibrationService>();
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.Android.Services.KeyboardService>();
 #elif IOS
-		builder.Services.AddSingleton<IVibrationService, HairCarePlus.Client.Patient.Platforms.iOS.Services.VibrationService>();
 		builder.Services.AddSingleton<IKeyboardService, HairCarePlus.Client.Patient.Platforms.iOS.Services.KeyboardService>();
 #endif
 
-		// Register Pages and ViewModels
-		builder.Services.AddTransient<ProfilePage>();
-		builder.Services.AddTransient<ProfileViewModel>();
-		builder.Services.AddTransient<PhotoReportPage>();
-		builder.Services.AddTransient<PhotoReportViewModel>();
-		builder.Services.AddTransient<DoctorChatPage>();
-		builder.Services.AddTransient<DoctorChatViewModel>();
-		builder.Services.AddTransient<DailyRoutinePage>();
-		builder.Services.AddTransient<DailyRoutineViewModel>();
+		// Register Chat feature (repositories & sync) + presentation layer
+		builder.Services.AddChatFeature();             // domain & infrastructure (extension)
+		builder.Services.AddTransient<ChatPage>();     // UI
+		builder.Services.AddTransient<ChatViewModel>();
 
-		// Register Treatment Progress
-		builder.Services.AddTransient<TreatmentProgressPage>();
-		builder.Services.AddTransient<TreatmentProgressViewModel>();
-
-		// Register Calendar Feature
+		// Register Calendar feature (handles its own DI, ViewModels и проч.)
 		builder.Services.AddCalendarServices();
 
-		// Register ViewModels
-		builder.Services.AddTransient<CalendarViewModel>();
-		builder.Services.AddTransient<FullCalendarViewModel>();
-		builder.Services.AddTransient<TodayViewModel>();
-		builder.Services.AddTransient<EventDetailViewModel>();
-
-		// Register Pages
-		builder.Services.AddTransient<CalendarPage>();
-		builder.Services.AddTransient<FullCalendarPage>();
-		builder.Services.AddTransient<TodayPage>();
-		builder.Services.AddTransient<EventDetailPage>();
-
-		// No need to manually register routes here since we're doing it in RegisterCalendarRoutes()
+		// Register startup tasks
+		builder.Services.AddStartupTasks();
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
@@ -110,7 +112,13 @@ public static class MauiProgram
 
 #if DEBUG
 		builder.Logging.AddDebug()
-			.SetMinimumLevel(LogLevel.Debug);
+			// Reduce verbosity of EF Core to minimise log overhead during development
+			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.Database.Transaction", LogLevel.Warning)
+			.AddFilter("Microsoft.EntityFrameworkCore.Update", LogLevel.Warning)
+			// Keep other categories at Information for useful context without flooding the output
+			.SetMinimumLevel(LogLevel.Information);
 #endif
 
 		var app = builder.Build();
@@ -119,38 +127,7 @@ public static class MauiProgram
 		return app;
 	}
 
-	private static void RegisterServices(IServiceCollection services)
-	{
-		// Calendar services
-		services.AddSingleton<ICalendarService, CalendarService>();
-		services.AddSingleton<INotificationService, NotificationService>();
-		
-		// Other services
-		// ...
-	}
-	
-	private static void RegisterViewModels(IServiceCollection services)
-	{
-		// Calendar
-		services.AddTransient<CalendarViewModel>();
-		services.AddTransient<CleanCalendarViewModel>();
-		services.AddTransient<RestrictionTimersViewModel>();
-		
-		// Calendar views
-		services.AddTransient<CalendarPage>();
-		services.AddTransient<MonthCalendarView>();
-		services.AddTransient<RestrictionTimersView>();
-		
-		// Other view models and views
-		// ...
-	}
-	
-	private static void RegisterConverters(IServiceCollection services)
-	{
-		// Register converters as resources
-		Application.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
-		Application.Current.Resources.Add("BoolToColorConverter", new BoolToColorConverter());
-		Application.Current.Resources.Add("DoubleToPercentageConverter", new DoubleToPercentageConverter());
-		Application.Current.Resources.Add("HasItemsConverter", new HasItemsConverter());
-	}
+	// NOTE: Presentation‑level converters for Calendar feature are registered inside
+	// CalendarServiceExtensions.RegisterConverters(). Additional converters can be
+	// placed there or in App.xaml resources; avoid duplicate registrations.
 }

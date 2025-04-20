@@ -1,35 +1,43 @@
-# HairCare+ Solution
+# HairCare+ Project Rules
 
-## Project Overview
-HairCare+ is a comprehensive digital healthcare solution that facilitates communication between clinics and patients during the post-operative period. The solution consists of three main applications:
+> **Версия:** 1.0  
+> **Назначение:** Эти правила определяют архитектурные, организационные и UX-принципы проекта HairCare+, а также описывают методы использования Think Tool и MCP Server в Cursor IDE.  
+> **Авторы:** Команда HairCare+
+
+---
+
+## 1. Общие сведения
+
+### 1.1 Назначение проекта
+**HairCare+** — это комплексное цифровое решение для взаимодействия между клиниками и пациентами в постоперационный период. Решение включает три приложения:
 
 1. **Patient Mobile Application (MAUI)**
-   - Patient profile management
-   - Local data storage and synchronization
-   - Real-time chat with clinic
-   - Calendar and notifications
-   - Media management with AR support
+   - Профиль пациента  
+   - Локальное хранение и синхронизацию данных  
+   - Чат с клиникой в режиме реального времени (локальное хранение истории чата) 
+   - Календарь и уведомления  (локальное хранение данных)
+   - Воспроизведение фото/видео  
+   - Съёмку фотографий с AR-инструментами  
+   - В дальнейшем — интеграцию с Server App и Clinic Mobile App  
 
 2. **Server Application**
-   - Centralized communication hub
-   - Authentication and security
-   - External API integration (AI services)
-   - Data synchronization
-   - Cloud storage management
+   - Центральная точка коммуникации  
+   - Аутентификация и безопасность  
+   - Синхронизация данных  
+   - Работа с облаком  
 
 3. **Clinic Mobile Application (MAUI)**
-   - Clinic staff management
-   - Patient monitoring and analytics
-   - Treatment management
-   - Real-time communication
-   - AI-assisted diagnostics
+   - Управление персоналом клиники  
+   - Мониторинг пациентов, аналитика  (локальное хранение данных)
+   - Управление лечением  
+   - Реальное время: чат, уведомления  (локальное хранение истории чата) 
+   - Диагностика (AI-интеграция)
 
-## Solution Structure
-
+### 1.2 Структура проекта
 ```
 src/
 ├── Client/
-│   ├── HairCarePlus.Client.Patient/           # Patient MAUI Application
+│   ├── HairCarePlus.Client.Patient/
 │   │   ├── Features/
 │   │   │   ├── Authentication/
 │   │   │   ├── Calendar/
@@ -38,7 +46,7 @@ src/
 │   │   │   └── Notifications/
 │   │   ├── Infrastructure/
 │   │   └── Services/
-│   └── HairCarePlus.Client.Clinic/            # Clinic MAUI Application
+│   └── HairCarePlus.Client.Clinic/
 │       ├── Features/
 │       │   ├── Authentication/
 │       │   ├── PatientManagement/
@@ -48,224 +56,176 @@ src/
 │       ├── Infrastructure/
 │       └── Services/
 ├── Server/
-│   ├── HairCarePlus.Server.API/               # API Layer
-│   ├── HairCarePlus.Server.Application/       # Application Layer
-│   ├── HairCarePlus.Server.Domain/            # Domain Layer
-│   └── HairCarePlus.Server.Infrastructure/    # Infrastructure Layer
+│   ├── HairCarePlus.Server.API/
+│   ├── HairCarePlus.Server.Application/
+│   ├── HairCarePlus.Server.Domain/
+│   └── HairCarePlus.Server.Infrastructure/
 └── Shared/
-    ├── HairCarePlus.Shared.Domain/            # Shared Domain Models
-    ├── HairCarePlus.Shared.Communication/     # Communication Contracts
-    └── HairCarePlus.Shared.Common/            # Common Utilities
+    ├── HairCarePlus.Shared.Domain/
+    ├── HairCarePlus.Shared.Communication/
+    └── HairCarePlus.Shared.Common/
 ```
 
-## Technology Stack
+### 1.3 Технологический стек
 - .NET 8
 - .NET MAUI
 - ASP.NET Core Web API
 - Entity Framework Core
-- SignalR for real-time communication
-- Azure Services (or alternative cloud provider)
+- SignalR (реальное время)
+- Azure Services (или другой облачный провайдер)
+- Clean Architecture, DDD, CQRS, SOLID, KISS
+- MVVM (в MAUI-приложениях)
+- Безопасность: JWT, HTTPS, шифрование данных, API-ключи, защищённое хранение
 
-## Getting Started
+## 2. Архитектурные принципы
+### 2.1 Clean Architecture & DDD
+- Слои: Domain, Application, Infrastructure, UI (MAUI).
+- Зависимости направлены к Domain (внутрь).
+- DDD: Определяйте сущности, агрегаты, Value Objects, bounded contexts, придерживайтесь Ubiquitous Language.
+- CQRS: Разделение команд (Commands) и запросов (Queries) для работы с данными.
+- SOLID, KISS: Соблюдать принципы для повышения гибкости и упрощения.
 
-### Prerequisites
-- .NET 8 SDK
-- Visual Studio 2022 or later
-- .NET MAUI workload
-- SQL Server (or alternative database)
+### 2.2 Разделение кода
+- Domain: доменные модели, бизнес-правила, агрегаты.
+- Application: логика CQRS (обработчики, DTO), сервисы приложения.
+- Infrastructure: базы данных, репозитории, внешние сервисы, поставщики.
+- UI (MAUI): в Features/ храним конкретные модули (Authentication, Calendar, Chat и т. д.), отдельно Infrastructure/ и Services/ для кросс-функционального кода.
 
-### Setup Instructions
-1. Clone the repository
-2. Open the solution in Visual Studio
-3. Restore NuGet packages
-4. Configure connection strings
-5. Run database migrations
-6. Launch the desired application
+### 2.3 Именование и комментарии
+- [FeatureName][Type].cs: Например, LoginViewModel.cs, AppointmentService.cs.
+- #regions, TODO, REVIEW: использовать для навигации в коде.
+- XML-документация для публичных методов, классов.
 
-## Architecture
+## 3. MAUI UI и паттерн MVVM
+### 3.1 Коллекции и списки
+ObservableCollection обновляем атомарно. При массовом изменении:
 
-The solution follows Clean Architecture principles with:
-- Domain-Driven Design (DDD)
-- SOLID principles
-- CQRS pattern
-- Event-driven architecture
-- Repository pattern
-- MVVM pattern (in MAUI applications)
+```csharp
+var updatedList = new List<T>(MyCollection);
+updatedList.AddRange(newItems);
+MyCollection = new ObservableCollection<T>(updatedList);
+```
 
-## Security
+- Не модифицируйте коллекцию из нескольких мест одновременно.
+- Управление через ViewModel (команды, свойства), а не напрямую из View.
 
-- JWT authentication
-- End-to-end encryption for chat
-- Secure storage for sensitive data
-- API key protection
-- HTTPS enforcement
+### 3.2 Потоки и производительность
+- UI-поток: обновления только через MainThread.InvokeOnMainThreadAsync(...).
+- Фоновые операции: длительные задачи в Task.Run(), результат – в UI-поток.
+- Ограничение обновлений: минимизировать частые перерисовки.
+- Кэширование: хранить часто используемые данные локально.
 
-## Contributing
+### 3.3 Компоненты интерфейса
+- Виртуализация: CachingStrategy, ItemSizingStrategy для больших списков.
+- Сбрасывание выделения: после выбора элемента.
+- Бесконечная прокрутка: RemainingItemsThreshold + команда подгрузки.
+- Очистка ресурсов: отписка от событий, освобождение компонентов в OnDisappearing.
 
-Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
+### 3.4 iOS UICollectionView (особенности)
+- Не обновляйте напрямую ObservableCollection, если она привязана к CollectionView.
+- При массовых изменениях: batch-операции или полная замена коллекции.
+- Проверяйте, что количество элементов совпадает с ожидаемым после обновления.
 
+## 4. UI/UX Руководства
+### 4.1 Общие принципы дизайна
+- Современный flat-дизайн: минимализм, чистые формы, понятная типографика.
+- Light/Dark темы, достаточный контраст, поддержка accessibility.
+- Адаптивные макеты: интерфейс должен корректно выглядеть на разных устройствах.
+- Официальные рекомендации .NET MAUI: следовать при проектировании интерфейсов.
 
-## Chat Interface
+### 4.2 Цветовая дифференциация категорий
+- Лекарства/процедуры: #4B9BF8, иконка капсула.
+- Осмотры/визиты: #A0DAB2, иконка стетоскоп.
+- Фотоотчёты: #9747FF, иконка камера.
+- Видео-инструкции: #FF9F1C, иконка учебная книга.
+- Общие рекомендации: #8E8E93, иконка ℹ️.
+- Критические предупреждения: #F14336, иконка ⚠️.
 
-The chat interface is a crucial component of the HairCare+ solution, providing real-time communication between patients and doctors.
+### 4.3 Календарь (пример)
+- Цветовая гамма: для мужской аудитории 30+ используем глубокие оттенки синего/фиолетового (#6962AD).
+- Типографика: 16–18px, полужирные заголовки.
+- Минималистичность: только нужные детали (индикаторы событий).
+- Профессиональный тон: строгий, без лишних украшений.
 
-### Existing Features
-- Real-time messaging with instant updates
-- Message reply functionality with preview
-- Timestamp display for each message
-- Keyboard-aware interface that adjusts automatically
-- Support for long messages with auto-expanding input
-- Visual feedback for message status
-- Message history persistence
-- Photo sharing capabilities (camera and gallery)
-- Message grouping by sender
-- Online/Offline status indication
-- Automatic scrolling to latest messages
-- Message reply preview with truncation
-- Smart response system with contextual replies
-- Input field with attachment options
-- Dynamic send button visibility
-- Message bubble styling with proper alignment
-- Support for both light and dark themes
+### 4.4 XAML-практики
+- ResourceDictionary: для общих стилей, тем.
+- x:DataType: для компиляционных проверок привязок.
+- ControlTemplates: создание переиспользуемых компонентов.
+- Форматирование: 4 пробела, выравнивание по вложенности.
 
-### Missing/Planned Features
-- Voice messages
-- Video messages
-- File attachments (documents, PDFs)
-- Message delivery status (sent, delivered, read)
-- Typing indicators
-- Message reactions/emojis
-- Message search functionality
-- Message forwarding
-- Message deletion
-- Message editing
-- Rich text formatting in messages
-- Link preview
-- Group chat support
-- Message pinning
-- Message bookmarks
-- Offline message queue
-- End-to-end encryption indicators
-- Message translation
-- Voice/Video call integration
+## 5. Чат-Интерфейс: основные правила
+- Реальное время: использовать SignalR (Server), отображать моментальные обновления.
+- Статусы: при необходимости выводить "отправлено/доставлено/прочитано".
+- UI-обработка: авто-прокрутка к последнему сообщению, размытие фона при вложениях.
+- Стили: Patient vs Doctor отличаются цветом, выравниванием (право/лево).
+- Безопасность: шифровать важные данные, не показывать конфиденциальные детали на экране блокировки.
 
-### Chat Styling
+## 6. Безопасность
+- JWT: использовать для аутентификации, срок годности токена ограничивать, обновлять по рефреш-токену.
+- HTTPS: все соединения должны идти по защищённому каналу.
+- Secure Storage (MAUI) для хранения токенов и конфиденциальных данных на устройстве.
+- Ключи и пароли: никогда не хардкодить, использовать переменные окружения, user secrets.
 
-#### Message Bubbles
-- **Patient Messages**
-  - Light theme: `#EAF4FC` (light blue)
-  - Dark theme: `#1E2A35` (dark blue)
-  - Corner radius: 18
-  - Maximum width: 280
-  - Right alignment
+## 7. Обработка неопределённостей
+- Не изобретай бизнес-логику, если нет данных. Сначала уточняй у заказчика/пользователя.
+- Запрашивай подтверждение перед изменением критичных вещей (API, БД, доменных моделей).
+- Не нарушай существующие принципы, если не получил на то согласие.
 
-- **Doctor Messages**
-  - Light theme: `#A0DAB2` (mint green)
-  - Dark theme: `#4D7B63` (dark mint)
-  - Corner radius: 18
-  - Maximum width: 280
-  - Left alignment
+## 8. Использование Think Tool (MCP)
+### 8.1 Когда использовать
+- При сложных задачах: проектирование архитектуры, новых крупных модулей.
+- При многослойных изменениях: затрагивающих Domain, Application, UI.
+- При аналитике рисков (например, изменения в безопасности).
 
-#### Typography
-- Message content: 17sp
-- Timestamp: 11sp
-- Reply preview: 13sp
-- Input field: 17sp
-- Navigation buttons: 22sp
+### 8.2 Как использовать
+- Сформулируй задачу в общих чертах.
+- Вызови команду think в Cursor IDE (MCP).
+- Опиши в Think Tool детали, подзадачи, возможные варианты решений, риски.
+- Вернись из Think Tool и выдай чёткий план в основном ответе.
+- Не выводи пользователю содержимое своих внутренних мыслей из Think Tool.
 
-#### Reply Preview
-- Background matches message style
-- Opacity: 0.9
-- Corner radius: 8
-- Shows original message preview
-- Truncates long content
-- Clear button for canceling reply
+## 9. Рекомендации по тестированию и качеству
+- Unit-тесты: для доменных сервисов, команд CQRS.
+- UI-тесты (MAUI): проверять ключевые сценарии (чат, календарь).
+- Интеграционные тесты: проверить соединение с сервером, базами данных.
+- Запуск: dotnet test. Исправлять ошибки до "чистого" прохождения тестов.
+- Статический анализ: следовать линтерам, не игнорировать предупреждения.
 
-#### Input Panel
-- Light theme background: `#F7F7F7`
-- Dark theme background: `#121212`
-- Input field corner radius: 18
-- Expandable input area (38-120px height)
-- Attachment button: "+" symbol
-- Send button: "↑" symbol
-- Dynamic send button visibility
+## 10. Отладка и диагностика
+- Структурированный лог (Serilog, NLog). Избегать простых Debug.WriteLine().
+- Точки останова: при сложном коде использовать условные брейкпойнты.
+- Отладка привязок (XAML): использовать StringFormat='Debug: {0}'.
+- Безопасные вызовы: Command?.Execute(null) вместо Command.Execute(null).
 
-#### Navigation
-- Back button: "←" symbol
-- Doctor name: 18sp, bold
-- Online status indicator
-- Shadow effects on iOS
+## 11. Платформенный код (MAUI)
+- Компиляционные директивы: #if ANDROID / #if IOS вместо DeviceInfo.Platform.
+- Интерфейсы: для платформенных сервисов, используйте Dependency Injection.
+- DI-регистрация: учитывайте разницу платформ (Android, iOS, Windows).
 
-### Behavior
-- Auto-scrolls to latest message
-- Keyboard-aware layout adjustment
-- Tap to reply to specific messages
-- Message grouping by sender
-- Smooth animations for state changes
+## 12. Итоговые инструкции при работе с Cursor IDE
+- Следуй изложенным правилам (архитектура, UX, безопасность).
+- Используй Think Tool при сложных или многоэтапных задачах.
+- Уточняй детали у пользователя, если информации недостаточно.
+- Поддерживай принцип MVVM: раздельные уровни (View, ViewModel, Service).
+- Придерживайся Clean Architecture, DDD, CQRS.
+- После генерации кода: проверяй стиль, запускай тесты.
 
+## 13. Заключение
+Этот документ описывает:
+- Архитектурные и организационные правила HairCare+
+- Ключевые паттерны (Clean Architecture, DDD, CQRS, SOLID)
+- Рекомендации по UI/UX (MAUI)
+- Интеграцию и применение Think Tool (MCP)
+- Тестирование, безопасность, работу с базовой функциональностью
 
-### Performance Optimization
+При дальнейшей разработке:
+- Всегда придерживайтесь данного файла в качестве основного справочника.
+- При внесении существенных изменений в проект обновляйте эти правила.
+- Обсуждайте все изменения с командой, чтобы сохранить согласованность.
 
-To avoid UI freezes and frame skipping:
-- Avoid heavy processing in the main UI thread
-- Use asynchronous methods with `async/await` pattern for network requests and database operations
-- Implement lazy loading for views and components that are not immediately visible
-- Consider using background threads for heavy calculations via `Task.Run()`
-- Optimize image loading and processing, use caching when possible
-- Keep UI component hierarchies flat when possible, avoid deep nesting
-- Implement proper view recycling patterns
-- Minimize UI updates and property change notifications
+Спасибо за соблюдение принципов HairCare+!
 
-### APK Size Optimization and Deployment
-
-To reduce APK size and avoid storage issues during development/deployment:
-- Use AOT compilation selectively or disable it for debug builds
-- Trim unused assemblies using PublishTrimmed property
-- Compress images and other assets before including them in the project
-- For debug builds, consider disabling `EmbedAssembliesIntoApk` to use Shared Runtime
-- Utilize `<AndroidPackageFormat>apk</AndroidPackageFormat>` instead of AAB format for debug builds
-- Enable ProGuard to remove unused code
-- Implement on-demand downloading of assets when applicable
-- Consider using Dynamic Features for less common functionality
-
-### Development Environment Setup
-
-For optimal development experience:
-- Configure Android emulators with at least 2GB RAM and 2GB internal storage
-- When creating new AVDs, use x86 or x86_64 ABI for better performance
-- Enable hardware acceleration in emulators (HAXM/Hypervisor)
-- Regularly clear build caches (bin/obj folders)
-- For physical devices, ensure they have sufficient storage (>1GB free)
-- Set up multi-targeting configurations to build only for the platform you're testing
-- Consider using Release configuration with debugging enabled for faster performance
-
-## UI Design Guidelines
-
-### Calendar Design for Male Audience 30+
-
-The calendar interface follows specific design principles tailored for the target audience (men 30+):
-
-#### Color Palette
-- **Primary Colors**: Deep blue-purple (#6962AD) and its variations are used as the primary accent colors
-- **Background Colors**: Clean, neutral backgrounds (light theme: #F8F8F8, dark theme: #1A1A1A)
-- **Accent Colors**: Distinct colors for different event types (medications: green, restrictions: red, instructions: purple)
-- **Text Colors**: High-contrast, readable text that maintains professionalism
-
-#### Typography
-- **Font Sizes**: Slightly larger than minimum (16-18px for regular text)
-- **Font Weight**: Bold text for important information, regular for details
-- **Font Family**: Sans-serif fonts for optimal readability
-
-#### Visual Elements
-- **Icons and Markers**: Minimalist dot indicators for event types
-- **Progress Indicators**: Clear progress bars showing recovery stages
-- **Current Day Highlighting**: Subtle background color highlighting for the current day
-
-#### UI Principles
-- **Minimalist Approach**: Only essential information is displayed
-- **Information Hierarchy**: Clear visual distinction between different types of content
-- **Reduced Visual Noise**: Clean interfaces without unnecessary decorative elements
-- **Professional Appearance**: Structured layout conveying medical professionalism
-
-These design principles create a calendar interface that is both functional and visually appropriate for the target demographic.
-
+## 1.4 Последние изменения (апрель 2025)
+- Завершена базовая реализация модуля **Calendar**: генератор событий, репозиторий `CalendarRepository`, инициализатор `CalendarDataInitializer`. События отображаются в TodayPage.
+- В DI добавлены регистрации `IHairTransplantEventGenerator` и `IDataInitializer`.
+- Исправлена фильтрация однодневных событий без `EndDate`.

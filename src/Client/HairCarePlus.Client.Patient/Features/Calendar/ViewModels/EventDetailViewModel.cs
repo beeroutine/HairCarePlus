@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
@@ -30,7 +31,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand ToggleCompletionCommand { get; }
         public ICommand PostponeCommand { get; }
 
-        public async Task LoadEventAsync(int eventId)
+        public async Task LoadEventAsync(Guid id)
         {
             try
             {
@@ -42,9 +43,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 // Для демонстрации используем временную заглушку
                 var events = await _calendarService.GetEventsForDateAsync(DateTime.Today);
-                Event = events.FirstOrDefault(e => e.Id == eventId) ?? new CalendarEvent
+                Event = events.FirstOrDefault(e => e.Id == id) ?? new CalendarEvent
                 {
-                    Id = eventId,
+                    Id = id,
                     Title = "Sample Event",
                     Description = "This is a sample event for demonstration purposes.",
                     Date = DateTime.Today,
@@ -72,17 +73,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             try
             {
+                var originalIsCompleted = Event.IsCompleted;
                 Event.IsCompleted = !Event.IsCompleted;
-                await _calendarService.MarkEventAsCompletedAsync(Event.Id, Event.IsCompleted);
                 
-                // Обновляем свойство для уведомления UI
+                var success = await _calendarService.MarkEventAsCompletedAsync(Event.Id);
+                
+                if (!success)
+                {
+                    Event.IsCompleted = originalIsCompleted; // Revert on failure
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await Shell.Current.DisplayAlert("Error", "Failed to update event status.", "OK");
+                    });
+                    return;
+                }
+                
+                // Notify UI of the change
                 OnPropertyChanged(nameof(Event));
             }
             catch (Exception ex)
             {
-                // В реальном приложении здесь был бы код логирования ошибки
-                Console.WriteLine($"Error toggling completion: {ex.Message}");
-                await Application.Current.MainPage.DisplayAlert("Error", "Failed to update event status.", "OK");
+                Event.IsCompleted = !Event.IsCompleted; // Revert the change
+                System.Diagnostics.Debug.WriteLine($"Error toggling completion: {ex.Message}");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to update event status.", "OK");
+                });
             }
         }
 

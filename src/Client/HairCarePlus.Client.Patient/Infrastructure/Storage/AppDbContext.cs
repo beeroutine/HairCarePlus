@@ -1,0 +1,75 @@
+using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Client.Patient.Features.Calendar.Models;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
+using System;
+using System.IO;
+
+namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
+
+public class AppDbContext : DbContext
+{
+    public DbSet<CalendarEvent> Events { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Event configuration
+        modelBuilder.Entity<CalendarEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired();
+            entity.Property(e => e.Date).IsRequired();
+            entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.ModifiedAt).IsRequired();
+            entity.Property(e => e.EventType).IsRequired();
+            entity.Property(e => e.Priority).IsRequired();
+            entity.Property(e => e.TimeOfDay).IsRequired();
+        });
+
+        // Message configuration
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.ToTable("ChatMessages");
+            
+            entity.HasKey(e => e.LocalId);
+            
+            entity.HasIndex(e => e.ServerMessageId)
+                .IsUnique()
+                .HasFilter("[ServerMessageId] IS NOT NULL");
+                
+            entity.HasIndex(e => e.ConversationId);
+            entity.HasIndex(e => e.SentAt);
+            entity.HasIndex(e => e.SyncStatus);
+            
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasMaxLength(4000);
+                
+            entity.Property(e => e.SenderId)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            entity.Property(e => e.RecipientId)
+                .HasMaxLength(50);
+                
+            entity.Property(e => e.FileName)
+                .HasMaxLength(255);
+                
+            entity.Property(e => e.MimeType)
+                .HasMaxLength(100);
+                
+            entity.HasOne(e => e.ReplyTo)
+                .WithMany()
+                .HasForeignKey(e => e.ReplyToLocalId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+} 

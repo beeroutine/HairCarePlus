@@ -9,14 +9,37 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces
     public interface INotificationService
     {
         /// <summary>
+        /// Shows a success notification
+        /// </summary>
+        /// <param name="message">The message to display</param>
+        Task ShowSuccessAsync(string message);
+        
+        /// <summary>
+        /// Shows an error notification
+        /// </summary>
+        /// <param name="message">The message to display</param>
+        Task ShowErrorAsync(string message);
+        
+        /// <summary>
+        /// Shows a warning notification
+        /// </summary>
+        /// <param name="message">The message to display</param>
+        Task ShowWarningAsync(string message);
+        
+        /// <summary>
+        /// Shows an info notification
+        /// </summary>
+        /// <param name="message">The message to display</param>
+        Task ShowInfoAsync(string message);
+        
+        /// <summary>
         /// Schedules a local notification
         /// </summary>
         /// <param name="title">Title of the notification</param>
         /// <param name="message">Message body</param>
         /// <param name="scheduledTime">When to show the notification</param>
-        /// <param name="data">Additional data to include with the notification</param>
         /// <returns>Notification identifier</returns>
-        Task<string> ScheduleNotificationAsync(string title, string message, DateTime scheduledTime, string data = null);
+        Task ScheduleNotificationAsync(string title, string message, DateTime scheduledTime);
         
         /// <summary>
         /// Cancels a scheduled notification
@@ -25,8 +48,9 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces
         Task CancelNotificationAsync(string notificationId);
         
         /// <summary>
-        /// Cancels all scheduled notifications
+        /// Requests notification permission from the user
         /// </summary>
-        Task CancelAllNotificationsAsync();
+        /// <returns>True if permission is granted, false otherwise</returns>
+        Task<bool> RequestNotificationPermissionAsync();
     }
 } 

@@ -1,53 +1,68 @@
 ﻿using Microsoft.Maui.Controls;
 using System;
-using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
+using HairCarePlus.Client.Patient.Common.Startup;
+using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Common.Views;
 
 namespace HairCarePlus.Client.Patient;
 
 public partial class App : Application
 {
+	private readonly ILogger<App> _logger;
+
 	public App()
 	{
 		try
 		{
-			Debug.WriteLine("App constructor start");
+			_logger = IPlatformApplication.Current.Services.GetRequiredService<ILogger<App>>();
+			_logger.LogDebug("App constructor start");
 			InitializeComponent();
-			Debug.WriteLine("App InitializeComponent completed");
+			_logger.LogDebug("App InitializeComponent completed");
 			
-			MainPage = new AppShell();
-			Debug.WriteLine("AppShell initialized and set as MainPage");
-			
-			RegisterServices();
-			Debug.WriteLine("RegisterServices completed");
+			// Show loading screen while startup tasks execute
+			MainPage = new LoadingPage();
+			_logger.LogDebug("LoadingPage set as MainPage");
 		}
 		catch (Exception ex)
 		{
-			Debug.WriteLine($"Exception in App constructor: {ex.Message}");
-			Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-			// You could set a simple error page here if needed
+			_logger.LogError(ex, "Exception in App constructor");
+			// Consider showing an error message to the user here
 		}
 	}
 
-	private void RegisterServices()
+	protected override async void OnStart()
 	{
-		// Placeholder for any service registration that might be needed
-	}
+		_logger.LogInformation("App.OnStart called");
 
-	protected override void OnStart()
-	{
-		Debug.WriteLine("App.OnStart called");
+		try
+		{
+			var startupTasks = IPlatformApplication.Current.Services.GetServices<IStartupTask>();
+			foreach (var task in startupTasks)
+			{
+				await task.ExecuteAsync();
+			}
+
+			MainPage = new AppShell();
+			_logger.LogInformation("Startup tasks completed. AppShell displayed.");
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Error during startup tasks execution");
+		}
+
 		base.OnStart();
 	}
 
 	protected override void OnSleep()
 	{
-		Debug.WriteLine("App.OnSleep called");
+		_logger.LogDebug("App.OnSleep called");
 		base.OnSleep();
 	}
 
 	protected override void OnResume()
 	{
-		Debug.WriteLine("App.OnResume called");
+		_logger.LogDebug("App.OnResume called");
 		base.OnResume();
 	}
 }

@@ -11,7 +11,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         {
             set
             {
-                if (int.TryParse(value, out int id))
+                if (Guid.TryParse(value, out Guid id))
                 {
                     _ = _viewModel.LoadEventAsync(id);
                 }

@@ -5,31 +5,66 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:system="clr-namespace:System;assembly=netstandard"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Behaviors"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
-             BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Title="Today">
 
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:EventIndicatorsConverter x:Key="EventIndicatorsConverter"/>
-            <converters:DateToFontAttributesConverter x:Key="DateToFontAttributesConverter"/>
-            <converters:DateToHasShadowConverter x:Key="DateToHasShadowConverter"/>
-            <converters:DateToBorderColorConverter x:Key="DateToBorderColorConverter"/>
-            <converters:DateToSelectionColorConverter x:Key="DateToSelectionColorConverter"/>
-            <converters:DateToTextColorConverter x:Key="DateToTextColorConverter"/>
-            <converters:DateToIsSelectedConverter x:Key="DateToIsSelectedConverter"/>
+            <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter"/>
+            <converters:DateHasAnyEventConverter x:Key="DateHasAnyEventConverter"/>
+            <converters:DateHasAnyEventColorConverter x:Key="DateHasAnyEventColorConverter"/>
             <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
             <converters:TimeOfDayToColorConverter x:Key="TimeOfDayToColorConverter"/>
             <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
             <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
-            <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+            <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+            <x:Double x:Key="CircleSize">100</x:Double>
+            
+            <!-- Layout Resources -->
+            <LinearItemsLayout x:Key="HorizontalLinearLayout" 
+                             Orientation="Horizontal" 
+                             ItemSpacing="5"
+                             SnapPointsType="None"
+                             SnapPointsAlignment="Center"/>
             
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate">
-                <Grid WidthRequest="45" HeightRequest="45" Padding="0" Margin="2,0">
+                <Grid x:Name="rootContainer" 
+                       WidthRequest="55" 
+                       HeightRequest="60" 
+                       Padding="0" 
+                       Margin="0"
+                       BackgroundColor="Transparent">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup Name="CommonStates">
+                            <VisualState Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="Transparent" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState Name="Selected">
+                                <VisualState.Setters>
+                                    <Setter Property="Frame.BackgroundColor" 
+                                            TargetName="dayFrame" 
+                                            Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                    <Setter Property="Frame.BorderColor" 
+                                            TargetName="dayFrame" 
+                                            Value="Transparent" />
+                                    <Setter Property="Label.TextColor" 
+                                            TargetName="dayText" 
+                                            Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+                                    <Setter Property="Scale" Value="1.05" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                    
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -38,81 +73,99 @@
 
                     <!-- Day of Week -->
                     <Label Grid.Row="0" 
-                           Text="{Binding ., StringFormat='{0:ddd}'}"
-                           FontSize="10"
-                           TextColor="{StaticResource Gray500}"
-                           HorizontalOptions="Center"
-                           Margin="0,0,0,2"/>
+                          Text="{Binding ., StringFormat='{0:ddd}'}"
+                          FontSize="12"
+                          TextColor="{StaticResource Gray500}"
+                          HorizontalOptions="Center"
+                          Margin="0,0,0,2"/>
 
                     <!-- Day number in circle -->
                     <Frame Grid.Row="1"
-                           CornerRadius="16"
-                           Padding="0"
-                           WidthRequest="32"
-                           HeightRequest="32"
-                           BorderColor="{Binding ., Converter={StaticResource DateToBorderColorConverter}}"
-                           BackgroundColor="{Binding ., Converter={StaticResource DateToSelectionColorConverter}, ConverterParameter={Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate}}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center">
-                        <Label Text="{Binding ., StringFormat='{0:%d}'}"
-                               FontSize="14"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               TextColor="{Binding ., Converter={StaticResource DateToTextColorConverter}, ConverterParameter={Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate}}"/>
+                          x:Name="dayFrame"
+                          CornerRadius="20"
+                          Padding="0"
+                          WidthRequest="40"
+                          HeightRequest="40"
+                          BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
+                          BorderColor="Transparent"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"
+                          Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
+                        <Label x:Name="dayText"
+                              Text="{Binding ., StringFormat='{0:%d}'}"
+                              FontSize="16"
+                              HorizontalOptions="Center"
+                              VerticalOptions="Center"
+                              TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
                     </Frame>
 
-                    <!-- Event Indicators -->
+                    <!-- Event Indicators bar -->
+                    <BoxView Grid.Row="2"
+                            HeightRequest="3"
+                            CornerRadius="1.5"
+                            WidthRequest="24"
+                            HorizontalOptions="Center"
+                            Margin="0,4,0,0"
+                            IsVisible="False"
+                            Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+
+                    <!-- Event Indicators details -->
                     <HorizontalStackLayout Grid.Row="2"
-                                         VerticalOptions="End" 
-                                         HorizontalOptions="Center"
-                                         Spacing="2"
-                                         Margin="0,1,0,0">
-                        <BoxView WidthRequest="4" 
-                                HeightRequest="4" 
-                                CornerRadius="2"
+                                        VerticalOptions="End" 
+                                        HorizontalOptions="Center"
+                                        Spacing="3"
+                                        Margin="0,10,0,0"
+                                        IsVisible="False">
+                        <BoxView WidthRequest="6" 
+                                HeightRequest="6" 
+                                CornerRadius="3"
                                 Color="{StaticResource MedicationBlue}"
                                 IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.MedicationTreatment}}"/>
                         
-                        <BoxView WidthRequest="4" 
-                                HeightRequest="4"
-                                CornerRadius="2"
+                        <BoxView WidthRequest="6" 
+                                HeightRequest="6"
+                                CornerRadius="3"
                                 Color="{StaticResource PhotoPurple}"
                                 IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Photo}}"/>
                                 
-                        <BoxView WidthRequest="4" 
-                                HeightRequest="4"
-                                CornerRadius="2"
+                        <BoxView WidthRequest="6" 
+                                HeightRequest="6"
+                                CornerRadius="3"
                                 Color="{StaticResource VideoOrange}"
-                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.VideoInstruction}}"/>
+                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Video}}"/>
                     </HorizontalStackLayout>
-
+                    
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
-                                             CommandParameter="{Binding .}"/>
+                        <TapGestureRecognizer 
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
+                            CommandParameter="{Binding .}" />
+                        <TapGestureRecognizer 
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
+                            CommandParameter="{Binding .}"
+                            NumberOfTapsRequired="2" />
                     </Grid.GestureRecognizers>
                 </Grid>
             </DataTemplate>
 
             <!-- Event Item Template -->
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
-                <Frame Margin="0,0,0,8" 
-                       Padding="15"
-                       CornerRadius="12"
+                <Frame Margin="0,4,0,0" 
+                       Padding="12"
+                       CornerRadius="18"
                        BorderColor="Transparent"
-                       BackgroundColor="{AppThemeBinding Light={StaticResource Gray50}, Dark={StaticResource Gray900}}"
-                       HasShadow="False">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                       BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                       HasShadow="True"
+                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                         <!-- Icon with background -->
                         <Frame Grid.Column="0"
-                               WidthRequest="38"
-                               HeightRequest="38"
-                               CornerRadius="19"
+                               WidthRequest="40"
+                               HeightRequest="40"
+                               CornerRadius="20"
                                Padding="0"
                                HasShadow="False"
                                BorderColor="Transparent"
-                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Start">
+                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}">
                             <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                    FontFamily="MaterialIcons"
                                    FontSize="20"
@@ -124,51 +177,52 @@
                         <!-- Task Content -->
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start">
                             <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                   FontSize="12"
+                                   FontSize="14"
+                                   FontAttributes="Bold"
                                    Margin="0,0,0,2"
-                                   TextColor="{StaticResource Gray500}"/>
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                             <Label Text="{Binding Title}"
                                    FontSize="16"
                                    FontAttributes="None"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                            <Label Text="{Binding Description}"
-                                   FontSize="14"
-                                   TextColor="{StaticResource Gray500}"/>
+                            <Grid>
+                                <Label x:Name="descriptionLabel"
+                                       Text="{Binding Description}"
+                                       FontSize="14"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="2"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                <Label Text="Подробнее..."
+                                       FontSize="13"
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                       HorizontalOptions="End"
+                                       VerticalOptions="End"
+                                       IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ShowEventDetailsCommand}"
+                                                             CommandParameter="{Binding .}"/>
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </Grid>
                         </VerticalStackLayout>
-
-                        <!-- Completion Circle -->
-                        <Frame Grid.Column="2"
-                               WidthRequest="24"
-                               HeightRequest="24"
-                               CornerRadius="12"
-                               Padding="0"
-                               HasShadow="False"
-                               BorderColor="{StaticResource Gray300}"
-                               BackgroundColor="{Binding IsCompleted, Converter={StaticResource BoolToColorConverter}}"
-                               HorizontalOptions="End"
-                               VerticalOptions="Start">
-                            <Label FontFamily="MaterialIcons"
-                                   Text="&#xe86c;"
-                                   FontSize="16"
-                                   TextColor="{StaticResource White}"
-                                   IsVisible="{Binding IsCompleted}"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center"/>
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
-                                                     CommandParameter="{Binding .}"/>
-                            </Frame.GestureRecognizers>
-                        </Frame>
                     </Grid>
                 </Frame>
             </DataTemplate>
             
             <!-- No events template -->
             <DataTemplate x:Key="EmptyViewTemplate">
-                <StackLayout HorizontalOptions="Center" VerticalOptions="Center" Padding="20">
+                <StackLayout VerticalOptions="CenterAndExpand" 
+                             HorizontalOptions="CenterAndExpand" 
+                             Padding="20">
+                    <Image Source="empty_calendar.png"
+                           WidthRequest="60"
+                           HeightRequest="60"
+                           Opacity="0.6"
+                           IsVisible="false" />
                     <Label Text="No events scheduled for this day" 
                            HorizontalTextAlignment="Center"
                            FontSize="16"
+                           Margin="0,20,0,0"
                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
                 </StackLayout>
             </DataTemplate>
@@ -176,34 +230,130 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*" Padding="0">
-        <!-- Main Content -->
-        <ScrollView Grid.Row="0" Grid.RowSpan="2">
-            <VerticalStackLayout Spacing="15" Padding="16,16,16,16">
-                <!-- Header -->
-                <VerticalStackLayout Spacing="2">
-                    <Label Text="{Binding FormattedSelectedDate}" 
-                           FontSize="30"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                    <Label Text="{Binding DaysSinceTransplant}" 
-                           FontSize="16"
-                           TextColor="{StaticResource Gray500}"/>
-                </VerticalStackLayout>
+        <!-- Fixed Header -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
+               BorderColor="Transparent"
+               CornerRadius="0"
+               Margin="0"
+               Padding="0"
+               HasShadow="False">
+            <VerticalStackLayout Padding="16,8,16,12" Spacing="12">
+                <!-- Updated Header Design: Date Circle Left, Month/Year Right -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8" VerticalOptions="Center">
+                    <!-- COL 0: Date Circle -->
+                    <Grid Grid.Column="0"
+                          HorizontalOptions="Start"
+                          VerticalOptions="Center"
+                          WidthRequest="{StaticResource CircleSize}"
+                          HeightRequest="{StaticResource CircleSize}">
+                        
+                        <!-- Добавляем распознаватель жестов для прокрутки к сегодняшней дате -->
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToTodayCommand}" />
+                        </Grid.GestureRecognizers>
+                          
+                        <!-- Background Circle -->
+                        <Border StrokeShape="Ellipse"
+                               Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                               StrokeThickness="4"
+                               BackgroundColor="Transparent"
+                               WidthRequest="{StaticResource CircleSize}"
+                               HeightRequest="{StaticResource CircleSize}"/>
+                               
+                        <!-- Progress Circle - Placeholder for actual progress binding -->
+                        <!-- Assuming you have progress logic, bind SkiaSharp or similar here -->
+                        <!-- <skia:SKCanvasView ... /> -->
+                               
+                        <!-- Day Number and Day Name -->
+                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                            <!-- Дата всегда показывает сегодняшний день -->
+                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
+                                   FontSize="32" 
+                                   FontAttributes="Bold" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                   HorizontalTextAlignment="Center"/>
+                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}" 
+                                   FontSize="14" 
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                   HorizontalTextAlignment="Center"
+                                   Margin="0,-5,0,0"/>
+                        </VerticalStackLayout>
+                    </Grid>
 
-                <!-- Horizontal Day Ticker -->
-                <CollectionView ItemsSource="{Binding CalendarDays}"
-                              ItemTemplate="{StaticResource DateTemplate}"
-                              HeightRequest="70"
-                              Margin="0,5,0,10">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4"/>
-                    </CollectionView.ItemsLayout>
+                    <!-- COL 1: Month (Large) and Year (Small) Right Aligned -->
+                    <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding SelectedDate, StringFormat='{0:MMMM}'}" 
+                                      FontSize="28" 
+                                      FontAttributes="Bold" 
+                                      TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                <Span Text=" "/>
+                                <Span Text="{Binding SelectedDate.Year}" 
+                                      FontSize="18" 
+                                      FontAttributes="None" 
+                                      TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Grid>
+
+                <!-- Date Selector (Horizontal CollectionView) -->
+                <CollectionView x:Name="DateSelectorView"
+                                ItemsSource="{Binding SelectableDates}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
+                                BackgroundColor="Transparent"
+                                ItemTemplate="{StaticResource DateTemplate}"
+                                ItemsLayout="{StaticResource HorizontalLinearLayout}"
+                                HeightRequest="75" 
+                                HorizontalScrollBarVisibility="Never"
+                                VerticalScrollBarVisibility="Never">
+                    <CollectionView.Behaviors>
+                        <behaviors:DateSelectorBehavior 
+                            SelectedDate="{Binding SelectedDate}" 
+                            ScrollToTargetDate="{Binding ScrollToIndexTarget}" />
+                    </CollectionView.Behaviors>
                 </CollectionView>
+                                
+            </VerticalStackLayout>
+        </Frame>
 
-                <!-- Events List -->
-                <CollectionView ItemsSource="{Binding FlattenedEvents}"
-                              ItemTemplate="{StaticResource EventTemplate}"
-                              EmptyView="{StaticResource EmptyViewTemplate}">
+        <!-- Main Content Area -->
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
+                
+                <!-- Restriction Area -->
+                <Border x:Name="RestrictionArea"
+                        IsVisible="{Binding HasActiveRestriction}"
+                        BackgroundColor="{Binding RestrictionBackgroundColor}"
+                        Padding="10" 
+                        Margin="0,5,0,5"
+                        StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0">
+                    <!-- Optional: Style with Shadow or Stroke -->
+                    <!-- HasShadow="True" Shadow="{StaticResource SmallShadow}" -->
+                    <HorizontalStackLayout Spacing="10">
+                        <!-- Replaced Image with Label using Material Icons font -->
+                        <Label Text="{Binding RestrictionIcon}"
+                               FontFamily="MaterialIcons"
+                               FontSize="20"
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                               VerticalOptions="Center"/>
+                        <Label Text="{Binding CurrentRestrictionText}"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" 
+                               FontSize="14"
+                               LineBreakMode="WordWrap"/>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <!-- Event List -->
+                <CollectionView ItemsSource="{Binding EventsForSelectedDate}"
+                                ItemTemplate="{StaticResource EventTemplate}"
+                                EmptyViewTemplate="{StaticResource EmptyViewTemplate}"
+                                VerticalOptions="FillAndExpand">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Vertical" ItemSpacing="8"/>
                     </CollectionView.ItemsLayout>

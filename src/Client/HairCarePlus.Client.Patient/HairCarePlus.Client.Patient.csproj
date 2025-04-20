@@ -72,14 +72,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Maui" Version="7.0.1" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="8.*" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
-		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="28.2.7" />
-		<PackageReference Include="Syncfusion.Maui.Core" Version="28.2.7" />
-		<PackageReference Include="Syncfusion.Maui.TabView" Version="28.2.7" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.*" />
+		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="28.*" />
+		<PackageReference Include="Syncfusion.Maui.Core" Version="28.*" />
+		<PackageReference Include="Syncfusion.Maui.TabView" Version="28.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -102,5 +107,10 @@
 	  <MtouchDebug>true</MtouchDebug>
 	</PropertyGroup>
 	<PropertyGroup Condition=" '$(Configuration)' == 'Release' " />
+
+	<!-- Include hair transplant schedule as Maui asset to be accessible via FileSystem.OpenAppPackageFileAsync -->
+	<ItemGroup>
+	  <MauiAsset Include="Features\Calendar\Data\HairTransplantSchedule.json" LogicalName="HairTransplantSchedule.json" />
+	</ItemGroup>
 
 </Project>
