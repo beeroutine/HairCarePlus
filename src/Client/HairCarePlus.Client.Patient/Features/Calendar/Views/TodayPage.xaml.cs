@@ -36,9 +36,31 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _logger = logger;
                 _logger.LogInformation("TodayPage instance created");
                 
+                // iOS 17+/MAUI 9 already renders selection without gray overlay; no custom fix needed
+                
 #if IOS
-                // Remove default gray highlight on iOS CollectionView cells
-                DateSelectorView?.DisableNativeHighlight();
+                // Workaround: ensure iOS doesn't draw black overlay for selected CollectionView cell
+                if (DateSelectorView != null)
+                {
+                    DateSelectorView.HandlerChanged += (_, __) =>
+                    {
+                        if (DateSelectorView.Handler?.PlatformView is UIKit.UICollectionView ui)
+                        {
+                            void ClearOverlay(UIKit.UICollectionView collection)
+                            {
+                                foreach (var cell in collection.VisibleCells)
+                                    cell.SelectedBackgroundView = new UIKit.UIView { BackgroundColor = UIKit.UIColor.Clear };
+                            }
+
+                            // Apply immediately to currently visible cells
+                            ClearOverlay(ui);
+
+                            // Also clear overlay whenever user scrolls (new cells appear)
+                            DateSelectorView.Scrolled += (_, __) => ClearOverlay(ui);
+                            DateSelectorView.SelectionChanged += (_, __) => ClearOverlay(ui);
+                        }
+                    };
+                }
 #endif
             }
             catch (Exception ex)

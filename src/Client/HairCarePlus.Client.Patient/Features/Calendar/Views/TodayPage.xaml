@@ -34,7 +34,7 @@
                              SnapPointsAlignment="Center"/>
             
             <!-- Date Selector Item Template -->
-            <DataTemplate x:Key="DateTemplate">
+            <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
                 <Grid x:Name="rootContainer" 
                        WidthRequest="55" 
                        HeightRequest="60" 
@@ -214,7 +214,7 @@
                 <StackLayout VerticalOptions="CenterAndExpand" 
                              HorizontalOptions="CenterAndExpand" 
                              Padding="20">
-                    <Image Source="empty_calendar.png"
+                    <Image Source="dotnet_bot.png"
                            WidthRequest="60"
                            HeightRequest="60"
                            Opacity="0.6"

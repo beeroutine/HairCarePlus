@@ -389,7 +389,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Error creating event", ex.Message);
+                    _logger?.LogError(ex, "Error creating event: {Message}", ex.Message);
                     throw;
                 }
             }

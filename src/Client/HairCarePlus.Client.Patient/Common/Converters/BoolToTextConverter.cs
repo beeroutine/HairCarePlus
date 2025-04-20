@@ -4,7 +4,7 @@ namespace HairCarePlus.Client.Patient.Common.Converters
 {
     public class BoolToTextConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is not bool boolValue || parameter is not string param)
                 return string.Empty;
@@ -16,7 +16,7 @@ namespace HairCarePlus.Client.Patient.Common.Converters
             return boolValue ? options[0] : options[1];
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

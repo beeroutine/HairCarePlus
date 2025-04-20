@@ -1200,7 +1200,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                string savedDateString = Preferences.Get(SelectedDateKey, null);
+                string savedDateString = Preferences.Get(SelectedDateKey, string.Empty);
                 if (!string.IsNullOrEmpty(savedDateString) && DateTime.TryParse(savedDateString, out DateTime savedDate))
                 {
                     return savedDate;
@@ -1299,14 +1299,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Get any active restrictions
                 var activeRestrictions = await _calendarService.GetActiveRestrictionsAsync();
                 
-                // Update UI properties based on restrictions
-                HasActiveRestriction = activeRestrictions != null && activeRestrictions.Any();
-                
-                if (HasActiveRestriction && activeRestrictions.Count > 0)
+                // Determine whether we actually have any restrictions in a null‑safe way
+                HasActiveRestriction = activeRestrictions?.Any() == true;
+
+                if (activeRestrictions?.Count > 0)
                 {
                     // Use the most critical restriction if there are multiple
-                    var criticalRestriction = activeRestrictions.FirstOrDefault(r => r.EventType == EventType.CriticalWarning) 
-                                             ?? activeRestrictions.First();
+                    var criticalRestriction = activeRestrictions.FirstOrDefault(r => r.EventType == EventType.CriticalWarning)
+                                             ?? activeRestrictions[0];
                     
                     CurrentRestrictionText = criticalRestriction.Description;
                     
