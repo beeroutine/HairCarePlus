@@ -67,8 +67,8 @@ src/
 ```
 
 ### 1.3 Технологический стек
-- .NET 8
-- .NET MAUI
+- .NET 9 (SDK 9.0.100‑rc.2 or newer)
+- .NET MAUI 9.0
 - ASP.NET Core Web API
 - Entity Framework Core
 - SignalR (реальное время)
@@ -225,7 +225,9 @@ MyCollection = new ObservableCollection<T>(updatedList);
 
 Спасибо за соблюдение принципов HairCare+!
 
-## 1.4 Последние изменения (апрель 2025)
+## 1.4 Последние изменения (сентябрь 2025)
+- Проект обновлён до .NET 9 и .NET MAUI 9 (Minimal SDK version 9.0.100‑rc.2). Часть кода переведена на новые API, устаревшие вызовы обновлены.
+- Обновлены CI‑скрипты и глобальный `global.json`.
 - Завершена базовая реализация модуля **Calendar**: генератор событий, репозиторий `CalendarRepository`, инициализатор `CalendarDataInitializer`. События отображаются в TodayPage.
 - В DI добавлены регистрации `IHairTransplantEventGenerator` и `IDataInitializer`.
 - Исправлена фильтрация однодневных событий без `EndDate`.

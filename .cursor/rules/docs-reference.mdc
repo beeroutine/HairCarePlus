@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# HairCare+ — Основная документация проекта
+
+AI‑ассистенту всегда необходимо учитывать следующие файлы при анализе, навигации и внесении изменений в код:
+
+1. [README.md](mdc:README.md) — общие правила архитектуры, стека и UX.
+2. [todaypage.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/todaypage.md) — подробная документация страницы Today календаря.
+3. [overview.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/overview.md) — обзор модуля Calendar.
+4. [chat.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Chat/doc/chat.md) — документация функции чата.
+
+Следовать:
+• Лучшим практикам .NET MAUI 9 (VisualStateManager, DI, ILogger, x:DataType).
+• Принципам **SOLID** и **KISS**.
+• Clean Architecture, MVVM, CQRS.
+
+Перед изменениями убедитесь, что новые решения не противоречат указанным документам.

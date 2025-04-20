@@ -190,7 +190,7 @@ TodayPage - основная страница календаря в прилож
 
 ### Обновления (июль 2025)
 
-1. Переход на SDK .NET 8.0.405 и MAUI 8.0.7+.
+1. Переход на SDK .NET 9.0.100‑rc.2 и MAUI 9.0+.
    * Исправлен системный серый фон `SelectedBackgroundView` на iOS – больше не требуется кастомный handler.
    * `DateSelectorView` снова использует штатный `SelectionMode="Single"` и двустороннюю привязку `SelectedItem ↔ SelectedDate`.
 

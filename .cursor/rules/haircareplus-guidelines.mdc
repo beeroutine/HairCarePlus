@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# HairCarePlus Development Guidelines
+
+The HairCare+ codebase follows Clean Architecture, MVVM, SOLID, and KISS principles.
+
+Key project rules and architecture details are documented in:
+
+* [README.md](mdc:README.md)
+* [Calendar Today Page](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/todaypage.md)
+* [Calendar Overview](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/overview.md)
+* [Chat Module](mdc:src/Client/HairCarePlus.Client.Patient/Features/Chat/doc/chat.md)
+
+
+Always consult these files when adding or modifying code. Ensure adherence to:
+
+1. Project structure: `src/Client`, `src/Server`, `Shared`.
+2. MAUI 9 best practices: UI in XAML with compiled bindings (x:DataType), business logic in ViewModels, DI via `MauiProgram`, `ILogger<>`.
+3. Naming conventions: `[FeatureName][Type].cs`.
+4. Logging via `ILogger<>`, avoid `Debug.WriteLine`.
+5. Follow UI/UX guidelines for themes, accessibility, and responsiveness.
+
+Additional stack requirements:
+• .NET 9 SDK (9.0.100‑rc.2+) и .NET MAUI 9.
+• Соблюдайте Clean Architecture, MVVM, SOLID, KISS.
+• Перед коммитом запускайте `dotnet test` — ошибок быть не должно.
+
+Use this rule to navigate the primary documentation quickly.
