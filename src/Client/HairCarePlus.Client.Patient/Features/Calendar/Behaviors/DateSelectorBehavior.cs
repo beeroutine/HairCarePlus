@@ -2,6 +2,7 @@ using Microsoft.Maui.Controls;
 using System;
 using System.Linq;
 using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
 {
@@ -114,33 +115,46 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Behaviors
             }
         }
 
-        private void UpdateSelectedItem(DateTime selectedDate)
+        private void UpdateSelectedItem(DateTime selectedDate, int attempt = 0)
         {
             if (_collectionView?.ItemsSource == null) return;
 
-            try 
+            try
             {
                 var items = _collectionView.ItemsSource.Cast<object>().ToList();
                 if (!items.Any()) return;
 
+                bool containerFound = false;
+
                 foreach (var item in items)
                 {
                     bool isSelected = item is DateTime date && date.Date == selectedDate.Date;
-                    
+
                     var container = _collectionView.GetVisualTreeDescendants()
                         .OfType<Grid>()
                         .FirstOrDefault(g => g.BindingContext == item);
 
                     if (container != null)
                     {
+                        containerFound = true;
                         var targetState = isSelected ? "Selected" : "Normal";
                         VisualStateManager.GoToState(container, targetState);
-                        
+
                         if (isSelected)
                         {
                             ScrollToDate(selectedDate);
                         }
                     }
+                }
+
+                // If the container for the selected date is not yet realized, try once more after a short delay
+                if (!containerFound && attempt < 3)
+                {
+                    _collectionView.Dispatcher.Dispatch(async () =>
+                    {
+                        await Task.Delay(120);
+                        UpdateSelectedItem(selectedDate, attempt + 1);
+                    });
                 }
             }
             catch (Exception ex)

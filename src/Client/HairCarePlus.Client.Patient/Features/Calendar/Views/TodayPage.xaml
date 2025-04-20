@@ -39,7 +39,7 @@
                        WidthRequest="55" 
                        HeightRequest="60" 
                        Padding="0" 
-                       Margin="3,0"
+                       Margin="0"
                        BackgroundColor="Transparent">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup Name="CommonStates">
@@ -60,7 +60,6 @@
                                             TargetName="dayText" 
                                             Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
                                     <Setter Property="Scale" Value="1.05" />
-                                    <Setter Property="BackgroundColor" Value="Transparent" />
                                 </VisualState.Setters>
                             </VisualState>
                         </VisualStateGroup>
@@ -303,7 +302,8 @@
                 <!-- Date Selector (Horizontal CollectionView) -->
                 <CollectionView x:Name="DateSelectorView"
                                 ItemsSource="{Binding SelectableDates}"
-                                SelectionMode="None"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
                                 BackgroundColor="Transparent"
                                 ItemTemplate="{StaticResource DateTemplate}"
                                 ItemsLayout="{StaticResource HorizontalLinearLayout}"

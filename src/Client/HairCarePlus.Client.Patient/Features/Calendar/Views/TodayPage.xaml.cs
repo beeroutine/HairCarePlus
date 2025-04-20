@@ -8,6 +8,10 @@ using Microsoft.Maui.Controls;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.ComponentModel;
+using Microsoft.Maui.Handlers;
+#if IOS
+using HairCarePlus.Client.Patient.Platforms.iOS;
+#endif
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -31,6 +35,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
                 _logger = logger;
                 _logger.LogInformation("TodayPage instance created");
+                
+#if IOS
+                // Remove default gray highlight on iOS CollectionView cells
+                DateSelectorView?.DisableNativeHighlight();
+#endif
             }
             catch (Exception ex)
             {
@@ -64,6 +73,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
                 // Ленивая инициализация: вызываем EnsureLoadedAsync (отработает только первый раз)
                 await _viewModel.EnsureLoadedAsync();
+                
+                // Сбрасываем, затем снова задаём значение, чтобы гарантировать событие PropertyChanged
+                _viewModel.ScrollToIndexTarget = null;
+                _viewModel.ScrollToIndexTarget = _viewModel.SelectedDate;
                 
                 // Update visual state for the selected date
                 if (_viewModel != null)
@@ -116,34 +129,63 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (_viewModel?.ScrollToIndexTarget.HasValue ?? false)
             {
                 var targetDate = _viewModel.ScrollToIndexTarget.Value;
-                // Reset the target immediately to prevent re-triggering 
-                // (though Dispatcher might make this less critical, it's safer)
-                _viewModel.ScrollToIndexTarget = null; 
+                // Reset the target immediately to prevent re-triggering
+                _viewModel.ScrollToIndexTarget = null;
 
                 _logger.LogInformation($"HandleScrollToIndexTargetChanged triggered for {targetDate.ToShortDateString()}");
                 try
                 {
                     // Ensure this runs on the UI thread and potentially after a delay
-                    Dispatcher.DispatchAsync(async () => 
-                    {    
+                    Dispatcher.DispatchAsync(async () =>
+                    {
                         // Maybe increase delay slightly more as a precaution?
-                        await Task.Delay(350); 
-                        
-                        const double itemWidth = 55.0;
-                        const double itemSpacing = 5.0;
-                        
+                        await Task.Delay(350); // Keep delay before finding index/item
+
                         // Find index based on the collection bound to DateSelectorView
                         var index = _viewModel?.SelectableDates.IndexOf(targetDate.Date) ?? -1;
                         
-                        if (index >= 0 && DateSelectorView != null && _viewModel != null)
+                        // Find the actual DateTime object in the source collection
+                        var itemToSelect = _viewModel?.SelectableDates.FirstOrDefault(d => d.Date == targetDate.Date);
+
+                        if (index >= 0 && DateSelectorView != null && _viewModel != null && itemToSelect != default(DateTime))
                         {
+                            // Set SelectedItem *before* scrolling
+                            _logger.LogInformation($"Setting DateSelectorView.SelectedItem to {((DateTime)itemToSelect).ToShortDateString()} BEFORE scrolling.");
+                            DateSelectorView.SelectedItem = itemToSelect;
+
+                            // Allow potential UI updates from setting SelectedItem
+                            await Task.Delay(50); 
+
                             _logger.LogInformation($"Scrolling DateSelectorView to index {index} for {targetDate.ToShortDateString()}");
                             // Use CollectionView.ScrollTo with index and specify position
                             DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
+
+                            // Try up to 3 times to apply visual state while container materializes
+                            for (int attempt = 0; attempt < 3; attempt++)
+                            {
+                                await Task.Delay(120); // give UI time
+                                UpdateSelectedDateVisualState(targetDate);
+                                // If visual state applied (container found) we можем выйти
+                                // Quick check: if any visible container now matches selected date and is in Selected state.
+                                var hasApplied = DateSelectorView.LogicalChildren
+                                    .OfType<Grid>()
+                                    .Any(g => g.BindingContext is DateTime dt && dt.Date == targetDate.Date && VisualStateManager.GetVisualStateGroups(g)?.FirstOrDefault()?.CurrentState?.Name == "Selected");
+                                if (hasApplied)
+                                {
+                                    break;
+                                }
+                            }
                         }
                         else
                         {
-                            _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelectorView is null or ViewModel is null.");
+                             if (itemToSelect == default(DateTime))
+                             {
+                                 _logger.LogWarning($"Could not find the DateTime object for {targetDate.ToShortDateString()} in SelectableDates to set SelectedItem.");
+                             }
+                             else
+                             {
+                                 _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelectorView/ViewModel is null.");
+                             }
                         }
                     });
                 }

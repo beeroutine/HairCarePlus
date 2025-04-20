@@ -188,4 +188,18 @@ TodayPage - основная страница календаря в прилож
 * `EnableSensitiveDataLogging()` активен только в `#if DEBUG`.
 * В Release‑сборке чувствительные данные не логируются.
 
+### Обновления (июль 2025)
+
+1. Переход на SDK .NET 8.0.405 и MAUI 8.0.7+.
+   * Исправлен системный серый фон `SelectedBackgroundView` на iOS – больше не требуется кастомный handler.
+   * `DateSelectorView` снова использует штатный `SelectionMode="Single"` и двустороннюю привязку `SelectedItem ↔ SelectedDate`.
+
+2. Центрирование на сегодняшней дате при запуске.
+   * `TodayViewModel.ScrollToIndexTarget` устанавливается в `SelectedDate`, а `TodayPage` ― обрабатывает событие и скроллит `CollectionView` к центру.
+   * Команда `GoToTodayCommand` привязана к круглому индикатору даты и сбрасывает выбор к текущему дню.
+
+3. Удалена временная обработка `DateSelectorView_SelectionChanged` из кода‑behind ‑ вся логика выделения и прокрутки теперь в ViewModel + VisualStateManager.
+
+4. Документация обновлена: описан фикс серого оверлея, актуальные версии SDK и упрощённый механизм выделения.
+
 --- 

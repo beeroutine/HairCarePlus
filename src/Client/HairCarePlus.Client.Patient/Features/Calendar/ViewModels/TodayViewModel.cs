@@ -37,9 +37,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private double _completionProgress;
         private int _completionPercentage;
         private bool _isLoadingMore;
-        private const int InitialDaysToLoad = 365; // Было 90, теперь 365 дней (1 год)
-        private const int DaysToLoadMore = 60; // Changed from 30 to 60 days (2 months)
-        private const int MaxTotalDays = 365; // New constant to prevent memory issues
+        private const int PreDaysToLoad = 30; // количество дней ДО операции/сегодня
+        private const int InitialDaysToLoad = 365; // дни ВПЕРЁД (1 год)
+        private const int DaysToLoadMore = 60; // подгрузка вперёд
+        private const int MaxTotalDays = PreDaysToLoad + InitialDaysToLoad + 365; // расширенный лимит (≈2 года)
         private DateTime _lastLoadedDate;
 
         // New fields for enhanced functionality
@@ -163,8 +164,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _progressCalculator = progressCalculator;
             _logger = logger;
             
-            // Restore saved date or use today
-            _selectedDate = LoadLastSelectedDate() ?? DateTime.Today;
+            // Всегда начинаем с сегодняшней даты (игнорируем сохранённое состояние прошлой сессии)
+            _selectedDate = DateTime.Today;
+            // Задаём цель прокрутки, чтобы горизонтальный календарь сразу отцентровался на сегодня
+            ScrollToIndexTarget = _selectedDate;
             _lastLoadedDate = DateTime.Today.AddDays(30); // Initial last loaded date
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
@@ -353,13 +356,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _logger.LogInformation("Starting LoadCalendarDays");
                 
-                // Начинаем с сегодняшней даты
-                var startDate = DateTime.Today;
+                // Начальная точка на PreDaysToLoad дней раньше сегодняшнего дня
+                var startDate = DateTime.Today.AddDays(-PreDaysToLoad);
                 _logger.LogInformation($"Start date: {startDate:yyyy-MM-dd}");
 
-                // Генерируем даты на год вперёд
+                // Генерируем диапазон: PreDaysToLoad назад + InitialDaysToLoad вперёд
                 var days = new List<DateTime>();
-                for (int i = 0; i < InitialDaysToLoad; i++)
+                var totalToGenerate = PreDaysToLoad + InitialDaysToLoad;
+                for (int i = 0; i < totalToGenerate; i++)
                 {
                     days.Add(startDate.AddDays(i));
                 }

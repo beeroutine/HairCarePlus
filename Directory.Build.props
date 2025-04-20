@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Единая версия NuGet‑пакетов Microsoft.Maui.* для всех проектов (последний патч 8.x) -->
+    <MauiVersion>8.*</MauiVersion>
+  </PropertyGroup>
+</Project> 
