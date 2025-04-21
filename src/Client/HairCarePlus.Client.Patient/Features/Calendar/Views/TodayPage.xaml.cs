@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.ComponentModel;
 using Microsoft.Maui.Handlers;
+using HairCarePlus.Client.Patient.Common.Utils;
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
@@ -18,7 +19,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     public partial class TodayPage : ContentPage
     {
         private readonly ILogger<TodayPage> _logger;
-        private TodayViewModel _viewModel;
+        private TodayViewModel? _viewModel;
         
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -87,27 +88,36 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             
             try
             {
-                // Clear the CollectionView selection when the page appears
+                // Set SelectedItem explicitly before loading ensures the binding is established
+                if (DateSelectorView != null && (DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
+                {
+                    _logger.LogDebug("Explicitly setting DateSelectorView.SelectedItem in OnAppearing");
+                    DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                }
+                
+                await _viewModel.EnsureLoadedAsync();
+                _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
+
+                await Task.Delay(150); // Delay for UI rendering
+                _logger.LogDebug("Delay completed in OnAppearing");
+                
+                // Scroll the horizontal calendar to center the selected date after data loading
                 if (DateSelectorView != null)
                 {
-                    DateSelectorView.SelectedItem = null;
-                }
-                
-                // Ленивая инициализация: вызываем EnsureLoadedAsync (отработает только первый раз)
-                await _viewModel.EnsureLoadedAsync();
-                
-                // Сбрасываем, затем снова задаём значение, чтобы гарантировать событие PropertyChanged
-                _viewModel.ScrollToIndexTarget = null;
-                _viewModel.ScrollToIndexTarget = _viewModel.SelectedDate;
-                
-                // Update visual state for the selected date
-                if (_viewModel != null)
-                {
-                    UpdateSelectedDateVisualState(_viewModel.SelectedDate);
-                }
-                else
-                {
-                    _logger.LogWarning("ViewModel is null in OnAppearing, cannot update selected date visual state.");
+                    try
+                    {
+                        _logger.LogDebug("Attempting ScrollTo in OnAppearing for date: {SelectedDate}", _viewModel.SelectedDate);
+                        DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        _logger.LogDebug("ScrollTo completed in OnAppearing");
+                        
+                        // Explicitly update visual states for visible items after scroll
+                        await Task.Delay(50); // Short delay after scroll completes
+                        UpdateVisibleItemStates(); 
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Error scrolling DateSelectorView or updating states in OnAppearing");
+                    }
                 }
                 _logger.LogInformation("TodayPage OnAppearing completed");
             }
@@ -129,152 +139,58 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
+        private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
-            if (e == null || _viewModel == null) return;
-            
-            // Когда SelectedDate изменяется, обновляем визуальное состояние
-            if (e.PropertyName == nameof(TodayViewModel.SelectedDate))
+            if (e?.PropertyName == nameof(TodayViewModel.SelectedDate) && DateSelectorView != null && _viewModel != null)
             {
-                UpdateSelectedDateVisualState(_viewModel.SelectedDate);
-            }
-            
-            // Check if the scroll target property changed
-            if (e.PropertyName == nameof(TodayViewModel.ScrollToIndexTarget))
-            {
-                HandleScrollToIndexTargetChanged();
-            }
-        }
-        
-        private void HandleScrollToIndexTargetChanged()
-        {
-            if (_viewModel?.ScrollToIndexTarget.HasValue ?? false)
-            {
-                var targetDate = _viewModel.ScrollToIndexTarget.Value;
-                // Reset the target immediately to prevent re-triggering
-                _viewModel.ScrollToIndexTarget = null;
-
-                _logger.LogInformation($"HandleScrollToIndexTargetChanged triggered for {targetDate.ToShortDateString()}");
-                try
+                _logger.LogDebug("ViewModel SelectedDate changed to {SelectedDate}, updating UI.", _viewModel.SelectedDate);
+                
+                // Binding should handle setting SelectedItem, but setting explicitly can be safer
+                if ((DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
                 {
-                    // Ensure this runs on the UI thread and potentially after a delay
-                    Dispatcher.DispatchAsync(async () =>
-                    {
-                        // Maybe increase delay slightly more as a precaution?
-                        await Task.Delay(350); // Keep delay before finding index/item
-
-                        // Find index based on the collection bound to DateSelectorView
-                        var index = _viewModel?.SelectableDates.IndexOf(targetDate.Date) ?? -1;
-                        
-                        // Find the actual DateTime object in the source collection
-                        var itemToSelect = _viewModel?.SelectableDates.FirstOrDefault(d => d.Date == targetDate.Date);
-
-                        if (index >= 0 && DateSelectorView != null && _viewModel != null && itemToSelect != default(DateTime))
-                        {
-                            // Set SelectedItem *before* scrolling
-                            _logger.LogInformation($"Setting DateSelectorView.SelectedItem to {((DateTime)itemToSelect).ToShortDateString()} BEFORE scrolling.");
-                            DateSelectorView.SelectedItem = itemToSelect;
-
-                            // Allow potential UI updates from setting SelectedItem
-                            await Task.Delay(50); 
-
-                            _logger.LogInformation($"Scrolling DateSelectorView to index {index} for {targetDate.ToShortDateString()}");
-                            // Use CollectionView.ScrollTo with index and specify position
-                            DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
-
-                            // Try up to 3 times to apply visual state while container materializes
-                            for (int attempt = 0; attempt < 3; attempt++)
-                            {
-                                await Task.Delay(120); // give UI time
-                                UpdateSelectedDateVisualState(targetDate);
-                                // If visual state applied (container found) we можем выйти
-                                // Quick check: if any visible container now matches selected date and is in Selected state.
-                                var hasApplied = DateSelectorView.LogicalChildren
-                                    .OfType<Grid>()
-                                    .Any(g => g.BindingContext is DateTime dt && dt.Date == targetDate.Date && VisualStateManager.GetVisualStateGroups(g)?.FirstOrDefault()?.CurrentState?.Name == "Selected");
-                                if (hasApplied)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                             if (itemToSelect == default(DateTime))
-                             {
-                                 _logger.LogWarning($"Could not find the DateTime object for {targetDate.ToShortDateString()} in SelectableDates to set SelectedItem.");
-                             }
-                             else
-                             {
-                                 _logger.LogWarning($"Could not find index for target date ({targetDate.ToShortDateString()}) or DateSelectorView/ViewModel is null.");
-                             }
-                        }
-                    });
+                     DateSelectorView.SelectedItem = _viewModel.SelectedDate;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error handling ScrollToIndexTarget change.");
-                }
+                
+                // Scroll to the item
+                DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: true);
+                
+                // Add delay and explicit state update after scroll completes
+                await Task.Delay(200); // Slightly longer delay for animated scroll
+                UpdateVisibleItemStates();
             }
         }
         
-        private void UpdateSelectedDateVisualState(DateTime? selectedDate)
+        /// <summary>
+        /// Iterates through visible cells in DateSelectorView and applies Normal/Selected state.
+        /// </summary>
+        private void UpdateVisibleItemStates()
         {
-            if (selectedDate == null)
-                return;
-                
-            try
-            {
-#if DEBUG
-                _logger?.LogDebug("UpdateSelectedDateVisualState called for date: {Date}", selectedDate.Value.ToShortDateString());
-#endif
-                
-                // Use the new DateSelectorView name
-                if (DateSelectorView == null || DateSelectorView.ItemTemplate == null)
+             if (DateSelectorView == null || _viewModel == null) return;
+             
+             _logger.LogDebug("Updating visual states for visible items. Target SelectedDate: {SelectedDate}", _viewModel.SelectedDate);
+             int updatedCount = 0;
+             try
+             {
+                foreach (var visual in DateSelectorView.VisibleCells())
                 {
-#if DEBUG
-                    _logger?.LogDebug("ItemTemplate or DateSelectorView is null");
-#endif
-                    return;
-                }
-
-                // Get visible containers from DateSelectorView
-                var visibleContainers = DateSelectorView.LogicalChildren
-                    .OfType<Grid>() // DateTemplate root is Grid
-                    .Where(g => g.BindingContext is DateTime && g.IsVisible)
-                    .ToList();
-
-                if (!visibleContainers.Any())
-                {
-#if DEBUG
-                    _logger?.LogDebug("No visible containers found");
-#endif
-                    return;
-                }
-                
-                foreach (var container in visibleContainers)
-                {
-                    if (container.BindingContext is DateTime containerDate)
+                    if (visual?.BindingContext is DateTime itemDate)
                     {
-                        bool isSelected = containerDate.Date == selectedDate.Value.Date;
-                        
-                        // Only log if selected to reduce noise
-                        if (isSelected)
-                        {
-#if DEBUG
-                            _logger?.LogDebug("Updating container for date: {Date}, IsSelected: {IsSelected}", containerDate.ToShortDateString(), isSelected);
-#endif
-                        }
-                        
-                        var visualState = isSelected ? "Selected" : "Normal";
-                        VisualStateManager.GoToState(container, visualState);
+                        var targetState = itemDate.Date == _viewModel.SelectedDate.Date ? "Selected" : "Normal";
+                        // _logger.LogTrace("Applying state '{TargetState}' to visual for date {ItemDate}", targetState, itemDate.ToShortDateString());
+                        VisualStateManager.GoToState(visual, targetState);
+                        updatedCount++;
+                    }
+                    else
+                    {
+                       // _logger.LogWarning("Visible cell found with null or non-DateTime BindingContext: {BindingContext}", visual?.BindingContext);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Exception in UpdateSelectedDateVisualState");
-            }
+                _logger.LogDebug("Finished updating visual states for {UpdatedCount} visible items.", updatedCount);
+             }
+             catch (Exception ex)
+             {
+                 _logger.LogError(ex, "Error updating visible item states.");
+             }
         }
         
         private void OnCheckBoxChanged(object? sender, CheckedChangedEventArgs e)

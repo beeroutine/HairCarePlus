@@ -148,14 +148,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        // New property to signal scroll target
-        private DateTime? _scrollToIndexTarget;
-        public DateTime? ScrollToIndexTarget
-        {
-            get => _scrollToIndexTarget;
-            set => SetProperty(ref _scrollToIndexTarget, value);
-        }
-
         public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
@@ -166,8 +158,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             
             // Всегда начинаем с сегодняшней даты (игнорируем сохранённое состояние прошлой сессии)
             _selectedDate = DateTime.Today;
-            // Задаём цель прокрутки, чтобы горизонтальный календарь сразу отцентровался на сегодня
-            ScrollToIndexTarget = _selectedDate;
             _lastLoadedDate = DateTime.Today.AddDays(30); // Initial last loaded date
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
@@ -1106,9 +1096,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 OnPropertyChanged(nameof(SelectedDate));
                 OnPropertyChanged(nameof(FormattedSelectedDate));
 
-                // Уведомляем о выбранной дате и вызываем ScrollToIndexTarget для центрирования
-                ScrollToIndexTarget = date;
-                
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
 
@@ -1248,11 +1235,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Set SelectedDate to trigger event loading and UI updates
                 SelectedDate = DateTime.Today;
 
-                // Set the target property to trigger scroll in the View
-                ScrollToIndexTarget = DateTime.Today;
-                // Log the value safely BEFORE it might be reset by the handler
-                _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
-                
                 // Make sure the date gets visually selected in the DateSelector
                 // by explicitly raising property changed for SelectedDate
                 OnPropertyChanged(nameof(SelectedDate));

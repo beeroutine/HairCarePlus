@@ -5,7 +5,7 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:system="clr-namespace:System;assembly=netstandard"
-             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Behaviors"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
@@ -41,29 +41,7 @@
                        Padding="0" 
                        Margin="0"
                        BackgroundColor="Transparent">
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal">
-                                <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="Transparent" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState Name="Selected">
-                                <VisualState.Setters>
-                                    <Setter Property="Frame.BackgroundColor" 
-                                            TargetName="dayFrame" 
-                                            Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                    <Setter Property="Frame.BorderColor" 
-                                            TargetName="dayFrame" 
-                                            Value="Transparent" />
-                                    <Setter Property="Label.TextColor" 
-                                            TargetName="dayText" 
-                                            Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                                    <Setter Property="Scale" Value="1.05" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
+                    <!-- VSM moved into frame to avoid XAMLC TargetName issues -->
                     
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -86,8 +64,8 @@
                           Padding="0"
                           WidthRequest="40"
                           HeightRequest="40"
-                          BackgroundColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
-                          BorderColor="Transparent"
+                          BackgroundColor="Transparent"
+                          BorderColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
                           HorizontalOptions="Center"
                           VerticalOptions="Center"
                           Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
@@ -136,14 +114,33 @@
                     </HorizontalStackLayout>
                     
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
-                            CommandParameter="{Binding .}" />
+                        <!-- REMOVED: The TapGestureRecognizer below was redundant as selection is handled by CollectionView.SelectedItem -->
                         <TapGestureRecognizer 
                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
                             CommandParameter="{Binding .}"
                             NumberOfTapsRequired="2" />
                     </Grid.GestureRecognizers>
+
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup Name="CommonStates">
+                            <VisualState Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter Property="BackgroundColor" Value="Transparent" />
+                                    <Setter TargetName="dayFrame" Property="Frame.BackgroundColor" Value="Transparent" />
+                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}" /> 
+                                    <Setter Property="Scale" Value="1.0" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState Name="Selected">
+                                <VisualState.Setters>
+                                    <Setter TargetName="dayFrame" Property="Frame.BackgroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                    <Setter TargetName="dayFrame" Property="Frame.BorderColor" Value="Transparent" />
+                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+                                    <Setter Property="Scale" Value="1.05" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
                 </Grid>
             </DataTemplate>
 
@@ -238,7 +235,7 @@
                Margin="0"
                Padding="0"
                HasShadow="False">
-            <VerticalStackLayout Padding="16,8,16,12" Spacing="12">
+            <VerticalStackLayout Padding="16,8,16,0" Spacing="4">
                 <!-- Updated Header Design: Date Circle Left, Month/Year Right -->
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8" VerticalOptions="Center">
                     <!-- COL 0: Date Circle -->
@@ -282,7 +279,7 @@
                     </Grid>
 
                     <!-- COL 1: Month (Large) and Year (Small) Right Aligned -->
-                    <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center">
+                    <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" TranslationY="20">
                         <Label.FormattedText>
                             <FormattedString>
                                 <Span Text="{Binding SelectedDate, StringFormat='{0:MMMM}'}" 
@@ -301,9 +298,9 @@
 
                 <!-- Date Selector (Horizontal CollectionView) -->
                 <CollectionView x:Name="DateSelectorView"
-                                ItemsSource="{Binding SelectableDates}"
                                 SelectionMode="Single"
                                 SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
+                                ItemsSource="{Binding SelectableDates}"
                                 BackgroundColor="Transparent"
                                 ItemTemplate="{StaticResource DateTemplate}"
                                 ItemsLayout="{StaticResource HorizontalLinearLayout}"
@@ -311,9 +308,7 @@
                                 HorizontalScrollBarVisibility="Never"
                                 VerticalScrollBarVisibility="Never">
                     <CollectionView.Behaviors>
-                        <behaviors:DateSelectorBehavior 
-                            SelectedDate="{Binding SelectedDate}" 
-                            ScrollToTargetDate="{Binding ScrollToIndexTarget}" />
+                        <behaviors:CollectionViewSelectionStateBehavior />
                     </CollectionView.Behaviors>
                 </CollectionView>
                                 
