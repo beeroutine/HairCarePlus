@@ -148,6 +148,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
+        private DateTime _visibleDate;
+        /// <summary>
+        /// Date used for displaying current month/year in header. It updates when user scrolls horizontally or selects a date.
+        /// </summary>
+        public DateTime VisibleDate
+        {
+            get => _visibleDate;
+            set
+            {
+                if (SetProperty(ref _visibleDate, value))
+                {
+                    OnPropertyChanged(nameof(CurrentMonthName));
+                    OnPropertyChanged(nameof(CurrentYear));
+                }
+            }
+        }
+
         public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger)
         {
             _calendarService = calendarService;
@@ -169,6 +186,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _loadingStatus = string.Empty;
             _loadingState = LoadingState.NotStarted;
             Title = "Today";
+            
+            VisibleDate = _selectedDate; // initialize visible date for header
             
             // Initialize commands
             RefreshCommand = new Command(async () => await RefreshDataAsync());
@@ -215,12 +234,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 #if DEBUG
                     Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
 #endif
+                    // Update events for selected date
                     Task.Run(async () => 
                     {
                         await LoadTodayEventsAsync();
-                        // Сохраняем выбранную дату при каждом изменении
+                        // Save selected date between sessions
                         SaveSelectedDate(value);
                     });
+
+                    // Update VisibleDate month/year if month or year differs from current
+                    if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
+                    {
+                        VisibleDate = value;
+                    }
+
                     OnPropertyChanged(nameof(FormattedSelectedDate));
                     OnPropertyChanged(nameof(CurrentMonthName));
                     OnPropertyChanged(nameof(CurrentYear));
@@ -232,9 +259,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public string FormattedTodayDate => DateTime.Today.ToString("ddd, MMM d");
         
-        public string CurrentMonthName => SelectedDate.ToString("MMMM");
+        public string CurrentMonthName => VisibleDate.ToString("MMMM");
         
-        public string CurrentYear => SelectedDate.ToString("yyyy");
+        public string CurrentYear => VisibleDate.ToString("yyyy");
         
         public ObservableCollection<DateTime> CalendarDays
         {

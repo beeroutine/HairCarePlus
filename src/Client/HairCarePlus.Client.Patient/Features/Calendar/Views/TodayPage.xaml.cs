@@ -13,6 +13,7 @@ using HairCarePlus.Client.Patient.Common.Utils;
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
+using System.Threading;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -20,6 +21,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
     {
         private readonly ILogger<TodayPage> _logger;
         private TodayViewModel? _viewModel;
+        private bool _isUpdatingFromScroll = false; // flag to avoid recursive scroll/selection updates
+        private bool _ignoreNextScrollEvent = false; // skip header update for programmatic scroll
+        private CancellationTokenSource? _headerUpdateCts; // debounce token for month header update
+        private DateTime _pendingVisibleDate;
+        
+        private bool _headerLocked = false; // lock header updates during programmatic animation until next user gesture
         
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -63,6 +70,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     };
                 }
 #endif
+
+                // Hook scrolling event to keep Month/Year header in sync when user swipes the horizontal calendar
+                if (DateSelectorView != null)
+                {
+                    DateSelectorView.Scrolled += OnDateSelectorScrolled;
+                }
             }
             catch (Exception ex)
             {
@@ -98,6 +111,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 await _viewModel.EnsureLoadedAsync();
                 _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
 
+                // Ensure header reflects today's month/year immediately
+                _viewModel.VisibleDate = _viewModel.SelectedDate;
+
                 await Task.Delay(150); // Delay for UI rendering
                 _logger.LogDebug("Delay completed in OnAppearing");
                 
@@ -107,7 +123,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     try
                     {
                         _logger.LogDebug("Attempting ScrollTo in OnAppearing for date: {SelectedDate}", _viewModel.SelectedDate);
-                        DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        _ignoreNextScrollEvent = false;
+                        _ = CenterSelectedDateAsync();
                         _logger.LogDebug("ScrollTo completed in OnAppearing");
                         
                         // Explicitly update visual states for visible items after scroll
@@ -137,6 +154,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
+
+            // cancel any pending header update to avoid memory leaks
+            _headerUpdateCts?.Cancel();
+            _headerUpdateCts = null;
         }
         
         private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
@@ -151,8 +172,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                      DateSelectorView.SelectedItem = _viewModel.SelectedDate;
                 }
                 
-                // Scroll to the item
-                DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: true);
+                // Start programmatic centering with freeze for ANY tapped date
+                _headerLocked = true;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(450); // assume default animation length
+                        await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                        {
+                            _headerLocked = false;
+                            _viewModel.VisibleDate = _viewModel.SelectedDate;
+                        });
+                    }
+                    catch (TaskCanceledException) { }
+                });
+                
+                // Scroll to the item with animation; freeze prevents header flicker
+                _ignoreNextScrollEvent = true;
+                _ = CenterSelectedDateAsync();
                 
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
@@ -256,6 +294,93 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling event tap.");
+            }
+        }
+
+        private void OnDateSelectorScrolled(object? sender, ItemsViewScrolledEventArgs e)
+        {
+            try
+            {
+                _logger.LogTrace("Scrolled: first={First}, last={Last}, delta={Delta}, freeze={Freeze}, prog={Prog}", e.FirstVisibleItemIndex, e.LastVisibleItemIndex, e.HorizontalDelta, _headerLocked, _ignoreNextScrollEvent);
+                if (_ignoreNextScrollEvent)
+                {
+                    _ignoreNextScrollEvent = false;
+                    return;
+                }
+
+                if (_headerLocked)
+                {
+                    return; // ignore updates during freeze
+                }
+
+                if (_isUpdatingFromScroll) return; // guard against reentrancy
+                if (DateSelectorView == null || _viewModel == null) return;
+
+                var list = _viewModel.SelectableDates;
+                if (e.FirstVisibleItemIndex < 0 || e.LastVisibleItemIndex < 0 ||
+                    e.FirstVisibleItemIndex >= list.Count || e.LastVisibleItemIndex >= list.Count) return;
+
+                // Determine central index of visible range
+                int centerIdx = e.CenterItemIndex;
+                if (centerIdx < 0)
+                {
+                    centerIdx = (e.FirstVisibleItemIndex + e.LastVisibleItemIndex) / 2;
+                }
+                if (centerIdx < 0 || centerIdx >= list.Count) return;
+
+                var candidate = list[centerIdx];
+                _logger.LogTrace("Candidate date for header: {Candidate}", candidate.ToShortDateString());
+
+                if (!_headerLocked && (candidate.Month != _viewModel.VisibleDate.Month || candidate.Year != _viewModel.VisibleDate.Year))
+                {
+                    // Debounce header update 120ms
+                    _pendingVisibleDate = candidate;
+                    _headerUpdateCts?.Cancel();
+                    _headerUpdateCts = new CancellationTokenSource();
+                    var token = _headerUpdateCts.Token;
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(120, token);
+                            if (token.IsCancellationRequested) return;
+                            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                            {
+                                _isUpdatingFromScroll = true;
+                                _viewModel.VisibleDate = _pendingVisibleDate;
+                                _isUpdatingFromScroll = false;
+                            });
+                        }
+                        catch (TaskCanceledException) { }
+                    }, token);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in OnDateSelectorScrolled");
+            }
+        }
+
+        private async Task CenterSelectedDateAsync()
+        {
+            if (DateSelectorView == null || _viewModel == null) return;
+            try
+            {
+                _headerLocked = true;
+                // CollectionView in .NET MAUI 9 exposes synchronous ScrollTo* methods (no *Async overload).
+                // We therefore invoke the non‑async overload and immediately yield control so that callers
+                // can still await this method without blocking the UI thread.
+                DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: true);
+                await Task.Yield(); // ensure asynchronous signature is preserved
+            }
+            catch(Exception ex)
+            {
+                _logger?.LogError(ex, "Error centering date");
+            }
+            finally
+            {
+                _viewModel.VisibleDate = _viewModel.SelectedDate;
+                _headerLocked = false;
             }
         }
     }

@@ -282,12 +282,12 @@
                     <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" TranslationY="20">
                         <Label.FormattedText>
                             <FormattedString>
-                                <Span Text="{Binding SelectedDate, StringFormat='{0:MMMM}'}" 
+                                <Span Text="{Binding CurrentMonthName}" 
                                       FontSize="28" 
                                       FontAttributes="Bold" 
                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
                                 <Span Text=" "/>
-                                <Span Text="{Binding SelectedDate.Year}" 
+                                <Span Text="{Binding CurrentYear}" 
                                       FontSize="18" 
                                       FontAttributes="None" 
                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
