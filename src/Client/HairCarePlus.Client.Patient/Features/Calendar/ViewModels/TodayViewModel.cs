@@ -1260,11 +1260,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _logger.LogInformation("GoToTodayCommand executed.");
                 // Set SelectedDate to trigger event loading and UI updates
-                SelectedDate = DateTime.Today;
+                var today = DateTime.Today;
+                SelectedDate = today;
+                VisibleDate = today; // Explicitly update VisibleDate as well
 
                 // Make sure the date gets visually selected in the DateSelector
                 // by explicitly raising property changed for SelectedDate
                 OnPropertyChanged(nameof(SelectedDate));
+                // Explicitly notify that VisibleDate changed too
+                OnPropertyChanged(nameof(VisibleDate)); 
             }
             catch (Exception ex)
             {

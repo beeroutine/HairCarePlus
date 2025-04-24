@@ -72,9 +72,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 #endif
 
                 // Hook scrolling event to keep Month/Year header in sync when user swipes the horizontal calendar
+                // RESTORED: Hook scroll event again
                 if (DateSelectorView != null)
                 {
-                    DateSelectorView.Scrolled += OnDateSelectorScrolled;
+                   DateSelectorView.Scrolled += OnDateSelectorScrolled;
                 }
             }
             catch (Exception ex)
@@ -156,8 +157,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
 
             // cancel any pending header update to avoid memory leaks
-            _headerUpdateCts?.Cancel();
-            _headerUpdateCts = null;
+            // RESTORED: Cancellation logic for debounce token
+             _headerUpdateCts?.Cancel();
+             _headerUpdateCts = null;
         }
         
         private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
@@ -172,29 +174,36 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                      DateSelectorView.SelectedItem = _viewModel.SelectedDate;
                 }
                 
-                // Start programmatic centering with freeze for ANY tapped date
-                _headerLocked = true;
-                _ = Task.Run(async () =>
+                // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
-                    try
-                    {
-                        await Task.Delay(450); // assume default animation length
-                        await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
-                        {
-                            _headerLocked = false;
-                            _viewModel.VisibleDate = _viewModel.SelectedDate;
-                        });
-                    }
-                    catch (TaskCanceledException) { }
+                  _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });
                 
-                // Scroll to the item with animation; freeze prevents header flicker
-                _ignoreNextScrollEvent = true;
-                _ = CenterSelectedDateAsync();
+                // RESTORED: Locking mechanism for scroll handler during animation
+                 _headerLocked = true;
+                 _ = Task.Run(async () =>
+                 {
+                     try
+                     {
+                         await Task.Delay(650); // Increased delay for animation + settling
+                         await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                         {
+                             // Unlock header updates after animation finishes
+                             _headerLocked = false;
+                         });
+                     }
+                     catch (TaskCanceledException) { }
+                 });
+                
+                // Scroll to the item with animation
+                // RESTORED: Flag to ignore the first scroll event from programmatic scroll
+                 _ignoreNextScrollEvent = true; 
+                 _ = CenterSelectedDateAsync(); // Still scroll to center
                 
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
-                UpdateVisibleItemStates();
+                UpdateVisibleItemStates(); // Keep this to ensure visual selection is correct
             }
         }
         
@@ -297,6 +306,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
 
+        // RESTORED: Method OnDateSelectorScrolled(object? sender, ItemsViewScrolledEventArgs e)
         private void OnDateSelectorScrolled(object? sender, ItemsViewScrolledEventArgs e)
         {
             try
@@ -366,7 +376,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             if (DateSelectorView == null || _viewModel == null) return;
             try
             {
-                _headerLocked = true;
                 // CollectionView in .NET MAUI 9 exposes synchronous ScrollTo* methods (no *Async overload).
                 // We therefore invoke the non‑async overload and immediately yield control so that callers
                 // can still await this method without blocking the UI thread.
@@ -376,11 +385,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             catch(Exception ex)
             {
                 _logger?.LogError(ex, "Error centering date");
-            }
-            finally
-            {
-                _viewModel.VisibleDate = _viewModel.SelectedDate;
-                _headerLocked = false;
             }
         }
     }
