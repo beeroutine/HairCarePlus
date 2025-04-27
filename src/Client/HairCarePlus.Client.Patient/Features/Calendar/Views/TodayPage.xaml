@@ -235,69 +235,109 @@
                Margin="0"
                Padding="0"
                HasShadow="False">
-            <VerticalStackLayout Padding="16,8,16,0" Spacing="4">
-                <!-- Updated Header Design: Date Circle Left, Month/Year Right -->
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,16,0,8" VerticalOptions="Center">
-                    <!-- COL 0: Date Circle -->
-                    <Grid Grid.Column="0"
-                          HorizontalOptions="Start"
-                          VerticalOptions="Center"
-                          WidthRequest="{StaticResource CircleSize}"
-                          HeightRequest="{StaticResource CircleSize}">
-                        
-                        <!-- Добавляем распознаватель жестов для прокрутки к сегодняшней дате -->
-                        <Grid.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding GoToTodayCommand}" />
-                        </Grid.GestureRecognizers>
-                          
-                        <!-- Background Circle -->
-                        <Border StrokeShape="Ellipse"
-                               Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
-                               StrokeThickness="4"
-                               BackgroundColor="Transparent"
-                               WidthRequest="{StaticResource CircleSize}"
-                               HeightRequest="{StaticResource CircleSize}"/>
-                               
-                        <!-- Progress Circle - Placeholder for actual progress binding -->
-                        <!-- Assuming you have progress logic, bind SkiaSharp or similar here -->
-                        <!-- <skia:SKCanvasView ... /> -->
-                               
-                        <!-- Day Number and Day Name -->
-                        <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
-                            <!-- Дата всегда показывает сегодняшний день -->
-                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
-                                   FontSize="32" 
-                                   FontAttributes="Bold" 
-                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                                   HorizontalTextAlignment="Center"/>
-                            <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}" 
-                                   FontSize="14" 
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                                   HorizontalTextAlignment="Center"
-                                   Margin="0,-5,0,0"/>
-                        </VerticalStackLayout>
-                    </Grid>
+            <!-- Header structured as Grid: Row0 = restrictions, Row1 = circle/month, Row2 = horizontal calendar -->
+            <Grid x:Name="HeaderGrid"
+                  Padding="16,8,16,0"
+                  RowDefinitions="Auto,Auto,Auto">
 
-                    <!-- COL 1: Month (Large) and Year (Small) Right Aligned -->
-                    <Label Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" TranslationY="20">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="{Binding CurrentMonthName}" 
-                                      FontSize="28" 
-                                      FontAttributes="Bold" 
-                                      TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                                <Span Text=" "/>
-                                <Span Text="{Binding CurrentYear}" 
-                                      FontSize="18" 
-                                      FontAttributes="None" 
-                                      TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
-                </Grid>
+                <!-- Single row header: left = circle, right = vertical stack (restrictions + month/year) -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,4,0,8" VerticalOptions="Center">
+                     <!-- COL 0: Date Circle -->
+                     <Grid Grid.Column="0"
+                           HorizontalOptions="Start"
+                           VerticalOptions="Center"
+                           WidthRequest="{StaticResource CircleSize}"
+                           HeightRequest="{StaticResource CircleSize}">
+                         
+                         <!-- Добавляем распознаватель жестов для прокрутки к сегодняшней дате -->
+                         <Grid.GestureRecognizers>
+                             <TapGestureRecognizer Command="{Binding GoToTodayCommand}" />
+                         </Grid.GestureRecognizers>
+                           
+                         <!-- Background Circle -->
+                         <Border StrokeShape="Ellipse"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                                StrokeThickness="4"
+                                BackgroundColor="Transparent"
+                                WidthRequest="{StaticResource CircleSize}"
+                                HeightRequest="{StaticResource CircleSize}"/>
+                                    
+                         <!-- Day Number and Day Name -->
+                         <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                             <!-- Дата всегда показывает сегодняшний день -->
+                             <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
+                                    FontSize="32" 
+                                    FontAttributes="Bold" 
+                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                    HorizontalTextAlignment="Center"/>
+                             <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}" 
+                                    FontSize="14" 
+                                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                    HorizontalTextAlignment="Center"
+                                    Margin="0,-5,0,0"/>
+                         </VerticalStackLayout>
+                     </Grid>
 
-                <!-- Date Selector (Horizontal CollectionView) -->
-                <CollectionView x:Name="DateSelectorView"
+                     <!-- COL 1: Right stack with restrictions and month/year -->
+                     <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                         <HorizontalStackLayout
+                             x:Name="ActiveRestrictionsPanel"
+                             BindableLayout.ItemsSource="{Binding ActiveRestrictions}"
+                             IsVisible="False"
+                             HorizontalOptions="Center"
+                             Spacing="12">
+                             <BindableLayout.ItemTemplate>
+                                 <DataTemplate x:DataType="models:RestrictionInfo">
+                                     <VerticalStackLayout Spacing="1" HorizontalOptions="Center">
+                                         <!-- Circular badge -->
+                                         <Frame WidthRequest="28"
+                                                HeightRequest="28"
+                                                CornerRadius="14"
+                                                Padding="0"
+                                                BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
+                                                HasShadow="False"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center">
+                                             <Label FontFamily="MaterialIconsRegular"
+                                                    FontSize="16"
+                                                    HorizontalOptions="Center"
+                                                    VerticalOptions="Center"
+                                                    HorizontalTextAlignment="Center"
+                                                    Text="{Binding Icon}"
+                                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                         </Frame>
+                                         <!-- Days counter -->
+                                         <Label FontSize="12"
+                                                FontAttributes="Bold"
+                                                Text="{Binding RemainingDays}"
+                                                HorizontalTextAlignment="Center"
+                                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                                     </VerticalStackLayout>
+                                 </DataTemplate>
+                             </BindableLayout.ItemTemplate>
+                         </HorizontalStackLayout>
+
+                         <Label HorizontalOptions="End" VerticalOptions="Center" TranslationY="12">
+                             <Label.FormattedText>
+                                 <FormattedString>
+                                     <Span Text="{Binding CurrentMonthName}" 
+                                           FontSize="28" 
+                                           FontAttributes="Bold" 
+                                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                     <Span Text=" "/>
+                                     <Span Text="{Binding CurrentYear}" 
+                                           FontSize="18" 
+                                           FontAttributes="None" 
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                 </FormattedString>
+                             </Label.FormattedText>
+                         </Label>
+                     </VerticalStackLayout>
+                 </Grid>
+
+                <!-- ROW 1: Horizontal calendar selector (now next row index) -->
+                <CollectionView Grid.Row="1"
+                                x:Name="DateSelectorView"
                                 SelectionMode="Single"
                                 SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
                                 ItemsSource="{Binding SelectableDates}"
@@ -311,14 +351,12 @@
                         <behaviors:CollectionViewSelectionStateBehavior />
                     </CollectionView.Behaviors>
                 </CollectionView>
-                                
-            </VerticalStackLayout>
+            </Grid>
         </Frame>
 
         <!-- Main Content Area -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
-                
                 <!-- Restriction Area -->
                 <Border x:Name="RestrictionArea"
                         IsVisible="{Binding HasActiveRestriction}"

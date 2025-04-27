@@ -222,6 +222,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             LoadCalendarDays();
             // 2. Подгружаем события для выбранной today‑даты
             await LoadTodayEventsAsync();
+            // 3. Загружаем активные ограничения
+            await CheckAndLoadActiveRestrictionsAsync(); 
         }
         
         public DateTime SelectedDate
@@ -320,35 +322,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _completionPercentage, value);
         }
         
-        // Restriction-related properties
-        private bool _hasActiveRestriction;
+        // NEW: Collection for active restrictions for UI
+        public ObservableCollection<RestrictionInfo> ActiveRestrictions { get; } = new();
+        private bool _hasActiveRestriction; // Keep the backing field for the property
+        
+        // RESTORED Property definition
         public bool HasActiveRestriction
         {
             get => _hasActiveRestriction;
-            set => SetProperty(ref _hasActiveRestriction, value);
-        }
-        
-        private Color _restrictionBackgroundColor = Colors.LightSalmon;
-        public Color RestrictionBackgroundColor
-        {
-            get => _restrictionBackgroundColor;
-            set => SetProperty(ref _restrictionBackgroundColor, value);
-        }
-        
-        // Using Material Icons glyphs instead of external PNG images to avoid missing-resource warnings
-        // "\ue002" – warning, "\ue88e" – info
-        private string _restrictionIcon = "\ue88e";
-        public string RestrictionIcon
-        {
-            get => _restrictionIcon;
-            set => SetProperty(ref _restrictionIcon, value);
-        }
-        
-        private string _currentRestrictionText = "No active restrictions";
-        public string CurrentRestrictionText
-        {
-            get => _currentRestrictionText;
-            set => SetProperty(ref _currentRestrictionText, value);
+            private set => SetProperty(ref _hasActiveRestriction, value); // Make setter private, updated in CheckAndLoad
         }
         
         // Selected date events
@@ -1309,49 +1291,120 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                // Get any active restrictions
-                var activeRestrictions = await _calendarService.GetActiveRestrictionsAsync();
-                
-                // Determine whether we actually have any restrictions in a null‑safe way
-                HasActiveRestriction = activeRestrictions?.Any() == true;
+                var fetchedRestrictions = await _calendarService.GetActiveRestrictionsAsync();
+                _logger.LogInformation("Fetched {Count} potential restrictions.", fetchedRestrictions?.Count ?? 0);
 
-                if (activeRestrictions?.Count > 0)
+                // Use Dispatcher for UI collection modification safety
+                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
-                    // Use the most critical restriction if there are multiple
-                    var criticalRestriction = activeRestrictions.FirstOrDefault(r => r.EventType == EventType.CriticalWarning)
-                                             ?? activeRestrictions[0];
-                    
-                    CurrentRestrictionText = criticalRestriction.Description;
-                    
-                    // Set appropriate colors based on restriction type
-                    switch (criticalRestriction.EventType)
+                    ActiveRestrictions.Clear();
+                    var today = DateTime.Today;
+                    int validRestrictionsCount = 0;
+
+                    if (fetchedRestrictions != null)
                     {
-                        case EventType.CriticalWarning:
-                            RestrictionBackgroundColor = Color.FromArgb("#FFEBEE"); // Light red
-                            RestrictionIcon = "\ue002"; // warning glyph
-                            break;
-                        default:
-                            RestrictionBackgroundColor = Color.FromArgb("#FFF8E1"); // Light amber
-                            RestrictionIcon = "\ue88e"; // info glyph
-                            break;
+                        var categoryDict = new Dictionary<string, RestrictionInfo>();
+
+                        foreach (var restriction in fetchedRestrictions)
+                        {
+                            if (restriction.EndDate.HasValue && restriction.EndDate.Value.Date >= today)
+                            {
+                                var remainingDays = (int)Math.Ceiling((restriction.EndDate.Value.Date - today).TotalDays);
+                                remainingDays = Math.Max(1, remainingDays);
+
+                                // Determine UI mapping based on title keywords
+                                var (icon, description) = GetRestrictionUIDetailsByTitle(restriction.Title);
+                                if (string.IsNullOrEmpty(icon))
+                                {
+                                    // fallback to event-type mapping
+                                    (icon, description) = GetRestrictionUIDetails(restriction.EventType);
+                                }
+
+                                if (string.IsNullOrEmpty(icon)) continue;
+
+                                // Deduplicate by description; keep the shortest remaining days
+                                if (categoryDict.TryGetValue(description, out var existing))
+                                {
+                                    if (remainingDays < existing.RemainingDays)
+                                    {
+                                        existing.RemainingDays = remainingDays;
+                                        existing.EndDate = restriction.EndDate.Value;
+                                    }
+                                }
+                                else
+                                {
+                                    categoryDict[description] = new RestrictionInfo
+                                    {
+                                        Icon = icon,
+                                        RemainingDays = remainingDays,
+                                        Description = description,
+                                        OriginalType = restriction.EventType,
+                                        EndDate = restriction.EndDate.Value
+                                    };
+                                }
+                            }
+                        }
+
+                        foreach (var info in categoryDict.Values)
+                        {
+                            ActiveRestrictions.Add(info);
+                        }
+                        validRestrictionsCount = ActiveRestrictions.Count;
                     }
-                }
-                else
-                {
-                    // Default values when no restrictions
-                    CurrentRestrictionText = "No active restrictions";
-                    RestrictionBackgroundColor = Colors.LightSalmon;
-                    RestrictionIcon = "\ue88e"; // info glyph
-                }
-                
-                _logger.LogInformation("Active restrictions check completed. HasActiveRestriction: {HasActiveRestriction}", HasActiveRestriction);
+
+                    HasActiveRestriction = ActiveRestrictions.Any();
+                    _logger.LogInformation("Processed restrictions. Added {Count} valid restrictions to UI collection. HasActiveRestriction: {HasActive}", 
+                                            validRestrictionsCount, HasActiveRestriction);
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking active restrictions");
-                HasActiveRestriction = false;
-                CurrentRestrictionText = "Unable to check restrictions";
+                 _logger.LogError(ex, "Error checking active restrictions");
+                 await Application.Current.MainPage.Dispatcher.DispatchAsync(() => 
+                 {
+                     ActiveRestrictions.Clear();
+                     HasActiveRestriction = false;
+                 });
             }
+        }
+
+        // Helper method for mapping EventType to UI details
+        private (string Icon, string Description) GetRestrictionUIDetails(EventType eventType)
+        {
+            // TODO: Define actual icons and short descriptions based on EventType values
+            switch (eventType)
+            {
+                // Example mappings (replace with actual Material Icon glyphs and short names)
+                case EventType.CriticalWarning: // Assuming this could be a general restriction
+                    return ("\ue002", "Warning"); // warning
+                case EventType.MedicalVisit: // Example: maybe a post-visit restriction?
+                     return ("\ue87d", "Visit"); // medical_services 
+                // Add specific restriction types if they exist in EventType enum
+                // case EventType.NoSport:
+                //     return ("\ue52f", "Спорт"); // directions_run
+                // case EventType.NoWater:
+                //     return ("\ue1a1", "Вода"); // water_drop
+                // case EventType.NoHaircut:
+                //     return ("\ue530", "Стрижка"); // content_cut
+                default:
+                    _logger.LogWarning("No UI mapping defined for EventType: {EventType}", eventType);
+                    return (string.Empty, string.Empty); // No icon/desc for unknown/unmapped types
+            }
+        }
+
+        // New helper: map by title keyword (simple heuristic)
+        private (string Icon, string Description) GetRestrictionUIDetailsByTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return (string.Empty, string.Empty);
+
+            title = title.ToLowerInvariant();
+            if (title.Contains("спорт")) return ("\ue566", "Sport");           // directions_run
+            if (title.Contains("баня") || title.Contains("сауна")) return ("\ueb3e", "Sauna"); // sauna icon
+            if (title.Contains("соляр")) return ("\ue430", "Sunbed");          // wb_sunny
+            if (title.Contains("уклад") || title.Contains("средства")) return ("\ue91d", "Styling"); // science
+            if (title.Contains("красить")) return ("\ue41d", "Dye");           // color_lens
+
+            return (string.Empty, string.Empty);
         }
 
         #region CacheHelpers

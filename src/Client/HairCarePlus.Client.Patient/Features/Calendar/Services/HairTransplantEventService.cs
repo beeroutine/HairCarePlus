@@ -160,8 +160,51 @@ public class HairTransplantEventService : ICalendarService
 
     async Task<List<CalendarEvent>> ICalendarService.GetActiveRestrictionsAsync()
     {
-        // For now, no separate restriction storage; return empty list
-        return new List<CalendarEvent>();
+        // Определяем «сегодня» в полночь
+        var today = DateTime.Today;
+
+        // Считаем, что расписание сгенерировано максимум на год вперёд,
+        // поэтому берём рамку до +365 дней.
+        var rangeEnd = today.AddDays(365);
+
+        // Получаем все события, попадающие в диапазон «сегодня – +1 год»
+        var upcomingDomainEvents = await GetEventsForRangeAsync(today, rangeEnd);
+
+        // Отфильтровываем события-«сигналы» начала разрешённой активности.
+        // Правило: заголовок начинается с «Можно …» (регистр не важен).
+        var allowanceEvents = upcomingDomainEvents
+            .Where(e => e.Title.StartsWith("Можно", StringComparison.InvariantCultureIgnoreCase))
+            .ToList();
+
+        var restrictions = new List<CalendarEvent>();
+
+        foreach (var allowEvt in allowanceEvents)
+        {
+            // Если разрешённый день уже наступил – актуального ограничения нет
+            if (allowEvt.StartDate.Date <= today) continue;
+
+            // Делаем «виртуальное» событие-ограничение: действует ДО allowEvt.StartDate включительно
+            var restrictionEndDate = allowEvt.StartDate.Date;
+
+            restrictions.Add(new CalendarEvent
+            {
+                Id = Guid.NewGuid(),
+                Title = allowEvt.Title, // можно сохранить оригинальное название
+                Description = string.Empty,
+                Date = today,            // сегодня – дата показа
+                StartDate = today,
+                EndDate = restrictionEndDate,
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow,
+                EventType = StorageEventType.CriticalWarning, // используем тип «важное предупреждение»
+                Priority = StorageEventPriority.Normal,
+                TimeOfDay = TimeOfDay.Morning,
+                ReminderTime = TimeSpan.Zero,
+                IsCompleted = false
+            });
+        }
+
+        return restrictions;
     }
 
     async Task<List<CalendarEvent>> ICalendarService.GetPendingNotificationEventsAsync()
