@@ -11,6 +11,18 @@
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Title="Today">
 
+    <Shell.TitleView>
+        <Label Text="Today"
+               FontSize="20"
+               FontAttributes="Bold"
+               HorizontalOptions="Center"
+               VerticalOptions="Center">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ToggleRestrictionsVisibilityCommand}" />
+            </Label.GestureRecognizers>
+        </Label>
+    </Shell.TitleView>
+
     <ContentPage.Resources>
         <ResourceDictionary>
             <converters:EventIndicatorsConverter x:Key="EventIndicatorsConverter"/>
@@ -262,7 +274,7 @@
                                 WidthRequest="{StaticResource CircleSize}"
                                 HeightRequest="{StaticResource CircleSize}"/>
                                     
-                         <!-- Day Number and Day Name -->
+                         <!-- Day Number and Day Name (tap toggles restrictions) -->
                          <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
                              <!-- Дата всегда показывает сегодняшний день -->
                              <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
@@ -283,29 +295,19 @@
                          <HorizontalStackLayout
                              x:Name="ActiveRestrictionsPanel"
                              BindableLayout.ItemsSource="{Binding ActiveRestrictions}"
-                             IsVisible="False"
+                             IsVisible="{Binding AreRestrictionsVisible}"
                              HorizontalOptions="Center"
                              Spacing="12">
                              <BindableLayout.ItemTemplate>
                                  <DataTemplate x:DataType="models:RestrictionInfo">
                                      <VerticalStackLayout Spacing="1" HorizontalOptions="Center">
-                                         <!-- Circular badge -->
-                                         <Frame WidthRequest="28"
-                                                HeightRequest="28"
-                                                CornerRadius="14"
-                                                Padding="0"
-                                                BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray700}}"
-                                                HasShadow="False"
+                                         <!-- Icon itself is already circular; display directly -->
+                                         <Image Source="{Binding Icon}"
+                                                Aspect="AspectFit"
+                                                WidthRequest="40"
+                                                HeightRequest="40"
                                                 HorizontalOptions="Center"
-                                                VerticalOptions="Center">
-                                             <Label FontFamily="MaterialIconsRegular"
-                                                    FontSize="16"
-                                                    HorizontalOptions="Center"
-                                                    VerticalOptions="Center"
-                                                    HorizontalTextAlignment="Center"
-                                                    Text="{Binding Icon}"
-                                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                         </Frame>
+                                                VerticalOptions="Center" />
                                          <!-- Days counter -->
                                          <Label FontSize="12"
                                                 FontAttributes="Bold"
@@ -359,7 +361,7 @@
             <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
                 <!-- Restriction Area -->
                 <Border x:Name="RestrictionArea"
-                        IsVisible="{Binding HasActiveRestriction}"
+                        IsVisible="{Binding AreRestrictionsVisible}"
                         BackgroundColor="{Binding RestrictionBackgroundColor}"
                         Padding="10" 
                         Margin="0,5,0,5"

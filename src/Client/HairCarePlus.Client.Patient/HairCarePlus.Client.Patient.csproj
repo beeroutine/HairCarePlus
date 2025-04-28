@@ -69,6 +69,9 @@
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+
+		<!-- Make AppIcon PNGs accessible at runtime -->
+		<MauiImage Include="Resources\AppIcon\*.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -111,6 +114,7 @@
 	<!-- Include hair transplant schedule as Maui asset to be accessible via FileSystem.OpenAppPackageFileAsync -->
 	<ItemGroup>
 	  <MauiAsset Include="Features\Calendar\Data\HairTransplantSchedule.json" LogicalName="HairTransplantSchedule.json" />
+	  <MauiAsset Include="Features\Calendar\Data\RestrictionSchedule.json" LogicalName="RestrictionSchedule.json" />
 	</ItemGroup>
 
 </Project>

@@ -33,5 +33,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         /// The date the restriction ends.
         /// </summary>
         public DateTime EndDate { get; set; }
+
+        /// <summary>
+        /// Background color (circle fill) for the restriction badge.
+        /// </summary>
+        public Color BackgroundColor { get; set; } = Colors.LightGray;
     }
 } 

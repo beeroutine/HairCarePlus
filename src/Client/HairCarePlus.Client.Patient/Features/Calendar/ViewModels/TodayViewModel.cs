@@ -200,6 +200,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
             GoToTodayCommand = new Command(ExecuteGoToToday);
             
+            // Toggle restrictions visibility
+            ToggleRestrictionsVisibilityCommand = new Command(() =>
+            {
+                AreRestrictionsVisible = !AreRestrictionsVisible;
+            });
+            
             // Lazy initialization – фактическая загрузка отложена до первого OnAppearing
             _initializationTask = null;
         }
@@ -326,12 +332,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ObservableCollection<RestrictionInfo> ActiveRestrictions { get; } = new();
         private bool _hasActiveRestriction; // Keep the backing field for the property
         
-        // RESTORED Property definition
+        // RESTORED Property definition (now triggers AreRestrictionsVisible update)
         public bool HasActiveRestriction
         {
             get => _hasActiveRestriction;
-            private set => SetProperty(ref _hasActiveRestriction, value); // Make setter private, updated in CheckAndLoad
+            private set
+            {
+                if (SetProperty(ref _hasActiveRestriction, value))
+                {
+                    OnPropertyChanged(nameof(AreRestrictionsVisible));
+                }
+            }
         }
+
+        // Property to allow user to hide/show restrictions panel
+        private bool _restrictionsVisible = true;
+        public bool AreRestrictionsVisible
+        {
+            get => _restrictionsVisible && HasActiveRestriction;
+            set => SetProperty(ref _restrictionsVisible, value);
+        }
+
+        public ICommand ToggleRestrictionsVisibilityCommand { get; }
         
         // Selected date events
         private ObservableCollection<CalendarEvent> _eventsForSelectedDate;
@@ -1398,11 +1420,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             if (string.IsNullOrWhiteSpace(title)) return (string.Empty, string.Empty);
 
             title = title.ToLowerInvariant();
-            if (title.Contains("спорт")) return ("\ue566", "Sport");           // directions_run
-            if (title.Contains("баня") || title.Contains("сауна")) return ("\ueb3e", "Sauna"); // sauna icon
-            if (title.Contains("соляр")) return ("\ue430", "Sunbed");          // wb_sunny
-            if (title.Contains("уклад") || title.Contains("средства")) return ("\ue91d", "Styling"); // science
-            if (title.Contains("красить")) return ("\ue41d", "Dye");           // color_lens
+
+            // Map keywords to image file names located in Resources/AppIcon/
+            if (title.Contains("курен")) return ("no_smoking.png", "Smoking");
+            if (title.Contains("алкогол")) return ("no_alcohol.png", "Alcohol");
+            if (title.Contains("секс")) return ("no_sex.png", "Sex");
+            if (title.Contains("головн") && title.Contains("убор")) return ("no_headwear.png", "Headwear");
+            if (title.Contains("потоотд") || title.Contains("пот")) return ("no_sweating.png", "Sweat");
+            if (title.Contains("спорт")) return ("no_sport.png", "Sport");
+            if (title.Contains("бассейн") || title.Contains("плаван") || title.Contains("swimm")) return ("no_swimming.png", "Swimming");
+            if (title.Contains("загар") || title.Contains("соляр")) return ("no_sun.png", "Sun");
+            if (title.Contains("стрижка")) return ("no_haircut.png", "Haircut");
+            if (title.Contains("стайл") || title.Contains("уклад") || title.Contains("средств")) return ("no_styling.png", "Styling");
+            if (title.Contains("наклон") || title.Contains("голов") && title.Contains("вниз")) return ("no_head_tilt.png", "HeadTilt");
+            if (title.Contains("45") || title.Contains("полусид")) return ("no_45_sleep.png", "Sleep45");
+            if (title.Contains("горизонталь") || title.Contains("лежа")) return ("no_horizontal_sleep.png", "HorizontalSleep");
 
             return (string.Empty, string.Empty);
         }
