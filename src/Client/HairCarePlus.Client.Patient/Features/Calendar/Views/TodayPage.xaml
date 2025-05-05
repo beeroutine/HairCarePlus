@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentPage x:Name="TodayPageRoot"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.ViewModels"
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Converters"
              xmlns:system="clr-namespace:System;assembly=netstandard"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
@@ -36,6 +38,7 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+            <converters:ProgressToDashArrayConverter x:Key="ProgressToDashArrayConverter"/>
             <x:Double x:Key="CircleSize">100</x:Double>
             
             <!-- Layout Resources -->
@@ -158,64 +161,99 @@
 
             <!-- Event Item Template -->
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
-                <Frame Margin="0,4,0,0" 
-                       Padding="12"
-                       CornerRadius="18"
-                       BorderColor="Transparent"
-                       BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
-                       HasShadow="True"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <!-- Icon with background -->
-                        <Frame Grid.Column="0"
-                               WidthRequest="40"
-                               HeightRequest="40"
-                               CornerRadius="20"
-                               Padding="0"
-                               HasShadow="False"
-                               BorderColor="Transparent"
-                               BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}">
-                            <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
-                                   FontFamily="MaterialIcons"
-                                   FontSize="20"
-                                   TextColor="White"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="Center"/>
-                        </Frame>
+                <SwipeView>
+                    <SwipeView.RightItems>
+                        <SwipeItems Mode="Execute">
+                            <SwipeItem Text="Done"
+                                       BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}"
+                                       Invoked="OnSwipeItemDoneInvoked">
+                                <SwipeItem.IconImageSource>
+                                    <FontImageSource Glyph="&#xE876;" FontFamily="MaterialIcons" Color="White" />
+                                </SwipeItem.IconImageSource>
+                            </SwipeItem>
+                        </SwipeItems>
+                    </SwipeView.RightItems>
+                    <Border Margin="0,4,0,0"
+                            x:Name="rootCard"
+                            StrokeThickness="0"
+                            BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 18">
+                        <!-- Long press handled via CommunityToolkit TouchBehavior below -->
+                        <Border.Behaviors>
+                            <toolkit:TouchBehavior
+                                  BindingContext="{Binding Source={x:Reference rootCard}, Path=BindingContext}"
+                                  LongPressDuration="2000"
+                                  LongPressCommand="{Binding Source={x:Reference TodayPageRoot}, Path=BindingContext.ToggleEventCompletionCommand}"
+                                  LongPressCommandParameter="{Binding .}" />
+                        </Border.Behaviors>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <!-- Icon with background -->
+                            <Frame Grid.Column="0"
+                                   WidthRequest="40"
+                                   HeightRequest="40"
+                                   CornerRadius="20"
+                                   Padding="0"
+                                   HasShadow="False"
+                                   BorderColor="Transparent"
+                                   BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}">
+                                <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
+                                       FontFamily="MaterialIcons"
+                                       FontSize="20"
+                                       TextColor="White"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"/>
+                            </Frame>
 
-                        <!-- Task Content -->
-                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start">
-                            <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                   FontSize="14"
-                                   FontAttributes="Bold"
-                                   Margin="0,0,0,2"
-                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                            <Label Text="{Binding Title}"
-                                   FontSize="16"
-                                   FontAttributes="None"
-                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                            <Grid>
-                                <Label x:Name="descriptionLabel"
-                                       Text="{Binding Description}"
+                            <!-- Task Content -->
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start">
+                                <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
                                        FontSize="14"
-                                       LineBreakMode="TailTruncation"
-                                       MaxLines="2"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                <Label Text="Подробнее..."
-                                       FontSize="13"
-                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                                       HorizontalOptions="End"
-                                       VerticalOptions="End"
-                                       IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ShowEventDetailsCommand}"
-                                                             CommandParameter="{Binding .}"/>
-                                    </Label.GestureRecognizers>
+                                       FontAttributes="Bold"
+                                       Margin="0,0,0,2"
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                <Label x:Name="titleLabel"
+                                       Text="{Binding Title}"
+                                       FontSize="16"
+                                       FontAttributes="None"
+                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="TextDecorations" Value="Strikethrough" />
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
                                 </Label>
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Grid>
-                </Frame>
+                                <Grid>
+                                    <Label x:Name="descriptionLabel"
+                                           Text="{Binding Description}"
+                                           FontSize="14"
+                                           LineBreakMode="TailTruncation"
+                                           MaxLines="2"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
+                                    <Label Text="Подробнее..."
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="End"
+                                           IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ShowEventDetailsCommand}"
+                                                                 CommandParameter="{Binding .}"/>
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+                        <!-- Visual state when completed -->
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsCompleted}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#DDEEE0, Dark=#2A3B2C}" />
+                                <Setter Property="Opacity" Value="0.6" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                    </Border>
+                </SwipeView>
             </DataTemplate>
             
             <!-- No events template -->
@@ -262,7 +300,7 @@
             <!-- Header structured as Grid: Row0 = restrictions, Row1 = circle/month, Row2 = horizontal calendar -->
             <Grid x:Name="HeaderGrid"
                   Padding="16,8,16,0"
-                  RowDefinitions="Auto,Auto,Auto">
+                  RowDefinitions="Auto,Auto">
 
                 <!-- Single row header: left = circle, right = vertical stack (restrictions + month/year) -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,4,0,8" VerticalOptions="Center">
@@ -285,7 +323,19 @@
                                 BackgroundColor="Transparent"
                                 WidthRequest="{StaticResource CircleSize}"
                                 HeightRequest="{StaticResource CircleSize}"/>
-                                    
+                               
+                         <!-- PROGRESS OVERLAY -->
+                         <Border StrokeShape="Ellipse"
+                                Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
+                                StrokeThickness="4"
+                                StrokeLineCap="Flat"
+                                StrokeDashOffset="0"
+                                BackgroundColor="Transparent"
+                                WidthRequest="{StaticResource CircleSize}"
+                                HeightRequest="{StaticResource CircleSize}"
+                                Rotation="-90"
+                                StrokeDashArray="{Binding CompletionProgress, Converter={StaticResource ProgressToDashArrayConverter}, ConverterParameter={StaticResource CircleSize}}"/>
+                                
                          <!-- Day Number and Day Name (tap toggles restrictions) -->
                          <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
                              <!-- Дата всегда показывает сегодняшний день -->
@@ -304,35 +354,6 @@
 
                      <!-- COL 1: Right stack with restrictions and month/year -->
                      <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
-                         <HorizontalStackLayout
-                              x:Name="ActiveRestrictionsPanel"
-                              BindableLayout.ItemsSource="{Binding ActiveRestrictions}"
-                              IsVisible="{Binding AreRestrictionsVisible}"
-                              HorizontalOptions="Center"
-                              Spacing="12">
-                              <BindableLayout.ItemTemplate>
-                                  <DataTemplate x:DataType="models:RestrictionInfo">
-                                      <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
-                                          <Border Style="{StaticResource RestrictionIconBorderStyle}"
-                                                  Stroke="{Binding RemainingDays, Converter={StaticResource DaysToStrokeColorConverter}}">
-                                              <Label Text="{Binding IconGlyph}"
-                                                     FontFamily="MaterialSymbolsOutlined"
-                                                     FontSize="22"
-                                                     HorizontalOptions="Center"
-                                                     VerticalOptions="Center"
-                                                     TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}"/>
-                                          </Border>
-                                          <!-- Days counter -->
-                                          <Label FontSize="12"
-                                                 FontAttributes="Bold"
-                                                 Text="{Binding RemainingDays}"
-                                                 HorizontalTextAlignment="Center"
-                                                 TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
-                                      </VerticalStackLayout>
-                                  </DataTemplate>
-                              </BindableLayout.ItemTemplate>
-                          </HorizontalStackLayout>
-
                          <Label HorizontalOptions="End" VerticalOptions="Center" TranslationY="12">
                              <Label.FormattedText>
                                  <FormattedString>
@@ -373,31 +394,6 @@
         <!-- Main Content Area -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
-                <!-- Restriction Area -->
-                <Border x:Name="RestrictionArea"
-                        IsVisible="{Binding AreRestrictionsVisible}"
-                        BackgroundColor="{Binding RestrictionBackgroundColor}"
-                        Padding="10" 
-                        Margin="0,5,0,5"
-                        StrokeShape="RoundRectangle 12"
-                        StrokeThickness="0">
-                    <!-- Optional: Style with Shadow or Stroke -->
-                    <!-- HasShadow="True" Shadow="{StaticResource SmallShadow}" -->
-                    <HorizontalStackLayout Spacing="10">
-                        <!-- Replaced Image with Label using Material Icons font -->
-                        <Label Text="{Binding RestrictionIcon}"
-                               FontFamily="MaterialIcons"
-                               FontSize="20"
-                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                               VerticalOptions="Center"/>
-                        <Label Text="{Binding CurrentRestrictionText}"
-                               VerticalOptions="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" 
-                               FontSize="14"
-                               LineBreakMode="WordWrap"/>
-                    </HorizontalStackLayout>
-                </Border>
-
                 <!-- Event List -->
                 <CollectionView ItemsSource="{Binding EventsForSelectedDate}"
                                 ItemTemplate="{StaticResource EventTemplate}"

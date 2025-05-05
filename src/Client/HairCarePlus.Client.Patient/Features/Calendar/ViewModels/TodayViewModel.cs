@@ -371,6 +371,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand ShowEventDetailsCommand { get; }
         public ICommand LoadMoreDatesCommand { get; }
         
+        // Summary presentation of the FIRST (highest-priority) active restriction for legacy UI bindings
+        private string _restrictionIcon;
+        public string RestrictionIcon
+        {
+            get => _restrictionIcon;
+            private set => SetProperty(ref _restrictionIcon, value);
+        }
+
+        private string _currentRestrictionText;
+        public string CurrentRestrictionText
+        {
+            get => _currentRestrictionText;
+            private set => SetProperty(ref _currentRestrictionText, value);
+        }
+
+        private Color _restrictionBackgroundColor = Colors.Transparent;
+        public Color RestrictionBackgroundColor
+        {
+            get => _restrictionBackgroundColor;
+            private set => SetProperty(ref _restrictionBackgroundColor, value);
+        }
+
+        private List<CalendarEvent> _allEventsForSelectedDate = new();
+
         private void LoadCalendarDays()
         {
             try
@@ -724,6 +748,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     displayEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
                 EventsForSelectedDate = new ObservableCollection<CalendarEvent>(displayEvents);
 
+                // Preserve a master list that includes *all* events for the day (completed + incomplete)
+                _allEventsForSelectedDate = displayEvents;
+
                 var (prog, percent) = _progressCalculator.CalculateProgress(displayEvents);
                 CompletionProgress = prog;
                 CompletionPercentage = percent;
@@ -1051,20 +1078,37 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public async Task ToggleEventCompletionAsync(CalendarEvent calendarEvent)
         {
+            // Verbose logging for diagnostics
+            _logger?.LogInformation("ToggleEventCompletionAsync invoked. SelectedDate={SelectedDate}, Today={Today}, EventId={EventId}, Title='{Title}', CurrentlyCompleted={IsCompleted}",
+                SelectedDate.ToShortDateString(), DateTime.Today.ToShortDateString(), calendarEvent?.Id, calendarEvent?.Title, calendarEvent?.IsCompleted);
+
+            // Restrict completion to events that belong to TODAY only
+            if (SelectedDate.Date != DateTime.Today)
+            {
+                _logger?.LogWarning("Attempt to complete an event that is not in today's list – operation aborted");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Application.Current.MainPage.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                });
+                return;
+            }
             if (calendarEvent != null)
             {
                 try
                 {
                     // Capture original state for rollback
                     var originalState = calendarEvent.IsCompleted;
+                    _logger?.LogDebug("Original IsCompleted state for event {EventId}: {State}", calendarEvent.Id, originalState);
                     
                     try
                     {
                         // Toggle state first
                         calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                        _logger?.LogDebug("Toggled IsCompleted for event {EventId} to {State}", calendarEvent.Id, calendarEvent.IsCompleted);
                         
                         // Call service with single parameter
                         await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                        _logger?.LogInformation("MarkEventAsCompletedAsync succeeded for event {EventId}", calendarEvent.Id);
                         
                         // Update cache if needed
                         if (TryGetCache(SelectedDate.Date, out var cachedEvents, out _))
@@ -1075,6 +1119,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             {
                                 eventToUpdate.IsCompleted = calendarEvent.IsCompleted;
                                 SetCache(SelectedDate.Date, cachedEvents);
+                                _logger?.LogDebug("Cache updated for event {EventId}", calendarEvent.Id);
                             }
                         }
                         
@@ -1083,6 +1128,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         {
                             await CheckOverdueEventsAsync();
                         }
+
+                        // Immediately recalculate progress and notify UI
+                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        {
+                            if (calendarEvent.IsCompleted)
+                            {
+                                // Remove from interactive UI collections – the master list (_allEventsForSelectedDate) remains intact
+                                FlattenedEvents?.Remove(calendarEvent);
+                                SortedEvents?.Remove(calendarEvent);
+                                EventsForSelectedDate?.Remove(calendarEvent);
+                            }
+
+                            var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
+                            CompletionProgress = prog;
+                            CompletionPercentage = percent;
+                            OnPropertyChanged(nameof(CompletionProgress));
+                            OnPropertyChanged(nameof(CompletionPercentage));
+                            _logger?.LogInformation("Progress recalculated after event toggle: {Percent}% ({ProgressF:P2})", percent, prog);
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -1374,6 +1438,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             ActiveRestrictions.Add(info);
                         }
                         validRestrictionsCount = ActiveRestrictions.Count;
+
+                        // Update legacy single-restriction bindings using first restriction (if any)
+                        var first = ActiveRestrictions.FirstOrDefault();
+                        if (first != null)
+                        {
+                            RestrictionIcon = first.IconGlyph;
+                            CurrentRestrictionText = first.Description;
+                            // Background accent – red if ≤3 days, else neutral subtle gray
+                            RestrictionBackgroundColor = first.RemainingDays <= 3
+                                ? Color.FromArgb("#FFFFE5E5") // light red tint
+                                : Color.FromArgb("#FFF0F0F0");
+                        }
+                        else
+                        {
+                            RestrictionIcon = string.Empty;
+                            CurrentRestrictionText = string.Empty;
+                            RestrictionBackgroundColor = Colors.Transparent;
+                        }
                     }
 
                     HasActiveRestriction = ActiveRestrictions.Any();

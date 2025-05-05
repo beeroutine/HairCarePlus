@@ -28,20 +28,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         private bool _headerLocked = false; // lock header updates during programmatic animation until next user gesture
         
+        // long-press cancellation token
+        private CancellationTokenSource? _longPressCts;
+        
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
             try
             {
-                _logger?.LogDebug("TodayPage constructor start");
+                _logger = logger; // assign first to allow early logging
+                _logger.LogDebug("TodayPage constructor start");
                 InitializeComponent();
-                _logger?.LogDebug("TodayPage InitializeComponent completed");
+                _logger.LogDebug("TodayPage InitializeComponent completed");
                 
                 _viewModel = viewModel;
-                _logger?.LogDebug("TodayViewModel retrieved from constructor");
+                _logger.LogDebug("TodayViewModel retrieved from constructor");
                 BindingContext = _viewModel;
-                _logger?.LogDebug("BindingContext set to TodayViewModel");
+                _logger.LogDebug("BindingContext set to TodayViewModel");
                 
-                _logger = logger;
                 _logger.LogInformation("TodayPage instance created");
                 
                 // iOS 17+/MAUI 9 already renders selection without gray overlay; no custom fix needed
@@ -266,6 +269,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             // Get the binding context and execute the command
             if (checkBox.BindingContext is CalendarEvent calendarEvent && _viewModel != null)
             {
+                _logger.LogInformation("Checkbox toggled for Event ID {EventId}. New state: {State}", calendarEvent.Id, checkBox.IsChecked);
+                if (!_viewModel.ToggleEventCompletionCommand.CanExecute(calendarEvent))
+                {
+                    _logger.LogWarning("ToggleEventCompletionCommand cannot execute for Event ID {EventId}", calendarEvent.Id);
+                }
                 _viewModel.ToggleEventCompletionCommand?.Execute(calendarEvent);
             }
         }
@@ -385,6 +393,73 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             catch(Exception ex)
             {
                 _logger?.LogError(ex, "Error centering date");
+            }
+        }
+
+        #region Long-Press handlers
+        private void OnEventCardPressed(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (sender is Element el && el.BindingContext is CalendarEvent evt && _viewModel != null)
+                {
+                    _longPressCts?.Cancel();
+                    _longPressCts = new CancellationTokenSource();
+                    var token = _longPressCts.Token;
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(2000, token); // 2-second press
+                            if (token.IsCancellationRequested) return;
+
+                            await MainThread.InvokeOnMainThreadAsync(() =>
+                            {
+                                if (_viewModel.ToggleEventCompletionCommand.CanExecute(evt))
+                                {
+                                    _viewModel.ToggleEventCompletionCommand.Execute(evt);
+                                }
+                            });
+                        }
+                        catch (TaskCanceledException) { }
+                    }, token);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in OnEventCardPressed");
+            }
+        }
+
+        private void OnEventCardReleased(object? sender, EventArgs e)
+        {
+            _longPressCts?.Cancel();
+        }
+        #endregion
+
+        private void OnSwipeItemDoneInvoked(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (sender is SwipeItem swipeItem && swipeItem.BindingContext is CalendarEvent evt && _viewModel != null)
+                {
+                    // execute completion command
+                    if (_viewModel.ToggleEventCompletionCommand.CanExecute(evt))
+                    {
+                        _viewModel.ToggleEventCompletionCommand.Execute(evt);
+                    }
+                }
+
+                // Close SwipeView regardless
+                if (sender is SwipeItem { Parent: SwipeItems { Parent: SwipeView sv } })
+                {
+                    sv.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in OnSwipeItemDoneInvoked");
             }
         }
     }

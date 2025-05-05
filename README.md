@@ -126,6 +126,35 @@ MyCollection = new ObservableCollection<T>(updatedList);
 - При массовых изменениях: batch-операции или полная замена коллекции.
 - Проверяйте, что количество элементов совпадает с ожидаемым после обновления.
 
+### 3.5 MAUI 9 Best-Practice Checklist
+> Применяйте эти правила при добавлении нового UI-кода, чтобы не использовать устаревшие API.
+
+**Контролы**
+* `CollectionView` вместо `ListView` / `TableView`.
+* `Border` + `StrokeShape` вместо `Frame`.
+* `SwipeView` для жестов, а не `SwipeGestureRecognizer`.
+* `IndicatorView` вместо сторонних пейдж-контролов.
+
+**Привязки**
+* Всегда указываем `x:DataType` → compiled bindings; конвертеры – только при необходимости.
+
+**Visual State**
+* Используем `VisualStateManager` для выделения / ошибок / режимов, а не несколько `ValueConverter`-ов.
+
+**Гесты**
+* Long-press ≥ 2 с – `CommunityToolkit.Maui.TouchBehavior` (стандартного LongPress ещё нет).
+* Не создавать CustomRenderer; расширяем через Handler `Mapper.AppendToMapping`.
+
+**Темы & цвета**
+* Все цвета объявляем в `Resources/Styles/Colors.xaml` → `AppThemeBinding`/`SemanticColor`.
+* Запрещён «жёсткий» hex-цвет в разметке.
+
+**Логирование**
+* Только `ILogger<T>`/Serilog; никаких `Debug.WriteLine`.
+
+**Deprecated API Blacklist**
+`Device.RuntimePlatform`, `ListView`, `Frame`, `CustomRenderer`, `SwipeGestureRecognizer`, `NavigationPage` (вместо Shell), `AnimationExtensions` (старый API).
+
 ## 4. UI/UX Руководства
 ### 4.1 Общие принципы дизайна
 - Современный flat-дизайн: минимализм, чистые формы, понятная типографика.
