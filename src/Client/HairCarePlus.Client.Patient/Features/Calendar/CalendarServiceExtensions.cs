@@ -105,6 +105,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 
             if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
                 Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
+
+            if (!Application.Current.Resources.ContainsKey("DaysToStrokeColorConverter"))
+                Application.Current.Resources.Add("DaysToStrokeColorConverter", new DaysToStrokeColorConverter());
         }
     }
 } 

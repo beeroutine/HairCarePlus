@@ -715,13 +715,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
             {
+                // Filter out restriction events (CriticalWarning) — they are displayed separately as icons, not in the tasks list
                 var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-                FlattenedEvents = new ObservableCollection<CalendarEvent>(eventsList);
-                SortedEvents = new ObservableCollection<CalendarEvent>(
-                    eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
-                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(eventsList);
+                var displayEvents = eventsList.Where(e => e.EventType != EventType.CriticalWarning).ToList();
 
-                var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
+                FlattenedEvents = new ObservableCollection<CalendarEvent>(displayEvents);
+                SortedEvents = new ObservableCollection<CalendarEvent>(
+                    displayEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
+                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(displayEvents);
+
+                var (prog, percent) = _progressCalculator.CalculateProgress(displayEvents);
                 CompletionProgress = prog;
                 CompletionPercentage = percent;
                 OnPropertyChanged(nameof(FlattenedEvents));
@@ -1335,14 +1338,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                                 remainingDays = Math.Max(1, remainingDays);
 
                                 // Determine UI mapping based on title keywords
-                                var (icon, description) = GetRestrictionUIDetailsByTitle(restriction.Title);
-                                if (string.IsNullOrEmpty(icon))
+                                var (glyph, description) = GetRestrictionGlyph(restriction.Title);
+                                if (string.IsNullOrEmpty(glyph))
                                 {
-                                    // fallback to event-type mapping
-                                    (icon, description) = GetRestrictionUIDetails(restriction.EventType);
+                                    (glyph, description) = GetRestrictionUIDetails(restriction.EventType);
                                 }
 
-                                if (string.IsNullOrEmpty(icon)) continue;
+                                if (string.IsNullOrEmpty(glyph)) continue;
 
                                 // Deduplicate by description; keep the shortest remaining days
                                 if (categoryDict.TryGetValue(description, out var existing))
@@ -1357,7 +1359,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                                 {
                                     categoryDict[description] = new RestrictionInfo
                                     {
-                                        Icon = icon,
+                                        IconGlyph = glyph,
                                         RemainingDays = remainingDays,
                                         Description = description,
                                         OriginalType = restriction.EventType,
@@ -1399,8 +1401,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Example mappings (replace with actual Material Icon glyphs and short names)
                 case EventType.CriticalWarning: // Assuming this could be a general restriction
                     return ("\ue002", "Warning"); // warning
-                case EventType.MedicalVisit: // Example: maybe a post-visit restriction?
-                     return ("\ue87d", "Visit"); // medical_services 
+                case EventType.MedicalVisit:
+                     return ("\ue87d", "Visit"); // medical_services
                 // Add specific restriction types if they exist in EventType enum
                 // case EventType.NoSport:
                 //     return ("\ue52f", "Спорт"); // directions_run
@@ -1415,25 +1417,26 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         }
 
         // New helper: map by title keyword (simple heuristic)
-        private (string Icon, string Description) GetRestrictionUIDetailsByTitle(string title)
+        private (string Icon, string Description) GetRestrictionGlyph(string title)
         {
             if (string.IsNullOrWhiteSpace(title)) return (string.Empty, string.Empty);
 
             title = title.ToLowerInvariant();
 
             // Map keywords to image file names located in Resources/AppIcon/
-            if (title.Contains("курен")) return ("no_smoking.png", "Smoking");
-            if (title.Contains("алкогол")) return ("no_alcohol.png", "Alcohol");
+            if (title.Contains("курен")) return ("\uebc3", "Smoking");          // smoking rooms
+            if (title.Contains("алкогол")) return ("\ueadf", "Alcohol");         // liquor
+            if (title.Contains("спорт")) return ("\ue566", "Sport");           // fitness_center
+            if (title.Contains("загар")) return ("\ue430", "Sun");             // wb_sunny
+            if (title.Contains("45")) return ("\uebed", "Sleep45");           // airline_seat_recline_extra
+            if (title.Contains("стрижк")) return ("\ue14e", "Haircut");        // content_cut
             if (title.Contains("секс")) return ("no_sex.png", "Sex");
             if (title.Contains("головн") && title.Contains("убор")) return ("no_headwear.png", "Headwear");
             if (title.Contains("потоотд") || title.Contains("пот")) return ("no_sweating.png", "Sweat");
-            if (title.Contains("спорт")) return ("no_sport.png", "Sport");
             if (title.Contains("бассейн") || title.Contains("плаван") || title.Contains("swimm")) return ("no_swimming.png", "Swimming");
-            if (title.Contains("загар") || title.Contains("соляр")) return ("no_sun.png", "Sun");
+            if (title.Contains("наклон") || title.Contains("голов") && title.Contains("вниз")) return ("no_head_tilt.png", "HeadTilt");
             if (title.Contains("стрижка")) return ("no_haircut.png", "Haircut");
             if (title.Contains("стайл") || title.Contains("уклад") || title.Contains("средств")) return ("no_styling.png", "Styling");
-            if (title.Contains("наклон") || title.Contains("голов") && title.Contains("вниз")) return ("no_head_tilt.png", "HeadTilt");
-            if (title.Contains("45") || title.Contains("полусид")) return ("no_45_sleep.png", "Sleep45");
             if (title.Contains("горизонталь") || title.Contains("лежа")) return ("no_horizontal_sleep.png", "HorizontalSleep");
 
             return (string.Empty, string.Empty);

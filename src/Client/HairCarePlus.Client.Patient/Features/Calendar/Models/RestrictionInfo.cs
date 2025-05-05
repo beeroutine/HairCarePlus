@@ -10,9 +10,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
     public class RestrictionInfo // Consider inheriting BindableObject if properties need dynamic updates
     {
         /// <summary>
-        /// Material Icons glyph for the restriction type.
+        /// Unicode glyph (from Material Symbols) representing this restriction.
         /// </summary>
-        public string Icon { get; set; }
+        public string IconGlyph { get; set; }
+
+#pragma warning disable CS0618 // keep for backward-compat during refactor
+        [Obsolete("Use IconGlyph instead.")]
+        public string Icon { get => IconGlyph; set => IconGlyph = value; }
+#pragma warning restore CS0618
 
         /// <summary>
         /// Number of days remaining until the restriction ends (ceiling value).
