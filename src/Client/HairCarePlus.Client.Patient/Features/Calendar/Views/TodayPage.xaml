@@ -8,6 +8,8 @@
              xmlns:system="clr-namespace:System;assembly=netstandard"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:local="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
+             xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
@@ -38,7 +40,6 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
-            <converters:ProgressToDashArrayConverter x:Key="ProgressToDashArrayConverter"/>
             <x:Double x:Key="CircleSize">100</x:Double>
             
             <!-- Layout Resources -->
@@ -161,15 +162,14 @@
 
             <!-- Event Item Template -->
             <DataTemplate x:Key="EventTemplate" x:DataType="models:CalendarEvent">
+                <!-- Card without swipe actions -->
                 <SwipeView>
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Execute">
-                            <SwipeItem Text="Done"
-                                       BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#388E3C}"
-                                       Invoked="OnSwipeItemDoneInvoked">
-                                <SwipeItem.IconImageSource>
-                                    <FontImageSource Glyph="&#xE876;" FontFamily="MaterialIcons" Color="White" />
-                                </SwipeItem.IconImageSource>
+                            <SwipeItem
+                                    BackgroundColor="Transparent"
+                                    Invoked="OnSwipeItemDoneInvoked">
+                                <!-- no icon -->
                             </SwipeItem>
                         </SwipeItems>
                     </SwipeView.RightItems>
@@ -179,14 +179,23 @@
                             BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
                             Stroke="Transparent"
                             StrokeShape="RoundRectangle 18">
-                        <!-- Long press handled via CommunityToolkit TouchBehavior below -->
+                        <!-- Long press and press feedback behavior -->
                         <Border.Behaviors>
                             <toolkit:TouchBehavior
                                   BindingContext="{Binding Source={x:Reference rootCard}, Path=BindingContext}"
                                   LongPressDuration="2000"
                                   LongPressCommand="{Binding Source={x:Reference TodayPageRoot}, Path=BindingContext.ToggleEventCompletionCommand}"
-                                  LongPressCommandParameter="{Binding .}" />
+                                  LongPressCommandParameter="{Binding .}"
+                                  PressedScale="0.96"
+                                  PressedOpacity="0.7"
+                                  PressedBackgroundColor="{AppThemeBinding Light=#00000010, Dark=#FFFFFF22}"
+                                  PressedAnimationDuration="80"
+                                  PressedAnimationEasing="{x:Static Easing.CubicOut}"
+                                  DefaultScale="1"
+                                  DefaultOpacity="1"
+                                  DefaultBackgroundColor="Transparent" />
                         </Border.Behaviors>
+
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <!-- Icon with background -->
                             <Frame Grid.Column="0"
@@ -316,25 +325,17 @@
                              <TapGestureRecognizer Command="{Binding GoToTodayCommand}" />
                          </Grid.GestureRecognizers>
                            
-                         <!-- Background Circle -->
-                         <Border StrokeShape="Ellipse"
-                                Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
-                                StrokeThickness="4"
-                                BackgroundColor="Transparent"
-                                WidthRequest="{StaticResource CircleSize}"
-                                HeightRequest="{StaticResource CircleSize}"/>
-                               
-                         <!-- PROGRESS OVERLAY -->
-                         <Border StrokeShape="Ellipse"
-                                Stroke="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
-                                StrokeThickness="4"
-                                StrokeLineCap="Flat"
-                                StrokeDashOffset="0"
-                                BackgroundColor="Transparent"
-                                WidthRequest="{StaticResource CircleSize}"
-                                HeightRequest="{StaticResource CircleSize}"
-                                Rotation="-90"
-                                StrokeDashArray="{Binding CompletionProgress, Converter={StaticResource ProgressToDashArrayConverter}, ConverterParameter={StaticResource CircleSize}}"/>
+                         <!-- Background Circle and Progress Overlay are now replaced by ProgressRingView -->
+                         <views:ProgressRingView 
+                            x:Name="ProgressRingGraphicsView"
+                            WidthRequest="{StaticResource CircleSize}"
+                            HeightRequest="{StaticResource CircleSize}"
+                            Progress="{Binding CompletionProgress}" 
+                            TrackColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                            ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
+                            StrokeWidth="4"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"/>
                                 
                          <!-- Day Number and Day Name (tap toggles restrictions) -->
                          <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">

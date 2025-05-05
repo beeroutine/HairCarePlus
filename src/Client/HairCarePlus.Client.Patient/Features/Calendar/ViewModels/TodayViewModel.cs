@@ -1140,6 +1140,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                                 EventsForSelectedDate?.Remove(calendarEvent);
                             }
 
+                            // --- DEBUG LOGGING START ---
+                            _logger?.LogDebug("[Progress Recalc] Events in _allEventsForSelectedDate ({Count}):", _allEventsForSelectedDate?.Count ?? 0);
+                            if (_allEventsForSelectedDate != null)
+                            {
+                                foreach (var evt in _allEventsForSelectedDate)
+                                {
+                                    _logger?.LogDebug("  - ID: {Id}, Title: '{Title}', IsCompleted: {IsCompleted}, Type: {Type}", evt.Id, evt.Title, evt.IsCompleted, evt.EventType);
+                                }
+                            }
+                            // --- DEBUG LOGGING END ---
+
                             var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
                             CompletionProgress = prog;
                             CompletionPercentage = percent;

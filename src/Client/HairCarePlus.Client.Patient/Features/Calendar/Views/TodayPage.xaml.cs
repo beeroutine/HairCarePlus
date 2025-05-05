@@ -14,6 +14,8 @@ using HairCarePlus.Client.Patient.Common.Utils;
 using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
 using System.Threading;
+using System.Windows.Input;
+using Microsoft.Maui.ApplicationModel;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -30,7 +32,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         
         // long-press cancellation token
         private CancellationTokenSource? _longPressCts;
-        
+
+        private ICommand? _pressCardCommand;
+        private ICommand? _releaseCardCommand;
+
+        public ICommand PressCardCommand => _pressCardCommand ??= new Command<VisualElement>(async el => await AnimatePressAsync(el));
+        public ICommand ReleaseCardCommand => _releaseCardCommand ??= new Command<VisualElement>(async el => await AnimateReleaseAsync(el));
+
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
             try
@@ -87,84 +95,27 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
         
-        protected override async void OnAppearing()
+        protected override void OnBindingContextChanged()
         {
-            base.OnAppearing();
-            _logger.LogInformation("TodayPage OnAppearing called");
-            
-            // Subscribe to ViewModel changes when the page appears
-            if (_viewModel != null)
-            {
-                _viewModel.PropertyChanged -= OnViewModelPropertyChanged; // Ensure clean state
-                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-            }
-            else
-            {
-                _logger.LogWarning("ViewModel is null in OnAppearing, cannot subscribe to PropertyChanged.");
-            }
-            
-            try
-            {
-                // Set SelectedItem explicitly before loading ensures the binding is established
-                if (DateSelectorView != null && (DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
-                {
-                    _logger.LogDebug("Explicitly setting DateSelectorView.SelectedItem in OnAppearing");
-                    DateSelectorView.SelectedItem = _viewModel.SelectedDate;
-                }
-                
-                await _viewModel.EnsureLoadedAsync();
-                _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
+            base.OnBindingContextChanged();
 
-                // Ensure header reflects today's month/year immediately
-                _viewModel.VisibleDate = _viewModel.SelectedDate;
-
-                await Task.Delay(150); // Delay for UI rendering
-                _logger.LogDebug("Delay completed in OnAppearing");
-                
-                // Scroll the horizontal calendar to center the selected date after data loading
-                if (DateSelectorView != null)
-                {
-                    try
-                    {
-                        _logger.LogDebug("Attempting ScrollTo in OnAppearing for date: {SelectedDate}", _viewModel.SelectedDate);
-                        _ignoreNextScrollEvent = false;
-                        _ = CenterSelectedDateAsync();
-                        _logger.LogDebug("ScrollTo completed in OnAppearing");
-                        
-                        // Explicitly update visual states for visible items after scroll
-                        await Task.Delay(50); // Short delay after scroll completes
-                        UpdateVisibleItemStates(); 
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.LogError(ex, "Error scrolling DateSelectorView or updating states in OnAppearing");
-                    }
-                }
-                _logger.LogInformation("TodayPage OnAppearing completed");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in OnAppearing");
-            }
-        }
-        
-        protected override void OnDisappearing()
-        {
-            base.OnDisappearing();
-            _logger.LogInformation("TodayPage OnDisappearing called");
-            
-            // Отписываемся от событий при уходе со страницы
+            // Clean up previous subscription if context changes
             if (_viewModel != null)
             {
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
-            // cancel any pending header update to avoid memory leaks
-            // RESTORED: Cancellation logic for debounce token
-             _headerUpdateCts?.Cancel();
-             _headerUpdateCts = null;
+            if (BindingContext is TodayViewModel newViewModel)
+            {
+                _viewModel = newViewModel; // Update the local reference
+                _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            }
+            else
+            {
+                _viewModel = null; // Clear local reference if context is not the expected ViewModel
+            }
         }
-        
+
         private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
             if (e?.PropertyName == nameof(TodayViewModel.SelectedDate) && DateSelectorView != null && _viewModel != null)
@@ -396,6 +347,65 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             }
         }
 
+        private async Task AnimatePressAsync(VisualElement element)
+        {
+            try
+            {
+                if (HapticFeedback.Default.IsSupported)
+                {
+                    HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+                }
+
+                if (element is Border border)
+                {
+                    try
+                    {
+                        var shadow = border.Shadow ?? new Shadow
+                        {
+                            Radius = 14,
+                            Brush = new SolidColorBrush(Colors.Black),
+                            Offset = new Point(0, 0),
+                            Opacity = 0
+                        };
+                        border.Shadow = shadow;
+                        border.Shadow.Opacity = 0.3f;
+                    }
+                    catch { }
+                }
+            }
+            catch { /* haptics not supported */ }
+            await element.ScaleTo(0.96, 80, Easing.CubicOut);
+        }
+
+        private async Task AnimateReleaseAsync(VisualElement element, bool bounce = false)
+        {
+            try
+            {
+                if (bounce)
+                {
+                    await element.ScaleTo(1.05, 110, Easing.SpringOut);
+                    await element.ScaleTo(1.0, 120, Easing.SpringOut);
+                }
+                else
+                {
+                    await element.ScaleTo(1.0, 120, Easing.CubicOut);
+                }
+
+                if (element is Border border)
+                {
+                    try
+                    {
+                        if (border.Shadow != null)
+                        {
+                            border.Shadow.Opacity = 0f;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { /* ignored */ }
+        }
+
         #region Long-Press handlers
         private void OnEventCardPressed(object? sender, EventArgs e)
         {
@@ -403,6 +413,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 if (sender is Element el && el.BindingContext is CalendarEvent evt && _viewModel != null)
                 {
+                    // Visual feedback: quick press animation
+                    _ = AnimatePressAsync(el as VisualElement);
+
                     _longPressCts?.Cancel();
                     _longPressCts = new CancellationTokenSource();
                     var token = _longPressCts.Token;
@@ -414,12 +427,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                             await Task.Delay(2000, token); // 2-second press
                             if (token.IsCancellationRequested) return;
 
-                            await MainThread.InvokeOnMainThreadAsync(() =>
+                            await MainThread.InvokeOnMainThreadAsync(async () =>
                             {
                                 if (_viewModel.ToggleEventCompletionCommand.CanExecute(evt))
                                 {
                                     _viewModel.ToggleEventCompletionCommand.Execute(evt);
                                 }
+
+                                // Bounce after successful long-press action
+                                await AnimateReleaseAsync(el as VisualElement, bounce: true);
                             });
                         }
                         catch (TaskCanceledException) { }
@@ -435,6 +451,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private void OnEventCardReleased(object? sender, EventArgs e)
         {
             _longPressCts?.Cancel();
+            if (sender is VisualElement el)
+            {
+                // Smoothly restore scale if user lifts finger before long-press triggers
+                _ = AnimateReleaseAsync(el, bounce: false);
+            }
         }
         #endregion
 
@@ -461,6 +482,64 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 _logger?.LogError(ex, "Error in OnSwipeItemDoneInvoked");
             }
+        }
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            _logger.LogInformation("TodayPage OnAppearing called");
+
+            if (_viewModel == null)
+            {
+                _logger.LogWarning("ViewModel is null in OnAppearing, aborting.");
+                return;
+            }
+
+            try
+            {
+                // Ensure CollectionView has selected item AFTER ItemsSource populated
+                if (DateSelectorView != null && (DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
+                {
+                    DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                }
+
+                await _viewModel.EnsureLoadedAsync();
+                _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
+
+                _viewModel.VisibleDate = _viewModel.SelectedDate;
+
+                await Task.Delay(150); // Allow UI to render
+
+                if (DateSelectorView != null)
+                {
+                    _ignoreNextScrollEvent = false;
+                    _ = CenterSelectedDateAsync();
+                    await Task.Delay(50);
+                    UpdateVisibleItemStates();
+                }
+
+                _logger.LogInformation("TodayPage OnAppearing completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in TodayPage.OnAppearing");
+            }
+        }
+
+        protected override void OnDisappearing()
+        {
+            base.OnDisappearing();
+            _logger.LogInformation("TodayPage OnDisappearing called");
+
+            if (_viewModel != null)
+            {
+                _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+
+            _headerUpdateCts?.Cancel();
+            _headerUpdateCts = null;
+            _longPressCts?.Cancel();
+            _logger.LogInformation("TodayPage OnDisappearing completed");
         }
     }
 } 
