@@ -40,7 +40,7 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
-            <x:Double x:Key="CircleSize">100</x:Double>
+            <x:Double x:Key="CircleSize">92</x:Double>
             
             <!-- Layout Resources -->
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
@@ -52,8 +52,8 @@
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
                 <Grid x:Name="rootContainer" 
-                       WidthRequest="55" 
-                       HeightRequest="60" 
+                       WidthRequest="48" 
+                       HeightRequest="54" 
                        Padding="0" 
                        Margin="0"
                        BackgroundColor="Transparent">
@@ -76,21 +76,21 @@
                     <!-- Day number in circle -->
                     <Frame Grid.Row="1"
                           x:Name="dayFrame"
-                          CornerRadius="20"
+                          CornerRadius="17"
                           Padding="0"
-                          WidthRequest="40"
-                          HeightRequest="40"
+                          WidthRequest="34"
+                          HeightRequest="34"
                           BackgroundColor="Transparent"
                           BorderColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
                           HorizontalOptions="Center"
                           VerticalOptions="Center"
-                          Shadow="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=Shadow}">
+                          Shadow="{x:Null}">
                         <Label x:Name="dayText"
                               Text="{Binding ., StringFormat='{0:%d}'}"
                               FontSize="16"
                               HorizontalOptions="Center"
                               VerticalOptions="Center"
-                              TextColor="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}"/>
+                              TextColor="White"/>
                     </Frame>
 
                     <!-- Event Indicators bar -->
@@ -143,7 +143,7 @@
                                 <VisualState.Setters>
                                     <Setter Property="BackgroundColor" Value="Transparent" />
                                     <Setter TargetName="dayFrame" Property="Frame.BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{Binding ., Converter={StaticResource DateHasAnyEventConverter}, ConverterParameter=TextColor}" /> 
+                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{StaticResource Gray500}" /> 
                                     <Setter Property="Scale" Value="1.0" />
                                 </VisualState.Setters>
                             </VisualState>
@@ -173,39 +173,34 @@
                             </SwipeItem>
                         </SwipeItems>
                     </SwipeView.RightItems>
-                    <Border Margin="0,4,0,0"
-                            x:Name="rootCard"
-                            StrokeThickness="0"
-                            BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
-                            Stroke="Transparent"
-                            StrokeShape="RoundRectangle 18">
+                    <Border x:Name="rootCard"
+                            Style="{StaticResource CalendarCardBorderStyle}"
+                            StrokeShape="RoundRectangle 16">
                         <!-- Long press and press feedback behavior -->
                         <Border.Behaviors>
                             <toolkit:TouchBehavior
                                   BindingContext="{Binding Source={x:Reference rootCard}, Path=BindingContext}"
-                                  LongPressDuration="2000"
+                                  LongPressDuration="600"
                                   LongPressCommand="{Binding Source={x:Reference TodayPageRoot}, Path=BindingContext.ToggleEventCompletionCommand}"
                                   LongPressCommandParameter="{Binding .}"
                                   PressedScale="0.96"
                                   PressedOpacity="0.7"
-                                  PressedBackgroundColor="{AppThemeBinding Light=#00000010, Dark=#FFFFFF22}"
                                   PressedAnimationDuration="80"
                                   PressedAnimationEasing="{x:Static Easing.CubicOut}"
                                   DefaultScale="1"
-                                  DefaultOpacity="1"
-                                  DefaultBackgroundColor="Transparent" />
+                                  DefaultOpacity="1" />
                         </Border.Behaviors>
 
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowDefinitions="Auto,*" VerticalOptions="Center">
                             <!-- Icon with background -->
-                            <Frame Grid.Column="0"
-                                   WidthRequest="40"
-                                   HeightRequest="40"
-                                   CornerRadius="20"
+                            <Frame Grid.RowSpan="2" Grid.Column="0"
+                                   WidthRequest="44"
+                                   HeightRequest="44"
+                                   CornerRadius="22"
                                    Padding="0"
                                    HasShadow="False"
                                    BorderColor="Transparent"
-                                   BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}}">
+                                   BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}, ConverterParameter=DarkAware}">
                                 <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                        FontFamily="MaterialIcons"
                                        FontSize="20"
@@ -215,16 +210,23 @@
                             </Frame>
 
                             <!-- Task Content -->
-                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start">
-                                <Label Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                       FontSize="14"
-                                       FontAttributes="Bold"
-                                       Margin="0,0,0,2"
-                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                            <Label x:Name="timeLabel"
+                                   Grid.Column="1"
+                                   Text="{Binding Date, StringFormat='{0:HH:mm}'}"
+                                   FontSize="15"
+                                   FontAttributes="None"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <VerticalStackLayout Grid.Column="1" Grid.Row="1" Spacing="2" VerticalOptions="Start">
                                 <Label x:Name="titleLabel"
                                        Text="{Binding Title}"
-                                       FontSize="16"
-                                       FontAttributes="None"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
                                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
@@ -257,8 +259,8 @@
                         <!-- Visual state when completed -->
                         <Border.Triggers>
                             <DataTrigger TargetType="Border" Binding="{Binding IsCompleted}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#DDEEE0, Dark=#2A3B2C}" />
-                                <Setter Property="Opacity" Value="0.6" />
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardCompletedLight}, Dark={StaticResource CardCompletedDark}}" />
+                                <Setter Property="Opacity" Value="1" />
                             </DataTrigger>
                         </Border.Triggers>
                     </Border>
@@ -300,19 +302,25 @@
     <Grid RowDefinitions="Auto,*" Padding="0">
         <!-- Fixed Header -->
         <Frame Grid.Row="0" 
-               BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
                BorderColor="Transparent"
                CornerRadius="0"
                Margin="0"
                Padding="0"
                HasShadow="False">
-            <!-- Header structured as Grid: Row0 = restrictions, Row1 = circle/month, Row2 = horizontal calendar -->
+            <!-- Apply gradient background -->
+            <Frame.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0" Color="{AppThemeBinding Light=#F9F9F9, Dark=#1A1A1A}"/>
+                    <GradientStop Offset="1" Color="{AppThemeBinding Light=#FFFFFF, Dark=#202020}"/>
+                </LinearGradientBrush>
+            </Frame.Background>
+
             <Grid x:Name="HeaderGrid"
-                  Padding="16,8,16,0"
+                  Padding="16,0,16,0"
                   RowDefinitions="Auto,Auto">
 
                 <!-- Single row header: left = circle, right = vertical stack (restrictions + month/year) -->
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,4,0,8" VerticalOptions="Center">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="0,0,0,4" VerticalOptions="Center">
                      <!-- COL 0: Date Circle -->
                      <Grid Grid.Column="0"
                            HorizontalOptions="Start"
@@ -331,9 +339,9 @@
                             WidthRequest="{StaticResource CircleSize}"
                             HeightRequest="{StaticResource CircleSize}"
                             Progress="{Binding CompletionProgress}" 
-                            TrackColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                            TrackColor="{AppThemeBinding Light={StaticResource ProgressTrackLight}, Dark=#525252}"
                             ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
-                            StrokeWidth="4"
+                            StrokeWidth="5"
                             HorizontalOptions="Center"
                             VerticalOptions="Center"/>
                                 
@@ -354,22 +362,19 @@
                      </Grid>
 
                      <!-- COL 1: Right stack with restrictions and month/year -->
-                     <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
-                         <Label HorizontalOptions="End" VerticalOptions="Center" TranslationY="12">
-                             <Label.FormattedText>
-                                 <FormattedString>
-                                     <Span Text="{Binding CurrentMonthName}" 
-                                           FontSize="28" 
-                                           FontAttributes="Bold" 
-                                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-                                     <Span Text=" "/>
-                                     <Span Text="{Binding CurrentYear}" 
-                                           FontSize="18" 
-                                           FontAttributes="None" 
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"/>
-                                 </FormattedString>
-                             </Label.FormattedText>
-                         </Label>
+                     <VerticalStackLayout Grid.Column="1" Spacing="0" HorizontalOptions="End" VerticalOptions="Center">
+                         <!-- Month name only -->
+                         <Label Text="{Binding CurrentMonthName}"
+                                FontSize="32"
+                                FontAttributes="Bold"
+                                HorizontalOptions="End"
+                                TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                         <!-- Days since transplant subtitle -->
+                         <Label Text="{Binding DaysSinceTransplantSubtitle}"
+                                FontSize="14"
+                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                HorizontalOptions="End"
+                                Margin="0,-4,0,0" />
                      </VerticalStackLayout>
                  </Grid>
 
@@ -394,7 +399,16 @@
 
         <!-- Main Content Area -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="16,10,16,16" Spacing="10">
+            <VerticalStackLayout Spacing="10">
+                <VerticalStackLayout.Padding>
+                    <OnPlatform x:TypeArguments="Thickness">
+                        <On Platform="iOS" Value="16,10,16,32" />
+                        <On Platform="Android" Value="16,10,16,16" />
+                        <On Platform="WinUI" Value="16,10,16,16" />
+                        <On Platform="MacCatalyst" Value="16,10,16,16" />
+                        <On Platform="Tizen" Value="16,10,16,16" />
+                    </OnPlatform>
+                </VerticalStackLayout.Padding>
                 <!-- Event List -->
                 <CollectionView ItemsSource="{Binding EventsForSelectedDate}"
                                 ItemTemplate="{StaticResource EventTemplate}"

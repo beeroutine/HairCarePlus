@@ -64,4 +64,26 @@
     <Color x:Key="Blue100Accent">#3E8EED</Color>
     <Color x:Key="Blue200Accent">#72ACF1</Color>
     <Color x:Key="Blue300Accent">#A7CBF6</Color>
+
+    <Color x:Key="CardBackgroundDark">#182635</Color>
+    <Color x:Key="CardBackgroundLight">#EAF4FC</Color>
+
+    <!-- Calendar Card Colors -->
+    <Color x:Key="CardShadowLight">#CCE0F6</Color> <!-- ~20% opacity blue shadow -->
+    <Color x:Key="CardShadowDark">#0000004D</Color> <!-- 30% black -->
+
+    <Color x:Key="PressedOverlayLight">#0000000A</Color> <!-- black 4% -->
+    <Color x:Key="PressedOverlayDark">#FFFFFF33</Color> <!-- white 20% -->
+
+    <!-- Progress Ring track colors -->
+    <Color x:Key="ProgressTrackLight">#E0E0E0</Color>
+    <Color x:Key="ProgressTrackDark">#404040</Color>
+
+    <!-- Brushes for shadows -->
+    <SolidColorBrush x:Key="CardShadowLightBrush" Color="{StaticResource CardShadowLight}"/>
+    <SolidColorBrush x:Key="CardShadowDarkBrush" Color="{StaticResource CardShadowDark}"/>
+
+    <!-- Completed card backgrounds -->
+    <Color x:Key="CardCompletedLight">#DDE7F6</Color>
+    <Color x:Key="CardCompletedDark">#23313F</Color>
 </ResourceDictionary>

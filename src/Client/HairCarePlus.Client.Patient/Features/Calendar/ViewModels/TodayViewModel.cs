@@ -271,6 +271,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public string CurrentYear => VisibleDate.ToString("yyyy");
         
+        // Added: SurgeryDate and DaysSinceTransplant for header subtitle
+        private readonly DateTime _surgeryDate = new DateTime(2024, 5, 15); // TODO: fetch from profile service
+        public int DaysSinceTransplant => (DateTime.Today - _surgeryDate).Days;
+        public string DaysSinceTransplantSubtitle => $"{DaysSinceTransplant} день после пересадки";
+        
         public ObservableCollection<DateTime> CalendarDays
         {
             get => _calendarDays;
@@ -739,19 +744,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
             {
-                // Filter out restriction events (CriticalWarning) — they are displayed separately as icons, not in the tasks list
                 var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-                var displayEvents = eventsList.Where(e => e.EventType != EventType.CriticalWarning).ToList();
 
-                FlattenedEvents = new ObservableCollection<CalendarEvent>(displayEvents);
+                // UI показывает ТОЛЬКО невыполненные карточки и не-restriction
+                var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
+
+                FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
                 SortedEvents = new ObservableCollection<CalendarEvent>(
-                    displayEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
-                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(displayEvents);
+                    visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
+                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
 
-                // Preserve a master list that includes *all* events for the day (completed + incomplete)
-                _allEventsForSelectedDate = displayEvents;
+                // Храним полный список для расчёта прогресса и возможных деталей
+                _allEventsForSelectedDate = eventsList;
 
-                var (prog, percent) = _progressCalculator.CalculateProgress(displayEvents);
+                var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
                 CompletionProgress = prog;
                 CompletionPercentage = percent;
                 OnPropertyChanged(nameof(FlattenedEvents));
