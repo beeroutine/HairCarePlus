@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # HairCarePlus Development Guidelines
 
@@ -22,10 +22,10 @@ Always consult these files when adding or modifying code. Ensure adherence to:
 3. Naming conventions: `[FeatureName][Type].cs`.
 4. Logging via `ILogger<>`, avoid `Debug.WriteLine`.
 5. Follow UI/UX guidelines for themes, accessibility, and responsiveness.
-
+s
 Additional stack requirements:
 • .NET 9 SDK (9.0.100‑rc.2+) и .NET MAUI 9.
-• Соблюдайте Clean Architecture, MVVM, SOLID, KISS.
+• Соблюдайте Clean Architecture, MVVM, SOLID, CQRS,s KISS.
 • Перед коммитом запускайте `dotnet test` — ошибок быть не должно.
 
 Use this rule to navigate the primary documentation quickly.

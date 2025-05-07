@@ -78,9 +78,10 @@
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="80" 
                             Margin="0,0,0,10">
-                <!-- <CollectionView.Behaviors>
-                    <behaviors:ScrollToIndexBehavior TargetIndex="{Binding ScrollToIndexTarget}" />
-                </CollectionView.Behaviors> -->
+                <CollectionView.Behaviors>
+                    <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
+                                                                SelectableDates="{Binding CalendarDays}" />
+                </CollectionView.Behaviors>
             </CollectionView>
 
             <!-- Events List -->
@@ -167,41 +168,15 @@
                               TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}"/>
                     </Border>
 
-                    <!-- Event Indicators bar -->
+                    <!-- Unified indicator bar instead of three dots -->
                     <BoxView Grid.Row="2"
                             HeightRequest="3"
                             CornerRadius="1.5"
                             WidthRequest="24"
                             HorizontalOptions="Center"
                             Margin="0,4,0,0"
-                            IsVisible="False"
-                            Color="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-
-                    <!-- Event Indicators details -->
-                    <HorizontalStackLayout Grid.Row="2"
-                                        VerticalOptions="End" 
-                                        HorizontalOptions="Center"
-                                        Spacing="3"
-                                        Margin="0,10,0,0"
-                                        IsVisible="False">
-                        <BoxView WidthRequest="6" 
-                                HeightRequest="6" 
-                                CornerRadius="3"
-                                Color="{StaticResource MedicationBlue}"
-                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.MedicationTreatment}}"/>
-                        
-                        <BoxView WidthRequest="6" 
-                                HeightRequest="6"
-                                CornerRadius="3"
-                                Color="{StaticResource PhotoPurple}"
-                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Photo}}"/>
-                                
-                        <BoxView WidthRequest="6" 
-                                HeightRequest="6"
-                                CornerRadius="3"
-                                Color="{StaticResource VideoOrange}"
-                                IsVisible="{Binding ., Converter={StaticResource DateHasEventTypeConverter}, ConverterParameter={x:Static models:EventType.Video}}"/>
-                    </HorizontalStackLayout>
+                            Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
+                            IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
                     
                     <Grid.GestureRecognizers>
                         <!-- REMOVED: The TapGestureRecognizer below was redundant as selection is handled by CollectionView.SelectedItem -->

@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Maui.Controls;
@@ -9,13 +8,11 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.ComponentModel;
 using Microsoft.Maui.Handlers;
-using HairCarePlus.Client.Patient.Common.Utils;
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
 using System.Threading;
-using System.Windows.Input;
-using Microsoft.Maui.ApplicationModel;
+using HairCarePlus.Client.Patient.Common.Utils;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -24,20 +21,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly ILogger<TodayPage> _logger;
         private TodayViewModel? _viewModel;
         private bool _isUpdatingFromScroll = false; // flag to avoid recursive scroll/selection updates
-        private bool _ignoreNextScrollEvent = false; // skip header update for programmatic scroll
-        private CancellationTokenSource? _headerUpdateCts; // debounce token for month header update
-        private DateTime _pendingVisibleDate;
-        
-        private bool _headerLocked = false; // lock header updates during programmatic animation until next user gesture
-        
-        // long-press cancellation token
-        private CancellationTokenSource? _longPressCts;
-
-        private ICommand? _pressCardCommand;
-        private ICommand? _releaseCardCommand;
-
-        public ICommand PressCardCommand => _pressCardCommand ??= new Command<VisualElement>(async el => await AnimatePressAsync(el));
-        public ICommand ReleaseCardCommand => _releaseCardCommand ??= new Command<VisualElement>(async el => await AnimateReleaseAsync(el));
 
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -81,13 +64,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     };
                 }
 #endif
-
-                // Hook scrolling event to keep Month/Year header in sync when user swipes the horizontal calendar
-                // RESTORED: Hook scroll event again
-                if (DateSelectorView != null)
-                {
-                   DateSelectorView.Scrolled += OnDateSelectorScrolled;
-                }
             }
             catch (Exception ex)
             {
@@ -134,26 +110,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                   _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });
                 
-                // RESTORED: Locking mechanism for scroll handler during animation
-                 _headerLocked = true;
-                 _ = Task.Run(async () =>
-                 {
-                     try
-                     {
-                         await Task.Delay(650); // Increased delay for animation + settling
-                         await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
-                         {
-                             // Unlock header updates after animation finishes
-                             _headerLocked = false;
-                         });
-                     }
-                     catch (TaskCanceledException) { }
-                 });
-                
-                // Scroll to the item with animation
-                // RESTORED: Flag to ignore the first scroll event from programmatic scroll
-                 _ignoreNextScrollEvent = true; 
-                 _ = CenterSelectedDateAsync(); // Still scroll to center
+                // Scroll to selected date with animation
+                _ = CenterSelectedDateAsync(); // Still scroll to center
                 
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
@@ -193,142 +151,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                  _logger.LogError(ex, "Error updating visible item states.");
              }
         }
-        
-        private void OnCheckBoxChanged(object? sender, CheckedChangedEventArgs e)
-        {
-            if (sender is not CheckBox checkBox) return;
-            
-            var parent = checkBox.Parent;
-            VisualElement? grid = null;
-            
-            // Traverse up the visual tree until we find a Grid
-            while (parent != null && grid == null)
-            {
-                grid = parent as Grid;
-                parent = parent.Parent;
-            }
-            
-            if (grid != null)
-            {
-                // Set the visual state based on the checkbox value
-                VisualStateManager.GoToState(grid, checkBox.IsChecked ? "ItemCompleted" : "ItemNormal");
-                
-                // Also set visual state for the checkbox itself
-                VisualStateManager.GoToState(checkBox, checkBox.IsChecked ? "CheckboxCompleted" : "CheckboxNormal");
-            }
-            
-            // Get the binding context and execute the command
-            if (checkBox.BindingContext is CalendarEvent calendarEvent && _viewModel != null)
-            {
-                _logger.LogInformation("Checkbox toggled for Event ID {EventId}. New state: {State}", calendarEvent.Id, checkBox.IsChecked);
-                if (!_viewModel.ToggleEventCompletionCommand.CanExecute(calendarEvent))
-                {
-                    _logger.LogWarning("ToggleEventCompletionCommand cannot execute for Event ID {EventId}", calendarEvent.Id);
-                }
-                _viewModel.ToggleEventCompletionCommand?.Execute(calendarEvent);
-            }
-        }
-        
-        private void OnCalendarDayLongPressed(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (sender is Grid grid && grid.BindingContext is DateTime date && _viewModel != null)
-                {
-                    _viewModel.OpenMonthCalendarCommand?.Execute(date);
-                    _logger?.LogDebug("OpenMonthCalendarCommand executed for date: {Date}", date.ToShortDateString());
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during long press on calendar day.");
-            }
-        }
-        
-        private void OnEventTapped(object? sender, TappedEventArgs e)
-        {
-            try
-            {
-                if (sender is Element element && element.BindingContext is CalendarEvent calendarEvent && _viewModel != null)
-                {
-                    _logger.LogInformation("Event tapped, executing ShowEventDetailsCommand for Event ID: {EventId}", calendarEvent.Id);
-                    _viewModel.ShowEventDetailsCommand?.Execute(calendarEvent);
-                }
-                else
-                {
-                    _logger.LogWarning("Event tapped but sender or its binding context is not a CalendarEvent, or ViewModel is null.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling event tap.");
-            }
-        }
-
-        // RESTORED: Method OnDateSelectorScrolled(object? sender, ItemsViewScrolledEventArgs e)
-        private void OnDateSelectorScrolled(object? sender, ItemsViewScrolledEventArgs e)
-        {
-            try
-            {
-                _logger.LogTrace("Scrolled: first={First}, last={Last}, delta={Delta}, freeze={Freeze}, prog={Prog}", e.FirstVisibleItemIndex, e.LastVisibleItemIndex, e.HorizontalDelta, _headerLocked, _ignoreNextScrollEvent);
-                if (_ignoreNextScrollEvent)
-                {
-                    _ignoreNextScrollEvent = false;
-                    return;
-                }
-
-                if (_headerLocked)
-                {
-                    return; // ignore updates during freeze
-                }
-
-                if (_isUpdatingFromScroll) return; // guard against reentrancy
-                if (DateSelectorView == null || _viewModel == null) return;
-
-                var list = _viewModel.SelectableDates;
-                if (e.FirstVisibleItemIndex < 0 || e.LastVisibleItemIndex < 0 ||
-                    e.FirstVisibleItemIndex >= list.Count || e.LastVisibleItemIndex >= list.Count) return;
-
-                // Determine central index of visible range
-                int centerIdx = e.CenterItemIndex;
-                if (centerIdx < 0)
-                {
-                    centerIdx = (e.FirstVisibleItemIndex + e.LastVisibleItemIndex) / 2;
-                }
-                if (centerIdx < 0 || centerIdx >= list.Count) return;
-
-                var candidate = list[centerIdx];
-                _logger.LogTrace("Candidate date for header: {Candidate}", candidate.ToShortDateString());
-
-                if (!_headerLocked && (candidate.Month != _viewModel.VisibleDate.Month || candidate.Year != _viewModel.VisibleDate.Year))
-                {
-                    // Debounce header update 120ms
-                    _pendingVisibleDate = candidate;
-                    _headerUpdateCts?.Cancel();
-                    _headerUpdateCts = new CancellationTokenSource();
-                    var token = _headerUpdateCts.Token;
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await Task.Delay(120, token);
-                            if (token.IsCancellationRequested) return;
-                            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
-                            {
-                                _isUpdatingFromScroll = true;
-                                _viewModel.VisibleDate = _pendingVisibleDate;
-                                _isUpdatingFromScroll = false;
-                            });
-                        }
-                        catch (TaskCanceledException) { }
-                    }, token);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error in OnDateSelectorScrolled");
-            }
-        }
 
         private async Task CenterSelectedDateAsync()
         {
@@ -344,143 +166,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             catch(Exception ex)
             {
                 _logger?.LogError(ex, "Error centering date");
-            }
-        }
-
-        private async Task AnimatePressAsync(VisualElement element)
-        {
-            try
-            {
-                if (HapticFeedback.Default.IsSupported)
-                {
-                    HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-                }
-
-                if (element is Border border)
-                {
-                    try
-                    {
-                        var shadow = border.Shadow ?? new Shadow
-                        {
-                            Radius = 14,
-                            Brush = new SolidColorBrush(Colors.Black),
-                            Offset = new Point(0, 0),
-                            Opacity = 0
-                        };
-                        border.Shadow = shadow;
-                        border.Shadow.Opacity = 0.3f;
-                    }
-                    catch { }
-                }
-            }
-            catch { /* haptics not supported */ }
-            await element.ScaleTo(0.96, 80, Easing.CubicOut);
-        }
-
-        private async Task AnimateReleaseAsync(VisualElement element, bool bounce = false)
-        {
-            try
-            {
-                if (bounce)
-                {
-                    await element.ScaleTo(1.05, 110, Easing.SpringOut);
-                    await element.ScaleTo(1.0, 120, Easing.SpringOut);
-                }
-                else
-                {
-                    await element.ScaleTo(1.0, 120, Easing.CubicOut);
-                }
-
-                if (element is Border border)
-                {
-                    try
-                    {
-                        if (border.Shadow != null)
-                        {
-                            border.Shadow.Opacity = 0f;
-                        }
-                    }
-                    catch { }
-                }
-            }
-            catch { /* ignored */ }
-        }
-
-        #region Long-Press handlers
-        private void OnEventCardPressed(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (sender is Element el && el.BindingContext is CalendarEvent evt && _viewModel != null)
-                {
-                    // Visual feedback: quick press animation
-                    _ = AnimatePressAsync(el as VisualElement);
-
-                    _longPressCts?.Cancel();
-                    _longPressCts = new CancellationTokenSource();
-                    var token = _longPressCts.Token;
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await Task.Delay(2000, token); // 2-second press
-                            if (token.IsCancellationRequested) return;
-
-                            await MainThread.InvokeOnMainThreadAsync(async () =>
-                            {
-                                if (_viewModel.ToggleEventCompletionCommand.CanExecute(evt))
-                                {
-                                    _viewModel.ToggleEventCompletionCommand.Execute(evt);
-                                }
-
-                                // Bounce after successful long-press action
-                                await AnimateReleaseAsync(el as VisualElement, bounce: true);
-                            });
-                        }
-                        catch (TaskCanceledException) { }
-                    }, token);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error in OnEventCardPressed");
-            }
-        }
-
-        private void OnEventCardReleased(object? sender, EventArgs e)
-        {
-            _longPressCts?.Cancel();
-            if (sender is VisualElement el)
-            {
-                // Smoothly restore scale if user lifts finger before long-press triggers
-                _ = AnimateReleaseAsync(el, bounce: false);
-            }
-        }
-        #endregion
-
-        private void OnSwipeItemDoneInvoked(object? sender, EventArgs e)
-        {
-            try
-            {
-                if (sender is SwipeItem swipeItem && swipeItem.BindingContext is CalendarEvent evt && _viewModel != null)
-                {
-                    // execute completion command
-                    if (_viewModel.ToggleEventCompletionCommand.CanExecute(evt))
-                    {
-                        _viewModel.ToggleEventCompletionCommand.Execute(evt);
-                    }
-                }
-
-                // Close SwipeView regardless
-                if (sender is SwipeItem { Parent: SwipeItems { Parent: SwipeView sv } })
-                {
-                    sv.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error in OnSwipeItemDoneInvoked");
             }
         }
 
@@ -512,7 +197,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
                 if (DateSelectorView != null)
                 {
-                    _ignoreNextScrollEvent = false;
                     _ = CenterSelectedDateAsync();
                     await Task.Delay(50);
                     UpdateVisibleItemStates();
@@ -536,9 +220,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
-            _headerUpdateCts?.Cancel();
-            _headerUpdateCts = null;
-            _longPressCts?.Cancel();
             _logger.LogInformation("TodayPage OnDisappearing completed");
         }
     }
