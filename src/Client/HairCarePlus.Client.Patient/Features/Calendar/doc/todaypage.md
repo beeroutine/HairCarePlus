@@ -9,6 +9,7 @@ TodayPage - основная страница календаря в прилож
 - Визуальный индикатор выбранной даты с использованием VisualStateManager
 - Отображение списка событий для выбранной даты
 - Визуальные индикаторы различных типов событий (лекарства, фото, видео)
+- Цветовая индикация типов событий через `DataTrigger` и ресурсы цвета (без конвертера)
 - Завершение задачи двумя жестами: **свайп влево** _или_ **долгое нажатие&nbsp;≥ 2 с** на карточке (реализовано через `SwipeView` и `TouchBehavior`).
 - Анимированное кольцо-прогресс вокруг сегодняшней даты (Stroke + StrokeDashArray). Логика вычисления `CompletionProgress` добавлена во ViewModel.
 - Возможность перейти к сегодняшней дате простым тапом по кругу.
@@ -59,12 +60,15 @@ TodayPage - основная страница календаря в прилож
 - `OpenMonthCalendarCommand` - открывает полноэкранный месячный календарь
 - `ViewEventDetailsCommand` - показывает детали выбранного события
 - `PostponeEventCommand` - позволяет отложить событие на другую дату
+- все команды реализуются через **CQRS** (`ICommandBus`/`IQueryBus`) и тестируемы в isolation
 
 ### Обработка событий
 Вся логика выбора и прокрутки теперь находится во ViewModel:
-* `SelectDateCommand` — устанавливает `SelectedDate`, вызывает `LoadTodayEventsAsync`.
+* `SelectDateCommand` — устанавливает `SelectedDate`, затем отправляет `GetEventsForDateQuery` через `IQueryBus`.
+* Полученные события объединяются и раскидываются по коллекциям UI, далее `EventCounts` запрашиваются одной пачкой (`GetEventCountsForDatesQuery`).
+* Смайпы/долгое нажатие отправляют `ToggleEventCompletionCommand` в `ICommandBus`; хендлер обновляет репозиторий и публикует `EventUpdatedMessage`, что триггерит обновление UI.
 * Свойство `ScrollToIndexTarget` уведомляет View о необходимости прокрутки к дате.
-* Визуальное состояние элементов даты управляется VisualStateManager автоматически, без кода-behind.
+* Визуальное состояние элементов даты управляется VisualStateManager — конвертеры не используются.
 
 ### Адаптивность и темы
 Используется `AppThemeBinding`, все основные цвета вынесены в `Resources/Styles/Colors.xaml`.
@@ -126,57 +130,15 @@ TodayPage - основная страница календаря в прилож
 - Сохранение и восстановление выбранной даты через локальное хранилище (`SelectedDateKey`)
 
 ## Взаимодействие с сервисами
-- `ICalendarService` - основной сервис для получения данных о событиях:
-  - `GetEventsForDateAsync` - загрузка событий для выбранной даты
-  - `GetEventsForDateRangeAsync` - загрузка событий для диапазона дат
-  - `GetOverdueEventsAsync` - получение просроченных событий
-  - `ToggleEventCompletionAsync` - изменение статуса выполнения события
-  - `PostponeEventAsync` - перенос события на другую дату
+Работа с данными идёт через слой **Application/CQRS**: 
+* Queries (`GetEventsForDateQuery`, `GetEventCountsForDatesQuery`, `GetActiveRestrictionsQuery`) 
+* Commands (`ToggleEventCompletionCommand`, `PostponeEventCommand`)
+Инфраструктурный `IHairTransplantEventRepository` обеспечивают кэш и persistance.
 
-## Производительность
-- Использование `Dispatcher.DispatchAsync` для обновления UI из фоновых потоков
-- Отложенная загрузка данных через `Task.Run`
-- Кэширование данных о событиях для видимого диапазона дат
-- Раздельное обновление различных частей интерфейса
+## Производительность (кратко)
+* UI-обновления через `Dispatcher`.
+* Хендлеры кэшируют данные и отправляют `EventUpdatedMessage` для точечных обновлений.
 
-## Хронология изменений
-
-### Сентябрь 2025
-* Переведены карточки событий c `Frame` на `Border` (улучшение производительности и стилизации).  
-* Добавлено кольцо-прогресс вокруг текущей даты; вычисление `CompletionProgress` перенесено в ViewModel.  
-* Реализован long-press ≥ 2 с через MAUI CommunityToolkit `TouchBehavior` (отказ от кастомного `LongPressGestureRecognizer`).  
-* Цвет `PrimaryLight` добавлен в ресурсы; исправлены XAML-парсинг ошибки при запуске.
-
-### Апрель 2025
-* Все вызовы `Debug.WriteLine` в `TodayPage`, `TodayViewModel`, **VisualFeedbackBehavior** и связанных конвертерах удалены.
-* Используется `ILogger<T>` из Microsoft.Extensions.Logging, регистрируемый через DI.
-* Логи фильтруются в `MauiProgram.cs`:
-  ```csharp
-  builder.Logging.AddDebug()
-               .AddFilter("HairCarePlus.Client.Patient", LogLevel.Information)
-               .AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
-  ```
-* Исправлен «рывок» при горизонтальном свайпе календаря путём изменения `SnapPointsType="None"` и добавления задержки **100 мс** в методе `HandleScrollToIndexTargetChanged`.
-* Выделение текущего дня гарантируется повторным применением `VisualState` после прокрутки.
-* Поведение для анимации нажатия переведено на `ILogger`.
-* Микро‑анимация использует `Easing.CubicOut` → `Easing.SpringOut`, что делает отклик более «живым».
-* Первичная генерация календаря (≈1 226 записей) выполняется асинхронно при первом запуске.
-* Кэш событий для видимых дат: hit‑rate вырос до >80 % при типичном сценарии навигации.
-* `EnableSensitiveDataLogging()` активен только в `#if DEBUG`.
-* В Release‑сборке чувствительные данные не логируются.
-
-### Обновления (июль 2025)
-
-1. Переход на SDK .NET 9.0.100‑rc.2 и MAUI 9.0+.
-   * Исправлен системный серый фон `SelectedBackgroundView` на iOS – больше не требуется кастомный handler.
-   * `DateSelectorView` снова использует штатный `SelectionMode="Single"` и двустороннюю привязку `SelectedItem ↔ SelectedDate`.
-
-2. Центрирование на сегодняшней дате при запуске.
-   * `TodayViewModel.ScrollToIndexTarget` устанавливается в `SelectedDate`, а `TodayPage` ― обрабатывает событие и скроллит `CollectionView` к центру.
-   * Команда `GoToTodayCommand` привязана к круглому индикатору даты и сбрасывает выбор к текущему дню.
-
-3. Удалена временная обработка `DateSelectorView_SelectionChanged` из кода‑behind ‑ вся логика выделения и прокрутки теперь в ViewModel + VisualStateManager.
-
-4. Документация обновлена: описан фикс серого оверлея, актуальные версии SDK и упрощённый механизм выделения.
+*(Для подробностей изменений см. CHANGELOG.md)*
 
 --- 

@@ -1,6 +1,6 @@
 # Модуль Calendar — обзор
 
-> Версия: апрель 2025
+> Версия: сентябрь 2025
 
 ## Назначение
 Модуль Calendar отвечает за планирование и сопровождение пост‑операционного периода пациента. Он обеспечивает:
@@ -9,70 +9,47 @@
 * отслеживание выполнения, перенос и завершение событий;
 * локальное хранение и офлайн‑работу с последующей синхронизацией.
 
-## Архитектура (Clean Architecture)
+## Архитектура (обновлённая Clean Architecture + CQRS)
 ```
 Calendar/
+├── Application/
+│   ├── Commands/   # ToggleEventCompletionCommand …
+│   ├── Queries/    # GetEventsForDateQuery, GetEventCountsForDatesQuery …
+│   └── Messages/   # EventUpdatedMessage
 ├── Domain/
-│   ├── Entities/ HairTransplantEvent
-│   ├── Repositories/ IHairTransplantEventRepository
-│   └── Services/   Business policies (validators, generators)
+│   └── Entities/   # CalendarEvent, RestrictionInfo …
 ├── Infrastructure/
-│   └── Repositories/ HairTransplantEventRepository (EF Core)
-├── Services/
-│   ├── IDataInitializer (CalendarDataInitializer)
-│   ├── IHairTransplantEventGenerator (JsonHairTransplantEventGenerator)
-│   └── IRestrictionService / INotificationService (кросс‑компонентные)
-├── ViewModels/ TodayViewModel, MonthViewModel, EventDetailViewModel
-├── Views/ TodayPage, MonthPage, EventDetailPage
-└── Helpers / Converters / Behaviors
+│   └── Repositories/ HairTransplantEventRepository (EF Core / cache)
+├── Services/       # IDataInitializer, IHairTransplantEventGenerator …
+├── ViewModels/     # TodayViewModel, MonthViewModel, EventDetailViewModel
+└── Views/          # TodayPage, MonthPage, EventDetailPage
 ```
-Зависимости направлены строго «внутрь»: UI → ViewModel → Domain → Infrastructure.
+Зависимости:
+UI → **Application (CQRS)** → Domain → Infrastructure.
 
 ## Поток данных `TodayPage`
-1. `TodayPage` (View) триггерит `LoadCalendarDays()` в `TodayViewModel` при `OnAppearing`.
-2. ViewModel обращается к `IHairTransplantEventService`, который в свою очередь использует `IHairTransplantEventRepository`.
-3. Если это первый запуск, `CalendarDataInitializer` проверяет `Preferences` и вызывает генератор событий.
-4. События кэшируются в слое Service, повторные запросы обслуживаются из памяти.
+1. `TodayPage` (View) триггерит `LoadCalendarDaysAsync()` в `TodayViewModel` при `OnAppearing`.
+2. ViewModel запрашивает данные через **`IQueryBus`** → `GetEventsForDateQuery` / `GetEventCountsForDatesQuery`.
+3. Пользовательские действия (свайп/лонг-пресс) отправляют **`ICommandBus`** → `ToggleEventCompletionCommand`.
+4. Handlers применяют изменения к репозиторию и публикуют `EventUpdatedMessage`; ViewModel реагирует и обновляет UI.
+5. При первом запуске `CalendarDataInitializer` и `IHairTransplantEventGenerator` заполняют базу событий.
 
-## DI‑регистрация (`CalendarServiceExtensions`)
+## DI-регистрация (CalendarServiceExtensions)
 ```csharp
-services.AddScoped<IHairTransplantEventRepository, HairTransplantEventRepository>()
-        .AddScoped<IHairTransplantEventService, HairTransplantEventService>()
+services.AddCqrs() // регистрирует InMemoryCommandBus / QueryBus
+        // Infrastructure
+        .AddScoped<IHairTransplantEventRepository, HairTransplantEventRepository>()
         .AddSingleton<IHairTransplantEventGenerator, JsonHairTransplantEventGenerator>()
         .AddScoped<IDataInitializer, CalendarDataInitializer>()
-        .AddTransient<TodayViewModel>()
-        .AddTransient<TodayPage>();
+        // Query handlers
+        .AddScoped<IQueryHandler<GetEventsForDateQuery, IEnumerable<CalendarEvent>>, GetEventsForDateHandler>()
+        .AddScoped<IQueryHandler<GetEventCountsForDatesQuery, Dictionary<DateTime, Dictionary<EventType,int>>>, GetEventCountsForDatesHandler>()
+        .AddScoped<IQueryHandler<GetActiveRestrictionsQuery, IReadOnlyList<RestrictionInfo>>, GetActiveRestrictionsHandler>()
+        // Command handlers
+        .AddScoped<ICommandHandler<ToggleEventCompletionCommand>, ToggleEventCompletionHandler>();
 ```
 
-## логирование
-* Структурированное через `ILogger<>`.
-* Категория `HairCarePlus.Client.Patient.Features.Calendar` фильтруется на уровень `Information`.
-* EF Core — `Warning` и выше.
-
-## Синхронизация
-`CalendarSyncService` (road‑map):
-* инкрементальная выгрузка изменённых событий;
-* разрешение конфликтов по `UpdatedAt`.
-
-## UX‑паттерны
-* Горизонтальный `CollectionView` со state‑driven UI (VisualStateManager).
-* «Прыгучий» свайп сглажен (SnapPointsType = None, деликатная задержка).
-* Анимация тапа через `VisualFeedbackBehavior` с `Easing.CubicOut/ SpringOut`.
-
-## Расширение функционала
-| Задача | Интерфейс | Реализация |
-|--------|-----------|------------|
-| Push‑напоминания | `INotificationService` | `NotificationService` (Infrastructure) |
-| Синхронизация | `ICalendarSyncService` | `CalendarSyncService` |
-| Генерация расписания клиник | `IHairTransplantEventGenerator` | `JsonHairTransplantEventGenerator` / `AI‑Planner` |
-
-## Тестирование
-* Юнит‑тесты: генератор, репозиторий (in‑memory Db), ViewModel логика.
-* UI‑тесты: сценарии выбора дат, отметка выполнения.
-
-## Риски
-* Громоздкие json‑файлы расписания —→ использовать компрессию.
-* Увеличение базы > 10k событий —→ требуется пагинация и lazy‑load.
+*(Полный список регистраций и подробности см. в `CalendarServiceExtensions.cs`)*
 
 ---
-*Документ поддерживается командой Calendar Feature. Изменения в API/архитектуре отражайте здесь.* 
+*(Конец краткого обзора модуля Calendar)* 
