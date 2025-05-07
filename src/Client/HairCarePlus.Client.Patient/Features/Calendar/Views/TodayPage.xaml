@@ -37,7 +37,7 @@
                             Progress="{Binding CompletionProgress}" 
                             TrackColor="{AppThemeBinding Light={StaticResource ProgressTrackLight}, Dark=#525252}"
                             ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
-                            StrokeWidth="4"
+                            StrokeWidth="3"
                             WidthRequest="112" HeightRequest="112"
                             HorizontalOptions="Center" VerticalOptions="Center"/>
                         <VerticalStackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center" Padding="0">
@@ -117,7 +117,7 @@
             <!-- Layout Resources -->
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
                              Orientation="Horizontal" 
-                             ItemSpacing="8"
+                             ItemSpacing="6"
                              SnapPointsType="None"
                              SnapPointsAlignment="Center"/>
             
@@ -245,7 +245,8 @@
                         <SwipeItems Mode="Execute">
                             <SwipeItem
                                     BackgroundColor="Transparent"
-                                    Invoked="OnSwipeItemDoneInvoked">
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
+                                    CommandParameter="{Binding .}">
                                 <!-- no icon -->
                             </SwipeItem>
                         </SwipeItems>
@@ -271,21 +272,20 @@
 
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowDefinitions="Auto,*" VerticalOptions="Center">
                             <!-- Icon with background -->
-                            <Frame Grid.RowSpan="2" Grid.Column="0"
-                                   WidthRequest="44"
-                                   HeightRequest="44"
-                                   CornerRadius="22"
-                                   Padding="0"
-                                   HasShadow="False"
-                                   BorderColor="Transparent"
-                                   BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}, ConverterParameter=DarkAware}">
+                            <Border Grid.RowSpan="2" Grid.Column="0"
+                                    WidthRequest="44"
+                                    HeightRequest="44"
+                                    StrokeShape="RoundRectangle 22"
+                                    Padding="0"
+                                    StrokeThickness="0"
+                                    BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}, ConverterParameter=DarkAware}">
                                 <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                        FontFamily="MaterialIcons"
                                        FontSize="20"
                                        TextColor="White"
                                        HorizontalOptions="Center"
                                        VerticalOptions="Center"/>
-                            </Frame>
+                            </Border>
 
                             <!-- Task Content -->
                             <Label x:Name="timeLabel"
