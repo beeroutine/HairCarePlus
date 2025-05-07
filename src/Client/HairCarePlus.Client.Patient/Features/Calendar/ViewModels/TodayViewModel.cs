@@ -267,6 +267,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public string FormattedTodayDate => DateTime.Today.ToString("ddd, MMM d");
         
+        // NEW: Separate fields for today day number and day-of-week (used in header circle)
+        public int TodayDay => DateTime.Today.Day;
+        public string TodayDayOfWeek => DateTime.Today.ToString("ddd");
+        
         public string CurrentMonthName => VisibleDate.ToString("MMMM");
         
         public string CurrentYear => VisibleDate.ToString("yyyy");
