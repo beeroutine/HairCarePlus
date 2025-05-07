@@ -6,6 +6,11 @@ using HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 using HairCarePlus.Client.Patient.Features.Chat.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Connectivity;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
+using HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
+using HairCarePlus.Shared.Common.CQRS;
+using System.Collections.Generic;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 
 namespace HairCarePlus.Client.Patient.Features.Chat;
 
@@ -28,7 +33,14 @@ public static class DependencyInjection
         
         // Services
         services.AddScoped<IChatSyncService, ChatSyncService>();
-        
+
+        // CQRS
+        services.AddCqrs();
+        services.AddScoped<ICommandHandler<SendChatMessageCommand>, SendChatMessageHandler>();
+        services.AddScoped<IQueryHandler<GetChatMessagesQuery, IReadOnlyList<ChatMessage>>, GetChatMessagesHandler>();
+        services.AddScoped<ICommandHandler<UpdateChatMessageCommand>, UpdateChatMessageHandler>();
+        services.AddScoped<ICommandHandler<DeleteChatMessageCommand>, DeleteChatMessageHandler>();
+
         return services;
     }
 } 

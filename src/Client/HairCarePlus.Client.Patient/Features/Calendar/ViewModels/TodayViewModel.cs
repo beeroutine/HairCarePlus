@@ -23,6 +23,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.ApplicationModel; // for MainThread
 using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
 using ICommand = System.Windows.Input.ICommand;
+using CalendarCommands = HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
 
 // Alias to disambiguate with namespace HairCarePlus.Client.Patient.Features.Calendar.Application
 using MauiApp = Microsoft.Maui.Controls.Application;
@@ -36,6 +37,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly ICalendarLoader _eventLoader;
         private readonly IProgressCalculator _progressCalculator;
         private readonly ILogger<TodayViewModel> _logger;
+        private readonly IMessenger _messenger;
         private readonly ICommandBus _commandBus;
         private readonly IQueryBus _queryBus;
         private DateTime _selectedDate;
@@ -176,13 +178,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
             _eventLoader = eventLoader;
             _progressCalculator = progressCalculator;
             _logger = logger;
+            _messenger = messenger;
             _commandBus = commandBus;
             _queryBus = queryBus;
             
@@ -207,7 +210,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             ToggleEventCompletionCommand = new AsyncRelayCommand<CalendarEvent>(async (calendarEvent) =>
             {
                 if (calendarEvent == null) return;
-                await _commandBus.SendAsync(new ToggleEventCompletionCommand(calendarEvent.Id));
+                await ToggleEventCompletionAsync(calendarEvent);
             });
             SelectDateCommand = new Command<DateTime>(async (date) => await SelectDateAsync(date));
             OpenMonthCalendarCommand = new Command<DateTime>(async (date) => await OpenMonthCalendarAsync(date));
@@ -225,6 +228,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             
             // Lazy initialization – фактическая загрузка отложена до первого OnAppearing
             _initializationTask = null;
+
+            // Subscribe to event update messages to refresh UI
+            _messenger.Register<EventUpdatedMessage>(this, async (recipient, message) =>
+            {
+                try
+                {
+                    _logger?.LogDebug("Received EventUpdatedMessage for {EventId}", message.Value);
+
+                    // Simple approach: reload events for selected date if it matches today (or contains the event)
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await LoadTodayEventsAsync();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error handling EventUpdatedMessage");
+                }
+            });
         }
         
         private Task? _initializationTask;
@@ -911,10 +933,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
                         _logger?.LogDebug("Toggled IsCompleted for event {EventId} to {State}", calendarEvent.Id, calendarEvent.IsCompleted);
                         
-                        // Call service with single parameter
-                        await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
-                        _logger?.LogInformation("MarkEventAsCompletedAsync succeeded for event {EventId}", calendarEvent.Id);
-                        
+                        // Persist via CQRS command handler
+                        await _commandBus.SendAsync(new CalendarCommands.ToggleEventCompletionCommand(calendarEvent.Id));
+
                         // Update cache if needed
                         if (TryGetCache(SelectedDate.Date, out var cachedEvents, out _))
                         {

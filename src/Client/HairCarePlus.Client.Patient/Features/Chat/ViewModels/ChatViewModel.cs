@@ -9,8 +9,11 @@ using HairCarePlus.Client.Patient.Infrastructure.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Maui.Controls;
 using System.Linq;
-using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 using Microsoft.Extensions.Logging;
+using ChatCommands = HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
+using ChatQueries = HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
+using HairCarePlus.Shared.Common.CQRS;
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -19,7 +22,8 @@ public partial class ChatViewModel : ObservableObject
     private readonly INavigationService _navigationService;
     private readonly ILocalStorageService _localStorageService;
     private readonly IKeyboardService _keyboardService;
-    private readonly IChatRepository _chatRepository;
+    private readonly ICommandBus _commandBus;
+    private readonly IQueryBus _queryBus;
     private readonly Random _random = new Random();
     private readonly ILogger<ChatViewModel> _logger;
     public CollectionView MessagesCollectionView { get; set; } = default!;
@@ -56,13 +60,15 @@ public partial class ChatViewModel : ObservableObject
         INavigationService navigationService,
         ILocalStorageService localStorageService,
         IKeyboardService keyboardService,
-        IChatRepository chatRepository,
+        ICommandBus commandBus,
+        IQueryBus queryBus,
         ILogger<ChatViewModel> logger)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
         _keyboardService = keyboardService;
-        _chatRepository = chatRepository;
+        _commandBus = commandBus;
+        _queryBus = queryBus;
         _logger = logger;
         Messages = new ObservableCollection<ChatMessage>();
         
@@ -84,15 +90,15 @@ public partial class ChatViewModel : ObservableObject
         try
         {
             Messages.Clear();
-            var messages = await _chatRepository.GetMessagesAsync("default_conversation");
+            var messages = await _queryBus.SendAsync<IReadOnlyList<ChatMessage>>(new ChatQueries.GetChatMessagesQuery("default_conversation"));
             foreach (var msg in messages.OrderBy(m => m.SentAt))
                 Messages.Add(msg);
         }
         catch (Exception /*ex*/)
         {
-            if (Application.Current?.MainPage != null)
+            if (MauiApp.Current?.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", "Failed to load chat messages", "OK");
+                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to load chat messages", "OK");
             }
         }
     }
@@ -106,8 +112,7 @@ public partial class ChatViewModel : ObservableObject
         {
             if (EditingMessage != null)
             {
-                EditingMessage.Content = MessageText;
-                await _chatRepository.UpdateMessageAsync(EditingMessage);
+                await _commandBus.SendAsync(new ChatCommands.UpdateChatMessageCommand(EditingMessage.LocalId, MessageText));
                 int index = Messages.IndexOf(EditingMessage);
                 if (index >= 0)
                 {
@@ -118,20 +123,21 @@ public partial class ChatViewModel : ObservableObject
             }
             else
             {
-                var message = new ChatMessage
+                var replyId = (ReplyToMessage?.LocalId > 0) ? ReplyToMessage!.LocalId : (int?)null;
+                await _commandBus.SendAsync(new ChatCommands.SendChatMessageCommand("default_conversation", MessageText, "patient", DateTime.UtcNow, replyId));
+                // optimistic UI message
+                Messages.Add(new ChatMessage
                 {
                     Content = MessageText,
                     SenderId = "patient",
                     ConversationId = "default_conversation",
                     SentAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
-                    Status = MessageStatus.Sending,
-                    SyncStatus = SyncStatus.NotSynced,
-                    ReplyTo = ReplyToMessage
-                };
-                var localId = await _chatRepository.SaveMessageAsync(message);
-                message.LocalId = localId;
-                Messages.Add(message);
+                    Status = MessageStatus.Sent,
+                    Type = MessageType.Text,
+                    ReplyTo = ReplyToMessage,
+                    ReplyToLocalId = replyId
+                });
                 MessageText = string.Empty;
                 ReplyToMessage = null;
                 await SimulateDoctorResponseAsync();
@@ -141,9 +147,9 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception /*ex*/)
         {
-            if (Application.Current?.MainPage != null)
+            if (MauiApp.Current?.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
+                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
             }
         }
     }
@@ -154,14 +160,14 @@ public partial class ChatViewModel : ObservableObject
         if (message == null) return;
         try
         {
-            await _chatRepository.DeleteMessageAsync(message.LocalId);
+            await _commandBus.SendAsync(new ChatCommands.DeleteChatMessageCommand(message.LocalId));
             Messages.Remove(message);
         }
         catch (Exception /*ex*/)
         {
-            if (Application.Current?.MainPage != null)
+            if (MauiApp.Current?.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
+                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
             }
         }
     }
@@ -186,9 +192,9 @@ public partial class ChatViewModel : ObservableObject
         if (message.SenderId == "patient")
         {
             _logger.LogDebug("HandleReplyToMessage cancelled: SenderId == patient");
-            if (Application.Current?.MainPage != null)
+            if (MauiApp.Current?.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
+                await MauiApp.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
             }
             return;
         }
@@ -239,18 +245,18 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenCamera()
     {
-        if (Application.Current?.MainPage != null)
+        if (MauiApp.Current?.MainPage != null)
         {
-            await Application.Current.MainPage.DisplayAlert("Coming Soon", "Camera functionality will be available soon", "OK");
+            await MauiApp.Current.MainPage.DisplayAlert("Coming Soon", "Camera functionality will be available soon", "OK");
         }
     }
 
     [RelayCommand]
     private async Task ChoosePhoto()
     {
-        if (Application.Current?.MainPage != null)
+        if (MauiApp.Current?.MainPage != null)
         {
-            await Application.Current.MainPage.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
+            await MauiApp.Current.MainPage.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
         }
     }
 
@@ -282,9 +288,9 @@ public partial class ChatViewModel : ObservableObject
                 ReplyTo = shouldReply ? latestPatientMessage : null
             };
             
-            if (Application.Current?.MainPage != null)
+            if (MauiApp.Current?.MainPage != null)
             {
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
                     Messages.Add(doctorResponse);
                 });

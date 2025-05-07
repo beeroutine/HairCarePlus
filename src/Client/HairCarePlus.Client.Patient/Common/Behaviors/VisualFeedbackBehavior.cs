@@ -6,12 +6,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
-    public class VisualFeedbackBehavior : Behavior<Frame>
+    public class VisualFeedbackBehavior : Behavior<Border>
     {
         private static readonly ILogger<VisualFeedbackBehavior> _logger =
             ServiceHelper.GetService<ILogger<VisualFeedbackBehavior>>() ?? NullLogger<VisualFeedbackBehavior>.Instance;
 
-        protected override void OnAttachedTo(Frame bindable)
+        protected override void OnAttachedTo(Border bindable)
         {
             base.OnAttachedTo(bindable);
             
@@ -31,7 +31,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             _logger.LogDebug("Attached to Frame");
         }
 
-        protected override void OnDetachingFrom(Frame bindable)
+        protected override void OnDetachingFrom(Border bindable)
         {
             bindable.ChildAdded -= OnFrameChildAdded;
             
@@ -61,43 +61,28 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         private async void OnTapped(object? sender, EventArgs? e)
         {
             if (sender == null) return;
-            
             try
             {
-                // Получаем Frame
-                Frame? frame = null;
-                
-                if (sender is TapGestureRecognizer tap && tap.Parent is Frame parentFrame)
+                Border? border = null;
+                if (sender is TapGestureRecognizer tap && tap.Parent is Border parentBorder)
                 {
-                    frame = parentFrame;
+                    border = parentBorder;
                 }
-                else if (sender is Frame senderFrame)
+                else if (sender is Border b)
                 {
-                    frame = senderFrame;
+                    border = b;
                 }
-                
-                if (frame == null)
+                if (border == null)
                 {
-                    _logger.LogDebug("Could not determine Frame from sender");
+                    _logger.LogDebug("Could not determine Border from sender");
                     return;
                 }
-                
-                // Логирование события тапа
-                _logger.LogDebug("Tapped event fired on Frame hash: {Hash}", frame.GetHashCode());
-                
-                // Сохраняем исходный масштаб
-                double originalScale = frame.Scale;
-                
-                // Быстрая анимация нажатия
-                await frame.ScaleTo(0.95, 50, Easing.CubicOut);
-                await frame.ScaleTo(originalScale, 150, Easing.SpringOut);
-                
-                // Логирование успешного завершения анимации
-                _logger.LogDebug("Animation completed for Frame hash: {Hash}", frame.GetHashCode());
+                double originalScale = border.Scale;
+                await border.ScaleTo(0.95, 50, Easing.CubicOut);
+                await border.ScaleTo(originalScale, 150, Easing.SpringOut);
             }
             catch (Exception ex)
             {
-                // Логирование ошибок
                 _logger.LogError(ex, "VisualFeedbackBehavior error");
             }
         }

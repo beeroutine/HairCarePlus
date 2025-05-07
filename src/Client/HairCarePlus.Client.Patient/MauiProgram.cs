@@ -28,6 +28,7 @@ using System.IO;
 using System.Diagnostics;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Common.Startup;
+using CommunityToolkit.Mvvm.Messaging;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -100,6 +101,9 @@ public static class MauiProgram
 
 		// Register startup tasks
 		builder.Services.AddStartupTasks();
+
+		// Register IMessenger singleton using WeakReferenceMessenger.Default
+		builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
 #if IOS
 		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
