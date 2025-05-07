@@ -40,7 +40,7 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
-            <x:Double x:Key="CircleSize">92</x:Double>
+            <x:Double x:Key="CircleSize">88</x:Double>
             
             <!-- Layout Resources -->
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
@@ -52,8 +52,8 @@
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
                 <Grid x:Name="rootContainer" 
-                       WidthRequest="48" 
-                       HeightRequest="54" 
+                       WidthRequest="54" 
+                       HeightRequest="68" 
                        Padding="0" 
                        Margin="0"
                        BackgroundColor="Transparent">
@@ -68,7 +68,7 @@
                     <!-- Day of Week -->
                     <Label Grid.Row="0" 
                           Text="{Binding ., StringFormat='{0:ddd}'}"
-                          FontSize="12"
+                          FontSize="14"
                           TextColor="{StaticResource Gray500}"
                           HorizontalOptions="Center"
                           Margin="0,0,0,2"/>
@@ -76,10 +76,10 @@
                     <!-- Day number in circle -->
                     <Frame Grid.Row="1"
                           x:Name="dayFrame"
-                          CornerRadius="17"
+                          CornerRadius="20"
                           Padding="0"
-                          WidthRequest="34"
-                          HeightRequest="34"
+                          WidthRequest="40"
+                          HeightRequest="40"
                           BackgroundColor="Transparent"
                           BorderColor="{Binding ., Converter={StaticResource DateHasAnyEventColorConverter}}"
                           HorizontalOptions="Center"
@@ -87,7 +87,7 @@
                           Shadow="{x:Null}">
                         <Label x:Name="dayText"
                               Text="{Binding ., StringFormat='{0:%d}'}"
-                              FontSize="16"
+                              FontSize="18"
                               HorizontalOptions="Center"
                               VerticalOptions="Center"
                               TextColor="White"/>
@@ -349,12 +349,12 @@
                          <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
                              <!-- Дата всегда показывает сегодняшний день -->
                              <Label Text="{Binding Source={x:Static system:DateTime.Today}, Path=Day}" 
-                                    FontSize="32" 
+                                    FontSize="30" 
                                     FontAttributes="Bold" 
                                     TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                     HorizontalTextAlignment="Center"/>
                              <Label Text="{Binding Source={x:Static system:DateTime.Today}, StringFormat='{0:ddd}'}" 
-                                    FontSize="14" 
+                                    FontSize="15" 
                                     TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                                     HorizontalTextAlignment="Center"
                                     Margin="0,-5,0,0"/>
@@ -365,13 +365,13 @@
                      <VerticalStackLayout Grid.Column="1" Spacing="0" HorizontalOptions="End" VerticalOptions="Center">
                          <!-- Month name only -->
                          <Label Text="{Binding CurrentMonthName}"
-                                FontSize="32"
+                                FontSize="34"
                                 FontAttributes="Bold"
                                 HorizontalOptions="End"
                                 TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                          <!-- Days since transplant subtitle -->
                          <Label Text="{Binding DaysSinceTransplantSubtitle}"
-                                FontSize="14"
+                                FontSize="15"
                                 TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                                 HorizontalOptions="End"
                                 Margin="0,-4,0,0" />
@@ -387,7 +387,7 @@
                                 BackgroundColor="Transparent"
                                 ItemTemplate="{StaticResource DateTemplate}"
                                 ItemsLayout="{StaticResource HorizontalLinearLayout}"
-                                HeightRequest="75" 
+                                HeightRequest="90" 
                                 HorizontalScrollBarVisibility="Never"
                                 VerticalScrollBarVisibility="Never">
                     <CollectionView.Behaviors>
