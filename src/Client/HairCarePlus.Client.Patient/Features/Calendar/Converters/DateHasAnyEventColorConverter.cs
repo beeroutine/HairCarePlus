@@ -3,6 +3,7 @@ using System.Globalization;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
@@ -12,21 +13,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
         {
             try
             {
-                if (value is DateTime date && Application.Current != null)
+                if (value is DateTime date && MauiApp.Current != null)
                 {
                     // Получаем ViewModel через BindingContext или другую привязку
                     TodayViewModel viewModel = null;
                     
                     // Безопасный доступ к MainPage и его BindingContext
-                    if (Application.Current.MainPage != null && 
-                        Application.Current.MainPage.BindingContext is TodayViewModel vm1)
+                    if (MauiApp.Current.MainPage != null && 
+                        MauiApp.Current.MainPage.BindingContext is TodayViewModel vm1)
                     {
                         viewModel = vm1;
                     }
                     // Пытаемся найти TodayViewModel в навигационном стеке, если он существует
-                    else if (Application.Current.MainPage?.Navigation?.NavigationStack != null && 
-                             Application.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
-                             Application.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
+                    else if (MauiApp.Current.MainPage?.Navigation?.NavigationStack != null && 
+                             MauiApp.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
+                             MauiApp.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
                     {
                         viewModel = vm2;
                     }
@@ -43,7 +44,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                             {
                                 // Определяем цвет для дней с событиями
                                 // В темной теме - белый, в светлой - черный
-                                return Application.Current.RequestedTheme == AppTheme.Dark
+                                return MauiApp.Current.RequestedTheme == AppTheme.Dark
                                     ? Colors.White
                                     : Colors.Black;
                             }

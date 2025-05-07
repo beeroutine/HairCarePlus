@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
@@ -21,9 +22,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                     return WarningRed;
 
                 // Neutral gray depending on theme
-                return Application.Current?.RequestedTheme == AppTheme.Dark
-                    ? Application.Current.Resources.TryGetValue("Gray600", out var dark) ? dark : Colors.Gray
-                    : Application.Current.Resources.TryGetValue("Gray400", out var light) ? light : Colors.LightGray;
+                return MauiApp.Current?.RequestedTheme == AppTheme.Dark
+                    ? MauiApp.Current.Resources.TryGetValue("Gray600", out var dark) ? dark : Colors.Gray
+                    : MauiApp.Current.Resources.TryGetValue("Gray400", out var light) ? light : Colors.LightGray;
             }
             return Colors.Transparent;
         }

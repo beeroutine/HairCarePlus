@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation;
@@ -14,6 +15,12 @@ using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Features.Calendar.Domain.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Features.Calendar.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
+using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
+using HairCarePlus.Client.Patient.Features.Calendar.Models;
+using HairCarePlus.Shared.Common.CQRS;
+// Alias to avoid conflict with Application namespace
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar
 {
@@ -46,6 +53,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             // Register ViewModels
             services.AddTransient<TodayViewModel>();
             services.AddTransient<EventDetailViewModel>();
+            
+            // CQRS kernel & handlers
+            services.AddCqrs();
+            services.AddScoped<ToggleEventCompletionHandler>();
+            services.AddScoped<ICommandHandler<ToggleEventCompletionCommand>, ToggleEventCompletionHandler>();
+            
+            // Query handlers
+            services.AddScoped<IQueryHandler<GetEventsForDateQuery, IEnumerable<CalendarEvent>>, GetEventsForDateHandler>();
+            services.AddScoped<IQueryHandler<GetEventCountsForDatesQuery, Dictionary<DateTime, Dictionary<EventType, int>>>, GetEventCountsForDatesHandler>();
+            services.AddScoped<IQueryHandler<GetActiveRestrictionsQuery, IReadOnlyList<RestrictionInfo>>, GetActiveRestrictionsHandler>();
             
             // Register calendar views
             services.AddTransient<TodayPage>();
@@ -81,33 +98,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
         /// </summary>
         private static void RegisterConverters()
         {
-            if (Application.Current?.Resources == null)
+            if (MauiApp.Current?.Resources == null)
                 return;
                 
             // Add converters to application resources if they don't exist
-            if (!Application.Current.Resources.ContainsKey("DateToColorConverter"))
-                Application.Current.Resources.Add("DateToColorConverter", new DateToColorConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("DateToColorConverter"))
+                MauiApp.Current.Resources.Add("DateToColorConverter", new DateToColorConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("EventTypeToColorConverter"))
-                Application.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("EventTypeToColorConverter"))
+                MauiApp.Current.Resources.Add("EventTypeToColorConverter", new EventTypeToColorConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("EventTypeToIconConverter"))
-                Application.Current.Resources.Add("EventTypeToIconConverter", new EventTypeToIconConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("EventTypeToIconConverter"))
+                MauiApp.Current.Resources.Add("EventTypeToIconConverter", new EventTypeToIconConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("EventPriorityToColorConverter"))
-                Application.Current.Resources.Add("EventPriorityToColorConverter", new EventPriorityToColorConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("EventPriorityToColorConverter"))
+                MauiApp.Current.Resources.Add("EventPriorityToColorConverter", new EventPriorityToColorConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("EventPriorityToIconConverter"))
-                Application.Current.Resources.Add("EventPriorityToIconConverter", new EventPriorityToIconConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("EventPriorityToIconConverter"))
+                MauiApp.Current.Resources.Add("EventPriorityToIconConverter", new EventPriorityToIconConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
-                Application.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("DateHasEventTypeConverter"))
+                MauiApp.Current.Resources.Add("DateHasEventTypeConverter", new DateHasEventTypeConverter());
                 
-            if (!Application.Current.Resources.ContainsKey("EventIndicatorsConverter"))
-                Application.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("EventIndicatorsConverter"))
+                MauiApp.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
 
-            if (!Application.Current.Resources.ContainsKey("DaysToStrokeColorConverter"))
-                Application.Current.Resources.Add("DaysToStrokeColorConverter", new DaysToStrokeColorConverter());
+            if (!MauiApp.Current.Resources.ContainsKey("DaysToStrokeColorConverter"))
+                MauiApp.Current.Resources.Add("DaysToStrokeColorConverter", new DaysToStrokeColorConverter());
         }
     }
 } 

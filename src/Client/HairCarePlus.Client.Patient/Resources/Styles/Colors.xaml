@@ -12,6 +12,7 @@
     <Color x:Key="PhotoPurple">#9C27B0</Color>
     <Color x:Key="VideoOrange">#FF9800</Color>
     <Color x:Key="GeneralGray">#757575</Color>
+    <Color x:Key="CriticalRed">#F14336</Color>
 
     <!-- Base Colors -->
     <Color x:Key="Primary">#3E8EED</Color>

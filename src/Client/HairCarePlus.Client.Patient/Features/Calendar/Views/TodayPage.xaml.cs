@@ -13,6 +13,7 @@ using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
 using System.Threading;
 using HairCarePlus.Client.Patient.Common.Utils;
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -105,7 +106,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
                 
                 // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
                   _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });

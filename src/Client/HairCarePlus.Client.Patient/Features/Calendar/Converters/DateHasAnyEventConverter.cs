@@ -4,6 +4,7 @@ using System.Globalization;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
@@ -18,13 +19,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                     // Получаем ViewModel через BindingContext или другую привязку
                     TodayViewModel viewModel = null;
                     
-                    if (Application.Current?.MainPage?.BindingContext is TodayViewModel vm1)
+                    if (MauiApp.Current?.MainPage?.BindingContext is TodayViewModel vm1)
                     {
                         viewModel = vm1;
                     }
-                    else if (Application.Current?.MainPage?.Navigation?.NavigationStack != null && 
-                        Application.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
-                        Application.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
+                    else if (MauiApp.Current?.MainPage?.Navigation?.NavigationStack != null && 
+                        MauiApp.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
+                        MauiApp.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
                     {
                         viewModel = vm2;
                     }
@@ -51,14 +52,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                         if (hasEvents)
                         {
                             // Для дней с событиями возвращаем белый (светлая тема) или черный (темная тема) текст
-                            return Application.Current?.RequestedTheme == AppTheme.Dark
+                            return MauiApp.Current?.RequestedTheme == AppTheme.Dark
                                 ? Colors.Black   // В темной теме черный текст на белом фоне
                                 : Colors.White;  // В светлой теме белый текст на черном фоне
                         }
                         else
                         {
                             // Для дней без событий возвращаем серый текст
-                            return Application.Current?.RequestedTheme == AppTheme.Dark
+                            return MauiApp.Current?.RequestedTheme == AppTheme.Dark
                                 ? Color.FromArgb("#BDBDBD")  // Gray400 для темной темы
                                 : Color.FromArgb("#9E9E9E");  // Gray600 для светлой темы
                         }
@@ -72,7 +73,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                             // Для дней с событиями возвращаем легкую тень
                             return new Shadow
                             {
-                                Brush = Application.Current?.RequestedTheme == AppTheme.Dark
+                                Brush = MauiApp.Current?.RequestedTheme == AppTheme.Dark
                                     ? Brush.White
                                     : Brush.Black,
                                 Offset = new Point(0, 2),
@@ -100,7 +101,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             
             if (parameter is string paramDefault && paramDefault == "TextColor")
             {
-                return Application.Current?.RequestedTheme == AppTheme.Dark
+                return MauiApp.Current?.RequestedTheme == AppTheme.Dark
                     ? Color.FromArgb("#BDBDBD")  // Gray400 для темной темы
                     : Color.FromArgb("#9E9E9E");  // Gray600 для светлой темы
             }

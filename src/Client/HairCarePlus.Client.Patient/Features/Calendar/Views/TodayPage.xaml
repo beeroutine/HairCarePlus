@@ -253,7 +253,27 @@
                                     StrokeShape="RoundRectangle 22"
                                     Padding="0"
                                     StrokeThickness="0"
-                                    BackgroundColor="{Binding EventType, Converter={StaticResource EventTypeToColorConverter}, ConverterParameter=DarkAware}">
+                                    BackgroundColor="Transparent">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="MedicationTreatment">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource MedicationBlue}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="MedicalVisit">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource AppointmentGreen}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="Photo">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource PhotoPurple}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="Video">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource VideoOrange}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="GeneralRecommendation">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource GeneralGray}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding EventType}" Value="CriticalWarning">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource CriticalRed}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Label Text="{Binding EventType, Converter={StaticResource EventTypeToIconConverter}}"
                                        FontFamily="MaterialIcons"
                                        FontSize="20"

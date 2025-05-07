@@ -11,7 +11,6 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
-            <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter"/>
             <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
             <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
             <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
@@ -27,7 +26,27 @@
                    Padding="0" 
                    CornerRadius="10" 
                    HasShadow="False" 
-                   BackgroundColor="{Binding Event.EventType, Converter={StaticResource EventTypeToColorConverter}}">
+                   BackgroundColor="Transparent">
+                <Frame.Triggers>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="MedicationTreatment">
+                        <Setter Property="BackgroundColor" Value="{StaticResource MedicationBlue}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="MedicalVisit">
+                        <Setter Property="BackgroundColor" Value="{StaticResource AppointmentGreen}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="Photo">
+                        <Setter Property="BackgroundColor" Value="{StaticResource PhotoPurple}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="Video">
+                        <Setter Property="BackgroundColor" Value="{StaticResource VideoOrange}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="GeneralRecommendation">
+                        <Setter Property="BackgroundColor" Value="{StaticResource GeneralGray}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="CriticalWarning">
+                        <Setter Property="BackgroundColor" Value="{StaticResource CriticalRed}" />
+                    </DataTrigger>
+                </Frame.Triggers>
                 <Grid RowDefinitions="Auto,*,Auto" Padding="20">
                     <!-- Статус завершения -->
                     <Label Grid.Row="0" 
