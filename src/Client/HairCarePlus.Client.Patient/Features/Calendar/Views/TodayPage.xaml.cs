@@ -116,53 +116,52 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
-                UpdateVisibleItemStates(); // Keep this to ensure visual selection is correct
+        // UpdateVisibleItemStates(); // Удалено для устранения ошибки и избежания двойной подсветки
             }
         }
         
         /// <summary>
         /// Iterates through visible cells in DateSelectorView and applies Normal/Selected state.
         /// </summary>
-        private void UpdateVisibleItemStates()
-        {
-             if (DateSelectorView == null || _viewModel == null) return;
-             
-             _logger.LogDebug("Updating visual states for visible items. Target SelectedDate: {SelectedDate}", _viewModel.SelectedDate);
-             int updatedCount = 0;
-             try
-             {
-                foreach (var visual in DateSelectorView.VisibleCells())
-                {
-                    if (visual?.BindingContext is DateTime itemDate)
-                    {
-                        var targetState = itemDate.Date == _viewModel.SelectedDate.Date ? "Selected" : "Normal";
-                        // _logger.LogTrace("Applying state '{TargetState}' to visual for date {ItemDate}", targetState, itemDate.ToShortDateString());
-                        VisualStateManager.GoToState(visual, targetState);
-                        updatedCount++;
-                    }
-                    else
-                    {
-                       // _logger.LogWarning("Visible cell found with null or non-DateTime BindingContext: {BindingContext}", visual?.BindingContext);
-                    }
-                }
-                _logger.LogDebug("Finished updating visual states for {UpdatedCount} visible items.", updatedCount);
-             }
-             catch (Exception ex)
-             {
-                 _logger.LogError(ex, "Error updating visible item states.");
-             }
-        }
+        // private void UpdateVisibleItemStates()
+        // {
+        //      if (DateSelectorView == null || _viewModel == null) return;
+        //      
+        //      _logger.LogDebug("Updating visual states for visible items. Target SelectedDate: {SelectedDate}", _viewModel.SelectedDate);
+        //      int updatedCount = 0;
+        //      try
+        //      {
+        //         foreach (var visual in DateSelectorView.VisibleCells())
+        //         {
+        //             if (visual?.BindingContext is DateTime itemDate)
+        //             {
+        //                 var targetState = itemDate.Date == _viewModel.SelectedDate.Date ? "Selected" : "Normal";
+        //                 // _logger.LogTrace("Applying state '{TargetState}' to visual for date {ItemDate}", targetState, itemDate.ToShortDateString());
+        //                 VisualStateManager.GoToState(visual, targetState);
+        //                 updatedCount++;
+        //             }
+        //             else
+        //             {
+        //                // _logger.LogWarning("Visible cell found with null or non-DateTime BindingContext: {BindingContext}", visual?.BindingContext);
+        //             }
+        //         }
+        //         _logger.LogDebug("Finished updating visual states for {UpdatedCount} visible items.", updatedCount);
+        //      }
+        //      catch (Exception ex)
+        //      {
+        //          _logger.LogError(ex, "Error updating visible item states.");
+        //      }
+        // }
 
         private async Task CenterSelectedDateAsync()
         {
             if (DateSelectorView == null || _viewModel == null) return;
             try
             {
-                // CollectionView in .NET MAUI 9 exposes synchronous ScrollTo* methods (no *Async overload).
-                // We therefore invoke the non‑async overload and immediately yield control so that callers
-                // can still await this method without blocking the UI thread.
+                // Просто прокручиваем к выбранной дате, визуальное выделение обеспечивается через DataTrigger в XAML 
+                // и не зависит от анимации прокрутки
                 DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: true);
-                await Task.Yield(); // ensure asynchronous signature is preserved
+                await Task.Yield(); // Просто сохраняем асинхронную подпись метода
             }
             catch(Exception ex)
             {
@@ -200,7 +199,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 {
                     _ = CenterSelectedDateAsync();
                     await Task.Delay(50);
-                    UpdateVisibleItemStates();
+
                 }
 
                 _logger.LogInformation("TodayPage OnAppearing completed");

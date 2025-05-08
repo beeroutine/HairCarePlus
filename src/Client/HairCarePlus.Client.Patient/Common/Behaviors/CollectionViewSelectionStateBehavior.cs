@@ -22,7 +22,11 @@ public class CollectionViewSelectionStateBehavior : Behavior<CollectionView>
         _collectionView = bindable;
         _collectionView.SelectionChanged += OnSelectionChanged;
         _collectionView.Scrolled += OnScrolled;
+        _collectionView.HandlerChanged += OnHandlerChanged;
         ApplySelectionState(); // initial apply (e.g., when page appears)
+
+        // Ensure state is applied once UI thread completed first layout
+        _collectionView.Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(30), () => ApplySelectionState());
     }
 
     protected override void OnDetachingFrom(CollectionView bindable)
@@ -32,6 +36,7 @@ public class CollectionViewSelectionStateBehavior : Behavior<CollectionView>
         {
             _collectionView.SelectionChanged -= OnSelectionChanged;
             _collectionView.Scrolled -= OnScrolled;
+            _collectionView.HandlerChanged -= OnHandlerChanged;
         }
         _collectionView = null;
     }
@@ -44,6 +49,11 @@ public class CollectionViewSelectionStateBehavior : Behavior<CollectionView>
     private void OnScrolled(object? sender, ItemsViewScrolledEventArgs e)
     {
         // When new cells become visible we need to refresh their states
+        ApplySelectionState();
+    }
+
+    private void OnHandlerChanged(object? sender, EventArgs e)
+    {
         ApplySelectionState();
     }
 

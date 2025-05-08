@@ -71,8 +71,8 @@
             <CollectionView Grid.Row="1"
                             x:Name="DateSelectorView"
                             ItemsSource="{Binding CalendarDays}"
+                            SelectionMode="Single" 
                             SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
-                            SelectionMode="Single"
                             ItemTemplate="{StaticResource DateTemplate}"
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
@@ -109,6 +109,7 @@
             <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
             <converters:TimeOfDayToColorConverter x:Key="TimeOfDayToColorConverter"/>
             <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
+            <converters:DateEqualityConverter x:Key="DateEqualityConverter"/>
             <converters:EventPriorityToColorConverter x:Key="EventPriorityToColorConverter"/>
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
@@ -125,13 +126,32 @@
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
                 <Grid x:Name="rootContainer" 
-                       WidthRequest="60"
-                       HeightRequest="75"
-                       Padding="0" 
-                       Margin="0"
-                       BackgroundColor="Transparent">
-                    <!-- VSM moved into frame to avoid XAMLC TargetName issues -->
-                    
+                      WidthRequest="60"
+                      HeightRequest="75"
+                      Padding="0" 
+                      Margin="0">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup Name="CommonStates">
+                            <VisualState Name="Normal">
+                                <VisualState.Setters>
+                                    <Setter Property="Grid.BackgroundColor" Value="Transparent" />
+                                    <Setter TargetName="dayOfWeekLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="Transparent" />
+                                    <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState Name="Selected">
+                                <VisualState.Setters>
+                                    <Setter Property="Grid.BackgroundColor" Value="Transparent" /> 
+                                    <Setter TargetName="dayOfWeekLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" /> 
+                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="{StaticResource White}" /> 
+                                    <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
+                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{StaticResource Black}" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -140,75 +160,56 @@
 
                     <!-- Day of Week -->
                     <Label Grid.Row="0" 
+                          x:Name="dayOfWeekLabel"
                           Text="{Binding ., StringFormat='{0:ddd}'}"
                           FontSize="15"
                           FontAttributes="None"
-                          TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                           HorizontalOptions="Center"
                           Margin="0,0,0,4"/>
 
                     <!-- Day number in circle/just text -->
                     <Border Grid.Row="1"
-                          x:Name="dayFrame"
-                          StrokeShape="RoundRectangle 22" 
-                          Padding="0"
-                          WidthRequest="44"
-                          HeightRequest="44"
-                          BackgroundColor="Transparent" 
-                          Stroke="Transparent"
-                          StrokeThickness="0"
-                          HorizontalOptions="Center"
-                          VerticalOptions="Center">
-                        <Label x:Name="dayText"
-                              Text="{Binding ., StringFormat='{0:%d}'}"
-                              FontSize="18"
-                              FontAttributes="None"
-                              HorizontalOptions="Center"
-                              VerticalOptions="Center"
-                              TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}"/>
+                           x:Name="dayCircleBorder" 
+                           Padding="0"
+                           WidthRequest="44"
+                           HeightRequest="44"
+                           StrokeShape="Ellipse"
+                           StrokeThickness="0" 
+                           BackgroundColor="Transparent" 
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center">
+                        <Label Text="{Binding ., StringFormat='{0:%d}'}"
+                               FontSize="18"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               x:Name="dayNumberLabel"/>
                     </Border>
 
                     <!-- Unified indicator bar instead of three dots -->
                     <BoxView Grid.Row="2"
-                            HeightRequest="3"
-                            CornerRadius="1.5"
-                            WidthRequest="24"
-                            HorizontalOptions="Center"
-                            Margin="0,4,0,0"
-                            Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
-                            IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
+                             HeightRequest="3"
+                             CornerRadius="1.5"
+                             WidthRequest="24"
+                             HorizontalOptions="Center"
+                             Margin="0,4,0,0"
+                             Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
+                             IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
                     
                     <Grid.GestureRecognizers>
-                        <!-- REMOVED: The TapGestureRecognizer below was redundant as selection is handled by CollectionView.SelectedItem -->
-                        <TapGestureRecognizer 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
-                            CommandParameter="{Binding .}"
-                            NumberOfTapsRequired="2" />
+                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
+                                             CommandParameter="{Binding .}" />
+                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
+                                             CommandParameter="{Binding .}"
+                                             NumberOfTapsRequired="2" />
                     </Grid.GestureRecognizers>
-
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal">
-                                <VisualState.Setters>
-                                    <Setter Property="BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="dayFrame" Property="Border.BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="dayFrame" Property="Border.Stroke" Value="Transparent" />
-                                    <Setter TargetName="dayFrame" Property="Border.StrokeThickness" Value="0" />
-                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" /> 
-                                    <Setter Property="Scale" Value="1.0" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState Name="Selected">
-                                <VisualState.Setters>
-                                    <Setter TargetName="dayFrame" Property="Border.BackgroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                    <Setter TargetName="dayFrame" Property="Border.Stroke" Value="Transparent" />
-                                    <Setter TargetName="dayFrame" Property="Border.StrokeThickness" Value="0" />
-                                    <Setter TargetName="dayText" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                                    <Setter Property="Scale" Value="1.05" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
+                    
+                    <!-- Using proper MAUI 9 binding syntax for BackgroundColor -->
+                    <!-- This binding might conflict with VSM, removing for now as VSM controls rootContainer's BackgroundColor -->
+                    <!-- 
+                    <Grid.BackgroundColor>
+                        <Binding Source="{x:Reference rootContainer}" Path="BackgroundColor" />
+                    </Grid.BackgroundColor> 
+                    -->
                 </Grid>
             </DataTemplate>
 
