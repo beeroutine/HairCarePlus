@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Microsoft.Maui.Controls;
 using System;
 using System.Threading.Tasks;
+using System.Threading; // Added for CancellationTokenSource
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
@@ -12,23 +13,24 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
     public sealed class CenterOnSelectedBehavior : Behavior<CollectionView>
     {
         private CollectionView? _collection;
+        private CancellationTokenSource? _debounceTokenSource;
 
         protected override void OnAttachedTo(CollectionView bindable)
         {
             base.OnAttachedTo(bindable);
             _collection = bindable;
+            if (_collection == null) return;
+
             _collection.SelectionChanged += OnSelectionChanged;
             _collection.PropertyChanged += OnPropertyChanged;
-            _collection.SizeChanged += OnSizeChanged;
+            _collection.SizeChanged += OnSizeChanged; // Keep for layout changes like rotation
             _collection.HandlerChanged += OnHandlerChanged;
 
-            // Initial attempt once control is attached & ItemsSource possibly already set
-            Device.BeginInvokeOnMainThread(Center);
+            RequestInitialScrollToCenter();
         }
 
         protected override void OnDetachingFrom(CollectionView bindable)
         {
-            base.OnDetachingFrom(bindable);
             if (_collection != null)
             {
                 _collection.SelectionChanged -= OnSelectionChanged;
@@ -36,63 +38,94 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 _collection.SizeChanged -= OnSizeChanged;
                 _collection.HandlerChanged -= OnHandlerChanged;
             }
+            _debounceTokenSource?.Cancel();
+            _debounceTokenSource?.Dispose();
             _collection = null;
+            base.OnDetachingFrom(bindable);
         }
 
         private void OnSizeChanged(object? sender, EventArgs e)
         {
-            // Layout pass finished – try centering again (device rotation etc.)
-            Center();
+            // Re-center if size changes (e.g., rotation), might need initial scroll logic
+            RequestInitialScrollToCenter();
         }
 
-        private async void DelayedCenter()
-        {
-            // Secondary attempt after UI thread settled (virtualization ready)
-            await Task.Delay(40);
-            Center();
-        }
-
-        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => Center();
+        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => ScrollToCenter(animate: false);
 
         private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName is nameof(CollectionView.ItemsSource) or nameof(CollectionView.SelectedItem))
-                Center();
+            if (e.PropertyName == nameof(CollectionView.ItemsSource) || e.PropertyName == nameof(CollectionView.SelectedItem))
+            {
+                // If ItemsSource changes, it's like an initial setup, or if selected item is set programmatically.
+                ScrollToCenter(animate: false);
+            }
         }
 
         private void OnHandlerChanged(object? sender, EventArgs e)
         {
-            // When native control is ready, center again
-            Center();
+            // When native control is ready, good time for an initial center.
+            RequestInitialScrollToCenter();
         }
 
-        private void Center()
+        private void RequestInitialScrollToCenter()
         {
-            if (_collection?.SelectedItem is null || _collection.ItemsSource is null)
-                return;
+            _debounceTokenSource?.Cancel();
+            _debounceTokenSource?.Dispose();
+            _debounceTokenSource = new CancellationTokenSource();
+            var token = _debounceTokenSource.Token;
 
-            // Determine index – safer with virtualization than item reference
-            int index = -1;
-            if (_collection.ItemsSource is System.Collections.IList list)
-                index = list.IndexOf(_collection.SelectedItem);
+            Task.Run(async () => {
+                try
+                {
+                    await Task.Delay(150, token); // Delay to allow UI to settle
+                    if (!token.IsCancellationRequested)
+                    {
+                        ScrollToCenter(animate: false);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected if token is cancelled
+                }
+            }, token);
+        }
 
-            if (index < 0)
-            {
-                // Fallback to item scroll if index lookup failed
-                _collection.Dispatcher.Dispatch(() =>
-                    _collection.ScrollTo(_collection.SelectedItem, position: ScrollToPosition.Center, animate: true));
-                return;
-            }
+        private void ScrollToCenter(bool animate)
+        {
+            if (_collection == null) return;
 
-            // Dispatch to ensure cell is materialised before scrolling (next UI cycle)
             _collection.Dispatcher.Dispatch(() =>
             {
-                // Use index-based scroll for reliability with virtualization
-                _collection.ScrollTo(index, position: ScrollToPosition.Center, animate: true);
-            });
+                if (_collection?.SelectedItem == null || _collection.ItemsSource == null)
+                    return;
 
-            // Fire secondary delayed attempt to reduce cases where first attempt happens too early
-            DelayedCenter();
+                int index = -1;
+                if (_collection.ItemsSource is System.Collections.IList list)
+                {
+                    try
+                    {
+                        index = list.IndexOf(_collection.SelectedItem);
+                    }
+                    catch (ArgumentException) // Item might not be in the list temporarily during updates
+                    {
+                        index = -1; 
+                    }
+                }
+
+                if (index < 0)
+                {
+                    // Fallback: if item is not found by index (e.g. list doesn't implement IList or item not present)
+                    // but SelectedItem is valid.
+                    if (_collection.SelectedItem != null)
+                    {
+                       _collection.ScrollTo(_collection.SelectedItem, position: ScrollToPosition.Center, animate: animate);
+                    }
+                }
+                else
+                {
+                    _collection.ScrollTo(index, position: ScrollToPosition.Center, animate: animate);
+                }
+            });
         }
     }
 } 

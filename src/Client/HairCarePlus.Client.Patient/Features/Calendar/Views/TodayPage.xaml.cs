@@ -138,8 +138,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                   _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });
                 
-                // Scroll to selected date with animation
-                _ = CenterSelectedDateAsync(); // Still scroll to center
+                // Scroll to selected date with animation - REMOVED, let CenterOnSelectedBehavior handle it
+                // _ = CenterSelectedDateAsync(); 
                 
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
@@ -220,14 +220,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
                 _viewModel.VisibleDate = _viewModel.SelectedDate;
 
-                await Task.Delay(150); // Allow UI to render
+                // await Task.Delay(150); // Allow UI to render - REMOVED, let CenterOnSelectedBehavior handle timing
 
-                if (DateSelectorView != null)
-                {
-                    _ = CenterSelectedDateAsync();
-                    await Task.Delay(50);
-
-                }
+                // if (DateSelectorView != null) // REMOVED, let CenterOnSelectedBehavior handle it
+                // {
+                //     _ = CenterSelectedDateAsync();
+                //     await Task.Delay(50); 
+                // }
 
                 _logger.LogInformation("TodayPage OnAppearing completed");
             }

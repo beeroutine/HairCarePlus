@@ -169,7 +169,8 @@
                           FontSize="15"
                           FontAttributes="None"
                           HorizontalOptions="Center"
-                          Margin="0,0,0,4"/>
+                          Margin="0,0,0,4"
+                          InputTransparent="True"/>
 
                     <!-- Day number in circle/just text -->
                     <Border Grid.Row="1"
