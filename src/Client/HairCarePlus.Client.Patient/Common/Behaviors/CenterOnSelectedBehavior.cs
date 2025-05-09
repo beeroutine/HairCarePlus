@@ -50,14 +50,20 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             RequestInitialScrollToCenter();
         }
 
-        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => ScrollToCenter(animate: false);
+        // Animate scroll when the user changes selection so the movement feels natural.
+        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => ScrollToCenter(animate: true);
 
         private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(CollectionView.ItemsSource) || e.PropertyName == nameof(CollectionView.SelectedItem))
+            if (e.PropertyName == nameof(CollectionView.ItemsSource))
             {
-                // If ItemsSource changes, it's like an initial setup, or if selected item is set programmatically.
+                // ItemsSource changed – initial positioning without animation while layout settles.
                 ScrollToCenter(animate: false);
+            }
+            else if (e.PropertyName == nameof(CollectionView.SelectedItem))
+            {
+                // SelectedItem set programmatically (e.g., via ViewModel) – animate to keep UX consistent.
+                ScrollToCenter(animate: true);
             }
         }
 
