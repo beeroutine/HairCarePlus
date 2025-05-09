@@ -261,10 +261,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             view.SetBackgroundColor(Android.Graphics.Color.Transparent);
         }
 
-        private class ClearHighlightAttachListener : Java.Lang.Object, Android.Views.View.IOnAttachStateChangeListener
+        private class ClearHighlightAttachListener : Java.Lang.Object, AndroidX.RecyclerView.Widget.RecyclerView.IOnChildAttachStateChangeListener
         {
-            public void OnViewAttachedToWindow(Android.Views.View? v) => ClearHighlight(v);
-            public void OnViewDetachedFromWindow(Android.Views.View? v) { /* no-op */ }
+            public void OnChildViewAttachedToWindow(Android.Views.View view) => ClearHighlight(view);
+            public void OnChildViewDetachedFromWindow(Android.Views.View view) { /* no-op */ }
         }
 #endif
     }

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Единая версия NuGet‑пакетов Microsoft.Maui.* для всех проектов -->
-    <MauiVersion>10.0.0-preview.3.25208.1</MauiVersion>
+    <MauiVersion>9.0.51</MauiVersion>
 
     <!-- Opt-in to preview workloads so that dotnet workload restore succeeds on CI -->
     <EnablePreviewWorkloads>true</EnablePreviewWorkloads>
