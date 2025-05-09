@@ -11,7 +11,7 @@ TodayPage - основная страница календаря в прилож
 - Визуальные индикаторы различных типов событий (лекарства, фото, видео)
 - Цветовая индикация типов событий через `DataTrigger` и ресурсы цвета (без конвертера)
 - Завершение задачи двумя жестами: **свайп влево** _или_ **долгое нажатие\u00a0≥ 2 с** на карточке (реализовано через `SwipeView` и `TouchBehavior`).
-- При MAUI 9 Preview 5 и выше мерцание системы при выборе даты устранено нативно через свойства `SelectionHighlightColor="Transparent"` и `SelectionChangedAnimationEnabled="False"` в `CollectionView` (см. XAML). Для более ранних превью остаётся VSM-workaround.
+- Со стабильной MAUI 10 (начиная с preview 4) мерцание системы при выборе даты можно убрать нативными свойствами `SelectionHighlightColor` и `SelectionChangedAnimationEnabled` у `CollectionView`. В **preview 3** эти API ещё отсутствуют, поэтому пока продолжает использоваться VSM-workaround (см. DataTemplate + `CollectionViewSelectionStateBehavior`).
 - Анимированное кольцо-прогресс вокруг сегодняшней даты (Stroke + StrokeDashArray). Логика вычисления `CompletionProgress` добавлена во ViewModel.
 - Возможность перейти к сегодняшней дате простым тапом по кругу.
 - Адаптивный дизайн с поддержкой светлой/темной темы

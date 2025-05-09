@@ -11,6 +11,10 @@ using Microsoft.Maui.Handlers;
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS;
 #endif
+#if ANDROID
+using Android.Views;
+using AndroidX.RecyclerView.Widget;
+#endif
 using System.Threading;
 using HairCarePlus.Client.Patient.Common.Utils;
 using MauiApp = Microsoft.Maui.Controls.Application;
@@ -61,6 +65,29 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                             // Also clear overlay whenever user scrolls (new cells appear)
                             DateSelectorView.Scrolled += (_, __) => ClearOverlay(ui);
                             DateSelectorView.SelectionChanged += (_, __) => ClearOverlay(ui);
+                        }
+                    };
+                }
+                // iOS: remove gray background on cell selection
+                Platforms.iOS.CollectionViewSelectionCleaner.Attach(DateSelectorView);
+#endif
+#if ANDROID
+                // Android: remove default gray ripple/highlight on CollectionView selection
+                if (DateSelectorView != null)
+                {
+                    DateSelectorView.HandlerChanged += (_, __) =>
+                    {
+                        if (DateSelectorView.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView rv)
+                        {
+                            // Listener that makes selected background transparent for each attached child view
+                            rv.AddOnChildAttachStateChangeListener(new ClearHighlightAttachListener());
+
+                            // Apply immediately for already attached views
+                            for (int i = 0; i < rv.ChildCount; i++)
+                            {
+                                var child = rv.GetChildAt(i);
+                                ClearHighlight(child);
+                            }
                         }
                     };
                 }
@@ -222,5 +249,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
             _logger.LogInformation("TodayPage OnDisappearing completed");
         }
+
+#if ANDROID
+        // Helper to make any RecyclerView child view transparent to remove gray selection overlay
+        private static void ClearHighlight(Android.Views.View? view)
+        {
+            if (view == null)
+                return;
+
+            view.Foreground = null;
+            view.StateListAnimator = null;
+            view.SetBackgroundColor(Android.Graphics.Color.Transparent);
+        }
+
+        private class ClearHighlightAttachListener : Java.Lang.Object, Android.Views.View.IOnAttachStateChangeListener
+        {
+            public void OnViewAttachedToWindow(Android.Views.View? v) => ClearHighlight(v);
+            public void OnViewDetachedFromWindow(Android.Views.View? v) { /* no-op */ }
+        }
+#endif
     }
 } 

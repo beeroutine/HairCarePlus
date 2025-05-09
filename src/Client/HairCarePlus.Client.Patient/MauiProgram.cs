@@ -32,6 +32,7 @@ using CommunityToolkit.Mvvm.Messaging;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
+using UIKit;
 #endif
 
 namespace HairCarePlus.Client.Patient;
@@ -113,6 +114,8 @@ public static class MauiProgram
 				textView.InputAccessoryView = null;
 			}
 		});
+		// Disable default gray highlight for CollectionView cells globally (background only)
+		UICollectionViewCell.Appearance.BackgroundColor = UIColor.Clear;
 #endif
 
 #if DEBUG

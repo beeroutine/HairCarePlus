@@ -81,6 +81,8 @@
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
+                    <behaviors:CollectionViewSelectionStateBehavior />
+                    <behaviors:CenterOnSelectedBehavior />
                 </CollectionView.Behaviors>
             </CollectionView>
 
@@ -139,6 +141,7 @@
                                     <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
                                     <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="Transparent" />
                                     <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
+                                    <Setter Property="Grid.Scale" Value="1" />
                                 </VisualState.Setters>
                             </VisualState>
                             <VisualState Name="Selected">
@@ -148,6 +151,7 @@
                                     <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="{StaticResource White}" /> 
                                     <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
                                     <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{StaticResource Black}" />
+                                    <Setter Property="Grid.Scale" Value="1.1" />
                                 </VisualState.Setters>
                             </VisualState>
                         </VisualStateGroup>

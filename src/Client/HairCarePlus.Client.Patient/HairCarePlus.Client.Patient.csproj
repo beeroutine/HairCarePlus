@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
-		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net9.0-android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
+		<!-- Upgrade to .NET 10 Preview TFMs -->
+		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net10.0-android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -27,7 +28,6 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.haircareplus.client.patient</ApplicationId>
-		<ApplicationIdGuid>5F05E0E4-8F6F-4F0D-8E69-9BF88B8866D6</ApplicationIdGuid>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -75,16 +75,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Maui" Version="9.*" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.*" />
+		
+		<PackageReference Include="CommunityToolkit.Maui" Version="11.2.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Core" Version="11.2.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Markup" Version="6.0.0" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0-preview.3.25171.5" />
 		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="29.*" />
 		<PackageReference Include="Syncfusion.Maui.Core" Version="29.*" />
 		<PackageReference Include="Syncfusion.Maui.TabView" Version="29.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.*">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0-preview.3.25171.6" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0-preview.3.25171.6">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>

@@ -18,13 +18,13 @@ Key project rules and architecture details are documented in:
 Always consult these files when adding or modifying code. Ensure adherence to:
 
 1. Project structure: `src/Client`, `src/Server`, `Shared`.
-2. MAUI 9 best practices: UI in XAML with compiled bindings (x:DataType), business logic in ViewModels, DI via `MauiProgram`, `ILogger<>`.
+2. MAUI 10 best practices: UI in XAML with compiled bindings (x:DataType), business logic in ViewModels, DI via `MauiProgram`, `ILogger<>`.
 3. Naming conventions: `[FeatureName][Type].cs`.
 4. Logging via `ILogger<>`, avoid `Debug.WriteLine`.
 5. Follow UI/UX guidelines for themes, accessibility, and responsiveness.
 s
 Additional stack requirements:
-• .NET 9 SDK (9.0.100‑rc.2+) и .NET MAUI 9, всегда используй общие решения одинаково используемые для всех платформ которые поддерживает MAUI. 
+• .NET 10 SDK и .NET MAUI 10, всегда используй общие решения одинаково используемые для всех платформ которые поддерживает MAUI. 
 • Соблюдайте Clean Architecture, MVVM, SOLID, CQRS,s KISS.
 • Перед коммитом запускайте `dotnet test` — ошибок быть не должно.
 

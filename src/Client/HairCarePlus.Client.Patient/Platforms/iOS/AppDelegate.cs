@@ -2,6 +2,7 @@
 using UIKit;
 using System;
 using System.Threading.Tasks;
+using Microsoft.Maui;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
