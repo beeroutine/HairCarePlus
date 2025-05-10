@@ -29,6 +29,7 @@ using System.Diagnostics;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Common.Startup;
 using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Patient.Features.PhotoCapture;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -47,6 +48,7 @@ public static class MauiProgram
 			.UseMauiCommunityToolkit()
 			.ConfigureSyncfusionCore()
 			.RegisterCalendarRoutes()
+			.RegisterPhotoCaptureRoutes()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -99,6 +101,9 @@ public static class MauiProgram
 
 		// Register Calendar feature (handles its own DI, ViewModels и проч.)
 		builder.Services.AddCalendarServices();
+
+		// Register PhotoCapture feature
+		builder.Services.AddPhotoCaptureFeature();
 
 		// Register startup tasks
 		builder.Services.AddStartupTasks();

@@ -6,11 +6,11 @@ using HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 using HairCarePlus.Client.Patient.Features.Chat.Services;
 using HairCarePlus.Client.Patient.Infrastructure.Connectivity;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
-using HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
-using HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
 using HairCarePlus.Shared.Common.CQRS;
 using System.Collections.Generic;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
+using Commands = HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
+using QueriesNs = HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
 
 namespace HairCarePlus.Client.Patient.Features.Chat;
 
@@ -36,10 +36,11 @@ public static class DependencyInjection
 
         // CQRS
         services.AddCqrs();
-        services.AddScoped<ICommandHandler<SendChatMessageCommand>, SendChatMessageHandler>();
-        services.AddScoped<IQueryHandler<GetChatMessagesQuery, IReadOnlyList<ChatMessage>>, GetChatMessagesHandler>();
-        services.AddScoped<ICommandHandler<UpdateChatMessageCommand>, UpdateChatMessageHandler>();
-        services.AddScoped<ICommandHandler<DeleteChatMessageCommand>, DeleteChatMessageHandler>();
+        services.AddScoped<ICommandHandler<Commands.SendChatMessageCommand>, Commands.SendChatMessageHandler>();
+        services.AddScoped<IQueryHandler<QueriesNs.GetChatMessagesQuery, IReadOnlyList<ChatMessage>>, QueriesNs.GetChatMessagesHandler>();
+        services.AddScoped<ICommandHandler<Commands.UpdateChatMessageCommand>, Commands.UpdateChatMessageHandler>();
+        services.AddScoped<ICommandHandler<Commands.DeleteChatMessageCommand>, Commands.DeleteChatMessageHandler>();
+        services.AddScoped<ICommandHandler<Commands.SendChatImageCommand>, Commands.SendChatImageHandler>();
 
         return services;
     }

@@ -10,4 +10,6 @@ public interface IMediaFileSystemService
     Task<byte[]?> ReadFileAsync(string path);
     Task<string> GetLocalPathAsync(string fileName, string directory);
     Task CleanupDirectoryAsync(string directory, int maxAgeInDays = 30);
+    Task<string> GetCacheDirectoryAsync();
+    Task<string> GetMediaDirectoryAsync();
 } 

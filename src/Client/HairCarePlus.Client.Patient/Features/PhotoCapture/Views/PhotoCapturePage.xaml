@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HairCarePlus.Client.Patient.Features.PhotoCapture.Views.PhotoCapturePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities"
+    xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Converters"
+    xmlns:mtk="clr-namespace:CommunityToolkit.Maui.Views"
+    x:DataType="vm:PhotoCaptureViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="White">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:EqualityConverter x:Key="EqualityConverter" />
+            <converters:LuxOkConverter x:Key="LuxOkConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid
+        RowDefinitions="Auto,*,Auto"
+        ColumnDefinitions="*"
+        Padding="0">
+        
+        <!-- Top bar: template selector + switch camera button -->
+        <Grid Grid.Row="0" Grid.Column="0" Padding="12" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+            <!-- Zone selector -->
+            <CollectionView
+                ItemsSource="{Binding Templates}"
+                SelectionMode="Single"
+                SelectedItem="{Binding SelectedTemplate}"
+                x:Name="TemplatesCollection"
+                HorizontalScrollBarVisibility="Never"
+                HeightRequest="44">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="16" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:CaptureTemplate">
+                        <Border Padding="8,4" BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#444444}" Stroke="Transparent" StrokeThickness="0">
+                            <Label Text="{Binding Name}" FontSize="14" />
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Switch camera button -->
+            <ImageButton Grid.Column="1" WidthRequest="32" HeightRequest="32" BackgroundColor="Transparent" Command="{Binding SwitchCameraCommand}">
+                <ImageButton.Source>
+                    <FontImageSource Glyph="⥀" Size="24" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+
+        <!-- Camera preview with overlay -->
+        <Grid Grid.Row="1" Grid.Column="0">
+            <!-- Actual camera preview -->
+            <mtk:CameraView x:Name="CameraPreview" HorizontalOptions="Fill" VerticalOptions="Fill" />
+
+            <!-- Overlay image to guide user -->
+            <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
+
+            <!-- Lux indicator -->
+            <HorizontalStackLayout Padding="12" Spacing="6" HorizontalOptions="Start" VerticalOptions="Start">
+                <Label Text="{Binding Lux, StringFormat='Освещённость: {0} Lux'}" FontSize="16" />
+                <Label Text="✓" IsVisible="{Binding Lux, Converter={StaticResource LuxOkConverter}}" FontSize="16" />
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- Shutter button -->
+        <Border Grid.Row="2" Grid.Column="0" HeightRequest="80" WidthRequest="80" Stroke="Black" StrokeThickness="2" HorizontalOptions="Center" VerticalOptions="Center">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="40" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding CaptureCommand}" />
+            </Border.GestureRecognizers>
+        </Border>
+    </Grid>
+</ContentPage> 

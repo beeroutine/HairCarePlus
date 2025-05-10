@@ -14,6 +14,8 @@ using ChatCommands = HairCarePlus.Client.Patient.Features.Chat.Application.Comma
 using ChatQueries = HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
 using HairCarePlus.Shared.Common.CQRS;
 using MauiApp = Microsoft.Maui.Controls.Application;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -24,6 +26,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly IKeyboardService _keyboardService;
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
+    private readonly IMessenger _messenger;
     private readonly Random _random = new Random();
     private readonly ILogger<ChatViewModel> _logger;
     public CollectionView MessagesCollectionView { get; set; } = default!;
@@ -62,6 +65,7 @@ public partial class ChatViewModel : ObservableObject
         IKeyboardService keyboardService,
         ICommandBus commandBus,
         IQueryBus queryBus,
+        IMessenger messenger,
         ILogger<ChatViewModel> logger)
     {
         _navigationService = navigationService;
@@ -69,6 +73,7 @@ public partial class ChatViewModel : ObservableObject
         _keyboardService = keyboardService;
         _commandBus = commandBus;
         _queryBus = queryBus;
+        _messenger = messenger;
         _logger = logger;
         Messages = new ObservableCollection<ChatMessage>();
         
@@ -82,6 +87,13 @@ public partial class ChatViewModel : ObservableObject
             IsOnline = true,
             LastSeen = DateTime.Now
         };
+
+        // Listen for captured photos
+        _messenger.Register<PhotoCapturedMessage>(this, async (recipient, msg) =>
+        {
+            _logger.LogInformation("Received PhotoCapturedMessage, path={Path}", msg.Value);
+            await SendPhotoMessageAsync(msg.Value);
+        });
     }
 
     [RelayCommand]
@@ -245,9 +257,13 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenCamera()
     {
-        if (MauiApp.Current?.MainPage != null)
+        try
         {
-            await MauiApp.Current.MainPage.DisplayAlert("Coming Soon", "Camera functionality will be available soon", "OK");
+            await Shell.Current.GoToAsync("//camera");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Navigation to camera failed");
         }
     }
 
@@ -315,6 +331,36 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error scrolling to bottom");
+        }
+    }
+
+    private async Task SendPhotoMessageAsync(string localPath)
+    {
+        try
+        {
+            // optimistic UI
+            var chatMessage = new ChatMessage
+            {
+                Content = string.Empty,
+                SenderId = "patient",
+                ConversationId = "default_conversation",
+                SentAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Status = MessageStatus.Sent,
+                Type = MessageType.Image,
+                LocalAttachmentPath = localPath,
+                SyncStatus = SyncStatus.NotSynced
+            };
+
+            Messages.Add(chatMessage);
+
+            await _commandBus.SendAsync(new ChatCommands.SendChatImageCommand("default_conversation", localPath, "patient", DateTime.UtcNow));
+
+            await ScrollToBottom();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending photo message");
         }
     }
 } 
