@@ -24,7 +24,7 @@ Always consult these files when adding or modifying code. Ensure adherence to:
 5. Follow UI/UX guidelines for themes, accessibility, and responsiveness.
 s
 Additional stack requirements:
-• .NET 10 SDK и .NET MAUI 10, всегда используй общие решения одинаково используемые для всех платформ которые поддерживает MAUI. 
+• .NET MAUI 9.0.51 SR (стабильная версия) всегда используй общие решения одинаково используемые для всех платформ которые поддерживает MAUI. 
 • Соблюдайте Clean Architecture, MVVM, SOLID, CQRS,s KISS.
 • Перед коммитом запускайте `dotnet test` — ошибок быть не должно.
 

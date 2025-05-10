@@ -53,8 +53,8 @@ Infrastructure-wide concerns (e.g., Connectivity, Storage) reside in `Client/Inf
 `Client/Common` holds reusable UI bits (Behaviors, Converters, base pages) that are referenced by multiple features but are not global enough for Shared/.
 
 ## 3  Tech Stack
-* .NET 10 SDK (SDK 10.0.100-preview.3)  
-* .NET MAUI 10
+* .NET 9 SDK (SDK 9.0.200)
+* .NET MAUI 9.0.51 SR
 * ASP.NET Core Web API + SignalR  
 * Entity Framework Core  
 * Clean Architecture · MVVM · CQRS · SOLID · KISS
