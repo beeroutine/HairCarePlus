@@ -1,9 +1,11 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities;
 
 /// <summary>
 /// Данные AR-шаблона (оверлей, который помогает пользователю правильно позиционировать камеру).
 /// </summary>
-public sealed class CaptureTemplate
+public sealed partial class CaptureTemplate : ObservableObject
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
@@ -19,5 +21,7 @@ public sealed class CaptureTemplate
     /// Минимальный уровень освещённости (lux) для качественного кадра.
     /// </summary>
     public int? RecommendedLux { get; init; }
-    public bool IsCaptured { get; set; }
+
+    [ObservableProperty]
+    private bool _isCaptured;
 } 

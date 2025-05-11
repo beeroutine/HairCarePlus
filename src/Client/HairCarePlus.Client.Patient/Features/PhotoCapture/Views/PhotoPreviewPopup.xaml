@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xaml-comp compile="true" ?>
+<toolkit:Popup
+    x:Class="HairCarePlus.Client.Patient.Features.PhotoCapture.Views.PhotoPreviewPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    CanBeDismissedByTappingOutsideOfPopup="True">
+    <Border
+        BackgroundColor="{AppThemeBinding Light=#DD000000, Dark=#DD000000}"
+        Padding="20"
+        HorizontalOptions="Fill"
+        VerticalOptions="Fill">
+        <ScrollView>
+            <Image Source="{Binding PhotoPath}" Aspect="AspectFit" />
+        </ScrollView>
+    </Border>
+</toolkit:Popup> 

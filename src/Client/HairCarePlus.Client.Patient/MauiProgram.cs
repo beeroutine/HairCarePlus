@@ -46,6 +46,7 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
+			.UseMauiCommunityToolkitCamera()
 			.ConfigureSyncfusionCore()
 			.RegisterCalendarRoutes()
 			.RegisterPhotoCaptureRoutes()
@@ -136,6 +137,17 @@ public static class MauiProgram
 
 		var app = builder.Build();
 		ServiceHelper.Initialize(app.Services);
+
+		// Gracefully handle absence of camera on simulators (CommunityToolkit.Maui.Camera throws)
+		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+		{
+			if (args?.ExceptionObject is CommunityToolkit.Maui.Core.CameraException camEx &&
+				camEx.Message.Contains("No camera available"))
+			{
+				// Ignore – simulators often lack a physical camera. Prevents SIGABRT crash on iOS simulator.
+				return;
+			}
+		};
 
 		return app;
 	}

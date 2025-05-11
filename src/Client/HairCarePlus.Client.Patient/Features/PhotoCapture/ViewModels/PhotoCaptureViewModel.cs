@@ -39,6 +39,27 @@ public partial class PhotoCaptureViewModel : ObservableObject
     [ObservableProperty]
     private int _lux = 320;
 
+    [ObservableProperty]
+    private string? _lastPhotoPath;
+
+    public enum CameraFacing
+    {
+        Front,
+        Back
+    }
+
+    [ObservableProperty]
+    private CameraFacing _facing = CameraFacing.Front;
+
+    [RelayCommand]
+    private void ToggleFacing()
+    {
+        _logger.LogInformation($"ToggleFacingCommand called. Current facing: {_facing}");
+        Facing = Facing == CameraFacing.Front ? CameraFacing.Back : CameraFacing.Front;
+        _logger.LogInformation($"New facing: {_facing}");
+        // TODO: publish message or invoke service to switch actual camera in view.
+    }
+
     [RelayCommand]
     private async Task Capture()
     {
@@ -63,12 +84,6 @@ public partial class PhotoCaptureViewModel : ObservableObject
     {
         if (Templates == null) return;
         SelectedTemplate = Templates.FirstOrDefault(t => t.Id == id);
-    }
-
-    [RelayCommand]
-    private async Task SwitchCamera()
-    {
-        await _commandBus.SendAsync(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands.CapturePhotoCommand());
     }
 
     partial void OnSelectedTemplateChanged(CaptureTemplate? oldValue, CaptureTemplate? newValue)

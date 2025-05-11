@@ -171,7 +171,9 @@
                                         </Frame>
                                     </Grid>
 
-                                    <Label Text="{Binding Content}" 
+                                    <!-- Text content -->
+                                    <Label x:Name="MessageText"
+                                           Text="{Binding Content}" 
                                            TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                            FontSize="17"
                                            Margin="0,4,0,0"
@@ -179,13 +181,31 @@
                                            LineHeight="1.25"
                                            VerticalOptions="Center">
                                         <Label.Triggers>
-                                            <DataTrigger TargetType="Label"
-                                                       Binding="{Binding SenderId}"
-                                                       Value="doctor">
+                                            <!-- sender colour tweak -->
+                                            <DataTrigger TargetType="Label" Binding="{Binding SenderId}" Value="doctor">
                                                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                            </DataTrigger>
+                                            <!-- hide text if this message is an image -->
+                                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                                <Setter Property="IsVisible" Value="False" />
                                             </DataTrigger>
                                         </Label.Triggers>
                                     </Label>
+
+                                    <!-- Image content -->
+                                    <Image x:Name="MessageImage"
+                                           Source="{Binding LocalAttachmentPath}"
+                                           Aspect="AspectFill"
+                                           HeightRequest="200"
+                                           IsVisible="False"
+                                           Margin="0,4,0,0">
+                                        <Image.Triggers>
+                                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                                <Setter Property="IsVisible" Value="True" />
+                                            </DataTrigger>
+                                        </Image.Triggers>
+                                    </Image>
+
                                     <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
                                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
                                            FontSize="11"

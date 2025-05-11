@@ -92,6 +92,7 @@ public partial class ChatViewModel : ObservableObject
         _messenger.Register<PhotoCapturedMessage>(this, async (recipient, msg) =>
         {
             _logger.LogInformation("Received PhotoCapturedMessage, path={Path}", msg.Value);
+            _logger.LogInformation("File exists on device: {Exists}", System.IO.File.Exists(msg.Value));
             await SendPhotoMessageAsync(msg.Value);
         });
     }
@@ -338,25 +339,41 @@ public partial class ChatViewModel : ObservableObject
     {
         try
         {
-            // optimistic UI
+            var now = DateTime.UtcNow;
+            _logger.LogInformation("Preparing ChatMessage for image. LocalPath={Path}", localPath);
+
             var chatMessage = new ChatMessage
             {
                 Content = string.Empty,
                 SenderId = "patient",
                 ConversationId = "default_conversation",
-                SentAt = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow,
+                SentAt = now,
+                Timestamp = now,
+                CreatedAt = now,
                 Status = MessageStatus.Sent,
                 Type = MessageType.Image,
                 LocalAttachmentPath = localPath,
                 SyncStatus = SyncStatus.NotSynced
             };
 
-            Messages.Add(chatMessage);
+            _logger.LogInformation("Adding photo message to Messages collection. Thread={ThreadId}", Environment.CurrentManagedThreadId);
+
+            if (MauiApp.Current?.Dispatcher.IsDispatchRequired ?? false)
+            {
+                await MauiApp.Current.Dispatcher.DispatchAsync(() => Messages.Add(chatMessage));
+                _logger.LogInformation("Message added via Dispatcher. Total messages: {Count}", Messages.Count);
+            }
+            else
+            {
+                Messages.Add(chatMessage);
+                _logger.LogInformation("Message added on current thread. Total messages: {Count}", Messages.Count);
+            }
 
             await _commandBus.SendAsync(new ChatCommands.SendChatImageCommand("default_conversation", localPath, "patient", DateTime.UtcNow));
 
             await ScrollToBottom();
+
+            _logger.LogInformation("SendPhotoMessageAsync completed");
         }
         catch (Exception ex)
         {
