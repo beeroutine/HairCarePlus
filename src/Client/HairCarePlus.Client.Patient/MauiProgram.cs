@@ -30,6 +30,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Common.Startup;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture;
+using HairCarePlus.Client.Patient.Features.Progress;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -50,6 +51,7 @@ public static class MauiProgram
 			.ConfigureSyncfusionCore()
 			.RegisterCalendarRoutes()
 			.RegisterPhotoCaptureRoutes()
+			.RegisterProgressRoutes()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -105,6 +107,9 @@ public static class MauiProgram
 
 		// Register PhotoCapture feature
 		builder.Services.AddPhotoCaptureFeature();
+
+		// Register Progress feature
+		builder.Services.AddProgressFeature();
 
 		// Register startup tasks
 		builder.Services.AddStartupTasks();

@@ -6,6 +6,7 @@
     xmlns:calendar="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
     xmlns:chat="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Views"
     xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Views"
+    xmlns:progress="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="True"
     Title="HairCarePlus">
@@ -49,6 +50,14 @@
                     <FontImageSource FontFamily="MaterialIcons" Glyph="&#xE412;" Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" Size="24" />
                 </ShellContent.Icon>
             </ShellContent>
+        </Tab>
+
+        <!-- Progress -->
+        <Tab Title="Progress">
+            <ShellContent
+                Title="Progress"
+                ContentTemplate="{DataTemplate progress:ProgressPage}"
+                Route="progress" />
         </Tab>
     </TabBar>
 

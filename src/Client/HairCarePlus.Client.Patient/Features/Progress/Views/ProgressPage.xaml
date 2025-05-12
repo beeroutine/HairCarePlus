@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.ProgressPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+    xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+    x:DataType="vm:ProgressViewModel"
+    Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="..\Styles\ProgressStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+        <!-- Restriction timers -->
+        <CollectionView Grid.Row="0"
+                        ItemsSource="{Binding RestrictionTimers}"
+                        SelectionMode="None"
+                        HeightRequest="90"
+                        HorizontalScrollBarVisibility="Never">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:RestrictionTimer">
+                    <VerticalStackLayout WidthRequest="80" HorizontalOptions="Center">
+                        <Border Style="{StaticResource RestrictionCircleStyle}">
+                            <Label Text="{Binding DaysRemaining}" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <Label Text="{Binding Title}" FontSize="12" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Photos carousel -->
+        <CarouselView Grid.Row="1"
+                      ItemsSource="{Binding Photos}"
+                      ItemsLayout="VerticalList"
+                      IsBounceEnabled="True"
+                      Loop="False">
+            <CarouselView.ItemTemplate>
+                <DataTemplate x:DataType="models:ProgressPhoto">
+                    <Border Style="{StaticResource PhotoCardStyle}" Margin="12">
+                        <Image Source="{Binding LocalPath}" Aspect="AspectFill" />
+                    </Border>
+                </DataTemplate>
+            </CarouselView.ItemTemplate>
+        </CarouselView>
+    </Grid>
+</ContentPage> 
