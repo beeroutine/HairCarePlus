@@ -5,6 +5,9 @@ using Microsoft.Maui.Controls.Hosting;
 using static Microsoft.Maui.Controls.Routing;
 using HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 using HairCarePlus.Client.Patient.Features.Progress.Views;
+using HairCarePlus.Shared.Common.CQRS;
+using HairCarePlus.Client.Patient.Features.Progress.Application.Queries;
+using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 
 namespace HairCarePlus.Client.Patient.Features.Progress;
 
@@ -20,9 +23,19 @@ public static class ProgressServiceExtensions
         // Presentation-layer registrations
         services.AddTransient<ProgressViewModel>();
         services.AddTransient<ProgressPage>();
+        services.AddTransient<ViewModels.ProcedureChecklistViewModel>();
+        services.AddTransient<Views.ProcedureChecklistPopup>();
 
         // NOTE: When domain/application services are implemented (e.g., IRestrictionService),
         // register them here following SOLID & Clean Architecture guidelines.
+
+        // Services
+        services.AddScoped<Services.Interfaces.IRestrictionService, Services.Implementation.RestrictionServiceStub>();
+
+        // CQRS
+        services.AddCqrs();
+        services.AddScoped<IQueryHandler<GetDailyProgressQuery, DailyProgress>, GetDailyProgressHandler>();
+        services.AddScoped<IQueryHandler<GetProgressFeedQuery, IReadOnlyList<ProgressFeedItem>>, GetProgressFeedHandler>();
 
         return services;
     }

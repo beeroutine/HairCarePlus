@@ -17,7 +17,7 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+    <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*">
         <!-- Restriction timers -->
         <CollectionView Grid.Row="0"
                         ItemsSource="{Binding RestrictionTimers}"
@@ -39,19 +39,55 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- Photos carousel -->
+        <!-- Feed carousel -->
         <CarouselView Grid.Row="1"
-                      ItemsSource="{Binding Photos}"
-                      ItemsLayout="VerticalList"
+                      ItemsSource="{Binding Feed}"
                       IsBounceEnabled="True"
                       Loop="False">
+            <CarouselView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="20" />
+            </CarouselView.ItemsLayout>
             <CarouselView.ItemTemplate>
-                <DataTemplate x:DataType="models:ProgressPhoto">
+                <DataTemplate x:DataType="models:ProgressFeedItem">
                     <Border Style="{StaticResource PhotoCardStyle}" Margin="12">
-                        <Image Source="{Binding LocalPath}" Aspect="AspectFill" />
+                        <Grid RowDefinitions="*,Auto" ColumnDefinitions="*">
+                            <!-- Photos horizontal list -->
+                            <CollectionView Grid.Row="0"
+                                            ItemsSource="{Binding Photos}"
+                                            SelectionMode="None"
+                                            ItemsLayout="HorizontalList"
+                                            HorizontalScrollBarVisibility="Never">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ProgressPhoto">
+                                        <Image Source="{Binding LocalPath}" Aspect="AspectFill" HeightRequest="300" WidthRequest="250" />
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+
+                            <!-- AI score -->
+                            <Label Grid.Row="1" Text="{Binding AiReport.Score, StringFormat='AI Score {0}'}"
+                                   FontSize="12" HorizontalOptions="End" Margin="8">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding AiReport}" Value="{x:Null}">
+                                        <Setter Property="IsVisible" Value="False" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </CarouselView.ItemTemplate>
         </CarouselView>
+
+        <!-- Dock quick actions -->
+        <Grid Grid.Row="2" Padding="16" ColumnDefinitions="*,*">
+            <Button Text="+ Photo"
+                    Command="{Binding AddPhotoCommand}"
+                    Style="{StaticResource DockButtonStyle}" />
+            <Button Grid.Column="1"
+                    Text="✓ Procedure"
+                    Command="{Binding CompleteProcedureCommand}"
+                    Style="{StaticResource DockButtonStyle}" />
+        </Grid>
     </Grid>
 </ContentPage> 

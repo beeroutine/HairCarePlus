@@ -71,6 +71,7 @@ Infrastructure-wide concerns (e.g., Connectivity, Storage) reside in `Client/Inf
 * Theme via **ResourceDictionary + AppThemeBinding** – no hard-coded hex in XAML.  
 * Interactions: `SwipeView`, `CommunityToolkit.TouchBehavior` (long-press).  
 * Log with `ILogger<T>`; never `Debug.WriteLine`.
+* Minimalism first: avoid visual clutter (no drop-shadows, card-in-card, overdraw); prefer flat Borders, max two accent colors, and information-dense layouts.
 
 ## 6  Cross-cutting Policies
 * **Security:** JWT, HTTPS everywhere, Secure Storage on device; no secrets in code.  

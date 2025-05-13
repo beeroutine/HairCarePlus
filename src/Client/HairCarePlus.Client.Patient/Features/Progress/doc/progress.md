@@ -53,4 +53,44 @@ Progress/
 * Лонг-тап на фото открывает полноэкранный просмотр + markdown-отчёт.
 
 ---
+© HairCare+, 2025
+
+## v2 Redesign — Minimalism First
+
+### 1. Суть страницы
+* Одним взглядом ответить пациенту на два вопроса:  
+  1. *«Как идёт моё восстановление сегодня?»*  
+  2. *«Что ещё под запретом и когда закончится?»*
+* Минимум отвлекающих элементов: плоский UI, до двух акцентных цветов.
+
+### 2. Компоненты UI
+|Блок|Описание|
+|----|---------|
+|Restriction Circles|Горизонтальный `CollectionView`. Круг = ограничение. Внутри — оставшиеся дни. Цвета: `Primary` (активно) / `SurfaceVariant` (< 24 ч) / `Surface` (снято). Tap → всплывашка с описанием.|
+|Diary Feed|Вертикальная хронология дней (`CollectionView`). Каждый элемент содержит: три мини-превью фото (Front/Top/Back), статус процедур ✓, метку AI-анализа («OK», «Attention»).|
+|Bottom-Sheet Insights|Ленивая подгрузка (`CommunityToolkit.Maui.Popup`). Графики роста/покраснения, % выполнения процедур, кнопка «Share with Clinic».|
+|Dock Quick-Actions|Две кнопки: «+ Photo» (открывает камеру c выбранной зоной) и «✓ Procedure» (чек-лист задач дня).|
+
+### 3. Потоки данных / CQRS
+* **Commands**  
+  `CapturePhotoCommand` → локальное сохранение + `PhotoCapturedMessage`  
+  `CompleteProcedureCommand` → отмечает чек-лист  
+* **Queries**  
+  `GetDailyProgressQuery` → агрегирует локальные фото, AI-report, процедуры  
+  `GetRestrictionsQuery` → TTL ограничений
+
+### 4. Доменные модели (draft)
+```csharp
+record RestrictionTimer(string Id, string Title, DateTime EndsAt);
+record ProgressPhoto(string LocalPath, DateOnly Date, PhotoZone Zone);
+record ProcedureCheck(string Id, bool IsDone, DateOnly Date);
+record AIReport(DateOnly Date, AiScore Score, string Summary);
+```
+
+### 5. Технические заметки
+* Для сравнения фото используется `SharedTransitionNavigationPage` (iOS/Android).  
+* Локальный кэш фото: `[CacheDir]/HairCarePlus/captured_photos/`.  
+* AI-отчёт приходит по SignalR `photoReportReady` и кешируется в SQLite.
+
+---
 © HairCare+, 2025 

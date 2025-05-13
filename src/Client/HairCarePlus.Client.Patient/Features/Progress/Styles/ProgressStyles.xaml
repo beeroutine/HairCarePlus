@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <!-- Restriction circle adopts primary accent color and respects theme -->
     <Style x:Key="RestrictionCircleStyle" TargetType="Border">
         <Setter Property="HeightRequest" Value="60" />
         <Setter Property="WidthRequest" Value="60" />
         <Setter Property="StrokeThickness" Value="2" />
-        <Setter Property="Stroke" Value="{StaticResource Primary}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="30" />
@@ -13,6 +14,7 @@
         </Setter>
     </Style>
 
+    <!-- Feed card background adapts to theme using global card colors -->
     <Style x:Key="PhotoCardStyle" TargetType="Border">
         <Setter Property="HeightRequest" Value="350" />
         <Setter Property="StrokeShape">
@@ -20,7 +22,10 @@
                 <RoundRectangle CornerRadius="12" />
             </Setter.Value>
         </Setter>
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#1E2A35, Dark=#2C2C2E}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" />
         <Setter Property="Padding" Value="0" />
     </Style>
+
+    <!-- Dock button uses shared PrimaryButton style -->
+    <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
 </ResourceDictionary> 

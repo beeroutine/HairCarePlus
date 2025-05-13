@@ -1,67 +1,92 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
-using HairCarePlus.Client.Patient.Infrastructure.Media;
+using HairCarePlus.Shared.Common.CQRS;
 using Microsoft.Extensions.Logging;
+using CommunityToolkit.Mvvm.Input;
+using ICommand = System.Windows.Input.ICommand;
+using Microsoft.Maui.Controls;
+using Microsoft.Extensions.DependencyInjection;
+using HairCarePlus.Client.Patient.Features.Progress.Views;
+using CommunityToolkit.Maui.Views;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
 public partial class ProgressViewModel : ObservableObject
 {
-    private readonly IMediaFileSystemService _fileSystem;
+    private readonly IQueryBus _queryBus;
     private readonly ILogger<ProgressViewModel> _logger;
+    private readonly IServiceProvider _sp;
 
-    public ProgressViewModel(IMediaFileSystemService fileSystem, ILogger<ProgressViewModel> logger)
+    private const int DefaultDaysRange = 7;
+
+    public ProgressViewModel(IQueryBus queryBus, ILogger<ProgressViewModel> logger, IServiceProvider sp)
     {
-        _fileSystem = fileSystem;
+        _queryBus = queryBus;
         _logger = logger;
+        _sp = sp;
 
         RestrictionTimers = new ObservableCollection<RestrictionTimer>();
-        Photos = new ObservableCollection<ProgressPhoto>();
+        Feed = new ObservableCollection<ProgressFeedItem>();
 
         _ = LoadAsync();
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
-    public ObservableCollection<ProgressPhoto> Photos { get; }
+    public ObservableCollection<ProgressFeedItem> Feed { get; }
+
+    // Selected feed item (for future insights)
+    [ObservableProperty]
+    private ProgressFeedItem? _selectedFeedItem;
+
+    public ICommand AddPhotoCommand => new RelayCommand(async () =>
+    {
+        try
+        {
+            await Shell.Current.GoToAsync("//camera");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Navigation to camera failed");
+        }
+    });
+
+    public ICommand CompleteProcedureCommand => new RelayCommand(() =>
+    {
+        try
+        {
+            var vm = _sp.GetRequiredService<ProcedureChecklistViewModel>();
+            var popup = new ProcedureChecklistPopup(vm);
+            Shell.Current.CurrentPage?.ShowPopup(popup);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open procedure checklist");
+        }
+    });
 
     private async Task LoadAsync()
     {
         try
         {
-            // 1. Загружаем таймеры ограничений (заглушка)
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var from = today.AddDays(-(DefaultDaysRange - 1)); // inclusive
+            var feedItems = await _queryBus.SendAsync(new Application.Queries.GetProgressFeedQuery(from, today));
+
+            Feed.Clear();
+            foreach (var item in feedItems)
+                Feed.Add(item);
+
+            // Use latest day restrictions for header until per-day selection implemented
+            var todayItem = feedItems.FirstOrDefault();
             RestrictionTimers.Clear();
-            RestrictionTimers.Add(new RestrictionTimer { Title = "Alcohol", DaysRemaining = 5 });
-            RestrictionTimers.Add(new RestrictionTimer { Title = "Gym", DaysRemaining = 12 });
-
-            // 2. Фото – сканируем локальный кэш
-            var dir = await _fileSystem.GetCacheDirectoryAsync();
-            var photoDir = Path.Combine(dir, "captured_photos");
-            if (!Directory.Exists(photoDir)) return;
-
-            var files = Directory.GetFiles(photoDir, "photo_*.jpg").OrderByDescending(File.GetCreationTimeUtc);
-            foreach (var file in files)
-            {
-                Photos.Add(new ProgressPhoto
-                {
-                    LocalPath = file,
-                    CapturedAt = File.GetCreationTime(file),
-                    Zone = GuessZone(file),
-                    AiScore = 0
-                });
-            }
+            foreach (var t in todayItem?.ActiveRestrictions ?? Enumerable.Empty<RestrictionTimer>())
+                RestrictionTimers.Add(t);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading progress data");
+            _logger.LogError(ex, "Error loading progress feed");
         }
-    }
-
-    private static PhotoZone GuessZone(string path)
-    {
-        if (path.Contains("front")) return PhotoZone.Front;
-        if (path.Contains("top")) return PhotoZone.Top;
-        if (path.Contains("back")) return PhotoZone.Back;
-        return PhotoZone.Front;
     }
 } 
