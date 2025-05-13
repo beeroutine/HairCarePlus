@@ -12,4 +12,9 @@ using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 public interface IRestrictionService
 {
     Task<IReadOnlyList<RestrictionTimer>> GetActiveRestrictionsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Возвращает список ограничений, актуальных на указанную дату после операции.
+    /// </summary>
+    Task<IReadOnlyList<RestrictionTimer>> GetRestrictionsForDateAsync(DateOnly date, CancellationToken cancellationToken = default);
 } 

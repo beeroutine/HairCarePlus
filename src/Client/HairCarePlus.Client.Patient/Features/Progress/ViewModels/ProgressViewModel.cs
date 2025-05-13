@@ -66,6 +66,20 @@ public partial class ProgressViewModel : ObservableObject
         }
     });
 
+    public ICommand OpenInsightsCommand => new RelayCommand<AIReport>(report =>
+    {
+        if (report is null) return;
+        try
+        {
+            var sheet = new InsightsSheet(report);
+            Shell.Current.CurrentPage?.ShowPopup(sheet);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open insights sheet");
+        }
+    });
+
     private async Task LoadAsync()
     {
         try

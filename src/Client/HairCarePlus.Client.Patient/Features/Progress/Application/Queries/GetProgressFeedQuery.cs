@@ -90,12 +90,13 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
             }
 
             // Derive restriction timers state for this historical date
-            var derivedRestrictions = todayRestrictions
-                .Select(r => new RestrictionTimer { Title = r.Title, DaysRemaining = r.DaysRemaining + (query.To.DayNumber - date.DayNumber) })
-                .ToList();
+            var derivedRestrictions = await _restrictionService.GetRestrictionsForDateAsync(date, cancellationToken);
 
             // Produce artificial AI feedback placeholder when photos exist
             AIReport? aiReport = null;
+            string title = $"Day {query.To.DayNumber - date.DayNumber + 1}";
+            string? description = photos.Count > 0 ? "Auto-note: New photos captured." : null;
+
             if (photos.Count > 0)
             {
                 // Simple heuristic: newer dates get slightly higher score
@@ -105,7 +106,7 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
                 aiReport = new AIReport(date, score, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
             }
 
-            feedItems.Add(new ProgressFeedItem(date, photos, derivedRestrictions, aiReport));
+            feedItems.Add(new ProgressFeedItem(date, title, description, photos, derivedRestrictions, aiReport));
         }
 
         return feedItems;

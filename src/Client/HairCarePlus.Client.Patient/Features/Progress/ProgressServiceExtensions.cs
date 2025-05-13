@@ -30,7 +30,7 @@ public static class ProgressServiceExtensions
         // register them here following SOLID & Clean Architecture guidelines.
 
         // Services
-        services.AddScoped<Services.Interfaces.IRestrictionService, Services.Implementation.RestrictionServiceStub>();
+        services.AddScoped<Services.Interfaces.IRestrictionService, Services.Implementation.RestrictionServiceCalendarAdapter>();
 
         // CQRS
         services.AddCqrs();

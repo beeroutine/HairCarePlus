@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolkit:Popup
+    x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.InsightsSheet"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+    x:DataType="models:AIReport"
+    CanBeDismissedByTappingOutsideOfPopup="True">
+
+    <Border BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+            Padding="16" WidthRequest="320">
+        <ScrollView>
+            <VerticalStackLayout Spacing="12">
+                <Label Text="{Binding Date, StringFormat='Insights — {0:d}'}" FontAttributes="Bold" FontSize="18" />
+                <Label Text="{Binding Score, StringFormat='AI Score: {0}'}" FontAttributes="Bold" FontSize="16" />
+                <Label Text="{Binding Summary}" LineBreakMode="WordWrap" />
+                <Button Text="Close" Command="{Binding Source={x:Reference Name=popupRoot}, Path=CloseCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Border>
+</toolkit:Popup> 
