@@ -24,6 +24,14 @@
                                 <Setter TargetName="PART_Text" Property="Label.TextColor" Value="{StaticResource White}" />
                             </VisualState.Setters>
                         </VisualState>
+                        <VisualState Name="Disabled">
+                            <VisualState.Setters>
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#D1D1D1, Dark=#3A3A3C}" />
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light=#BDBDBD, Dark=#515154}" />
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter TargetName="PART_Text" Property="Label.TextColor" Value="{AppThemeBinding Light=#6E6E6E, Dark=#9E9EA0}" />
+                            </VisualState.Setters>
+                        </VisualState>
                     </VisualStateGroup>
                 </VisualStateGroupList>
             </Setter.Value>

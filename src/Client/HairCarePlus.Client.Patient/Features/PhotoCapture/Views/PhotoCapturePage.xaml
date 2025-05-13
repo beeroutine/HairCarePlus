@@ -30,7 +30,7 @@
         Padding="0">
         
         <!-- Top bar: template selector + switch camera button -->
-        <Grid Grid.Row="0" Grid.Column="0" Padding="12" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+        <Grid Grid.Row="0" Grid.Column="0" Padding="16,12" ColumnDefinitions="*,Auto" VerticalOptions="Center">
             <!-- Zone selector -->
             <CollectionView
                 ItemsSource="{Binding Templates}"
@@ -72,11 +72,21 @@
             <!-- Overlay image to guide user -->
             <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
 
-            <!-- Lux indicator -->
-            <HorizontalStackLayout Padding="12" Spacing="6" HorizontalOptions="Start" VerticalOptions="Start">
-                <Label Text="{Binding Lux, StringFormat='Освещённость: {0} Lux'}" FontSize="16" />
-                <Label Text="✓" IsVisible="{Binding Lux, Converter={StaticResource LuxOkConverter}}" FontSize="16" />
-            </HorizontalStackLayout>
+            <!-- Semi-transparent badge showing current Lux level -->
+            <Border BackgroundColor="#66000000"
+                    Padding="6,2"
+                    StrokeThickness="0"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Start"
+                    Margin="12">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <HorizontalStackLayout Spacing="4">
+                    <Label Text="{Binding Lux, StringFormat='{0} lx'}" FontSize="14" TextColor="White" />
+                    <Label Text="✓" IsVisible="{Binding Lux, Converter={StaticResource LuxOkConverter}}" FontSize="14" TextColor="Lime" />
+                </HorizontalStackLayout>
+            </Border>
 
             <!-- Button to preview the last captured photo -->
             <ImageButton
