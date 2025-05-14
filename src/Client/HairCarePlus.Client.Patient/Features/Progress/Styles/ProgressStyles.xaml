@@ -16,7 +16,7 @@
 
     <!-- Feed card background adapts to theme using global card colors -->
     <Style x:Key="PhotoCardStyle" TargetType="Border">
-        <Setter Property="HeightRequest" Value="350" />
+        <!-- <Setter Property="HeightRequest" Value="350" /> -->
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="12" />

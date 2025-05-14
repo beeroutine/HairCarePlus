@@ -17,4 +17,8 @@ public sealed record ProgressFeedItem(
     string? Description,
     IReadOnlyList<ProgressPhoto> Photos,
     IReadOnlyList<RestrictionTimer> ActiveRestrictions,
-    AIReport? AiReport); 
+    AIReport? AiReport = null
+)
+{
+    public string? DoctorReportSummary { get; set; }
+} 

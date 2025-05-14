@@ -5,89 +5,156 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
     xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+    xmlns:selectors="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Selectors"
     xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
     x:DataType="vm:ProgressViewModel"
-    Shell.NavBarIsVisible="False">
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light=White, Dark=#FF1E1E1E}">
 
     <ContentPage.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="..\Styles\ProgressStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="models:RestrictionTimer">
+                <VerticalStackLayout WidthRequest="85" HorizontalOptions="Center">
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:ProgressViewModel}}, Path=OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
+                    </VerticalStackLayout.GestureRecognizers>
+                    <Border Style="{StaticResource RestrictionCircleStyle}">
+                        <Label Text="{Binding DaysRemaining}" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="{Binding Title}" FontSize="12" HorizontalTextAlignment="Center" LineBreakMode="WordWrap" MaxLines="2" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="vm:ShowMoreRestrictionPlaceholderViewModel">
+                <VerticalStackLayout WidthRequest="85" HorizontalOptions="Center">
+                    <Border Style="{StaticResource RestrictionCircleStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:ProgressViewModel}}, Path=ShowAllRestrictionsCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding CountLabel}" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label HeightRequest="28" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <selectors:RestrictionItemTemplateSelector x:Key="RestrictionItemTemplateSelector" 
+                                                  StandardTemplate="{StaticResource StandardRestrictionTimerTemplate}" 
+                                                  ShowMoreTemplate="{StaticResource ShowMoreRestrictionsTemplate}" />
+
+            <!-- Converter to decide whether to display the "Read more" link -->
+            <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
+
         </ResourceDictionary>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
         <!-- Restriction timers -->
         <CollectionView Grid.Row="0"
-                        ItemsSource="{Binding RestrictionTimers}"
+                        ItemsSource="{Binding VisibleRestrictionItems}"
                         SelectionMode="None"
-                        HeightRequest="90"
-                        HorizontalScrollBarVisibility="Never">
+                        HeightRequest="110"
+                        HorizontalScrollBarVisibility="Never"
+                        ItemTemplate="{StaticResource RestrictionItemTemplateSelector}">
             <CollectionView.ItemsLayout>
-                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
             </CollectionView.ItemsLayout>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:RestrictionTimer">
-                    <VerticalStackLayout WidthRequest="80" HorizontalOptions="Center">
-                        <Border Style="{StaticResource RestrictionCircleStyle}">
-                            <Label Text="{Binding DaysRemaining}" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <Label Text="{Binding Title}" FontSize="12" HorizontalOptions="Center" />
-                    </VerticalStackLayout>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <!-- Feed carousel -->
-        <CarouselView Grid.Row="1"
-                      ItemsSource="{Binding Feed}"
-                      IsBounceEnabled="True"
-                      Loop="False">
-            <CarouselView.ItemsLayout>
-                <LinearItemsLayout Orientation="Vertical" ItemSpacing="20" />
-            </CarouselView.ItemsLayout>
-            <CarouselView.ItemTemplate>
+        <!-- Feed list -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding Feed}"
+                        SelectionMode="None"
+                        HorizontalScrollBarVisibility="Never">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="16" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:ProgressFeedItem">
-                    <Border Style="{StaticResource PhotoCardStyle}" Margin="12" Padding="12">
-                        <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*" RowSpacing="8">
+                    <Border Style="{StaticResource PhotoCardStyle}" Margin="12,0,12,12" Padding="10">
+                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*" RowSpacing="6">
                             <!-- Header with date/title -->
-                            <Label Text="{Binding Title}" FontAttributes="Bold" FontSize="16" />
+                            <Label Grid.Row="0" Text="{Binding Title}" FontSize="15" Margin="0,0,0,4"/>
 
-                            <!-- Photos horizontal list -->
+                            <!-- Multiple Photos Display -->
                             <CollectionView Grid.Row="1"
                                             ItemsSource="{Binding Photos}"
-                                            SelectionMode="None"
-                                            ItemsLayout="HorizontalList"
-                                            HorizontalScrollBarVisibility="Never">
+                                            HeightRequest="180"
+                                            HorizontalScrollBarVisibility="Never"
+                                            SelectionMode="None">
+                                <CollectionView.ItemsLayout>
+                                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4" />
+                                </CollectionView.ItemsLayout>
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate x:DataType="models:ProgressPhoto">
-                                        <Image Source="{Binding LocalPath}" Aspect="AspectFill" HeightRequest="280" WidthRequest="200" Margin="4" />
+                                        <Image Source="{Binding LocalPath}"
+                                               Aspect="AspectFill"
+                                               HeightRequest="180"
+                                               WidthRequest="120"/>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
 
-                            <!-- Description -->
-                            <Label Grid.Row="2" Text="{Binding Description}" FontSize="12" LineBreakMode="WordWrap" />
+                            <!-- Description and AI/Doctor reports -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" RowSpacing="2" Margin="0,4,0,4">
+                                <!-- Description with Read More link in stack -->
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="{Binding Description}" 
+                                           FontSize="12" 
+                                           LineBreakMode="TailTruncation" 
+                                           MaxLines="2" />
+                                    <Label Text="Read more" 
+                                           FontSize="12" 
+                                           TextColor="{StaticResource Primary}"
+                                           IsVisible="{Binding Description, Converter={StaticResource ReadMoreVisibilityConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:ProgressViewModel}}, Path=ShowDescriptionCommand}"
+                                                                 CommandParameter="{Binding .}" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </VerticalStackLayout>
 
-                            <!-- AI score -->
-                            <Label Grid.Row="3" Text="{Binding AiReport.Score, StringFormat='AI Score {0}'}"
-                                   FontSize="12" HorizontalOptions="End" Margin="0,0,0,4">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding AiReport}" Value="{x:Null}">
-                                        <Setter Property="IsVisible" Value="False" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                                <Label.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:ProgressViewModel}}, Path=OpenInsightsCommand}"
-                                                         CommandParameter="{Binding AiReport}" />
-                                </Label.GestureRecognizers>
-                            </Label>
+                                <!-- AI score & Doctor's Report aligned to the right -->
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Start" HorizontalOptions="End">
+                                    <Label Text="{Binding AiReport.Score, StringFormat='AI Score {0}'}"
+                                           FontSize="12" HorizontalOptions="End">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding AiReport}" Value="{x:Null}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding AiReport.Score}" Value="{x:Null}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={x:RelativeSource AncestorType={x:Type vm:ProgressViewModel}}, Path=OpenInsightsCommand}"
+                                                                 CommandParameter="{Binding AiReport}" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                    <Label Text="{Binding DoctorReportSummary}"
+                                           FontSize="12"
+                                           LineBreakMode="TailTruncation"
+                                           MaxLines="2"
+                                           HorizontalOptions="End">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding DoctorReportSummary}" Value="{x:Null}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding DoctorReportSummary}" Value="">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </Grid>
                         </Grid>
                     </Border>
                 </DataTemplate>
-            </CarouselView.ItemTemplate>
-        </CarouselView>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
 
         <!-- Dock removed per UX spec -->
     </Grid>
