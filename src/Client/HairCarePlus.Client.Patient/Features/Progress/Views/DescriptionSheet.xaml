@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolkit:Popup
+    x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.DescriptionSheet"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    x:DataType="sys:String"
+    CanBeDismissedByTappingOutsideOfPopup="True">
+
+    <!-- Bottom-sheet container -->
+    <Border
+        BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
+        Padding="24"
+        StrokeShape="RoundRectangle 24"
+        MinimumHeightRequest="200"
+        MaximumHeightRequest="500">
+        <ScrollView>
+            <Label
+                Text="{Binding .}"
+                FontSize="14"
+                LineBreakMode="WordWrap"
+                FontFamily="{StaticResource BodyFont}"/>
+        </ScrollView>
+    </Border>
+</toolkit:Popup> 

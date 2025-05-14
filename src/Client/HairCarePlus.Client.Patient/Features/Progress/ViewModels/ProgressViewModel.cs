@@ -123,44 +123,23 @@ public partial class ProgressViewModel : ObservableObject
 
         try
         {
-            // For now, display a simple popup with the full description.
-            var popup = new CommunityToolkit.Maui.Views.Popup
-            {
-                Content = new Label
-                {
-                    Text = item.Description,
-                    Padding = new Thickness(20),
-                    FontSize = 14,
-                    LineBreakMode = LineBreakMode.WordWrap
-                }
-            };
+            if (string.IsNullOrWhiteSpace(item.Description)) return;
 
-            Shell.Current.CurrentPage?.ShowPopup(popup);
+            var sheet = new DescriptionSheet(item.Description);
+            Shell.Current.CurrentPage?.ShowPopup(sheet);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to show description popup");
+            _logger.LogError(ex, "Failed to show description sheet");
         }
     }
 
     private void BuildVisibleRestrictions()
     {
         VisibleRestrictionItems.Clear();
-        if (RestrictionTimers.Count == 0) return;
-
-        if (RestrictionTimers.Count <= MaxVisibleRestrictionItems)
+        foreach (var t in RestrictionTimers)
         {
-            foreach (var t in RestrictionTimers)
-                VisibleRestrictionItems.Add(t);
-        }
-        else
-        {
-            for (int i = 0; i < MaxVisibleRestrictionItems - 1; i++)
-                VisibleRestrictionItems.Add(RestrictionTimers[i]);
-            VisibleRestrictionItems.Add(new ShowMoreRestrictionPlaceholderViewModel
-            {
-                CountLabel = $"+{RestrictionTimers.Count - (MaxVisibleRestrictionItems - 1)}"
-            });
+            VisibleRestrictionItems.Add(t);
         }
     }
 
