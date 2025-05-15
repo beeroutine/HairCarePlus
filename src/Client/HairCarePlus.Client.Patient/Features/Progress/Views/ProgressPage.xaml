@@ -100,7 +100,8 @@
             <CollectionView
                          ItemsSource="{Binding Feed}"
                           SelectionMode="None"
-                          HorizontalScrollBarVisibility="Never">
+                          HorizontalScrollBarVisibility="Never"
+                          VerticalScrollBarVisibility="Never">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
                 </CollectionView.ItemsLayout>

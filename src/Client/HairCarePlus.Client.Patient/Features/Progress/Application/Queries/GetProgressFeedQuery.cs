@@ -10,6 +10,7 @@ using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 using HairCarePlus.Client.Patient.Infrastructure.Media;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.Application.Queries;
 
@@ -27,15 +28,18 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
 {
     private readonly IMediaFileSystemService _fs;
     private readonly IRestrictionService _restrictionService;
+    private readonly IProfileService _profileService;
     private readonly ILogger<GetProgressFeedHandler> _logger;
 
     public GetProgressFeedHandler(
         IMediaFileSystemService fs,
         IRestrictionService restrictionService,
+        IProfileService profileService,
         ILogger<GetProgressFeedHandler> logger)
     {
         _fs = fs;
         _restrictionService = restrictionService;
+        _profileService = profileService;
         _logger = logger;
     }
 
@@ -94,7 +98,10 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
 
             // Produce artificial AI feedback placeholder when photos exist
             AIReport? aiReport = null;
-            string title = $"Day {query.To.DayNumber - date.DayNumber + 1}";
+            // calculate day number since surgery date inclusive
+            var surgeryDateOnly = DateOnly.FromDateTime(_profileService.SurgeryDate);
+            var dayNumber = (date.DayNumber - surgeryDateOnly.DayNumber) + 1;
+            string title = $"Day {dayNumber}";
             string? description = photos.Count > 0 ? "Auto-note: New photos captured." : null;
 
             if (photos.Count > 0)
