@@ -87,14 +87,6 @@ public partial class ChatViewModel : ObservableObject
             IsOnline = true,
             LastSeen = DateTime.Now
         };
-
-        // Listen for captured photos
-        _messenger.Register<PhotoCapturedMessage>(this, async (recipient, msg) =>
-        {
-            _logger.LogInformation("Received PhotoCapturedMessage, path={Path}", msg.Value);
-            _logger.LogInformation("File exists on device: {Exists}", System.IO.File.Exists(msg.Value));
-            await SendPhotoMessageAsync(msg.Value);
-        });
     }
 
     [RelayCommand]

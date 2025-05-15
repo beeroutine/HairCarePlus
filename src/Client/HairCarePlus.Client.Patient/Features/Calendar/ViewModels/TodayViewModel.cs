@@ -24,6 +24,7 @@ using Microsoft.Maui.ApplicationModel; // for MainThread
 using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
 using ICommand = System.Windows.Input.ICommand;
 using CalendarCommands = HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 
 // Alias to disambiguate with namespace HairCarePlus.Client.Patient.Features.Calendar.Application
 using MauiApp = Microsoft.Maui.Controls.Application;
@@ -40,6 +41,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly IMessenger _messenger;
         private readonly ICommandBus _commandBus;
         private readonly IQueryBus _queryBus;
+        private readonly IProfileService _profileService;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
@@ -178,7 +180,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger, IProfileService profileService)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
@@ -188,6 +190,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _messenger = messenger;
             _commandBus = commandBus;
             _queryBus = queryBus;
+            _profileService = profileService;
             
             // Всегда начинаем с сегодняшней даты (игнорируем сохранённое состояние прошлой сессии)
             _selectedDate = DateTime.Today;
@@ -315,8 +318,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public string CurrentYear => VisibleDate.ToString("yyyy");
         
         // Added: SurgeryDate and DaysSinceTransplant for header subtitle
-        private readonly DateTime _surgeryDate = new DateTime(2024, 5, 15); // TODO: fetch from profile service
-        public int DaysSinceTransplant => (DateTime.Today - _surgeryDate).Days;
+        public int DaysSinceTransplant => (DateTime.Today - _profileService.SurgeryDate).Days;
         public string DaysSinceTransplantSubtitle => $"{DaysSinceTransplant} день после пересадки";
         
         public ObservableCollection<DateTime> CalendarDays

@@ -11,34 +11,52 @@ using Microsoft.Extensions.DependencyInjection;
 using HairCarePlus.Client.Patient.Features.Progress.Views;
 using CommunityToolkit.Maui.Views;
 using HairCarePlus.Client.Patient.Features.Progress.Selectors;
+using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
+using HairCarePlus.Client.Patient.Features.Progress.Application.Messages;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
-public partial class ProgressViewModel : ObservableObject
+public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>
 {
     private readonly IQueryBus _queryBus;
     private readonly ILogger<ProgressViewModel> _logger;
     private readonly IServiceProvider _sp;
+    private readonly IProfileService _profileService;
 
     private const int DefaultDaysRange = 7;
     private const int MaxVisibleRestrictionItems = 4;
 
-    public ProgressViewModel(IQueryBus queryBus, ILogger<ProgressViewModel> logger, IServiceProvider sp)
+    public ProgressViewModel(IQueryBus queryBus, ILogger<ProgressViewModel> logger, IServiceProvider sp, IProfileService profileService)
     {
         _queryBus = queryBus;
         _logger = logger;
         _sp = sp;
+        _profileService = profileService;
 
         RestrictionTimers = new ObservableCollection<RestrictionTimer>();
         Feed = new ObservableCollection<ProgressFeedItem>();
         VisibleRestrictionItems = new ObservableCollection<object>();
 
         _ = LoadAsync();
+
+        // подписка на сообщение о новом фото
+        WeakReferenceMessenger.Default.Register<PhotoCapturedMessage>(this);
+        // подписка на изменение ограничений
+        WeakReferenceMessenger.Default.Register<RestrictionsChangedMessage>(this);
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
     public ObservableCollection<ProgressFeedItem> Feed { get; }
     public ObservableCollection<object> VisibleRestrictionItems { get; }
+
+    /// <summary>
+    /// Дата операции пациента (для годового таймлайна).
+    /// TODO: загрузить из профиля.
+    /// </summary>
+    public DateTime SurgeryDate => _profileService.SurgeryDate;
 
     // Selected feed item (for future insights)
     [ObservableProperty]
@@ -134,13 +152,34 @@ public partial class ProgressViewModel : ObservableObject
         }
     }
 
+    // Команда предварительного просмотра фото на полный экран
+    [RelayCommand]
+    private void PreviewPhoto(ProgressPhoto? photo)
+    {
+        if (photo is null) return;
+
+        try
+        {
+            var popup = new PhotoPreviewPopup(photo.LocalPath);
+            Shell.Current.CurrentPage?.ShowPopup(popup);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to preview photo");
+        }
+    }
+
     private void BuildVisibleRestrictions()
     {
         VisibleRestrictionItems.Clear();
-        foreach (var t in RestrictionTimers)
-        {
-            VisibleRestrictionItems.Add(t);
-        }
+
+        // Ensure deterministic ordering – shortest remaining first (ближайшие слева)
+        var ordered = RestrictionTimers
+            .OrderBy(t => t.DaysRemaining)
+            .ToList();
+
+        foreach (var timer in ordered)
+            VisibleRestrictionItems.Add(timer);
     }
 
     private async Task LoadAsync()
@@ -153,75 +192,85 @@ public partial class ProgressViewModel : ObservableObject
             _logger.LogInformation("Fetched {Count} feed items.", feedItems.Count());
             
             Feed.Clear();
-            // Counter to help vary dummy data
-            int counter = 0;
-            foreach (var originalItem in feedItems.OrderByDescending(f => f.Date)) // Ensure latest is first for dummy data assignment
+            var filtered = feedItems.Where(f => (f.Photos?.Any() == true) || !string.IsNullOrWhiteSpace(f.Description) || f.AiReport != null || !string.IsNullOrWhiteSpace(f.DoctorReportSummary));
+            foreach (var item in filtered.OrderByDescending(f => f.Date))
             {
-                string currentDescription;
-                string currentDoctorReportSummary;
-                AIReport? currentAiReport = originalItem.AiReport; // Start with original or null
-
-                if (counter == 0) // First item (most recent)
-                {
-                    currentDescription = "This is a recent update with a moderate amount of text. We're checking to see how the layout handles this. Swelling has reduced significantly today.";
-                    currentDoctorReportSummary = "Looks good. Continue protocol. Next check-up in 3 days.";
-                    if (currentAiReport == null && originalItem.Photos.Any()) 
-                        currentAiReport = new AIReport(originalItem.Date, 75, "AI: Healing progressing well.");
-                }
-                else if (counter == 1)
-                {
-                    currentDescription = "A very short note about yesterday's status. Seems okay.";
-                    currentDoctorReportSummary = "Minor redness noted. Monitor closely and report any changes.";
-                    if (currentAiReport == null && originalItem.Photos.Any()) 
-                        currentAiReport = new AIReport(originalItem.Date, 60, "AI: Slight inflammation detected. Pay attention.");
-                }
-                else
-                {
-                    currentDescription = "This is a much longer description designed to test the MaxLines and TailTruncation feature. We need to ensure that the text wraps correctly and the 'Read More' functionality (to be implemented) will have enough content to expand. The patient reports slight itching in the donor area, which is normal at this stage. Overall progress seems to be on track according to the established recovery timeline. No signs of infection observed. Vitamin supplements were taken as prescribed.";
-                    currentDoctorReportSummary = "Patient reports itching, which is common. Advised to use the prescribed spray. If symptoms persist or worsen, schedule an immediate follow-up. Otherwise, everything appears to be developing as expected for this phase of recovery. Continue current care regimen.";
-                    if (currentAiReport == null && originalItem.Photos.Any()) 
-                        currentAiReport = new AIReport(originalItem.Date, 85, "AI: Itching reported - this is a normal healing symptom. Overall progress is positive.");
-                }
-                
-                // Fallback to ensure AiReport has some value if photos exist and AiReport is still null, for UI binding consistency
-                if (currentAiReport == null && originalItem.Photos.Any())
-                {
-                    currentAiReport = new AIReport(originalItem.Date, (counter % 3 + 1) * 25, $"AI Default Score: {(counter % 3 + 1) * 25}");
-                }
-
-                var modifiedItem = originalItem with
-                {
-                    Description = currentDescription,
-                    DoctorReportSummary = currentDoctorReportSummary,
-                    AiReport = currentAiReport
-                };
-                
-                Feed.Add(modifiedItem);
-                counter++;
+                Feed.Add(item);
             }
 
             // var todayItem = Feed.FirstOrDefault(); // This line doesn't seem to be used, can be removed if not needed later.
             
+            // Load active restrictions via CQRS
             RestrictionTimers.Clear();
-            var dummyRestrictions = new List<RestrictionTimer>
-            {
-                new RestrictionTimer { Title = "Окрашивание волос и стайлинг", DaysRemaining = 243 },
-                new RestrictionTimer { Title = "Первая стрижка машинкой очень коротко", DaysRemaining = 58 },
-                new RestrictionTimer { Title = "Интенсивный загар и солярий", DaysRemaining = 28 },
-                new RestrictionTimer { Title = "Активный спорт и нагрузки", DaysRemaining = 28 },
-                new RestrictionTimer { Title = "Бассейн и сауна", DaysRemaining = 20 },
-                new RestrictionTimer { Title = "Крепкий алкоголь", DaysRemaining = 15 },
-                new RestrictionTimer { Title = "Ношение тесных шапок", DaysRemaining = 10 },
-                new RestrictionTimer { Title = "Сон на животе", DaysRemaining = 5 }
-            };
-            foreach (var t in dummyRestrictions)
-                 RestrictionTimers.Add(t);
+            var restrictions = await _queryBus.SendAsync(new Application.Queries.GetRestrictionsQuery());
+            foreach (var t in restrictions)
+                RestrictionTimers.Add(t);
 
             BuildVisibleRestrictions();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading progress feed");
+        }
+    }
+
+    // Pull-to-refresh binding
+    [RelayCommand]
+    private Task Load() => LoadAsync();
+
+    // При получении нового фото освежаем ленту (без блокировки UI)
+    public void Receive(PhotoCapturedMessage message)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var existing = Feed.OfType<ProgressFeedItem>().FirstOrDefault(f => f.Date == today);
+        if (existing == null)
+        {
+            existing = new ProgressFeedItem(
+                Date: today,
+                Title: $"Day {(_profileService.SurgeryDate == DateTime.Today ? 1 : (DateTime.Today - _profileService.SurgeryDate).Days + 1)}",
+                Description: string.Empty,
+                Photos: new List<ProgressPhoto>(),
+                ActiveRestrictions: new List<RestrictionTimer>(),
+                AiReport: null)
+            {
+                DoctorReportSummary = string.Empty
+            };
+            Feed.Insert(0, existing);
+        }
+
+        var photoList = existing.Photos as List<ProgressPhoto> ?? new List<ProgressPhoto>(existing.Photos);
+        photoList.Add(new ProgressPhoto
+        {
+            LocalPath = message.Value,
+            CapturedAt = DateTime.Now,
+            Zone = PhotoZone.Front,
+            AiScore = 0
+        });
+        // recreate item with updated list to notify UI
+        existing = existing with { Photos = photoList };
+        Feed[Feed.IndexOf(Feed.First(f => f.Date == today))] = existing;
+    }
+
+    // При изменении ограничений обновляем только верхнюю полосу
+    public void Receive(RestrictionsChangedMessage message)
+    {
+        _ = ReloadRestrictionsAsync();
+    }
+
+    private async Task ReloadRestrictionsAsync()
+    {
+        try
+        {
+            RestrictionTimers.Clear();
+            var restrictions = await _queryBus.SendAsync(new Application.Queries.GetRestrictionsQuery());
+            foreach (var t in restrictions)
+                RestrictionTimers.Add(t);
+
+            BuildVisibleRestrictions();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reloading restrictions");
         }
     }
 } 

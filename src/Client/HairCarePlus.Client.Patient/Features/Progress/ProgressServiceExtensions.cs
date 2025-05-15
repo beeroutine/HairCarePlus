@@ -36,6 +36,7 @@ public static class ProgressServiceExtensions
         services.AddCqrs();
         services.AddScoped<IQueryHandler<GetDailyProgressQuery, DailyProgress>, GetDailyProgressHandler>();
         services.AddScoped<IQueryHandler<GetProgressFeedQuery, IReadOnlyList<ProgressFeedItem>>, GetProgressFeedHandler>();
+        services.AddScoped<IQueryHandler<GetRestrictionsQuery, IReadOnlyList<RestrictionTimer>>, GetRestrictionsHandler>();
 
         return services;
     }

@@ -229,6 +229,7 @@ public partial class PhotoCapturePage : ContentPage
             return;
         }
 
+        _isCapturing = false;
         byte[] bytes;
         using (var ms = new System.IO.MemoryStream())
         {
@@ -261,9 +262,6 @@ public partial class PhotoCapturePage : ContentPage
             if (!string.IsNullOrEmpty(localPath))
             {
                 _logger.LogInformation($"Photo saved to {localPath}");
-                // Persist message to chat repo immediately so it will appear when chat opens
-                await _commandBus.SendAsync(new HairCarePlus.Client.Patient.Features.Chat.Application.Commands.SendChatImageCommand("default_conversation", localPath, "patient", DateTime.UtcNow));
-
                 _messenger.Send(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages.PhotoCapturedMessage(localPath));
                 _viewModel.LastPhotoPath = localPath;
                 if (_viewModel.SelectedTemplate is not null)
@@ -278,16 +276,16 @@ public partial class PhotoCapturePage : ContentPage
                             _viewModel.SelectedTemplate = nextTemplate;
                     }
 
-                    // Если все фотографии сделаны, автоматический переход в чат
+                    // Если все фотографии сделаны, переходим в Progress
                     if (_viewModel.Templates?.Count > 0 && _viewModel.Templates.All(t => t.IsCaptured))
                     {
                         try
                         {
-                            await Shell.Current.GoToAsync("//chat");
+                            await Shell.Current.GoToAsync("//progress");
                         }
                         catch (Exception navEx)
                         {
-                            _logger.LogError(navEx, "Navigation to chat after all photos captured failed");
+                            _logger.LogError(navEx, "Navigation to progress after all photos captured failed");
                         }
                     }
                 }
@@ -300,10 +298,6 @@ public partial class PhotoCapturePage : ContentPage
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during photo saving process in OnMediaCaptured.");
-        }
-        finally
-        {
-            _isCapturing = false; // ensure flag reset on any error
         }
     }
 
@@ -334,6 +328,7 @@ public partial class PhotoCapturePage : ContentPage
             _isCapturing = true;
             await Camera.CaptureImage(CancellationToken.None);
             _logger.LogInformation("Camera.CaptureImage called. Waiting for MediaCaptured event.");
+            _isCapturing = false;
         }
         catch (TaskCanceledException)
         {
