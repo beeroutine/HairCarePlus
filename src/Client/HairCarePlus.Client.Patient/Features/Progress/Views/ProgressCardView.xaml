@@ -41,11 +41,12 @@
                            Margin="12"
                            VerticalOptions="Start"
                            HorizontalOptions="Start" />
-                    <IndicatorView x:Name="dots" Grid.Row="1"
+                    <IndicatorView x:Name="dots"
                                    IndicatorColor="Gray"
                                    SelectedIndicatorColor="{StaticResource Primary}"
                                    HorizontalOptions="Center"
-                                   Margin="0,6" />
+                                   VerticalOptions="End"
+                                   Margin="0,0,0,8" />
                 </Grid>
             </Border>
 

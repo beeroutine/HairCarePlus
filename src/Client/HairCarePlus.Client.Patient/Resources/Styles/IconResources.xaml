@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                   x:Class="HairCarePlus.Client.Patient.Resources.Styles.IconResources">
+  <!-- FontAwesome6 Solid font family should be registered in App.xaml or MauiProgram.cs -->
+  <!-- Smoking prohibition icon -->
+  <FontImageSource x:Key="IconSmoking" FontFamily="FontAwesome6Solid" Glyph="&#xf48d;" Size="24" />
+  <!-- Alcohol prohibition icon (wine glass) -->
+  <FontImageSource x:Key="IconAlcohol" FontFamily="FontAwesome6Solid" Glyph="&#xf4e3;" Size="24" />
+  <!-- Sex prohibition icon (venus-mars) -->
+  <FontImageSource x:Key="IconNoSex" FontFamily="FontAwesome6Solid" Glyph="&#xf228;" Size="24" />
+  <!-- No bending head icon (user-headset as placeholder) -->
+  <FontImageSource x:Key="IconNoBendHead" FontFamily="FontAwesome6Solid" Glyph="&#xf2a3;" Size="24" />
+  <!-- Sleep semi-upright icon (bed) -->
+  <FontImageSource x:Key="IconSleepSemi" FontFamily="FontAwesome6Solid" Glyph="&#xf236;" Size="24" />
+  <!-- No hats icon (hat-cowboy as placeholder) -->
+  <FontImageSource x:Key="IconNoHats" FontFamily="FontAwesome6Solid" Glyph="&#xf8c0;" Size="24" />
+  <!-- No heavy sweating icon (tint) -->
+  <FontImageSource x:Key="IconNoSweat" FontFamily="FontAwesome6Solid" Glyph="&#xf043;" Size="24" />
+  <!-- No active sports icon (dumbbell) -->
+  <FontImageSource x:Key="IconNoSport" FontFamily="FontAwesome6Solid" Glyph="&#xf44b;" Size="24" />
+  <!-- No water exposure icon (swimming-pool) -->
+  <FontImageSource x:Key="IconNoWater" FontFamily="FontAwesome6Solid" Glyph="&#xf5c7;" Size="24" />
+  <!-- No intense sun icon (sun) -->
+  <FontImageSource x:Key="IconNoSun" FontFamily="FontAwesome6Solid" Glyph="&#xf185;" Size="24" />
+  <!-- No close haircut icon (scissors) -->
+  <FontImageSource x:Key="IconNoHaircut" FontFamily="FontAwesome6Solid" Glyph="&#xf0c4;" Size="24" />
+  <!-- No coloring icon (paint-brush) -->
+  <FontImageSource x:Key="IconNoDye" FontFamily="FontAwesome6Solid" Glyph="&#xf1fc;" Size="24" />
+</ResourceDictionary> 
