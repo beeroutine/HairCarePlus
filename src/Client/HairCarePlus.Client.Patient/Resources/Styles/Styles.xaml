@@ -2,7 +2,8 @@
 <?xaml-comp compile="true" ?>
 <ResourceDictionary 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
 
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
@@ -463,12 +464,12 @@
 
     <!-- Calendar card reusable style -->
     <Style x:Key="CalendarCardBorderStyle" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
         <Setter Property="Padding" Value="20" />
-        <Setter Property="Margin" Value="0,6" />
+        <Setter Property="Margin" Value="6,6" />
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape" Value="RoundRectangle 18" />
         <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
+        <Setter Property="BackgroundColor" Value="{toolkit:AppThemeResource TaskCardBackground}" />
     </Style>
 
 </ResourceDictionary>

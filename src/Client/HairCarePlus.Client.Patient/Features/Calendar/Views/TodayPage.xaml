@@ -148,9 +148,11 @@
                                 <VisualState.Setters>
                                     <Setter Property="Grid.BackgroundColor" Value="Transparent" /> 
                                     <Setter TargetName="dayOfWeekLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" /> 
-                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="{StaticResource White}" /> 
+                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" 
+                                            Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" /> 
                                     <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
-                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{StaticResource Black}" />
+                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" 
+                                            Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
                                     <Setter Property="Grid.Scale" Value="1.1" />
                                 </VisualState.Setters>
                             </VisualState>
