@@ -96,6 +96,8 @@
                                     HorizontalOptions="Start"
                                     Margin="8,0,80,0"
                                     StrokeShape="RoundRectangle 18"
+                                    StrokeThickness="0"
+                                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
                                     Padding="12,8">
                                 <Border.Triggers>
                                     <!-- Settings for patient messages -->

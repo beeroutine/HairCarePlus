@@ -234,7 +234,6 @@
                     </SwipeView.RightItems>
                     <Border x:Name="rootCard"
                             Style="{StaticResource CalendarCardBorderStyle}"
-                            StrokeShape="RoundRectangle 20"
                             Padding="16,12,16,12">
                         <!-- Long press and press feedback behavior -->
                         <Border.Behaviors>
@@ -292,7 +291,7 @@
                             <Label x:Name="timeLabel"
                                    Grid.Column="1"
                                    Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                   FontSize="15"
+                                   FontSize="13"
                                    FontAttributes="None"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}">
                                 <Label.Triggers>
@@ -304,7 +303,7 @@
                             <VerticalStackLayout Grid.Column="1" Grid.Row="1" Spacing="3" VerticalOptions="Start">
                                 <Label x:Name="titleLabel"
                                        Text="{Binding Title}"
-                                       FontSize="18"
+                                       FontSize="17"
                                        FontAttributes="Bold"
                                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}">
                                     <Label.Triggers>
@@ -314,7 +313,7 @@
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
-                                <toolkit:Expander ExpandDirection="Down" IsExpanded="False">
+                                <toolkit:Expander IsExpanded="False">
                                     <toolkit:Expander.Triggers>
                                         <DataTrigger TargetType="toolkit:Expander" Binding="{Binding Description}" Value="">
                                             <Setter Property="IsVisible" Value="False" />

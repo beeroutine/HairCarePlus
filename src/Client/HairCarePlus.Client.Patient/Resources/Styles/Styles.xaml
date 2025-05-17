@@ -467,8 +467,8 @@
         <Setter Property="Padding" Value="20" />
         <Setter Property="Margin" Value="0,6" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 24" />
-        <Setter Property="Shadow" Value="{StaticResource CalendarCardShadow}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 18" />
+        <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
     </Style>
 
 </ResourceDictionary>
