@@ -8,12 +8,29 @@
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
     <!-- Task Category Colors -->
-    <Color x:Key="MedicationBlue">#3E8EED</Color>
-    <Color x:Key="AppointmentGreen">#4CAF50</Color>
-    <Color x:Key="PhotoPurple">#9C27B0</Color>
-    <Color x:Key="VideoOrange">#FF9800</Color>
-    <Color x:Key="GeneralGray">#757575</Color>
-    <Color x:Key="CriticalRed">#F14336</Color>
+    <!-- Light Theme -->
+    <Color x:Key="MedicationBlueLight">#3E8EED</Color>
+    <Color x:Key="AppointmentGreenLight">#4CAF50</Color>
+    <Color x:Key="PhotoPurpleLight">#9C27B0</Color>
+    <Color x:Key="VideoOrangeLight">#FF9800</Color>
+    <Color x:Key="GeneralGrayLight">#757575</Color>
+    <Color x:Key="CriticalRedLight">#F14336</Color>
+
+    <!-- Dark Theme - Softer variants for better dark mode visibility -->
+    <Color x:Key="MedicationBlueDark">#2B62A3</Color>
+    <Color x:Key="AppointmentGreenDark">#357A38</Color>
+    <Color x:Key="PhotoPurpleDark">#6D1B7B</Color>
+    <Color x:Key="VideoOrangeDark">#B26A00</Color>
+    <Color x:Key="GeneralGrayDark">#9E9E9E</Color>
+    <Color x:Key="CriticalRedDark">#A92E24</Color>
+
+    <!-- Theme-aware category colors -->
+    <toolkit:AppThemeColor x:Key="MedicationBlue" Light="{StaticResource MedicationBlueLight}" Dark="{StaticResource MedicationBlueDark}" />
+    <toolkit:AppThemeColor x:Key="AppointmentGreen" Light="{StaticResource AppointmentGreenLight}" Dark="{StaticResource AppointmentGreenDark}" />
+    <toolkit:AppThemeColor x:Key="PhotoPurple" Light="{StaticResource PhotoPurpleLight}" Dark="{StaticResource PhotoPurpleDark}" />
+    <toolkit:AppThemeColor x:Key="VideoOrange" Light="{StaticResource VideoOrangeLight}" Dark="{StaticResource VideoOrangeDark}" />
+    <toolkit:AppThemeColor x:Key="GeneralGray" Light="{StaticResource GeneralGrayLight}" Dark="{StaticResource GeneralGrayDark}" />
+    <toolkit:AppThemeColor x:Key="CriticalRed" Light="{StaticResource CriticalRedLight}" Dark="{StaticResource CriticalRedDark}" />
 
     <!-- Base Colors -->
     <Color x:Key="Primary">#3478F6</Color>
@@ -103,7 +120,8 @@
     <Color x:Key="TaskCardBackgroundLight">#EAF4FC</Color>
     <Color x:Key="TaskCardBackgroundDark">#1E2A35</Color>
 
-    <!-- Combined resource that switches automatically -->
-    <toolkit:AppThemeColor x:Key="TaskCardBackground" Light="#EAF4FC" Dark="#1E2A35" />
+    <!-- Text color on Task/Event cards -->
+    <Color x:Key="TaskCardTextColorLight">Black</Color>
+    <Color x:Key="TaskCardTextColorDark">White</Color>
 
 </ResourceDictionary>

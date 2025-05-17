@@ -469,7 +469,7 @@
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="StrokeShape" Value="RoundRectangle 18" />
         <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
-        <Setter Property="BackgroundColor" Value="{toolkit:AppThemeResource TaskCardBackground}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
     </Style>
 
 </ResourceDictionary>

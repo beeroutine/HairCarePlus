@@ -17,7 +17,6 @@ using AndroidX.RecyclerView.Widget;
 #endif
 using System.Threading;
 using HairCarePlus.Client.Patient.Common.Utils;
-using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -42,6 +41,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _logger.LogDebug("BindingContext set to TodayViewModel");
                 
                 _logger.LogInformation("TodayPage instance created");
+                
+                Microsoft.Maui.Controls.Application.Current.RequestedThemeChanged += OnThemeChanged;
                 
                 // iOS 17+/MAUI 9 already renders selection without gray overlay; no custom fix needed
                 
@@ -133,7 +134,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
                 
                 // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
-                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await Microsoft.Maui.Controls.Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
                   _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });
@@ -209,24 +210,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 
             try
             {
-                // Ensure CollectionView has selected item AFTER ItemsSource populated
-                if (DateSelectorView != null && (DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
-                {
-                    DateSelectorView.SelectedItem = _viewModel.SelectedDate;
-                }
-
+                // Загружаем данные
                 await _viewModel.EnsureLoadedAsync();
                 _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
 
-                _viewModel.VisibleDate = _viewModel.SelectedDate;
-
-                // await Task.Delay(150); // Allow UI to render - REMOVED, let CenterOnSelectedBehavior handle timing
-
-                // if (DateSelectorView != null) // REMOVED, let CenterOnSelectedBehavior handle it
-                // {
-                //     _ = CenterSelectedDateAsync();
-                //     await Task.Delay(50); 
-                // }
+                // Убеждаемся, что текущая дата выбрана и видима
+                if (DateSelectorView != null)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        // Устанавливаем выбранный элемент
+                        DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                        
+                        // Прокручиваем к выбранной дате без анимации
+                        DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        
+                        // Принудительно обновляем состояние выделения
+                        var selectedItem = DateSelectorView.GetVisualTreeDescendants()
+                            .OfType<Grid>()
+                            .FirstOrDefault(g => g.BindingContext is DateTime date && date.Date == _viewModel.SelectedDate.Date);
+                            
+                        if (selectedItem != null)
+                        {
+                            VisualStateManager.GoToState(selectedItem, "Selected");
+                            _logger.LogInformation("Visual state updated for selected date: {Date}", _viewModel.SelectedDate.Date);
+                        }
+                    });
+                }
 
                 _logger.LogInformation("TodayPage OnAppearing completed");
             }
@@ -246,7 +256,49 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
+            // Отписываемся от события смены темы
+            Microsoft.Maui.Controls.Application.Current.RequestedThemeChanged -= OnThemeChanged;
+
             _logger.LogInformation("TodayPage OnDisappearing completed");
+        }
+
+        private void OnThemeChanged(object? sender, AppThemeChangedEventArgs e)
+        {
+            try
+            {
+                _logger.LogInformation("Theme changed to: {Theme}", e.RequestedTheme);
+                
+                // Логируем состояние всех элементов в CollectionView
+                if (DateSelectorView != null)
+                {
+                    var itemsLayout = DateSelectorView.ItemsLayout as LinearItemsLayout;
+                    _logger.LogInformation("CollectionView orientation: {Orientation}", itemsLayout?.Orientation);
+                    _logger.LogInformation("CollectionView items count: {Count}", DateSelectorView.ItemsSource?.Cast<object>().Count());
+                    
+                    // Проверяем цвета через VisualStateManager
+                    var borders = DateSelectorView.GetVisualTreeDescendants()
+                        .OfType<Border>()
+                        .ToList();
+                        
+                    _logger.LogInformation("Found {Count} Border elements", borders.Count);
+                    
+                    foreach (var border in borders)
+                    {
+                        _logger.LogInformation("Border background color: {Color}, BindingContext type: {Type}", 
+                            border.BackgroundColor,
+                            border.BindingContext?.GetType().Name ?? "null");
+                    }
+
+                    // Проверяем текущие ресурсы
+                    var lightColor = Microsoft.Maui.Controls.Application.Current.Resources["TaskCardBackgroundLight"];
+                    var darkColor = Microsoft.Maui.Controls.Application.Current.Resources["TaskCardBackgroundDark"];
+                    _logger.LogInformation("TaskCard colors in resources - Light: {Light}, Dark: {Dark}", lightColor, darkColor);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling theme change");
+            }
         }
 
 #if ANDROID

@@ -266,12 +266,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private async Task LoadInitialAsync()
         {
-            // 1. Загружаем календарные дни на год вперёд (синхронно как раньше)
-            LoadCalendarDays();
-            // 2. Подгружаем события для выбранной today‑даты
-            await LoadTodayEventsAsync();
-            // 3. Загружаем активные ограничения
-            await CheckAndLoadActiveRestrictionsAsync(); 
+            try
+            {
+                // 1. Загружаем календарные дни на год вперёд
+                LoadCalendarDays();
+
+                // 2. Устанавливаем текущий день как выбранный
+                var today = DateTime.Today;
+                SelectedDate = today;
+                VisibleDate = today;
+
+                // 3. Подгружаем события для выбранной даты
+                await LoadTodayEventsAsync();
+
+                // 4. Загружаем активные ограничения
+                await CheckAndLoadActiveRestrictionsAsync();
+
+                // 5. Прокручиваем к выбранной дате
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    OnPropertyChanged(nameof(SelectedDate));
+                    OnPropertyChanged(nameof(VisibleDate));
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in LoadInitialAsync");
+            }
         }
         
         public DateTime SelectedDate
