@@ -127,10 +127,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 _logger.LogDebug("ViewModel SelectedDate changed to {SelectedDate}, updating UI.", _viewModel.SelectedDate);
                 
-                // Binding should handle setting SelectedItem, but setting explicitly can be safer
-                if ((DateSelectorView.SelectedItem as DateTime?) != _viewModel.SelectedDate)
+                // Используем индекс, чтобы гарантировать корректное применение выделения (особенно для DateTime-структур)
+                if (_viewModel.CalendarDays is not null)
                 {
-                     DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                    var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
+                    if (index >= 0)
+                    {
+                        var itemRef = _viewModel.CalendarDays[index];
+                        if (!Equals(DateSelectorView.SelectedItem, itemRef))
+                        {
+                            DateSelectorView.SelectedItem = itemRef;
+                        }
+                    }
                 }
                 
                 // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
@@ -219,11 +227,46 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 {
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
-                        // Устанавливаем выбранный элемент
-                        DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                        // Определяем индекс выбранной даты в источнике данных
+                        if (_viewModel.CalendarDays is not null)
+                        {
+                            var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
+                            if (index >= 0)
+                            {
+                                var itemRef = _viewModel.CalendarDays[index];
+                                if (!Equals(DateSelectorView.SelectedItem, itemRef))
+                                {
+                                    DateSelectorView.SelectedItem = itemRef;
+                                }
+                            }
+                            else
+                            {
+                                // Fallback: если элемент не найден (что маловероятно) – используем старую логику
+                                DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                            }
+                        }
+                        else
+                        {
+                            DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                        }
                         
                         // Прокручиваем к выбранной дате без анимации
-                        DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        if (_viewModel.CalendarDays is not null)
+                        {
+                            var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
+                            if (index >= 0)
+                            {
+                                DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: false);
+                            }
+                            else
+                            {
+                                DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                            }
+                        }
+                        else
+                        {
+                            DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        }
                         
                         // Принудительно обновляем состояние выделения
                         var selectedItem = DateSelectorView.GetVisualTreeDescendants()
