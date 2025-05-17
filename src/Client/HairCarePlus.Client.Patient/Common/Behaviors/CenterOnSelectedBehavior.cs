@@ -129,6 +129,13 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 }
                 else
                 {
+#if ANDROID
+                    if (_collection.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView rv)
+                    {
+                        rv.SmoothScrollToPosition(index);
+                        return; // handled natively
+                    }
+#endif
                     _collection.ScrollTo(index, position: ScrollToPosition.Center, animate: animate);
                 }
             });
