@@ -301,6 +301,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     OnPropertyChanged(nameof(FormattedSelectedDate));
                     OnPropertyChanged(nameof(CurrentMonthName));
                     OnPropertyChanged(nameof(CurrentYear));
+                    OnPropertyChanged(nameof(DaysSinceTransplant));
+                    OnPropertyChanged(nameof(DaysSinceTransplantSubtitle));
                 }
             }
         }
@@ -318,8 +320,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public string CurrentYear => VisibleDate.ToString("yyyy");
         
         // Added: SurgeryDate and DaysSinceTransplant for header subtitle
-        public int DaysSinceTransplant => (DateTime.Today - _profileService.SurgeryDate).Days;
-        public string DaysSinceTransplantSubtitle => $"{DaysSinceTransplant} день после пересадки";
+        public int DaysSinceTransplant => (SelectedDate.Date - _profileService.SurgeryDate.Date).Days + 1;
+        public string DaysSinceTransplantSubtitle => $"Day {DaysSinceTransplant} post hair transplant";
         
         public ObservableCollection<DateTime> CalendarDays
         {

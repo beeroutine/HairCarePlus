@@ -97,4 +97,8 @@
     <Color x:Key="SuccessColor">#4CAF50</Color>
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+
+    <!-- Task / Event card colors aligned with Chat bubbles -->
+    <Color x:Key="TaskCardBackgroundLight">#EAF4FC</Color>
+    <Color x:Key="TaskCardBackgroundDark">#1E2A35</Color>
 </ResourceDictionary>

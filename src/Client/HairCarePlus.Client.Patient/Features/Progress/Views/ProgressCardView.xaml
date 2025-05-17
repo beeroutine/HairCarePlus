@@ -60,79 +60,46 @@
             <BoxView HeightRequest="1"
                      Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}" />
 
-            <!-- Description block -->
+            <!-- AI analysis block (minimal) -->
             <VerticalStackLayout Spacing="4">
                 <VerticalStackLayout.Triggers>
-                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding Description}" Value="{x:Null}">
-                        <Setter Property="IsVisible" Value="False" />
-                    </DataTrigger>
-                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding Description}" Value="">
+                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding AiReport}" Value="{x:Null}">
                         <Setter Property="IsVisible" Value="False" />
                     </DataTrigger>
                 </VerticalStackLayout.Triggers>
-                <Label Text="{Binding Description}"
+                <Label Text="AI analysis:" FontSize="13" FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="6">
+                    <Label Text="🤖" FontSize="16"/>
+                    <Label Text="{Binding AiReport.Score, StringFormat='Score {0}'}"
+                           FontSize="16"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+                </HorizontalStackLayout>
+                <Label Text="{Binding AiReport.Summary}"
                        FontSize="14"
                        LineBreakMode="TailTruncation"
-                       MaxLines="3"
-                       VerticalOptions="Start" />
-                <Label Text="Read more"
-                       FontSize="14"
-                       TextColor="{StaticResource Primary}"
-                       IsVisible="{Binding Description, Converter={StaticResource ReadMoreVisibilityConverter}}"
-                       HorizontalOptions="End">
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowDescriptionCommand}"
-                                              CommandParameter="{Binding .}" />
-                    </Label.GestureRecognizers>
-                </Label>
+                       MaxLines="3" />
             </VerticalStackLayout>
 
-            <!-- AI analysis block -->
-            <Border Style="{StaticResource AiBlockStyle}">
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <Label Text="🤖"
-                           FontSize="16"
-                           VerticalOptions="Center" />
-                    <VerticalStackLayout Spacing="2" HorizontalOptions="FillAndExpand">
-                        <VerticalStackLayout.Triggers>
-                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding AiReport}" Value="{x:Null}">
-                                <Setter Property="IsVisible" Value="False" />
-                            </DataTrigger>
-                        </VerticalStackLayout.Triggers>
-                        <Label Text="AI-анализ:" FontSize="13" FontAttributes="Bold" />
-                        <Label Text="{Binding AiReport.Score, StringFormat='Score {0}'}"
-                               FontSize="16"
-                               FontAttributes="Bold"
-                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}" />
-                        <Label Text="{Binding AiReport.Summary}"
-                               FontSize="14"
-                               LineBreakMode="TailTruncation"
-                               MaxLines="3" />
-                    </VerticalStackLayout>
+            <!-- Doctor notes block (minimal) -->
+            <VerticalStackLayout Spacing="4">
+                <VerticalStackLayout.Triggers>
+                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="{x:Null}">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </VerticalStackLayout.Triggers>
+                <Label Text="Doctor:" FontSize="13" FontAttributes="Bold" />
+                <HorizontalStackLayout Spacing="6">
+                    <Label Text="👩‍⚕️" FontSize="16"/>
+                    <Label Text="{Binding DoctorReportSummary}"
+                           FontSize="14"
+                           LineBreakMode="TailTruncation"
+                           MaxLines="3" />
                 </HorizontalStackLayout>
-            </Border>
-
-            <!-- Doctor notes block -->
-            <Border Style="{StaticResource DoctorBlockStyle}">
-                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                    <Label Text="👩‍⚕️" FontSize="16" VerticalOptions="Center" />
-                    <VerticalStackLayout Spacing="2" HorizontalOptions="FillAndExpand">
-                        <VerticalStackLayout.Triggers>
-                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="{x:Null}">
-                                <Setter Property="IsVisible" Value="False" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="">
-                                <Setter Property="IsVisible" Value="False" />
-                            </DataTrigger>
-                        </VerticalStackLayout.Triggers>
-                        <Label Text="Врач:" FontSize="13" FontAttributes="Bold" />
-                        <Label Text="{Binding DoctorReportSummary}"
-                               FontSize="14"
-                               LineBreakMode="TailTruncation"
-                               MaxLines="3" />
-                    </VerticalStackLayout>
-                </HorizontalStackLayout>
-            </Border>
+            </VerticalStackLayout>
         </VerticalStackLayout>
     </Border>
 </ContentView> 

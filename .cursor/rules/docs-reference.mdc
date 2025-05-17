@@ -3,18 +3,21 @@ description:
 globs: 
 alwaysApply: true
 ---
-# HairCare+ — Основная документация проекта
+# HairCare+ — Core Documentation Reference
 
-AI‑ассистенту всегда необходимо учитывать следующие файлы при анализе, навигации и внесении изменений в код:
+AI assistants must always consult the following files when analyzing, navigating, or modifying code:
 
-1. [README.md](mdc:README.md) — общие правила архитектуры, стека и UX.
-2. [todaypage.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/todaypage.md) — подробная документация страницы Today календаря.
-3. [overview.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Calendar/doc/overview.md) — обзор модуля Calendar.
-4. [chat.md](mdc:src/Client/HairCarePlus.Client.Patient/Features/Chat/doc/chat.md) — документация функции чата.
+1. README.md — core architecture, tech stack, and UX guidelines
+2. Features/Calendar/overview.md — Calendar module overview
+3. Features/Calendar/todaypage.md — Today Page detailed spec
+4. Features/Chat/chat.md — Chat module documentation
+5. Features/Notifications/notifications.md — Notifications module documentation
+6. Features/PhotoCapture/photo_capture.md — Photo Capture module documentation
+7. Features/Progress/progress.md — Progress module documentation
 
-Следовать:
-• Лучшим практикам .NET MAUI 9.0.51 SR (стабильная версия) (VisualStateManager, DI, ILogger, x:DataType), всегда используй решения одинаково используемые для всех платформ которые поддерживает MAUI. 
-• Принципам **SOLID** и **KISS**.
-• Clean Architecture, MVVM, CQRS.
+Follow these principles:
+- .NET MAUI 9.0.51 SR best practices (VisualStateManager, DI via MauiProgram, ILogger<>, x:DataType)
+- SOLID and KISS
+- Clean Architecture, MVVM, CQRS
 
-Перед изменениями убедитесь, что новые решения не противоречат указанным документам.
+Before making changes, ensure new solutions do not conflict with any of the above documents.

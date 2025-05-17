@@ -463,7 +463,7 @@
 
     <!-- Calendar card reusable style -->
     <Style x:Key="CalendarCardBorderStyle" TargetType="Border">
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
         <Setter Property="Padding" Value="20" />
         <Setter Property="Margin" Value="0,6" />
         <Setter Property="StrokeThickness" Value="0" />

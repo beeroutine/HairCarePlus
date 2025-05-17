@@ -65,6 +65,9 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
     [ObservableProperty]
     private ProgressFeedItem? _selectedFeedItem;
 
+    [ObservableProperty]
+    private bool isRefreshing;
+
     public ICommand AddPhotoCommand => new RelayCommand(async () =>
     {
         try { await _nav.NavigateToCameraAsync(); }
@@ -134,6 +137,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
 
     private async Task LoadAsync()
     {
+        IsRefreshing = true;
         try
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
@@ -164,6 +168,10 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading progress feed");
+        }
+        finally
+        {
+            IsRefreshing = false;
         }
     }
 

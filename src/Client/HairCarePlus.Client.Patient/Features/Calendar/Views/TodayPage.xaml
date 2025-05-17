@@ -314,25 +314,27 @@
                                         </DataTrigger>
                                     </Label.Triggers>
                                 </Label>
-                                <Grid>
-                                    <Label x:Name="descriptionLabel"
-                                           Text="{Binding Description}"
+                                <toolkit:Expander ExpandDirection="Down" IsExpanded="False">
+                                    <toolkit:Expander.Triggers>
+                                        <DataTrigger TargetType="toolkit:Expander" Binding="{Binding Description}" Value="">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="toolkit:Expander" Binding="{Binding Description}" Value="{x:Null}">
+                                            <Setter Property="IsVisible" Value="False" />
+                                        </DataTrigger>
+                                    </toolkit:Expander.Triggers>
+                                    <toolkit:Expander.Header>
+                                        <Label Text="{Binding Description}"
+                                               FontSize="14"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="2"
+                                               TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
+                                    </toolkit:Expander.Header>
+                                    <Label Text="{Binding Description}"
                                            FontSize="14"
-                                           LineBreakMode="TailTruncation"
-                                           MaxLines="2"
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}"/>
-                                    <Label Text="Подробнее..."
-                                           FontSize="13"
-                                           TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
-                                           HorizontalOptions="End"
-                                           VerticalOptions="End"
-                                           IsVisible="{Binding Source={x:Reference descriptionLabel}, Path=LineBreakMode, Converter={StaticResource StringNotEmptyConverter}}">
-                                        <Label.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ShowEventDetailsCommand}"
-                                                                 CommandParameter="{Binding .}"/>
-                                        </Label.GestureRecognizers>
-                                    </Label>
-                                </Grid>
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}"
+                                           Padding="0,4,0,0" />
+                                </toolkit:Expander>
                             </VerticalStackLayout>
                         </Grid>
                         <!-- Visual state when completed -->

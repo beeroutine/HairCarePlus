@@ -17,38 +17,18 @@
     <!-- Feed card background adapts to theme using global card colors -->
     <Style x:Key="PhotoCardStyle" TargetType="Border">
         <!-- Card height dynamic, remove fixed HeightRequest -->
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="12" />
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Shadow">
-            <Setter.Value>
-                <Shadow Brush="Black" Radius="4" Opacity="0.1" Offset="0,2" />
-            </Setter.Value>
-        </Setter>
+        <Setter Property="StrokeShape" Value="RoundRectangle 24" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Shadow" Value="{StaticResource CalendarCardShadow}" />
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" />
-        <Setter Property="Padding" Value="0" />
+        <Setter Property="Padding" Value="20" />
     </Style>
 
     <!-- Dock button uses shared PrimaryButton style -->
     <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
 
-    <!-- AI analysis block style -->
-    <Style x:Key="AiBlockStyle" TargetType="Border">
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="Stroke" Value="{StaticResource Gray200Brush}" />
-        <Setter Property="Padding" Value="8" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F5F5F5, Dark=#2C2C2E}" />
-    </Style>
-
-    <!-- Doctor block style -->
-    <Style x:Key="DoctorBlockStyle" TargetType="Border">
+    <!-- Unified info block style for AI and Doctor sections -->
+    <Style x:Key="InfoBlockStyle" TargetType="Border">
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="8" />

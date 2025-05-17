@@ -70,7 +70,7 @@
                 <VerticalStackLayout WidthRequest="85" HorizontalOptions="Center">
                     <Border Style="{StaticResource RestrictionCircleStyle}"
                             AutomationProperties.IsInAccessibleTree="True"
-                            AutomationProperties.Name="Показать ещё" >
+                            AutomationProperties.Name="Show more" >
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
                         </Border.GestureRecognizers>
@@ -100,7 +100,7 @@
             <cv:YearTimelineView HeightRequest="32"
                                  SurgeryDate="{Binding SurgeryDate}"
                                  AutomationProperties.IsInAccessibleTree="True"
-                                 AutomationProperties.Name="Годовая шкала" />
+                                 AutomationProperties.Name="Year timeline" />
             <!-- Restriction timers moved out of TitleView to dedicated sticky header -->
         </VerticalStackLayout>
     </ContentPage.Shell.TitleView>
@@ -120,11 +120,18 @@
         </CollectionView>
 
         <!-- Scrollable content: RefreshView wrapping feed -->
-        <RefreshView Grid.Row="1" Command="{Binding LoadCommand}">
+        <RefreshView Grid.Row="1"
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}">
             <CollectionView ItemsSource="{Binding Feed}"
                             SelectionMode="None"
                             HorizontalScrollBarVisibility="Never"
                             VerticalScrollBarVisibility="Never">
+                <CollectionView.EmptyView>
+                    <StackLayout HorizontalOptions="Center" VerticalOptions="CenterAndExpand" Padding="16">
+                        <Label Text="No progress entries yet." FontSize="16" TextColor="{AppThemeBinding Light={StaticResource SecondaryDarkText}, Dark={StaticResource Secondary}}" />
+                    </StackLayout>
+                </CollectionView.EmptyView>
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
                 </CollectionView.ItemsLayout>
