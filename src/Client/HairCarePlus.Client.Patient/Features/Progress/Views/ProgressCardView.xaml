@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.ProgressCardView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
+             x:DataType="models:ProgressFeedItem">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Border Style="{StaticResource PhotoCardStyle}">
+        <VerticalStackLayout Spacing="8" Padding="16">
+            <!-- Photo with overlay title -->
+            <Border StrokeShape="RoundRectangle 12" HeightRequest="220">
+                <Grid>
+                    <CarouselView ItemsSource="{Binding Photos}"
+                                  IndicatorView="{x:Reference dots}"
+                                  IsSwipeEnabled="True"
+                                  PeekAreaInsets="0"
+                                  IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
+                        <CarouselView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProgressPhoto">
+                                <Image Source="{Binding LocalPath}"
+                                       Aspect="AspectFill">
+                                    <Image.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PreviewPhotoCommand}" CommandParameter="{Binding .}" />
+                                    </Image.GestureRecognizers>
+                                </Image>
+                            </DataTemplate>
+                        </CarouselView.ItemTemplate>
+                    </CarouselView>
+                    <Label Text="{Binding Title}"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           Margin="12"
+                           VerticalOptions="Start"
+                           HorizontalOptions="Start" />
+                    <IndicatorView x:Name="dots" Grid.Row="1"
+                                   IndicatorColor="Gray"
+                                   SelectedIndicatorColor="{StaticResource Primary}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,6" />
+                </Grid>
+            </Border>
+
+            <!-- Date below photo -->
+            <Label Text="{Binding Date, StringFormat='{0:dd MMM yyyy}'}"
+                   FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource SecondaryDarkText}, Dark={StaticResource Secondary}}"
+                   HorizontalOptions="Start" />
+
+            <!-- Separator -->
+            <BoxView HeightRequest="1"
+                     Color="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}" />
+
+            <!-- Description block -->
+            <VerticalStackLayout Spacing="4">
+                <VerticalStackLayout.Triggers>
+                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding Description}" Value="{x:Null}">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding Description}" Value="">
+                        <Setter Property="IsVisible" Value="False" />
+                    </DataTrigger>
+                </VerticalStackLayout.Triggers>
+                <Label Text="{Binding Description}"
+                       FontSize="14"
+                       LineBreakMode="TailTruncation"
+                       MaxLines="3"
+                       VerticalOptions="Start" />
+                <Label Text="Read more"
+                       FontSize="14"
+                       TextColor="{StaticResource Primary}"
+                       IsVisible="{Binding Description, Converter={StaticResource ReadMoreVisibilityConverter}}"
+                       HorizontalOptions="End">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowDescriptionCommand}"
+                                              CommandParameter="{Binding .}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </VerticalStackLayout>
+
+            <!-- AI analysis block -->
+            <Border Style="{StaticResource AiBlockStyle}">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Label Text="🤖"
+                           FontSize="16"
+                           VerticalOptions="Center" />
+                    <VerticalStackLayout Spacing="2" HorizontalOptions="FillAndExpand">
+                        <VerticalStackLayout.Triggers>
+                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding AiReport}" Value="{x:Null}">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </VerticalStackLayout.Triggers>
+                        <Label Text="AI-анализ:" FontSize="13" FontAttributes="Bold" />
+                        <Label Text="{Binding AiReport.Score, StringFormat='Score {0}'}"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}" />
+                        <Label Text="{Binding AiReport.Summary}"
+                               FontSize="14"
+                               LineBreakMode="TailTruncation"
+                               MaxLines="3" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Border>
+
+            <!-- Doctor notes block -->
+            <Border Style="{StaticResource DoctorBlockStyle}">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Label Text="👩‍⚕️" FontSize="16" VerticalOptions="Center" />
+                    <VerticalStackLayout Spacing="2" HorizontalOptions="FillAndExpand">
+                        <VerticalStackLayout.Triggers>
+                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="{x:Null}">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="VerticalStackLayout" Binding="{Binding DoctorReportSummary}" Value="">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </VerticalStackLayout.Triggers>
+                        <Label Text="Врач:" FontSize="13" FontAttributes="Bold" />
+                        <Label Text="{Binding DoctorReportSummary}"
+                               FontSize="14"
+                               LineBreakMode="TailTruncation"
+                               MaxLines="3" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </Border>
+</ContentView> 

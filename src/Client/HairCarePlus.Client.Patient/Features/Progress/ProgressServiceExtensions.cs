@@ -31,6 +31,8 @@ public static class ProgressServiceExtensions
 
         // Services
         services.AddScoped<Services.Interfaces.IRestrictionService, Services.Implementation.RestrictionServiceCalendarAdapter>();
+        services.AddSingleton<Services.Interfaces.ITimelineService, Services.Implementation.TimelineService>();
+        services.AddScoped<Services.Interfaces.IProgressNavigationService, Services.Implementation.ProgressNavigationService>();
 
         // CQRS
         services.AddCqrs();

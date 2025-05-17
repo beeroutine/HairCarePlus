@@ -15,7 +15,7 @@
     <Color x:Key="CriticalRed">#F14336</Color>
 
     <!-- Base Colors -->
-    <Color x:Key="Primary">#3E8EED</Color>
+    <Color x:Key="Primary">#3478F6</Color>
     <Color x:Key="PrimaryDark">#1976D2</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
     <Color x:Key="Secondary">#DFD8F7</Color>
@@ -68,8 +68,8 @@
     <Color x:Key="Blue200Accent">#72ACF1</Color>
     <Color x:Key="Blue300Accent">#A7CBF6</Color>
 
-    <Color x:Key="CardBackgroundDark">#1C2738</Color>
-    <Color x:Key="CardBackgroundLight">#EAF4FC</Color>
+    <Color x:Key="CardBackgroundDark">#1E1E1E</Color>
+    <Color x:Key="CardBackgroundLight">#F0F0F0</Color>
 
     <!-- Calendar Card Colors -->
     <Color x:Key="CardShadowLight">#CCE0F6</Color> <!-- ~20% opacity blue shadow -->
@@ -89,4 +89,12 @@
     <!-- Completed card backgrounds -->
     <Color x:Key="CardCompletedLight">#DDE7F6</Color>
     <Color x:Key="CardCompletedDark">#23313F</Color>
+
+    <!-- Progress Page Colors -->
+    <Color x:Key="BackgroundLight">#FFFFFF</Color>
+    <Color x:Key="BackgroundDark">#121212</Color>
+    <Color x:Key="ErrorColor">#E94545</Color>
+    <Color x:Key="SuccessColor">#4CAF50</Color>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
 </ResourceDictionary>

@@ -16,6 +16,7 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
 using HairCarePlus.Client.Patient.Features.Progress.Application.Messages;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
@@ -25,16 +26,18 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
     private readonly ILogger<ProgressViewModel> _logger;
     private readonly IServiceProvider _sp;
     private readonly IProfileService _profileService;
+    private readonly IProgressNavigationService _nav;
 
     private const int DefaultDaysRange = 7;
     private const int MaxVisibleRestrictionItems = 4;
 
-    public ProgressViewModel(IQueryBus queryBus, ILogger<ProgressViewModel> logger, IServiceProvider sp, IProfileService profileService)
+    public ProgressViewModel(IQueryBus queryBus, ILogger<ProgressViewModel> logger, IServiceProvider sp, IProfileService profileService, IProgressNavigationService nav)
     {
         _queryBus = queryBus;
         _logger = logger;
         _sp = sp;
         _profileService = profileService;
+        _nav = nav;
 
         RestrictionTimers = new ObservableCollection<RestrictionTimer>();
         Feed = new ObservableCollection<ProgressFeedItem>();
@@ -64,109 +67,56 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
 
     public ICommand AddPhotoCommand => new RelayCommand(async () =>
     {
-        try
-        {
-            await Shell.Current.GoToAsync("//camera");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Navigation to camera failed");
-        }
+        try { await _nav.NavigateToCameraAsync(); }
+        catch (Exception ex) { _logger.LogError(ex, "Navigation to camera failed"); }
     });
 
-    public ICommand CompleteProcedureCommand => new RelayCommand(() =>
+    public ICommand CompleteProcedureCommand => new RelayCommand(async () =>
     {
-        try
-        {
-            var vm = _sp.GetRequiredService<ProcedureChecklistViewModel>();
-            var popup = new ProcedureChecklistPopup(vm);
-            Shell.Current.CurrentPage?.ShowPopup(popup);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to open procedure checklist");
-        }
+        try { await _nav.ShowProcedureChecklistAsync(); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to open procedure checklist"); }
     });
 
-    public ICommand OpenInsightsCommand => new RelayCommand<AIReport>(report =>
+    public ICommand OpenInsightsCommand => new RelayCommand<AIReport>(async report =>
     {
         if (report is null) return;
-        try
-        {
-            var sheet = new InsightsSheet(report);
-            Shell.Current.CurrentPage?.ShowPopup(sheet);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to open insights sheet");
-        }
+        try { await _nav.ShowInsightsAsync(report); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to open insights sheet"); }
     });
 
     // Команда открытия деталей ограничения
     [RelayCommand]
-    private void OpenRestrictionDetails(RestrictionTimer? timer)
+    private async Task OpenRestrictionDetailsAsync(RestrictionTimer? timer)
     {
         if (timer is null) return;
-        try
-        {
-            var popup = new RestrictionDetailPopup(timer);
-            Shell.Current.CurrentPage?.ShowPopup(popup);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to open restriction details");
-        }
+        try { await _nav.ShowRestrictionDetailsAsync(timer); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to open restriction details"); }
     }
 
     // Команда показа всех ограничений
     [RelayCommand]
-    private void ShowAllRestrictions()
+    private async Task ShowAllRestrictionsAsync()
     {
-        try
-        {
-            var popup = new AllRestrictionsPopup(RestrictionTimers.ToList());
-            Shell.Current.CurrentPage?.ShowPopup(popup);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to show all restrictions");
-        }
+        try { await _nav.ShowAllRestrictionsAsync(RestrictionTimers.ToList()); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to show all restrictions"); }
     }
 
     // Команда показа полного описания (Read more)
     [RelayCommand]
-    private void ShowDescription(ProgressFeedItem? item)
+    private async Task ShowDescriptionAsync(ProgressFeedItem? item)
     {
-        if (item is null) return;
-
-        try
-        {
-            if (string.IsNullOrWhiteSpace(item.Description)) return;
-
-            var sheet = new DescriptionSheet(item.Description);
-            Shell.Current.CurrentPage?.ShowPopup(sheet);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to show description sheet");
-        }
+        if (item is null || string.IsNullOrWhiteSpace(item.Description)) return;
+        try { await _nav.ShowDescriptionAsync(item.Description!); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to show description sheet"); }
     }
 
     // Команда предварительного просмотра фото на полный экран
     [RelayCommand]
-    private void PreviewPhoto(ProgressPhoto? photo)
+    private async Task PreviewPhotoAsync(ProgressPhoto? photo)
     {
         if (photo is null) return;
-
-        try
-        {
-            var popup = new PhotoPreviewPopup(photo.LocalPath);
-            Shell.Current.CurrentPage?.ShowPopup(popup);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to preview photo");
-        }
+        try { await _nav.PreviewPhotoAsync(photo.LocalPath); }
+        catch (Exception ex) { _logger.LogError(ex, "Failed to preview photo"); }
     }
 
     private void BuildVisibleRestrictions()
@@ -192,8 +142,11 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
             _logger.LogInformation("Fetched {Count} feed items.", feedItems.Count());
             
             Feed.Clear();
-            var filtered = feedItems.Where(f => (f.Photos?.Any() == true) || !string.IsNullOrWhiteSpace(f.Description) || f.AiReport != null || !string.IsNullOrWhiteSpace(f.DoctorReportSummary));
-            foreach (var item in filtered.OrderByDescending(f => f.Date))
+            // Требование: показывать только дни, где есть хотя бы одна фотография
+            var visible = feedItems.Where(f => f.Photos?.Any() == true)
+                                   .OrderByDescending(f => f.Date);
+
+            foreach (var item in visible)
             {
                 Feed.Add(item);
             }
