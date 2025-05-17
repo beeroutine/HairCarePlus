@@ -75,9 +75,31 @@ internal static class CollectionViewExtensions
             yield break; // Important: If iOS implementation ran, stop here.
         }
 #elif ANDROID
-        // TODO: Add optimized Android implementation if needed, potentially using RecyclerView methods.
-        // _logger?.LogWarning("VisibleCells on Android using fallback LogicalChildren traversal.");
-        // Fall through to LogicalChildren for now
+        if (collectionView.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView rv)
+        {
+            for (int i = 0; i < rv.ChildCount; i++)
+            {
+                var child = rv.GetChildAt(i);
+                if (child == null)
+                    continue;
+
+                // MAUI recycler view item exposes the virtual view via the "VirtualView" property
+                var ve = child.GetType().GetProperty("VirtualView")?.GetValue(child) as VisualElement;
+                if (ve != null)
+                {
+                    yield return ve;
+                    continue;
+                }
+
+                // Fallback: inspect first child for VirtualView property
+                var firstChild = child is Android.Views.ViewGroup group && group.ChildCount > 0 ? group.GetChildAt(0) : null;
+                ve = firstChild?.GetType().GetProperty("VirtualView")?.GetValue(firstChild) as VisualElement;
+                if (ve != null)
+                    yield return ve;
+            }
+            yield break; // processed via RecyclerView
+        }
+        // Fallback to LogicalChildren below if handler/view not available
 #endif
 
         // Fallback for other platforms or if Handler/PlatformView is null

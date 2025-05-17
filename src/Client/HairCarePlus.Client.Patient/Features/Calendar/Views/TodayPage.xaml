@@ -71,13 +71,16 @@
             <CollectionView Grid.Row="1"
                             x:Name="DateSelectorView"
                             ItemsSource="{Binding CalendarDays}"
-                            SelectionMode="Single" 
+                            SelectionMode="Single"
                             SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
                             ItemTemplate="{StaticResource DateTemplate}"
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
-                            HeightRequest="80" 
-                            Margin="0,0,0,10">
+                            HeightRequest="80"
+                            Margin="0,0,0,10"
+                            SelectionHighlightColor="Transparent"
+                            SelectionChangedAnimationEnabled="False"
+                            CachingStrategy="RecycleElement">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
