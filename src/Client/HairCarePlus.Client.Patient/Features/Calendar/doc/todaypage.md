@@ -1,145 +1,91 @@
-# TodayPage - Документация
+# Today Page Module
 
-## Назначение
-TodayPage - основная страница календаря в приложении HairCare+ для пациентов, отображающая события текущего дня и позволяющая навигацию по дням в горизонтальном календаре.
+> Version: September 2025 | .NET MAUI 9.0.51 SR
 
-## Ключевые функции
-- Отображение текущей даты и количества дней после трансплантации
-- Горизонтальный календарь для быстрого переключения между датами
-- Визуальный индикатор выбранной даты с использованием VisualStateManager
-- Отображение списка событий для выбранной даты
-- Визуальные индикаторы различных типов событий (лекарства, фото, видео)
-- Цветовая индикация типов событий через `DataTrigger` и ресурсы цвета (без конвертера)
-- Завершение задачи двумя жестами: **свайп влево** _или_ **долгое нажатие\u00a0≥ 2 с** на карточке (реализовано через `SwipeView` и `TouchBehavior`).
-- В MAUI 9.0.51 SR мерцание системы при выборе даты можно убрать нативными свойствами `SelectionHighlightColor` и `SelectionChangedAnimationEnabled` у `CollectionView`. Для совместимости и кроссплатформенности по-прежнему используется VSM-workaround (см. DataTemplate + `CollectionViewSelectionStateBehavior`).
-- Анимированное кольцо-прогресс вокруг сегодняшней даты (Stroke + StrokeDashArray). Логика вычисления `CompletionProgress` добавлена во ViewModel.
-- Возможность перейти к сегодняшней дате простым тапом по кругу.
-- Адаптивный дизайн с поддержкой светлой/темной темы
-- Сохранение выбранной даты между сеансами приложения
+## TL;DR
+Displays the patient's daily calendar events with offline-first support, gesture controls, and adaptive theming.
 
-## Структура UI
-### Заголовок (Header)
-- Крупный заголовок с текущей датой (`FormattedTodayDate`)
-- Дополнительная информация о днях после процедуры (`DaysSinceTransplant`)
+## Table of Contents
+1. [Purpose](#purpose)
+2. [Features](#features)
+3. [UI Structure](#ui-structure)
+4. [Technical Implementation](#technical-implementation)
+5. [Interaction Flow](#interaction-flow)
+6. [Accessibility & Performance](#accessibility--performance)
+7. [Platform Considerations](#platform-considerations)
+8. [Architecture](#architecture)
+9. [DI Registration](#di-registration)
 
-### Горизонтальный календарь
-- Реализован через `CollectionView` с горизонтальным `LinearItemsLayout`
-- Элементы календаря:
-  - День недели (верхняя метка)
-  - Число месяца (в круглой рамке)
-- Выбранная дата визуально выделяется через VisualStateManager
+## Purpose
+The Today Page serves as the main calendar interface in the Patient App, displaying events for the current day and enabling horizontal navigation between dates.
 
-### Список событий
-- Вертикальный `CollectionView`.
-- Шаблон карточки построен на `Border` (вместо `Frame`), включает:
-  - Цветную иконку типа события
-  - Время, название, описание (до 2 строк)  
-  - Состояние «выполнено» — заштрихованный фон + strikethrough текста.
-- Жесты
-  - Свайп-влево (SwipeItem → `ToggleEventCompletionCommand`)
-  - Long-press ≥ 2 с (`TouchBehavior.LongPressCommand`).
-- При отсутствии событий отображается EmptyView.
+## Features
+- Current date and days-since-transplant display
+- Horizontal date selector with VisualStateManager styling
+- List of events with type indicators (medication, photo, video)
+- Color coding via DataTrigger and resource dictionaries
+- Toggle completion via swipe-left or long-press (≥2s)
+- Animated progress ring around today's date, tap-to-jump
+- Adaptive Light/Dark theming
+- Persistence of selected date across sessions
 
-## Реализация
-### MVVM Паттерн
-- View: TodayPage.xaml - определяет пользовательский интерфейс
-- ViewModel: TodayViewModel - управляет данными и логикой
-- Привязка данных через `x:DataType` для компиляционных проверок
+## UI Structure
+### Header
+- Large date label (`FormattedTodayDate`)
+- Transplant-day counter (`DaysSinceTransplant`)
 
-### Модель данных (TodayViewModel)
-- Наследуется от BaseViewModel для поддержки уведомлений об изменении свойств
-- Хранит и управляет:
-  - Выбранной датой `SelectedDate`
-  - Коллекцией дат для горизонтального календаря `CalendarDays`
-  - Списком событий выбранного дня `FlattenedEvents`
-  - Счетчиками событий по типам для визуальных индикаторов `EventCountsByDate`
-  - Информацией о количестве дней после трансплантации `DaysSinceTransplant`
+### Horizontal Calendar
+- `CollectionView` (horizontal `LinearItemsLayout`)
+- Items show day-of-week and day-of-month in a circular `Border`
+- Selection managed by VisualStateManager
 
-### Команды
-- `SelectDateCommand` - обрабатывает выбор даты в горизонтальном календаре
-- `ToggleEventCompletionCommand` - переключает статус выполнения события
-- `OpenMonthCalendarCommand` - открывает полноэкранный месячный календарь
-- `ViewEventDetailsCommand` - показывает детали выбранного события
-- `PostponeEventCommand` - позволяет отложить событие на другую дату
-- все команды реализуются через **CQRS** (`ICommandBus`/`IQueryBus`) и тестируемы в isolation
+### Event List
+- Vertical `CollectionView` of event cards
+- Cards use `Border` with icon, time, title, description
+- Completed events styled with shaded background and strikethrough
+- `EmptyView` if no events
 
-### Обработка событий
-Вся логика выбора и прокрутки теперь находится во ViewModel:
-* `SelectDateCommand` — устанавливает `SelectedDate`, затем отправляет `GetEventsForDateQuery` через `IQueryBus`.
-* Полученные события объединяются и раскидываются по коллекциям UI, далее `EventCounts` запрашиваются одной пачкой (`GetEventCountsForDatesQuery`).
-* Смайпы/долгое нажатие отправляют `ToggleEventCompletionCommand` в `ICommandBus`; хендлер обновляет репозиторий и публикует `EventUpdatedMessage`, что триггерит обновление UI.
-* Свойство `ScrollToIndexTarget` уведомляет View о необходимости прокрутки к дате.
-* Визуальное состояние элементов даты управляется VisualStateManager — конвертеры не используются.
+## Technical Implementation
+- MVVM Pattern: `TodayPage.xaml` (View) + `TodayViewModel` (ViewModel) with compiled bindings (`x:DataType`)
+- Data Model: `SelectedDate`, `CalendarDays`, `FlattenedEvents`, `EventCountsByDate`, `DaysSinceTransplant`
+- Commands & Queries (via CQRS): `SelectDateCommand`, `ToggleEventCompletionCommand`, `GetEventsForDateQuery`, `GetEventCountsForDatesQuery`, etc.
 
-### Адаптивность и темы
-Используется `AppThemeBinding`, все основные цвета вынесены в `Resources/Styles/Colors.xaml`.
-Для светлой/тёмной темы предусмотрены альтернативные ключи (`Primary`, `PrimaryLight`, `PrimaryDark`).
-Элементы выравниваются относительно `SafeAreaInsets` (iOS), что исключает перекрытие Dynamic Island.
+## Interaction Flow
+1. On appearing, `TodayViewModel` loads days and events via queries.
+2. Date selection dispatches queries; UI updates accordingly.
+3. Swipe/long-press dispatch `ToggleEventCompletionCommand`; handlers update the store and publish `EventUpdatedMessage`.
+4. ViewModel listens for messages and refreshes the UI.
+5. All logic is testable in isolation.
 
-## Текущий статус и дальнейший рефакторинг
-### Исторический подход (конвертеры)
-Ранее для выделения выбранной даты использовались следующие конвертеры:
-- `DateToSelectionColorConverter` - определял цвет фона элемента в зависимости от выбранной даты
-- `DateToBorderColorConverter` - определял цвет границы элемента
-- `DateToTextColorConverter` - менял цвет текста для выделения выбранного дня
-- `DateToIsSelectedConverter` - определял масштаб (увеличение) выбранного элемента
+## Accessibility & Performance
+- High-contrast colors for readability
+- Virtualized `CollectionView` for efficient rendering
+- Main-thread UI updates via `Dispatcher`
+- Suppress flicker with `SelectionHighlightColor` and `SelectionChangedAnimationEnabled` when possible
 
-Проблемы старого подхода:
-- Избыточные вычисления при каждой перерисовке UI
-- Сложности с обновлением визуального состояния при программной смене даты
-- Необходимость передавать параметры в конвертеры через BindingContext
-- Потенциальные проблемы с производительностью при большом количестве элементов
-- Сложное отслеживание и отладка проблем с визуальным состоянием
+## Platform Considerations
+- `SafeAreaInsets` support on iOS to avoid UI overlap
+- Platform-specific flicker suppression on Android/iOS
 
-### Текущий подход (VisualStateManager)
-Преимущества новой реализации:
-- Использование нативного механизма выделения в CollectionView (`SelectionMode="Single"`)
-- Декларативное определение визуальных состояний через VisualStateManager
-- Автоматическое обновление состояния при смене выбранного элемента
-- Улучшенная производительность за счет оптимизаций платформы
-- Более чистый и поддерживаемый код без избыточных конвертеров
-- Соответствие современным практикам разработки в MAUI
-
-Реализация:
-```xml
-<VisualStateManager.VisualStateGroups>
-    <VisualStateGroup Name="CommonStates">
-        <VisualState Name="Normal" />
-        <VisualState Name="Selected">
-            <VisualState.Setters>
-                <Setter Property="Frame.BackgroundColor" 
-                        TargetName="dayFrame" 
-                        Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
-                <Setter Property="Frame.BorderColor" 
-                        TargetName="dayFrame" 
-                        Value="Transparent" />
-                <Setter Property="Label.TextColor" 
-                        TargetName="dayText" 
-                        Value="{StaticResource White}" />
-                <Setter Property="Grid.Scale" Value="1.05" />
-            </VisualState.Setters>
-        </VisualState>
-    </VisualStateGroup>
-</VisualStateManager.VisualStateGroups>
+## Architecture
+Follows Clean Architecture & CQRS within the Calendar feature:
+```text
+Calendar/
+├── Application/
+│   ├── Commands/ToggleEventCompletionCommand.cs
+│   ├── Queries/GetEventsForDateQuery.cs
+│   └── Messages/EventUpdatedMessage.cs
+├── ViewModels/TodayViewModel.cs
+├── Views/TodayPage.xaml (+ .cs)
+└── doc/todaypage.md
 ```
 
-## Синхронизация данных
-- Загрузка событий при выборе даты через `LoadTodayEventsAsync`
-- Обновление счетчиков событий для видимых дней через `LoadEventCountsForVisibleDaysAsync`
-- Проверка просроченных событий через `CheckOverdueEventsAsync`
-- Логирование загруженных событий для отладки
-- Сохранение и восстановление выбранной даты через локальное хранилище (`SelectedDateKey`)
-
-## Взаимодействие с сервисами
-Работа с данными идёт через слой **Application/CQRS**: 
-* Queries (`GetEventsForDateQuery`, `GetEventCountsForDatesQuery`, `GetActiveRestrictionsQuery`) 
-* Commands (`ToggleEventCompletionCommand`, `PostponeEventCommand`)
-Инфраструктурный `IHairTransplantEventRepository` обеспечивают кэш и persistance.
-
-## Производительность (кратко)
-* UI-обновления через `Dispatcher`.
-* Хендлеры кэшируют данные и отправляют `EventUpdatedMessage` для точечных обновлений.
-
-*(Для подробностей изменений см. CHANGELOG.md)*
-
---- 
+## DI Registration
+Register the TodayPage ViewModel and handlers in `MauiProgram.cs`:
+```csharp
+services.AddCqrs(); // registers command and query buses
+services.AddScoped<TodayViewModel>();
+services.AddScoped<ICommandHandler<ToggleEventCompletionCommand>, ToggleEventCompletionHandler>();
+services.AddScoped<IQueryHandler<GetEventsForDateQuery, IEnumerable<CalendarEvent>>, GetEventsForDateHandler>();
+services.AddScoped<IQueryHandler<GetEventCountsForDatesQuery, Dictionary<DateTime, Dictionary<EventType,int>>>, GetEventCountsForDatesHandler>();
+``` 
