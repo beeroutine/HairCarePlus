@@ -249,11 +249,12 @@
                     </SwipeView.RightItems>
                     <Border x:Name="rootCard"
                             Style="{StaticResource CalendarCardBorderStyle}"
+                            HorizontalOptions="Fill"
                             BackgroundColor="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}"
                             Padding="16,12,16,12">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" RowDefinitions="Auto,*" VerticalOptions="Center">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" VerticalOptions="Start">
                             <!-- Icon with background -->
-                            <Border Grid.RowSpan="2" Grid.Column="0"
+                            <Border Grid.Column="0" Grid.Row="0" VerticalOptions="Start"
                                     WidthRequest="44"
                                     HeightRequest="44"
                                     StrokeShape="RoundRectangle 22"
@@ -288,24 +289,26 @@
                                        VerticalOptions="Center"/>
                             </Border>
 
-                            <!-- Task Content -->
-                            <Label x:Name="timeLabel"
-                                   Grid.Column="1"
-                                   Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                   FontSize="13"
-                                   FontAttributes="None"
-                                   TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
-                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray500}}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                            <VerticalStackLayout Grid.Column="1" Grid.Row="1" Spacing="3" VerticalOptions="Start">
+                            <!-- Task Content Combined -->
+                            <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="3" VerticalOptions="Start">
+                                <Label x:Name="timeLabel"
+                                       Text="{Binding Date, StringFormat='{0:HH:mm}'}"
+                                       FontSize="13"
+                                       FontAttributes="None"
+                                       TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray500}}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                                 <Label x:Name="titleLabel"
                                        Text="{Binding Title}"
                                        FontSize="17"
                                        FontAttributes="Bold"
+                                       LineBreakMode="WordWrap"
+                                       MaxLines="2"
+                                       HorizontalOptions="Fill"
                                        TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
