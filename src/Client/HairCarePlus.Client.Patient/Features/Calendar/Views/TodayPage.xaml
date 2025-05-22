@@ -17,8 +17,8 @@
 
     <ContentPage.Content>
         <Grid RowDefinitions="Auto, Auto, *" 
-              RowSpacing="14" 
-              Padding="16,20,16,0">
+              RowSpacing="16" 
+              Padding="20,24,20,0">
 
             <!-- New Header Section -->
             <Grid Grid.Row="0" ColumnDefinitions="Auto, *" ColumnSpacing="12" Margin="0,0,0,12">
@@ -95,7 +95,7 @@
                             EmptyView="{StaticResource EventsEmptyViewTemplate}"
                             Margin="0,5,0,0">
                 <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12"/>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
                 </CollectionView.ItemsLayout>
             </CollectionView>
 
@@ -251,7 +251,7 @@
                             Style="{StaticResource CalendarCardBorderStyle}"
                             HorizontalOptions="Fill"
                             BackgroundColor="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}"
-                            Padding="16,12,16,12">
+                            Padding="16,16,16,16">
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" VerticalOptions="Start">
                             <!-- Icon with background -->
                             <Border Grid.Column="0" Grid.Row="0" VerticalOptions="Start"
@@ -290,26 +290,16 @@
                             </Border>
 
                             <!-- Task Content Combined -->
-                            <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="3" VerticalOptions="Start">
-                                <Label x:Name="timeLabel"
-                                       Text="{Binding Date, StringFormat='{0:HH:mm}'}"
-                                       FontSize="13"
-                                       FontAttributes="None"
-                                       TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
-                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray500}}" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
+                            <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="2" VerticalOptions="Start">
                                 <Label x:Name="titleLabel"
                                        Text="{Binding Title}"
-                                       FontSize="17"
+                                       FontSize="15"
                                        FontAttributes="Bold"
                                        LineBreakMode="WordWrap"
                                        MaxLines="2"
                                        HorizontalOptions="Fill"
-                                       TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}">
+                                       TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}"
+                                       LineHeight="1.2">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding IsCompleted}" Value="True">
                                             <Setter Property="TextDecorations" Value="Strikethrough" />
@@ -328,15 +318,19 @@
                                     </toolkit:Expander.Triggers>
                                     <toolkit:Expander.Header>
                                         <Label Text="{Binding Description}"
-                                               FontSize="14"
+                                               FontSize="15"
                                                LineBreakMode="TailTruncation"
                                                MaxLines="2"
-                                               TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}" />
+                                               LineHeight="1.3"
+                                               TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}"
+                                               Opacity="0.8" />
                                     </toolkit:Expander.Header>
                                     <Label Text="{Binding Description}"
-                                           FontSize="14"
+                                           FontSize="15"
+                                           LineHeight="1.3"
                                            TextColor="{AppThemeBinding Light={StaticResource TaskCardTextColorLight}, Dark={StaticResource TaskCardTextColorDark}}"
-                                           Padding="0,4,0,0" />
+                                           Opacity="0.8"
+                                           Padding="0,8,0,0" />
                                 </toolkit:Expander>
                             </VerticalStackLayout>
                         </Grid>

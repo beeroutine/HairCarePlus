@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <!-- Restriction circle adopts primary accent color and respects theme -->
+    <!-- Restriction circle unified with Today Page icon style -->
     <Style x:Key="RestrictionCircleStyle" TargetType="Border">
-        <Setter Property="HeightRequest" Value="60" />
-        <Setter Property="WidthRequest" Value="60" />
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="WidthRequest" Value="44" />
         <Setter Property="StrokeThickness" Value="2" />
         <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}" />
         <Setter Property="StrokeShape">
             <Setter.Value>
-                <RoundRectangle CornerRadius="30" />
+                <RoundRectangle CornerRadius="22" />
             </Setter.Value>
         </Setter>
     </Style>
 
-    <!-- Feed card background adapts to theme using global card colors -->
+    <!-- Feed card background unified with Today Page style -->
     <Style x:Key="PhotoCardStyle" TargetType="Border">
-        <!-- Card height dynamic, remove fixed HeightRequest -->
-        <Setter Property="StrokeShape" Value="RoundRectangle 24" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="Shadow" Value="{StaticResource CalendarCardShadow}" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}" />
-        <Setter Property="Padding" Value="20" />
+        <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="4,6" />
     </Style>
 
     <!-- Dock button uses shared PrimaryButton style -->

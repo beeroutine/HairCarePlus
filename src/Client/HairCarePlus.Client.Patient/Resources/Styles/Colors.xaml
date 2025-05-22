@@ -117,11 +117,11 @@
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
 
     <!-- Task / Event card colors aligned with Chat bubbles -->
-    <Color x:Key="TaskCardBackgroundLight">#EAF4FC</Color>
-    <Color x:Key="TaskCardBackgroundDark">#1E2A35</Color>
+    <Color x:Key="TaskCardBackgroundLight">#FFFFFF</Color>
+    <Color x:Key="TaskCardBackgroundDark">#1E1E1E</Color>
 
     <!-- Text color on Task/Event cards -->
-    <Color x:Key="TaskCardTextColorLight">Black</Color>
-    <Color x:Key="TaskCardTextColorDark">White</Color>
+    <Color x:Key="TaskCardTextColorLight">#1A1A1A</Color>
+    <Color x:Key="TaskCardTextColorDark">#F5F5F5</Color>
 
 </ResourceDictionary>

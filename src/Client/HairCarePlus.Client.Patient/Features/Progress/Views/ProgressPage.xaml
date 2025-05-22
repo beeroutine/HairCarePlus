@@ -21,7 +21,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="models:RestrictionTimer">
-                <VerticalStackLayout WidthRequest="85" HorizontalOptions="Center">
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center">
                     <VerticalStackLayout.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
                     </VerticalStackLayout.GestureRecognizers>
@@ -67,7 +67,7 @@
             </DataTemplate>
 
             <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="vm:ShowMoreRestrictionPlaceholderViewModel">
-                <VerticalStackLayout WidthRequest="85" HorizontalOptions="Center">
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center">
                     <Border Style="{StaticResource RestrictionCircleStyle}"
                             AutomationProperties.IsInAccessibleTree="True"
                             AutomationProperties.Name="Show more" >
@@ -133,7 +133,7 @@
                     </StackLayout>
                 </CollectionView.EmptyView>
                 <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:ProgressFeedItem">

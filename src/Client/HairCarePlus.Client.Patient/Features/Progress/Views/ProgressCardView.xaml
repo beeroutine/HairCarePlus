@@ -14,7 +14,7 @@
     </ContentView.Resources>
 
     <Border Style="{StaticResource PhotoCardStyle}">
-        <VerticalStackLayout Spacing="8" Padding="16">
+        <VerticalStackLayout Spacing="8">
             <!-- Photo with overlay title -->
             <Border StrokeShape="RoundRectangle 12" HeightRequest="220">
                 <Grid>
@@ -35,7 +35,7 @@
                         </CarouselView.ItemTemplate>
                     </CarouselView>
                     <Label Text="{Binding Title}"
-                           FontSize="18"
+                           FontSize="16"
                            FontAttributes="Bold"
                            TextColor="White"
                            Margin="12"
@@ -52,7 +52,7 @@
 
             <!-- Date below photo -->
             <Label Text="{Binding Date, StringFormat='{0:dd MMM yyyy}'}"
-                   FontSize="12"
+                   FontSize="14"
                    TextColor="{AppThemeBinding Light={StaticResource SecondaryDarkText}, Dark={StaticResource Secondary}}"
                    HorizontalOptions="Start" />
 
@@ -67,7 +67,7 @@
                         <Setter Property="IsVisible" Value="False" />
                     </DataTrigger>
                 </VerticalStackLayout.Triggers>
-                <Label Text="AI analysis:" FontSize="13" FontAttributes="Bold" />
+                <Label Text="AI analysis:" FontSize="15" FontAttributes="Bold" />
                 <HorizontalStackLayout Spacing="6">
                     <Label Text="🤖" FontSize="16"/>
                     <Label Text="{Binding AiReport.Score, StringFormat='Score {0}'}"
@@ -91,7 +91,7 @@
                         <Setter Property="IsVisible" Value="False" />
                     </DataTrigger>
                 </VerticalStackLayout.Triggers>
-                <Label Text="Doctor:" FontSize="13" FontAttributes="Bold" />
+                <Label Text="Doctor:" FontSize="15" FontAttributes="Bold" />
                 <HorizontalStackLayout Spacing="6">
                     <Label Text="👩‍⚕️" FontSize="16"/>
                     <Label Text="{Binding DoctorReportSummary}"
