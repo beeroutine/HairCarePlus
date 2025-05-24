@@ -1,42 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <!-- Restriction circle unified with Today Page icon style -->
-    <Style x:Key="RestrictionCircleStyle" TargetType="Border">
+    
+    <!-- Временно определяем стили локально для избежания проблем с MergedDictionaries -->
+    
+    <!-- Минималистичный стиль кругов -->
+    <Style x:Key="MinimalCircleStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="Ellipse" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="HeightRequest" Value="44" />
         <Setter Property="WidthRequest" Value="44" />
-        <Setter Property="StrokeThickness" Value="2" />
-        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}" />
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="22" />
-            </Setter.Value>
-        </Setter>
     </Style>
-
-    <!-- Feed card background unified with Today Page style -->
-    <Style x:Key="PhotoCardStyle" TargetType="Border">
+    
+    <!-- Базовый стиль карточки -->
+    <Style x:Key="BaseCardStyle" TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 20" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, 
+                                       Dark={StaticResource TaskCardBackgroundDark}}" />
         <Setter Property="Padding" Value="16" />
         <Setter Property="Margin" Value="4,6" />
     </Style>
+    
+    <!-- Restriction circle использует MinimalCircleStyle -->
+    <Style x:Key="RestrictionCircleStyle" TargetType="Border" BasedOn="{StaticResource MinimalCircleStyle}">
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+    </Style>
+
+    <!-- Feed card background использует BaseCardStyle -->
+    <Style x:Key="PhotoCardStyle" TargetType="Border" BasedOn="{StaticResource BaseCardStyle}" />
 
     <!-- Dock button uses shared PrimaryButton style -->
     <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
 
-    <!-- Unified info block style for AI and Doctor sections -->
-    <Style x:Key="InfoBlockStyle" TargetType="Border">
-        <Setter Property="StrokeShape">
-            <Setter.Value>
-                <RoundRectangle CornerRadius="8" />
-            </Setter.Value>
-        </Setter>
-        <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="Stroke" Value="{StaticResource Gray200Brush}" />
-        <Setter Property="Padding" Value="8" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F5F5F5, Dark=#2C2C2E}" />
-    </Style>
+    <!-- Info block удален - больше не используется -->
 </ResourceDictionary> 
