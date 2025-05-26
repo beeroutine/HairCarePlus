@@ -30,7 +30,12 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters
             {"swim", "IconNoWater"},
             {"hat", "IconNoHats"},
             {"sex", "IconNoSex"},
-            {"styling", "IconNoDye"}
+            {"styling", "IconNoDye"},
+            {"басс", "IconNoWater"},
+            {"плаван", "IconNoWater"},
+            {"вода", "IconNoWater"},
+            {"душ", "IconNoWater"},
+            {"солярий", "IconNoWater"}
         };
 
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -39,6 +44,14 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters
             var resources = global::Microsoft.Maui.Controls.Application.Current?.Resources as global::Microsoft.Maui.Controls.ResourceDictionary;
             if (value is string title && resources != null)
             {
+                // High-priority check: все ограничения, связанные с водой/плаванием
+                var lower = title.ToLowerInvariant();
+                if (lower.Contains("басс") || lower.Contains("плаван") || lower.Contains("вода") || lower.Contains("душ") || lower.Contains("солярий"))
+                {
+                    if (resources.TryGetValue("IconNoWater", out var waterRes) && waterRes is Microsoft.Maui.Controls.ImageSource waterImg)
+                        return waterImg;
+                }
+
                 foreach (var kvp in _map)
                 {
                     if (title.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))

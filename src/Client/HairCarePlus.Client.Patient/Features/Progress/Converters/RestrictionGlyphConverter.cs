@@ -15,6 +15,11 @@ public sealed class RestrictionGlyphConverter : IValueConverter
     private static readonly Dictionary<string, string> _map = new(StringComparer.OrdinalIgnoreCase)
     {
         // Russian substrings
+        {"басс", "\uf2dc"},     // swimmer
+        {"плаван", "\uf2dc"},   // swimmer
+        {"вода", "\uf2dc"},     // water -> swimmer
+        {"душ", "\uf2dc"},      // shower -> swimmer
+        {"солярий", "\uf2dc"},  // solarium -> treat as swimming restriction
         {"стриж", "\uf0c4"},     // scissors
         {"загар", "\uf185"},     // sun
         {"спорт", "\uf44b"},     // dumbbell
@@ -22,13 +27,13 @@ public sealed class RestrictionGlyphConverter : IValueConverter
         {"сауна", "\uf2dc"},     // hot-tub
 
         // English keywords for backend data consistency
+        {"swim", "\uf2dc"},
+        {"pool", "\uf2dc"},
         {"haircut", "\uf0c4"},
         {"sun", "\uf185"},
         {"sport", "\uf44b"},
         {"gym", "\uf44b"},
         {"alcohol", "\uf0fc"},
-        {"swim", "\uf2dc"},
-        {"pool", "\uf2dc"},
     };
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -259,5 +259,5 @@
         <Setter Property="TextColor" 
                 Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
     </Style>
-
+    
 </ResourceDictionary> 

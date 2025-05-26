@@ -26,11 +26,11 @@
                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
                     </VerticalStackLayout.GestureRecognizers>
                     
-                    <!-- Модернизированный кружок с цветовой кодировкой -->
+                    <!-- Кружок только с числом дней -->
                     <Border x:Name="RestrictionCircle"
                             Style="{StaticResource ModernRestrictionCircleStyle}"
                             AutomationProperties.IsInAccessibleTree="True"
-                            AutomationProperties.Name="{Binding Label}">
+                            AutomationProperties.Name="{Binding Title, Converter={StaticResource RestrictionShortPhraseConverter}}">
                         
                         <!-- Цветовая кодировка по срочности -->
                         <Border.Triggers>
@@ -68,7 +68,7 @@
                             </MultiTrigger>
                         </Border.Triggers>
                         
-                        <!-- Число дней -->
+                        <!-- Только число дней -->
                         <Label x:Name="DaysLabel"
                                Text="{Binding DaysRemaining}"
                                Style="{StaticResource RestrictionDaysTextStyle}">
@@ -123,11 +123,11 @@
                         </VisualStateManager.VisualStateGroups>
                     </Border>
                     
-                    <!-- Подпись ограничения -->
-                    <Label Text="{Binding Label}"
+                    <!-- Короткая фраза ограничения -->
+                    <Label Text="{Binding Title, Converter={StaticResource RestrictionShortPhraseConverter}}"
                            Style="{StaticResource RestrictionLabelStyle}"
                            AutomationProperties.IsInAccessibleTree="True"
-                           AutomationProperties.Name="{Binding Label}" />
+                           AutomationProperties.Name="{Binding Title, Converter={StaticResource RestrictionShortPhraseConverter}}" />
                 </VerticalStackLayout>
             </DataTemplate>
 
@@ -172,7 +172,7 @@
             <conv:RestrictionStrokeColorConverter x:Key="RestrictionStrokeConverter" />
             <conv:RestrictionGlyphConverter x:Key="RestrictionGlyphConverter" />
             <conv:RestrictionFillColorConverter x:Key="RestrictionFillConverter" />
-            <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <conv:RestrictionShortPhraseConverter x:Key="RestrictionShortPhraseConverter" />
             <conv:EqualToConverter x:Key="EqualToConverter" />
 
         </ResourceDictionary>

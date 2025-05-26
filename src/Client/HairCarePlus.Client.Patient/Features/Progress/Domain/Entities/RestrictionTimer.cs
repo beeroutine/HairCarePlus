@@ -14,6 +14,17 @@ public sealed partial class RestrictionTimer : ObservableObject
     /// </summary>
     public string Label => Title;
 
+    /// <summary>
+    /// Детальное описание ограничения для показа в Stories popup.
+    /// </summary>
+    public string DetailedDescription { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Ширина прогресс бара для Stories popup (в процентах от максимальной ширины).
+    /// Вычисляется как обратная пропорция от количества дней.
+    /// </summary>
+    public double ProgressWidth => DaysRemaining <= 0 ? 300 : Math.Max(50, 300 - (DaysRemaining * 15));
+
     [ObservableProperty]
     private int _daysRemaining;
 } 

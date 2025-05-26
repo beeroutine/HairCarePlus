@@ -87,13 +87,21 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         catch (Exception ex) { _logger.LogError(ex, "Failed to open insights sheet"); }
     });
 
-    // Команда открытия деталей ограничения
+    // Команда открытия деталей ограничения через Stories popup
     [RelayCommand]
     private async Task OpenRestrictionDetailsAsync(RestrictionTimer? timer)
     {
         if (timer is null) return;
-        try { await _nav.ShowRestrictionDetailsAsync(timer); }
-        catch (Exception ex) { _logger.LogError(ex, "Failed to open restriction details"); }
+        
+        try 
+        {
+            var popup = new RestrictionStoriesPopup(timer);
+            await Microsoft.Maui.Controls.Application.Current.MainPage.ShowPopupAsync(popup);
+        }
+        catch (Exception ex) 
+        { 
+            _logger.LogError(ex, "Failed to open restriction details popup"); 
+        }
     }
 
     // Команда показа всех ограничений
@@ -148,7 +156,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
             Feed.Clear();
             // Требование: показывать только дни, где есть хотя бы одна фотография
             var visible = feedItems.Where(f => f.Photos?.Any() == true)
-                                   .OrderByDescending(f => f.Date);
+                                   .OrderBy(f => f.Date);
 
             foreach (var item in visible)
             {
@@ -196,7 +204,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
             {
                 DoctorReportSummary = string.Empty
             };
-            Feed.Insert(0, existing);
+            Feed.Add(existing);
         }
 
         var photoList = existing.Photos as List<ProgressPhoto> ?? new List<ProgressPhoto>(existing.Photos);
