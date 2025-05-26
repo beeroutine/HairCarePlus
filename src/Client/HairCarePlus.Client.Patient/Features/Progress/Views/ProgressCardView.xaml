@@ -5,7 +5,6 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
-             xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
              x:DataType="models:ProgressFeedItem">
     <ContentView.Resources>
         <ResourceDictionary>
@@ -16,101 +15,133 @@
         </ResourceDictionary>
     </ContentView.Resources>
 
-    <Border Style="{StaticResource PhotoCardStyle}">
-        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
-            <!-- Фото с минималистичной меткой дня -->
+    <!-- Instagram-подобная карточка во всю ширину -->
+    <Border Style="{StaticResource InstagramCardStyle}"
+            Margin="16,8"
+            Padding="0">
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="0">
+            
+            <!-- Фото область с floating badge дня -->
             <Border Grid.Row="0" 
-                    StrokeShape="RoundRectangle 8" 
-                    HeightRequest="160">
+                    StrokeThickness="0"
+                    HeightRequest="300">
                 <Grid>
+                    <!-- CarouselView для 3 типов фото: фронт, темя, затылок -->
                     <CarouselView ItemsSource="{Binding Photos}"
-                                  IndicatorView="{x:Reference dots}"
+                                  IndicatorView="{x:Reference photoIndicators}"
                                   IsSwipeEnabled="True"
                                   PeekAreaInsets="0"
                                   IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
                         <CarouselView.ItemTemplate>
                             <DataTemplate x:DataType="models:ProgressPhoto">
-                                <Image Source="{Binding LocalPath}"
-                                       Aspect="AspectFill">
-                                    <Image.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PreviewPhotoCommand}" CommandParameter="{Binding .}" />
-                                    </Image.GestureRecognizers>
-                                </Image>
+                                <Grid>
+                                    <!-- Убрал TapGestureRecognizer для KISS принципа -->
+                                    <Image Source="{Binding LocalPath}"
+                                           Aspect="AspectFill" />
+                                    <!-- Градиент для лучшего контраста с badge -->
+                                    <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
+                                               VerticalOptions="Start"
+                                               HeightRequest="60" />
+                                </Grid>
                             </DataTemplate>
                         </CarouselView.ItemTemplate>
                     </CarouselView>
-                    <!-- Минималистичная метка дня -->
-                    <Border Padding="8,4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0E6, Dark=#1E1E1EE6}"
-                            StrokeShape="RoundRectangle 12"
+                    
+                    <!-- Floating badge дня -->
+                    <Border Style="{StaticResource FloatingDayBadgeStyle}"
                             HorizontalOptions="Start"
                             VerticalOptions="Start"
-                            Margin="12">
+                            Margin="16,16">
                         <Label Text="{Binding Title}"
-                               FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                               Style="{StaticResource DayBadgeTextStyle}" />
                     </Border>
-                    <IndicatorView x:Name="dots"
-                                   IndicatorColor="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}"
-                                   SelectedIndicatorColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}"
-                                   HorizontalOptions="Center"
-                                   VerticalOptions="End"
-                                   Margin="0,0,0,8"
-                                   IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}, ConverterParameter=1}" />
+
+                    <!-- AI Score badge в правом верхнем углу -->
+                    <Border Style="{StaticResource AIScoreBadgeStyle}"
+                            HorizontalOptions="End"
+                            VerticalOptions="Start"
+                            Margin="16,16"
+                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="AI" 
+                                   Style="{StaticResource AIScoreLabelStyle}" />
+                            <Label Text="{Binding AiReport.Score}"
+                                   Style="{StaticResource AIScoreValueStyle}" />
+                        </HorizontalStackLayout>
+                    </Border>
                 </Grid>
             </Border>
 
-            <!-- Дата и прогресс в одной строке -->
-            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
-                <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
-                       FontSize="13"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
-                <!-- AI Score без эмодзи, минималистично -->
-                <HorizontalStackLayout Grid.Column="1" Spacing="4" IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
-                    <Label Text="Score"
-                           FontSize="12"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
-                    <Label Text="{Binding AiReport.Score}"
-                           FontSize="14"
-                           FontAttributes="Bold"
-                           TextColor="{StaticResource Primary}" />
-                </HorizontalStackLayout>
-            </Grid>
-
-            <!-- Единый блок для комментариев -->
-            <VerticalStackLayout Grid.Row="2" Spacing="4">
-                <!-- Приоритет отдается комментарию врача -->
-                <Label IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="Врач: " 
-                                  FontAttributes="Bold"
-                                  FontSize="13"
-                                  TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
-                            <Span Text="{Binding DoctorReportSummary}"
-                                  FontSize="13"
-                                  TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
+            <!-- Контент области с отступами -->
+            <VerticalStackLayout Grid.Row="1" 
+                                Padding="16,12"
+                                Spacing="12">
                 
-                <!-- AI комментарий показывается если нет комментария врача -->
-                <Label Text="{Binding AiReport.Summary}"
-                       FontSize="13"
-                       LineHeight="1.4"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}"
-                       MaxLines="2"
-                       LineBreakMode="TailTruncation">
-                    <Label.Triggers>
-                        <DataTrigger TargetType="Label" Binding="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}" Value="True">
-                            <Setter Property="IsVisible" Value="False" />
-                        </DataTrigger>
-                        <DataTrigger TargetType="Label" Binding="{Binding AiReport}" Value="{x:Null}">
-                            <Setter Property="IsVisible" Value="False" />
-                        </DataTrigger>
-                    </Label.Triggers>
-                </Label>
+                <!-- Photo indicators как в Instagram - ниже фото -->
+                <IndicatorView x:Name="photoIndicators"
+                               Style="{StaticResource InstagramPhotoIndicatorStyle}"
+                               HorizontalOptions="Center"
+                               IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}, ConverterParameter=1}" />
+                
+                <!-- Дата в Instagram стиле -->
+                <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
+                       Style="{StaticResource InstagramDateStyle}" />
+
+                <!-- Комментарии с приоритетом врачебных -->
+                <VerticalStackLayout Spacing="8">
+                    
+                    <!-- Комментарий врача (приоритет) - всегда показываем для демонстрации -->
+                    <Border Style="{StaticResource DoctorCommentStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="Комментарий врача" 
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
+                            <Label Text="Прогресс идет отлично! Заживление проходит без осложнений. Продолжайте соблюдать рекомендации."
+                                   Style="{StaticResource CommentTextStyle}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    
+                    <!-- AI анализ -->
+                    <Border Style="{StaticResource AICommentStyle}"
+                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource AIIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="AI анализ" 
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding AiReport.Summary}"
+                                   Style="{StaticResource CommentTextStyle}"
+                                   MaxLines="3"
+                                   LineBreakMode="TailTruncation" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
             </VerticalStackLayout>
+
         </Grid>
+
+        <!-- VisualStateManager для анимаций -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Scale" Value="0.98" />
+                            <Setter Property="Opacity" Value="0.9" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </VisualStateManager.VisualStateGroups>
     </Border>
 </ContentView> 

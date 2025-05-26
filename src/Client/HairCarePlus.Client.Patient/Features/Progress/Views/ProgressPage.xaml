@@ -8,7 +8,6 @@
     xmlns:selectors="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Selectors"
     xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
     xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
-    xmlns:cv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views"
     x:DataType="vm:ProgressViewModel"
     Shell.NavBarIsVisible="True"
     Title="Progress"
@@ -22,96 +21,144 @@
             </ResourceDictionary.MergedDictionaries>
 
             <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="models:RestrictionTimer">
-                <VerticalStackLayout WidthRequest="64" HorizontalOptions="Center" Spacing="6">
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="8">
                     <VerticalStackLayout.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
                     </VerticalStackLayout.GestureRecognizers>
-                    <Border x:Name="CircleBorder"
-                            StrokeShape="Ellipse"
-                            HeightRequest="44"
-                            WidthRequest="44"
-                            StrokeThickness="1.5"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray500}}"
-                            BackgroundColor="Transparent"
+                    
+                    <!-- Модернизированный кружок с цветовой кодировкой -->
+                    <Border x:Name="RestrictionCircle"
+                            Style="{StaticResource ModernRestrictionCircleStyle}"
                             AutomationProperties.IsInAccessibleTree="True"
-                            AutomationProperties.Name="{Binding Label}" >
+                            AutomationProperties.Name="{Binding Label}">
+                        
+                        <!-- Цветовая кодировка по срочности -->
                         <Border.Triggers>
-                            <!-- Завершенные ограничения -->
+                            <!-- Завершенные ограничения (0 дней) -->
                             <DataTrigger TargetType="Border" Binding="{Binding DaysRemaining}" Value="0">
-                                <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray600}}" />
-                                <Setter Property="Opacity" Value="0.6" />
+                                <Setter Property="Stroke" Value="{StaticResource CompletedRestrictionColor}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource CompletedRestrictionBackground}" />
+                                <Setter Property="Opacity" Value="0.7" />
                             </DataTrigger>
-                            <!-- Скоро истекающие (1 день) -->
+                            
+                            <!-- Критичные ограничения (1 день) -->
                             <DataTrigger TargetType="Border" Binding="{Binding DaysRemaining}" Value="1">
-                                <Setter Property="Stroke" Value="{StaticResource Primary}" />
-                                <Setter Property="StrokeThickness" Value="2" />
+                                <Setter Property="Stroke" Value="{StaticResource CriticalRestrictionColor}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource CriticalRestrictionBackground}" />
+                                <Setter Property="StrokeThickness" Value="3" />
                             </DataTrigger>
+                            
+                            <!-- Скоро истекающие ограничения (2-3 дня) -->
+                            <MultiTrigger TargetType="Border">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding DaysRemaining}" Value="2" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Stroke" Value="{StaticResource SoonRestrictionColor}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource SoonRestrictionBackground}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </MultiTrigger>
+                            
+                            <MultiTrigger TargetType="Border">
+                                <MultiTrigger.Conditions>
+                                    <BindingCondition Binding="{Binding DaysRemaining}" Value="3" />
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Stroke" Value="{StaticResource SoonRestrictionColor}" />
+                                <Setter Property="BackgroundColor" Value="{StaticResource SoonRestrictionBackground}" />
+                                <Setter Property="StrokeThickness" Value="2.5" />
+                            </MultiTrigger>
                         </Border.Triggers>
-                        <Label Text="{Binding DaysRemaining}"
-                               FontSize="16"
-                               FontAttributes="Bold"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                        
+                        <!-- Число дней -->
+                        <Label x:Name="DaysLabel"
+                               Text="{Binding DaysRemaining}"
+                               Style="{StaticResource RestrictionDaysTextStyle}">
+                            <Label.Triggers>
+                                <!-- Стили текста в зависимости от срочности -->
+                                <DataTrigger TargetType="Label" Binding="{Binding DaysRemaining}" Value="0">
+                                    <Setter Property="Text" Value="✓" />
+                                    <Setter Property="TextColor" Value="{StaticResource CompletedRestrictionColor}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding DaysRemaining}" Value="1">
+                                    <Setter Property="TextColor" Value="{StaticResource CriticalRestrictionColor}" />
+                                </DataTrigger>
+                                <MultiTrigger TargetType="Label">
+                                    <MultiTrigger.Conditions>
+                                        <BindingCondition Binding="{Binding DaysRemaining}" Value="2" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="TextColor" Value="{StaticResource SoonRestrictionColor}" />
+                                </MultiTrigger>
+                                <MultiTrigger TargetType="Label">
+                                    <MultiTrigger.Conditions>
+                                        <BindingCondition Binding="{Binding DaysRemaining}" Value="3" />
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="TextColor" Value="{StaticResource SoonRestrictionColor}" />
+                                </MultiTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        
+                        <!-- VisualStateManager для анимаций -->
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroupList>
-                                <VisualStateGroup x:Name="PressStates">
+                                <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter TargetName="CircleBorder" Property="Scale" Value="0.95" />
+                                            <Setter Property="Scale" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                                
+                                <!-- Пульсация для критичных ограничений -->
+                                <VisualStateGroup x:Name="UrgencyStates">
+                                    <VisualState x:Name="Critical">
+                                        <VisualState.StateTriggers>
+                                            <StateTrigger IsActive="{Binding DaysRemaining, Converter={StaticResource EqualToConverter}, ConverterParameter=1}" />
+                                        </VisualState.StateTriggers>
+                                        <VisualState.Setters>
+                                            <Setter Property="Scale" Value="1.05" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
                             </VisualStateGroupList>
                         </VisualStateManager.VisualStateGroups>
                     </Border>
+                    
+                    <!-- Подпись ограничения -->
                     <Label Text="{Binding Label}"
-                           FontSize="11"
-                           HorizontalOptions="Center"
-                           LineBreakMode="TailTruncation"
-                           MaxLines="1"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                           Style="{StaticResource RestrictionLabelStyle}"
                            AutomationProperties.IsInAccessibleTree="True"
                            AutomationProperties.Name="{Binding Label}" />
                 </VerticalStackLayout>
             </DataTemplate>
 
             <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="vm:ShowMoreRestrictionPlaceholderViewModel">
-                <VerticalStackLayout WidthRequest="64" HorizontalOptions="Center" Spacing="6">
-                    <Border StrokeShape="Ellipse"
-                            HeightRequest="44"
-                            WidthRequest="44"
-                            StrokeThickness="1.5"
-                            Stroke="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                            BackgroundColor="Transparent"
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="8">
+                    <Border Style="{StaticResource ShowMoreRestrictionCircleStyle}"
                             AutomationProperties.IsInAccessibleTree="True"
-                            AutomationProperties.Name="Show more" >
+                            AutomationProperties.Name="Show more restrictions">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
                         </Border.GestureRecognizers>
+                        
                         <Label Text="{Binding CountLabel}" 
-                               FontSize="14" 
-                               HorizontalOptions="Center" 
-                               VerticalOptions="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
+                               Style="{StaticResource ShowMoreTextStyle}" />
+                        
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroupList>
-                                <VisualStateGroup x:Name="PressStates">
+                                <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter Property="Scale" Value="0.95" />
+                                            <Setter Property="Scale" Value="0.92" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
                             </VisualStateGroupList>
                         </VisualStateManager.VisualStateGroups>
                     </Border>
+                    
                     <Label Text="Еще"
-                           FontSize="11"
-                           HorizontalOptions="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                           Style="{StaticResource RestrictionLabelStyle}" />
                 </VerticalStackLayout>
             </DataTemplate>
 
@@ -126,6 +173,7 @@
             <conv:RestrictionGlyphConverter x:Key="RestrictionGlyphConverter" />
             <conv:RestrictionFillColorConverter x:Key="RestrictionFillConverter" />
             <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <conv:EqualToConverter x:Key="EqualToConverter" />
 
         </ResourceDictionary>
     </ContentPage.Resources>
@@ -134,56 +182,62 @@
         <!-- Удалено для минималистичного дизайна -->
     </ContentPage.Shell.TitleView>
 
-    <!-- Main layout: минималистичная структура с увеличенными отступами -->
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16" Padding="20,24,20,0">
-        <!-- Минималистичный timeline -->
-        <cv:YearTimelineView Grid.Row="0" 
-                            HeightRequest="24"
-                            SurgeryDate="{Binding SurgeryDate}"
-                            AutomationProperties.IsInAccessibleTree="True"
-                            AutomationProperties.Name="Year timeline" />
+    <!-- Instagram-подобная структура с фокусом на ленте -->
+    <Grid RowDefinitions="Auto,*" RowSpacing="20" Padding="0,16,0,0">
         
-        <!-- Упрощенные restriction timers с горизонтальной прокруткой -->
-        <ScrollView Grid.Row="1" 
+        <!-- Модернизированные таймеры ограничений -->
+        <ScrollView Grid.Row="0" 
                     Orientation="Horizontal" 
                     HorizontalScrollBarVisibility="Never"
-                    HeightRequest="80">
+                    Padding="16,0"
+                    HeightRequest="90">
             <CollectionView ItemsSource="{Binding VisibleRestrictionItems}"
                             SelectionMode="None"
                             ItemTemplate="{StaticResource RestrictionItemTemplateSelector}">
                 <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="16" />
                 </CollectionView.ItemsLayout>
             </CollectionView>
         </ScrollView>
 
-        <!-- Scrollable content: RefreshView wrapping feed -->
-        <RefreshView Grid.Row="2"
+        <!-- Instagram-подобная лента прогресса -->
+        <RefreshView Grid.Row="1"
                      Command="{Binding LoadCommand}"
-                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}">
+                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
+                     Margin="0">
             <CollectionView ItemsSource="{Binding Feed}"
                             SelectionMode="None"
                             HorizontalScrollBarVisibility="Never"
-                            VerticalScrollBarVisibility="Never">
+                            VerticalScrollBarVisibility="Never"
+                            Margin="0">
                 <CollectionView.EmptyView>
-                    <StackLayout HorizontalOptions="Center" VerticalOptions="CenterAndExpand" Padding="16">
+                    <StackLayout HorizontalOptions="Center" 
+                                VerticalOptions="CenterAndExpand" 
+                                Padding="32"
+                                Spacing="12">
+                        <Label Text="📸" 
+                               FontSize="32"
+                               HorizontalOptions="Center" />
                         <Label Text="Нет записей прогресса" 
-                               FontSize="15" 
-                               TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
-                        <Label Text="Начните фотографировать свой прогресс" 
-                               FontSize="13" 
-                               Margin="0,8,0,0"
+                               FontSize="16" 
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray800}, Dark={StaticResource Gray300}}" />
+                        <Label Text="Начните фотографировать свой прогресс&#x0a;для отслеживания восстановления" 
+                               FontSize="14" 
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center"
                                TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
                     </StackLayout>
                 </CollectionView.EmptyView>
                 <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="16" />
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
                 </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:ProgressFeedItem">
-                        <cv:ProgressCardView />
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
+                                 <CollectionView.ItemTemplate>
+                     <DataTemplate x:DataType="models:ProgressFeedItem">
+                         <views:ProgressCardView xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views" />
+                     </DataTemplate>
+                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
     </Grid>

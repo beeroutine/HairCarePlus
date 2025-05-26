@@ -1,76 +1,137 @@
 # Progress Module
 
-> Version: June 2025 | .NET MAUI 9.0.51 SR
+> Version: December 2025 | .NET MAUI 9.0.51 SR
 
 ## TL;DR
-Provides a visual timeline of patient recovery with daily photos, AI analysis, and clinician comments, enriched by a year-view header and interactive restrictions.
+Instagram-подобная вертикальная лента памяти для отслеживания восстановления волос с интерактивными таймерами ограничений и мотивационными элементами.
 
 ## Table of Contents
 1. [Purpose](#purpose)
-2. [Features](#features)
+2. [Core Features](#core-features)
 3. [UI Design](#ui-design)
 4. [Data Flow](#data-flow)
 5. [Technical Implementation](#technical-implementation)
-6. [Accessibility & Performance](#accessibility--performance)
-7. [Future Refactoring](#future-refactoring)
-8. [Testing & Review](#testing--review)
+6. [Future Development](#future-development)
 
 ## Purpose
-The Progress module displays a scrollable feed of daily recovery photos, highlighting progress with an interactive year timeline and upcoming restrictions.
+Модуль Progress создает мотивирующую ленту памяти для пациентов после пересадки волос, позволяя отслеживать восстановление через ежедневные фотографии и видеть прогресс в Instagram-подобном интерфейсе.
 
-## Features
-- Sticky year timeline header with interactive markers
-- Horizontal restriction timers with visual status indicators
-- Vertical feed of `ProgressCardView` displaying:
-  - Photo carousel with tap-to-fullscreen, pinch-zoom, and share
-  - AI analysis score and feedback
-  - Clinician comments
-- Pull-to-refresh and floating action button for adding new photos
+## Core Features
+
+### 1. **Вертикальная лента памяти (основная функция)**
+- Instagram-подобные карточки во всю ширину
+- Горизонтальный свайп между 3 типами фото одного дня: фронт, темя, затылок
+- Визуальные индикаторы прогресса и milestone события
+- Комментарии врача как "лайки от эксперта"
+- Pull-to-refresh для обновления ленты
+
+### 2. **Интерактивные таймеры ограничений**
+- Горизонтальные кружочки с countdown до окончания запретов
+- Цветовая кодировка по срочности (красный/желтый/серый)
+- Stories-подобное открытие для полного описания ограничения
+- Пульсация для критичных ограничений
+
+### 3. **Мотивационные элементы**
+- Автоматические milestone карточки ("Месяц прошел!")
+- AI анализ с понятными оценками "ВСЕ ХОРОШО"
+- Прогресс-индикаторы на фотографиях
+- Реакции и одобрения от медицинской команды
 
 ## UI Design
-### Year Timeline
-- Minimalist line with progress segments colored by age (0–1m, 1–3m, 3–6m, 6–12m)
-- Tap markers for popups showing day-of-year and status
 
-### Restriction Timers
-- Horizontal `CollectionView` with circular icons and days-remaining labels
-- Active (>1d), Soon (≤1d), Completed states styled via `Border` and theme resources
+### Структура страницы
+```
+┌─────────────────────────┐
+│ [Заголовок "Progress"]  │
+├─────────────────────────┤
+│ [Таймеры ограничений]   │ ← Горизонтальный скролл кружочков
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ День X карточка     │ │ ← Instagram-подобная карточка
+│ │ [фото carousel]     │ │   - Фронт/темя/затылок свайп
+│ │ [дата + AI score]   │ │   - Dots indicator для фото
+│ │ [комментарии]       │ │   - Врач/AI комментарии
+│ └─────────────────────┘ │
+│ ┌─────────────────────┐ │
+│ │ День X-1 карточка   │ │
+│ └─────────────────────┘ │
+│         ...             │
+└─────────────────────────┘
+```
 
-### ProgressCardView
-- `CarouselView` for daily photos (AspectFill, corner radius 12px)
-- Overlay `Day {DayNumber}` and date label
-- AI block (`Border`, theme-aware background, padded content)
-- Clinician block similar to AI block
+### Карточка прогресса
+- **Фото область**: CarouselView с 3 типами фото, dots indicator снизу
+- **Метка дня**: Floating badge "День 15" в углу фото
+- **Метаданные**: Дата + AI Score в одной строке
+- **Комментарии**: Приоритет врачебным, потом AI анализ
+- **Стиль**: Закругленные углы, тени, полная ширина
+
+### Таймеры ограничений
+- **Кружочки**: Число дней в центре, название снизу
+- **Цвета**: 
+  - Красный: ≤1 день (критично)
+  - Желтый: 2-3 дня (скоро)
+  - Серый: завершено
+- **Интерактивность**: Tap → Stories-подобный popup с полным описанием
 
 ## Data Flow
-| Trigger              | Query/Message                | Updates              |
-|----------------------|------------------------------|----------------------|
-| App start/Refresh    | `GetProgressFeedQuery`       | Header + Feed        |
-| New photo saved      | `PhotoCapturedMessage`       | Adds new ProgressCard|
-| Restriction changed  | `RestrictionsChangedMessage` | Updates Timers       |
-| Pull-to-Refresh      | Both queries                 | Header + Feed        |
+
+| Событие | Запрос/Сообщение | Обновление |
+|---------|------------------|------------|
+| Загрузка страницы | `GetProgressFeedQuery` | Лента + таймеры |
+| Новое фото | `PhotoCapturedMessage` | Добавление в ленту |
+| Pull-to-refresh | `RefreshProgressCommand` | Полное обновление |
+| Tap на ограничение | `ShowRestrictionDetailsCommand` | Stories popup |
+| Смена фото в карточке | UI только | Dots indicator |
 
 ## Technical Implementation
-- **Views:** `ProgressPage.xaml`, `YearTimelineView`, `RestrictionTimersView`, `ProgressCardView`
-- **ViewModel:** `ProgressViewModel` with observable collections and commands
-- **CQRS:** Query and command buses with handlers (`GetProgressFeedQuery`, `PhotoCapturedMessageHandler`, etc.)
-- **Services:** DI registration for message handlers and queries in `MauiProgram`
 
-## Accessibility & Performance
-- Virtualized `CollectionView` and lazy loading of images
-- High-contrast color resources for readability
-- `AutomationProperties` for UI elements
-- UI updates via `Dispatcher` and minimal re-rendering
+### MAUI 9.0 Components
+- **CollectionView**: Virtualized лента с ItemSpacing
+- **CarouselView**: Свайп между фото дня внутри карточки
+- **RefreshView**: Pull-to-refresh функционал
+- **Border**: Закругленные карточки с тенями
+- **VisualStateManager**: Анимации появления карточек
 
-## Future Refactoring
-- Extract UI component interfaces (`IYearTimelineView`, `IProgressCardView`) for testability
-- Move touch and animation logic into a dedicated service
-- Centralize dimensions and style resources in `Dimensions.xaml` and `Colors.xaml`
-- Optimize image caching and lazy loading strategy
+### Architecture
+- **Views**: `ProgressPage`, `ProgressCardView`, `RestrictionTimerView`
+- **ViewModel**: `ProgressViewModel` с ObservableCollections
+- **CQRS**: Query handlers для загрузки данных
+- **Services**: Navigation, Timeline, Restriction services
 
-## Testing & Review
-- Unit tests for `ProgressViewModel` and message handlers
-- UI tests for key interactions using MAUI.Testing framework
-- Performance benchmarks for feed rendering and animations
+### Key Files
+```
+Views/
+  ├── ProgressPage.xaml              # Основная страница
+  ├── ProgressCardView.xaml          # Instagram-подобная карточка
+  ├── RestrictionDetailPopup.xaml    # Stories-подобный popup
+  └── Styles/ProgressStyles.xaml     # Стили модуля
+
+ViewModels/
+  └── ProgressViewModel.cs           # Основная логика
+
+Domain/Entities/
+  ├── ProgressFeedItem.cs            # Карточка дня
+  ├── ProgressPhoto.cs               # Фото (фронт/темя/затылок)
+  └── RestrictionTimer.cs            # Таймер ограничения
+```
+
+## Future Development
+
+### Прогресс-бар роста волос
+**Статус**: Отложено до появления по-настоящему крутой идеи
+**Требования**: Визуально наглядный, показывающий ключевые этапы (смывание корочек, первое мытье, стрижка)
+
+### Дополнительные фичи
+- Анимации появления новых карточек
+- Реакции врача на фотографии (лайки, комментарии)
+- Сравнение "до/после" между далекими датами
+- Экспорт прогресса в PDF для врача
 
 ---
+
+**Ключевые принципы:**
+1. Instagram UX > медицинский интерфейс
+2. Визуальная мотивация > текстовая информация  
+3. Простота взаимодействия > функциональность
+4. Снижение тревожности пациента
