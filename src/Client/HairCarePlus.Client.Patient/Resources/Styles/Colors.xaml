@@ -9,7 +9,7 @@
 
     <!-- Task Category Colors -->
     <!-- Light Theme -->
-    <Color x:Key="MedicationBlueLight">#3E8EED</Color>
+    <Color x:Key="MedicationBlueLight">#3797F0</Color>
     <Color x:Key="AppointmentGreenLight">#4CAF50</Color>
     <Color x:Key="PhotoPurpleLight">#9C27B0</Color>
     <Color x:Key="VideoOrangeLight">#FF9800</Color>
@@ -17,7 +17,7 @@
     <Color x:Key="CriticalRedLight">#F14336</Color>
 
     <!-- Dark Theme - Softer variants for better dark mode visibility -->
-    <Color x:Key="MedicationBlueDark">#2B62A3</Color>
+    <Color x:Key="MedicationBlueDark">#2B7BD9</Color>
     <Color x:Key="AppointmentGreenDark">#357A38</Color>
     <Color x:Key="PhotoPurpleDark">#6D1B7B</Color>
     <Color x:Key="VideoOrangeDark">#B26A00</Color>
@@ -116,12 +116,12 @@
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
     <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
 
-    <!-- Task / Event card colors aligned with Chat bubbles -->
-    <Color x:Key="TaskCardBackgroundLight">#FFFFFF</Color>
-    <Color x:Key="TaskCardBackgroundDark">#1E1E1E</Color>
+    <!-- Task / Event card colors (same as patient outgoing message bubble) -->
+    <Color x:Key="TaskCardBackgroundLight">#EAF4FC</Color>
+    <Color x:Key="TaskCardBackgroundDark">#1E2A35</Color>
 
     <!-- Text color on Task/Event cards -->
-    <Color x:Key="TaskCardTextColorLight">#1A1A1A</Color>
-    <Color x:Key="TaskCardTextColorDark">#F5F5F5</Color>
+    <Color x:Key="TaskCardTextColorLight">Black</Color>
+    <Color x:Key="TaskCardTextColorDark">White</Color>
 
 </ResourceDictionary>
