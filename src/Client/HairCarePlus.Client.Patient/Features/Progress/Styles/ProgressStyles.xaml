@@ -29,7 +29,7 @@
         <Setter Property="StrokeShape" Value="RoundRectangle 16" />
         <Setter Property="StrokeThickness" Value="0" />
         <Setter Property="BackgroundColor" 
-                Value="{AppThemeBinding Light=White, Dark=#1E1E1E}" />
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
         <Setter Property="Shadow">
             <Setter.Value>
                 <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
