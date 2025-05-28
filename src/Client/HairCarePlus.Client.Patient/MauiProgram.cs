@@ -10,9 +10,6 @@ using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Calendar;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
-using Syncfusion.Maui.Core.Hosting;
-using Syncfusion.Maui.Scheduler;
-using Syncfusion.Maui.TabView;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Calendar.Views;
 using System.Net.Http;
@@ -31,6 +28,7 @@ using HairCarePlus.Client.Patient.Common.Startup;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture;
 using HairCarePlus.Client.Patient.Features.Progress;
+using Microsoft.Maui.Handlers;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -48,7 +46,6 @@ public static class MauiProgram
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
 			.UseMauiCommunityToolkitCamera()
-			.ConfigureSyncfusionCore()
 			.RegisterCalendarRoutes()
 			.RegisterPhotoCaptureRoutes()
 			.RegisterProgressRoutes()
@@ -119,7 +116,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
 #if IOS
-		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
+		EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
 		{
 			if (handler.PlatformView is UIKit.UITextView textView)
 			{

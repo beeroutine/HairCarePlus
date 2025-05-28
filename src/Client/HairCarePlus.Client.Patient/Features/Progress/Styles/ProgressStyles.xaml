@@ -6,21 +6,21 @@
     
     <!-- Градиент для overlay на фото -->
     <LinearGradientBrush x:Key="PhotoOverlayGradient" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#80000000" Offset="0" />
+        <GradientStop Color="#40000000" Offset="0" />
         <GradientStop Color="Transparent" Offset="1" />
     </LinearGradientBrush>
     
     <!-- Цвета индикаторов -->
     <Color x:Key="DoctorIndicatorColor">#4CAF50</Color>
-    <Color x:Key="AIIndicatorColor">#2196F3</Color>
+    <Color x:Key="AIIndicatorColor">#3478F6</Color>
     
-    <!-- Цвета ограничений по срочности -->
-    <Color x:Key="CriticalRestrictionColor">#F44336</Color>
-    <Color x:Key="CriticalRestrictionBackground">#FFEBEE</Color>
-    <Color x:Key="SoonRestrictionColor">#FF9800</Color>
-    <Color x:Key="SoonRestrictionBackground">#FFF3E0</Color>
-    <Color x:Key="CompletedRestrictionColor">#4CAF50</Color>
-    <Color x:Key="CompletedRestrictionBackground">#E8F5E8</Color>
+    <!-- Цвета ограничений по срочности (приглушенные, как в Today Page) -->
+    <Color x:Key="CriticalRestrictionColor">#DC4545</Color>
+    <Color x:Key="CriticalRestrictionBackground">#FFF5F5</Color>
+    <Color x:Key="SoonRestrictionColor">#F59E0B</Color>
+    <Color x:Key="SoonRestrictionBackground">#FFFBEB</Color>
+    <Color x:Key="CompletedRestrictionColor">#10B981</Color>
+    <Color x:Key="CompletedRestrictionBackground">#F0FDF4</Color>
     
     <!-- ============== ОСНОВНЫЕ СТИЛИ КАРТОЧЕК ============== -->
     
@@ -63,7 +63,8 @@
     <Style x:Key="AIScoreBadgeStyle" TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 12" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="Shadow">
             <Setter.Value>
@@ -113,7 +114,7 @@
         <Setter Property="IndicatorColor" 
                 Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
         <Setter Property="SelectedIndicatorColor" 
-                Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}" />
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         <Setter Property="IndicatorSize" Value="6" />
         <Setter Property="Margin" Value="0,4,0,0" />
     </Style>
@@ -134,14 +135,16 @@
     <Style x:Key="AIScoreLabelStyle" TargetType="Label">
         <Setter Property="FontSize" Value="10" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="White" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
     </Style>
     
     <!-- AI Score value -->
     <Style x:Key="AIScoreValueStyle" TargetType="Label">
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="TextColor" Value="White" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
     </Style>
     
     <!-- Instagram дата -->

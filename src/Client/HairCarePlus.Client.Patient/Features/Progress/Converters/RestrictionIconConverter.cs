@@ -2,73 +2,80 @@ using System;
 using System.Globalization;
 using System.Collections.Generic;
 using Microsoft.Maui.Controls;
+using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
+using System.Text;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.Converters
 {
     /// <summary>
-    /// Maps RestrictionTimer.Title to an icon file name in Resources/AppIcon.
-    /// Fallback returns a default prohibition icon.
+    /// Конвертер для преобразования типа ограничения в имя файла PNG (MAUI конвертирует SVG в PNG во время сборки).
     /// </summary>
-    public sealed class RestrictionIconConverter : IValueConverter
+    public class RestrictionIconConverter : IValueConverter
     {
-        private static readonly Dictionary<string, string> _map = new(StringComparer.OrdinalIgnoreCase)
+        // Альтернативные FontAwesome символы для fallback (могут быть не нужны, если SVG->PNG работает)
+        private static readonly Dictionary<RestrictionIconType, string> FontAwesomeAlternatives = new()
         {
-            {"курен", "IconSmoking"},
-            {"smok", "IconSmoking"},
-            {"алког", "IconAlcohol"},
-            {"alcohol", "IconAlcohol"},
-            {"спорт", "IconNoSport"},
-            {"sport", "IconNoSport"},
-            {"стрич", "IconNoHaircut"},
-            {"haircut", "IconNoHaircut"},
-            {"загар", "IconNoSun"},
-            {"sun", "IconNoSun"},
-            {"накло", "IconNoBendHead"},
-            {"tilt", "IconNoBendHead"},
-            {"сауна", "IconNoSweat"},
-            {"sweat", "IconNoSweat"},
-            {"swim", "IconNoWater"},
-            {"hat", "IconNoHats"},
-            {"sex", "IconNoSex"},
-            {"styling", "IconNoDye"},
-            {"басс", "IconNoWater"},
-            {"плаван", "IconNoWater"},
-            {"вода", "IconNoWater"},
-            {"душ", "IconNoWater"},
-            {"солярий", "IconNoWater"}
+            { RestrictionIconType.NoSmoking, "\uf54d" }, 
+            { RestrictionIconType.NoAlcohol, "\uf5c8" }, 
+            { RestrictionIconType.NoSex, "\uf3c4" }, 
+            { RestrictionIconType.NoHairCutting, "\uf2c7" }, 
+            { RestrictionIconType.NoHatWearing, "\uf5c1" }, 
+            { RestrictionIconType.NoStyling, "\uf5c3" }, 
+            { RestrictionIconType.NoLaying, "\uf564" }, 
+            { RestrictionIconType.NoSun, "\uf05e" }, 
+            { RestrictionIconType.NoSweating, "\uf769" }, 
+            { RestrictionIconType.NoSwimming, "\uf5c4" }, 
+            { RestrictionIconType.NoSporting, "\uf70c" }, 
+            { RestrictionIconType.NoTilting, "\uf3c4" }, 
         };
 
-        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Use full qualification to access MAUI Application's resources
-            var resources = global::Microsoft.Maui.Controls.Application.Current?.Resources as global::Microsoft.Maui.Controls.ResourceDictionary;
-            if (value is string title && resources != null)
-            {
-                // High-priority check: все ограничения, связанные с водой/плаванием
-                var lower = title.ToLowerInvariant();
-                if (lower.Contains("басс") || lower.Contains("плаван") || lower.Contains("вода") || lower.Contains("душ") || lower.Contains("солярий"))
-                {
-                    if (resources.TryGetValue("IconNoWater", out var waterRes) && waterRes is Microsoft.Maui.Controls.ImageSource waterImg)
-                        return waterImg;
-                }
+            if (value is not RestrictionIconType iconType)
+                return "no_smoking.png"; // fallback PNG filename (default)
 
-                foreach (var kvp in _map)
-                {
-                    if (title.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var key = kvp.Value;
-                        if (resources.TryGetValue(key, out var res) && res is Microsoft.Maui.Controls.ImageSource img)
-                            return img;
-                    }
-                }
-            }
-            // Fallback to smoking icon
-            if (resources != null && resources.TryGetValue("IconSmoking", out var fb) && fb is Microsoft.Maui.Controls.ImageSource fbImg)
-                return fbImg;
-            return null!;
+            // MAUI ожидает, что SVG, объявленные как <MauiImage>, будут доступны в рантайме как PNG.
+            // Поэтому строим имя ресурса в snake_case, чтобы совпадало с <LogicalName>="%(Filename).png" в csproj.
+            string iconFileName = iconType switch
+            {
+                RestrictionIconType.NoAlcohol     => "no_alchohol.png",   // сохранён с опечаткой
+                RestrictionIconType.NoHairCutting => "no_haircuting.png", // сохранён с опечаткой
+                _ => $"{ToSnakeCase(iconType.ToString())}.png"
+            };
+
+            return iconFileName; // Возвращаем только имя файла с расширением .png
         }
 
-        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-            => throw new NotSupportedException();
+        /// <summary>
+        /// Получить FontAwesome символ для типа ограничения (запасной вариант)
+        /// </summary>
+        public static string GetFontAwesomeIcon(RestrictionIconType iconType)
+        {
+            return FontAwesomeAlternatives.TryGetValue(iconType, out var icon) ? icon : "\uf54d";
+        }
+
+        /// <summary>
+        /// Преобразует PascalCase / CamelCase строку в snake_case.
+        /// </summary>
+        private static string ToSnakeCase(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            var sb = new StringBuilder(input.Length * 2);
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (char.IsUpper(c) && i > 0)
+                    sb.Append('_');
+                sb.Append(char.ToLowerInvariant(c));
+            }
+            return sb.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 } 
