@@ -130,6 +130,7 @@
 	<!-- CQRS shared abstractions -->
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
+	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj" />
 	</ItemGroup>
 
 </Project>

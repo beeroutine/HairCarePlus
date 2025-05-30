@@ -50,7 +50,7 @@ public sealed class RestrictionServiceCalendarAdapter : IRestrictionService
                     .Select(e => new RestrictionTimer
                     {
                         Title = e.Title,
-                        IconType = GetIconTypeFromTitle(e.Title),
+                        IconType = RestrictionIconMapper.FromTitle(e.Title),
                         DaysRemaining = Math.Max(1, (e.EndDate!.Value.Date - today.Date).Days + 1),
                         DetailedDescription = string.IsNullOrWhiteSpace(e.Description) ? GetDetailedDescription(e.Title) : e.Description
                     })
@@ -70,7 +70,7 @@ public sealed class RestrictionServiceCalendarAdapter : IRestrictionService
                     .Select(r => new RestrictionTimer
                     {
                         Title = r.Title,
-                        IconType = GetIconTypeFromTitle(r.Title),
+                        IconType = RestrictionIconMapper.FromTitle(r.Title),
                         DaysRemaining = Math.Max(1, (surgeryDate.AddDays(r.EndDay - 1) - today).Days + 1),
                         DetailedDescription = r.Description
                     })
@@ -91,55 +91,6 @@ public sealed class RestrictionServiceCalendarAdapter : IRestrictionService
             _logger.LogError(ex, "Failed to load restrictions from calendar service");
             return new List<RestrictionTimer>();
         }
-    }
-
-    /// <summary>
-    /// Определяет тип иконки ограничения на основе анализа заголовка.
-    /// </summary>
-    private static RestrictionIconType GetIconTypeFromTitle(string title)
-    {
-        var lowerTitle = title.ToLowerInvariant();
-        
-        return lowerTitle switch
-        {
-            var t when t.Contains("курен") || t.Contains("сигарет") || t.Contains("табак") || t.Contains("дым") => 
-                RestrictionIconType.NoSmoking,
-                
-            var t when t.Contains("алкоголь") || t.Contains("пиво") || t.Contains("вино") || t.Contains("водка") || t.Contains("выпив") => 
-                RestrictionIconType.NoAlcohol,
-                
-            var t when t.Contains("спорт") || t.Contains("физическ") || t.Contains("нагрузк") || t.Contains("тренировк") || t.Contains("зал") => 
-                RestrictionIconType.NoSporting,
-                
-            var t when t.Contains("солнц") || t.Contains("загар") || t.Contains("пляж") || t.Contains("солярий") || t.Contains("уф") => 
-                RestrictionIconType.NoSun,
-                
-            var t when t.Contains("стрижк") || t.Contains("машинк") || t.Contains("брить") || t.Contains("парикмах") => 
-                RestrictionIconType.NoHairCutting,
-                
-            var t when t.Contains("басс") || t.Contains("плаван") || t.Contains("вода") || t.Contains("душ") || t.Contains("ванн") => 
-                RestrictionIconType.NoSwimming,
-                
-            var t when t.Contains("шляп") || t.Contains("шапк") || t.Contains("кепк") || t.Contains("панам") || t.Contains("платок") => 
-                RestrictionIconType.NoHatWearing,
-                
-            var t when t.Contains("наклон") || t.Contains("голов") || t.Contains("нагиб") || t.Contains("накло") => 
-                RestrictionIconType.NoTilting,
-                
-            var t when t.Contains("лежать") || t.Contains("спать") || t.Contains("сон") || t.Contains("животе") => 
-                RestrictionIconType.NoLaying,
-                
-            var t when t.Contains("секс") || t.Contains("интим") || t.Contains("близост") => 
-                RestrictionIconType.NoSex,
-                
-            var t when t.Contains("укладк") || t.Contains("стайлинг") || t.Contains("гель") || t.Contains("воск") || t.Contains("лак") => 
-                RestrictionIconType.NoStyling,
-                
-            var t when t.Contains("пот") || t.Contains("сауна") || t.Contains("баня") || t.Contains("жара") => 
-                RestrictionIconType.NoSweating,
-                
-            _ => RestrictionIconType.NoSmoking // Default fallback
-        };
     }
 
     private static string GetDetailedDescription(string title)
