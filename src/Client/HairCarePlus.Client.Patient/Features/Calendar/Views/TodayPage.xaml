@@ -10,6 +10,8 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:local="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
              xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
+             xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
+             xmlns:commonViews="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
@@ -33,13 +35,14 @@
                         <TapGestureRecognizer Command="{Binding GoToTodayCommand}"/>
                     </Border.GestureRecognizers>
                     <Grid>
-                        <views:ProgressRingView 
-                            Progress="{Binding CompletionProgress}" 
-                            TrackColor="{AppThemeBinding Light={StaticResource ProgressTrackLight}, Dark=#525252}"
-                            ProgressColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryLight}}"
-                            StrokeWidth="3"
-                            WidthRequest="112" HeightRequest="112"
-                            HorizontalOptions="Center" VerticalOptions="Center"/>
+                        <commonViews:SkiaProgressRing
+                            x:Name="ProgressRingRef"
+                            Progress="{Binding CompletionProgress}"
+                            Thickness="6"
+                            HeightRequest="112"
+                            WidthRequest="112"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"/>
                         <VerticalStackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center" Padding="0">
                             <Label Text="{Binding TodayDay}"
                                    FontSize="48" FontAttributes="Bold"
@@ -99,7 +102,16 @@
                 </CollectionView.ItemsLayout>
             </CollectionView>
 
+            <!-- Confetti overlay using SkiaSharp -->
+            <skia:SKConfettiView x:Name="ConfettiView"
+                                 Grid.RowSpan="3"
+                                 IsAnimationEnabled="False"
+                                 InputTransparent="True"
+                                 HorizontalOptions="Fill"
+                                 VerticalOptions="Fill" />
+
         </Grid>
+
     </ContentPage.Content>
 
     <ContentPage.Resources>
@@ -346,9 +358,11 @@
             </DataTemplate>
             
             <!-- Empty View Template (Moved here) -->
-            <ControlTemplate x:Key="EventsEmptyViewTemplate">
+            <DataTemplate x:Key="EventsEmptyViewTemplate">
                 <StackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10" Padding="20">
-                    <Image Source="no_events_placeholder.png" HeightRequest="100" WidthRequest="100" Aspect="AspectFit" />
+                    <Label Text="📅" 
+                           FontSize="64"
+                           HorizontalOptions="Center" />
                     <Label Text="Нет событий на выбранную дату" 
                            HorizontalOptions="Center" 
                            FontSize="18"
@@ -359,7 +373,7 @@
                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}"
                            HorizontalTextAlignment="Center"/>
                 </StackLayout>
-            </ControlTemplate>
+            </DataTemplate>
 
             <!-- Style for restriction circular icon -->
             <Style x:Key="RestrictionIconBorderStyle" TargetType="Border">

@@ -29,6 +29,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture;
 using HairCarePlus.Client.Patient.Features.Progress;
 using Microsoft.Maui.Handlers;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -46,6 +47,7 @@ public static class MauiProgram
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
 			.UseMauiCommunityToolkitCamera()
+			.UseSkiaSharp()
 			.RegisterCalendarRoutes()
 			.RegisterPhotoCaptureRoutes()
 			.RegisterProgressRoutes()

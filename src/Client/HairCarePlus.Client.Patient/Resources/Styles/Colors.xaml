@@ -96,9 +96,9 @@
     <Color x:Key="PressedOverlayLight">#0000000A</Color> <!-- black 4% -->
     <Color x:Key="PressedOverlayDark">#FFFFFF33</Color> <!-- white 20% -->
 
-    <!-- Progress Ring track colors -->
-    <Color x:Key="ProgressTrackLight">#E0E0E0</Color>
-    <Color x:Key="ProgressTrackDark">#404040</Color>
+    <!-- Progress Ring track matches card background per theme -->
+    <Color x:Key="ProgressTrackLight">#EAF4FC</Color> <!-- same as TaskCardBackgroundLight -->
+    <Color x:Key="ProgressTrackDark">#1E2A35</Color> <!-- same as TaskCardBackgroundDark -->
 
     <!-- Brushes for shadows -->
     <SolidColorBrush x:Key="CardShadowLightBrush" Color="{StaticResource CardShadowLight}"/>
@@ -123,5 +123,9 @@
     <!-- Text color on Task/Event cards -->
     <Color x:Key="TaskCardTextColorLight">Black</Color>
     <Color x:Key="TaskCardTextColorDark">White</Color>
+
+    <!-- Filled progress arc is high-contrast (black/white) -->
+    <Color x:Key="RingPrimaryLight">#000000</Color>
+    <Color x:Key="RingPrimaryDark">#FFFFFF</Color>
 
 </ResourceDictionary>
