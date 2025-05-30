@@ -611,19 +611,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 if (TryGetCache(date, out var cachedEvents, out var lastUpd) &&
                     (DateTimeOffset.Now - lastUpd) <= _cacheExpiration)
                 {
-                    // Use cached data
-                    _logger.LogInformation("Cache hit for date {Date}. Events count: {Count}", date.ToShortDateString(), cachedEvents.Count);
+                    // Use cached data (debug-level to avoid log spam in production)
+                    _logger.LogDebug("Cache hit for date {Date}. Events count: {Count}", date.ToShortDateString(), cachedEvents.Count);
                     UpdateEventCountsForDate(date, cachedEvents);
                     continue;
                 }
-                _logger.LogInformation("Cache miss for date {Date}", date.ToShortDateString());
+                _logger.LogDebug("Cache miss for date {Date}", date.ToShortDateString());
 
                 // Load from service with retry
                 var events = await _eventLoader.LoadEventsForDateAsync(date, cancellationToken);
                 
                 // Update cache and counts
                 SetCache(date, events);
-                _logger.LogInformation("Cached {Count} events for date {Date}", events.Count, date.ToShortDateString());
+                _logger.LogDebug("Cached {Count} events for date {Date}", events.Count, date.ToShortDateString());
                 UpdateEventCountsForDate(date, events);
             }
         }
@@ -704,7 +704,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 else
                 {
                     _cacheMisses++;
-                    _logger.LogInformation("Cache miss for {Date}. Total misses: {CacheMisses}/{TotalRequests} ({MissPercentage}%)", 
+                    _logger.LogDebug("Cache miss for {Date}. Total misses: {CacheMisses}/{TotalRequests} ({MissPercentage}%)", 
                         selectedDateKey.ToShortDateString(),
                         _cacheMisses, _totalRequests,
                         (int)((_cacheMisses / (float)_totalRequests) * 100));
@@ -722,7 +722,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         }
                         else 
                         {
-                            _logger.LogInformation("Loading events for {Date}", selectedDateKey.ToShortDateString());
+                            _logger.LogDebug("Loading events for {Date}", selectedDateKey.ToShortDateString());
                         }
                         
                         // Загрузка событий через CQRS QueryBus
@@ -786,7 +786,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     SetCache(selectedDateKey, events);
                     
                     await UpdateUIWithEvents(events, cancellationToken);
-                    _logger.LogInformation("Successfully loaded and cached {Count} events for {Date}", 
+                    _logger.LogDebug("Successfully loaded and cached {Count} events for {Date}", 
                         events.Count(), selectedDateKey.ToShortDateString());
                 }
             }

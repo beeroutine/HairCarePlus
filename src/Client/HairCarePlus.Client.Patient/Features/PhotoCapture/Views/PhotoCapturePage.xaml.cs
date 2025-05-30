@@ -11,6 +11,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using Microsoft.Maui.ApplicationModel;
 // TODO: add CommunityToolkit.Maui.Camera integration when API finalized
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
@@ -179,7 +180,7 @@ public partial class PhotoCapturePage : ContentPage
 
         if (!_previewReady)
         {
-            _logger.LogWarning("Preview not ready – attempting to start preview before capture.");
+            _logger.LogDebug("Preview not ready – attempting to start preview before capture.");
             await TryStartPreviewAsync(CancellationToken.None);
         }
     }
@@ -281,7 +282,11 @@ public partial class PhotoCapturePage : ContentPage
                     {
                         try
                         {
-                            await Shell.Current.GoToAsync("//progress");
+                            // Ensure navigation happens on the UI thread to avoid CalledFromWrongThreadException
+                            await MainThread.InvokeOnMainThreadAsync(async () =>
+                            {
+                                await Shell.Current.GoToAsync("//progress");
+                            });
                         }
                         catch (Exception navEx)
                         {
@@ -311,7 +316,7 @@ public partial class PhotoCapturePage : ContentPage
 
         if (!_previewReady)
         {
-            _logger.LogWarning("Preview not ready – attempting to start preview before capture.");
+            _logger.LogDebug("Preview not ready – attempting to start preview before capture.");
             await TryStartPreviewAsync(CancellationToken.None);
         }
 
