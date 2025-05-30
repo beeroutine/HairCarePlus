@@ -86,6 +86,9 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
                             AiScore = 0
                         });
                     }
+
+                    // ensure chronological order oldest→newest
+                    photos = photos.OrderBy(p => p.CapturedAt).ToList();
                 }
             }
             catch (Exception ex)

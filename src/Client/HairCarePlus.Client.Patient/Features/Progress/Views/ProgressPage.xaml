@@ -128,6 +128,7 @@
             <conv:RestrictionShortPhraseConverter x:Key="RestrictionShortPhraseConverter" />
             <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
             <conv:EqualToConverter x:Key="EqualToConverter" />
+            <converters:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
 
         </ResourceDictionary>
     </ContentPage.Resources>

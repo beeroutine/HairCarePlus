@@ -20,6 +20,10 @@ public class HairTransplantEventService : ICalendarService
     private readonly IHairTransplantEventRepository _repository;
     private readonly ILocalStorageService _localStorage;
     private const string SYNC_TIME_KEY = "calendar_last_sync";
+    private static readonly TimeSpan _restrictionsCacheTtl = TimeSpan.FromMinutes(10);
+    private static List<CalendarEvent>? _cachedRestrictions;
+    private static DateTime _restrictionsCacheTimestamp;
+    private static readonly object _cacheLock = new();
 
     public HairTransplantEventService(
         IHairTransplantEventRepository repository,
@@ -160,18 +164,31 @@ public class HairTransplantEventService : ICalendarService
 
     async Task<List<CalendarEvent>> ICalendarService.GetActiveRestrictionsAsync()
     {
-        // Актуальные ограничения — это события-предупреждения (CriticalWarning)
-        // с датой окончания в будущем.
+        // Return cached if fresh
+        lock (_cacheLock)
+        {
+            if (_cachedRestrictions != null && (DateTime.UtcNow - _restrictionsCacheTimestamp) < _restrictionsCacheTtl)
+            {
+                // Defensive copy to prevent external mutation
+                return _cachedRestrictions.Select(e => e).ToList();
+            }
+        }
 
         var today = DateTime.Today;
         var rangeEnd = today.AddDays(365);
-
         var events = await GetEventsForRangeAsync(today, rangeEnd);
 
         var activeRestrictions = events
             .Where(e => e.Type == DomainEventType.Warning && e.EndDate >= today)
             .Select(MapToCalendarEvent)
             .ToList();
+
+        // Update cache
+        lock (_cacheLock)
+        {
+            _cachedRestrictions = activeRestrictions;
+            _restrictionsCacheTimestamp = DateTime.UtcNow;
+        }
 
         return activeRestrictions;
     }

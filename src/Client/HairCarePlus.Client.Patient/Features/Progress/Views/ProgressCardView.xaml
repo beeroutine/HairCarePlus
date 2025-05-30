@@ -12,6 +12,7 @@
             <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
             <conv:NullToBoolConverter x:Key="NullToBoolConverter" />
             <conv:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBoolConverter" />
+            <converters:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
         </ResourceDictionary>
     </ContentView.Resources>
 
@@ -36,7 +37,7 @@
                             <DataTemplate x:DataType="models:ProgressPhoto">
                                 <Grid>
                                     <!-- Убрал TapGestureRecognizer для KISS принципа -->
-                                    <Image Source="{Binding LocalPath}"
+                                    <Image Source="{Binding LocalPath, Converter={StaticResource FilePathToImageSourceConverter}}"
                                            Aspect="AspectFill" />
                                     <!-- Градиент для лучшего контраста с badge -->
                                     <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
@@ -54,20 +55,6 @@
                             Margin="16,16">
                         <Label Text="{Binding Title}"
                                Style="{StaticResource DayBadgeTextStyle}" />
-                    </Border>
-
-                    <!-- AI Score badge в правом верхнем углу -->
-                    <Border Style="{StaticResource AIScoreBadgeStyle}"
-                            HorizontalOptions="End"
-                            VerticalOptions="Start"
-                            Margin="16,16"
-                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
-                        <HorizontalStackLayout Spacing="4">
-                            <Label Text="AI" 
-                                   Style="{StaticResource AIScoreLabelStyle}" />
-                            <Label Text="{Binding AiReport.Score}"
-                                   Style="{StaticResource AIScoreValueStyle}" />
-                        </HorizontalStackLayout>
                     </Border>
                 </Grid>
             </Border>
