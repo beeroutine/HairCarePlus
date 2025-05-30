@@ -9,11 +9,17 @@
     xmlns:progress="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="True"
+    Shell.BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
+    Shell.ForegroundColor="{AppThemeBinding Light=#121212, Dark=#F7F7F7}"
+    Shell.TitleColor="{AppThemeBinding Light=#121212, Dark=#F7F7F7}"
+    Shell.DisabledColor="{AppThemeBinding Light=#BDBDBD, Dark=#666666}"
+    Shell.UnselectedColor="{AppThemeBinding Light=#757575, Dark=#9E9E9E}"
+    Shell.NavBarHasShadow="False"
     Title="HairCarePlus">
 
     <Shell.Resources>
         <Style TargetType="Tab">
-            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light=#F7F7F7, Dark=#121212}" />
             <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
             <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
         </Style>

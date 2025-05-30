@@ -1,0 +1,39 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="MainTheme" parent="MainTheme.Base">
+        <!-- Transparent status bar -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <!-- Optional: make the status bar icons dark for light backgrounds -->
+        <item name="android:windowLightStatusBar">true</item> <!-- Use 'false' for dark backgrounds -->
+        
+        <!-- Transparent navigation bar -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Optional: make the navigation bar icons dark for light backgrounds -->
+        <item name="android:windowLightNavigationBar">true</item> <!-- Use 'false' for dark backgrounds -->
+        
+        <!-- Ensure the content draws behind the system bars -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:fitsSystemWindows">false</item> <!-- This is important -->
+
+        <!-- Style for BottomNavigationView (TabBar) -->
+        <item name="bottomNavigationStyle">@style/Widget.App.BottomNavigationView</item>
+    </style>
+
+    <style name="MainTheme.Base" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/pageBackgroundColorLight</item>
+    </style>
+
+    <!-- Custom BottomNavigationView style -->
+    <style name="Widget.App.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemRippleColor">@android:color/transparent</item>
+        <!-- Ensure no extra padding that might cause the gap -->
+        <item name="android:paddingBottom">0dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:layout_height">wrap_content</item> <!-- Or specific height if needed -->
+    </style>
+</resources> 

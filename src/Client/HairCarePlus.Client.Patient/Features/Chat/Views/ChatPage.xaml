@@ -6,10 +6,12 @@
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
              xmlns:entities="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Domain.Entities"
+             xmlns:android="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
-             NavigationPage.HasNavigationBar="False">
+             NavigationPage.HasNavigationBar="False"
+             android:Application.WindowSoftInputModeAdjust="Resize">
 
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -23,7 +25,7 @@
     </ContentPage.Resources>
 
     <Shell.TitleView>
-        <Grid ColumnDefinitions="80,*,80">
+        <Grid ColumnDefinitions="80,*,80" BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
             <Button Text="←"
                     Command="{Binding BackCommand}"
                     HorizontalOptions="Start"
@@ -31,7 +33,7 @@
                     FontAttributes="Bold"
                     TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                     BackgroundColor="Transparent"
-                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    Shadow="{StaticResource SmallShadow}"
                     Margin="0"
                     Padding="0"
                     HeightRequest="44"
@@ -56,6 +58,9 @@
     </Shell.TitleView>
 
     <Grid RowDefinitions="*,Auto">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
+        </Grid.GestureRecognizers>
         <!-- Messages -->
         <CollectionView Grid.Row="0"
                        x:Name="MessagesCollection"
@@ -64,9 +69,6 @@
                        VerticalOptions="End"
                        Margin="8,8,8,0"
                        VerticalScrollBarVisibility="Never">
-            <CollectionView.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
-            </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="entities:ChatMessage">
                     <Grid Padding="4,4">
@@ -97,7 +99,7 @@
                                     Margin="8,6,80,6"
                                     StrokeShape="RoundRectangle 18"
                                     StrokeThickness="0"
-                                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                                    Shadow="{StaticResource SmallShadow}"
                                     Padding="12,8">
                                 <Border.Triggers>
                                     <!-- Settings for patient messages -->
@@ -252,7 +254,7 @@
                        CornerRadius="12"
                        x:Name="ReplyIndicator"
                        BorderColor="Transparent"
-                       HasShadow="{OnPlatform iOS=True, Android=False}">
+                       HasShadow="True">
                     <Frame.Triggers>
                         <DataTrigger TargetType="Frame" Binding="{Binding ReplyToMessage.SenderId}" Value="patient">
                             <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
@@ -335,12 +337,13 @@
             <!-- Input Controls -->
             <Grid Grid.Row="2"
                   ColumnDefinitions="44,*,44"
-                  Padding="8,6,8,8">
+                  Padding="8,6,8,8"
+                  VerticalOptions="End">
                 <Button Grid.Column="0"
                        Text="＋"
                        BackgroundColor="Transparent"
                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                       Shadow="{StaticResource SmallShadow}"
                        FontSize="24"
                        Padding="0"
                        Margin="0"
@@ -358,7 +361,7 @@
                        Padding="8,0"
                        CornerRadius="18"
                        HasShadow="True"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                       Shadow="{StaticResource SmallShadow}"
                        BorderColor="Transparent"
                        Margin="4,0,4,0"
                        MinimumHeightRequest="38"
@@ -383,7 +386,7 @@
                        Command="{Binding SendMessageCommand}"
                        BackgroundColor="Transparent"
                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                       Shadow="{StaticResource SmallShadow}"
                        FontSize="24"
                        FontAttributes="Bold"
                        Padding="0"

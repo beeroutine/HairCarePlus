@@ -127,6 +127,23 @@ public static class MauiProgram
 		UICollectionViewCell.Appearance.BackgroundColor = UIColor.Clear;
 #endif
 
+#if ANDROID
+		// Remove default blue underline / background tint and focus ring from Editor controls
+		EditorHandler.Mapper.AppendToMapping("NoUnderline", (handler, view) =>
+		{
+			var native = handler.PlatformView;
+			// Remove background drawable/shadow
+			native.Background = null; // clears default Material shape with underline
+			native.SetBackgroundColor(Android.Graphics.Color.Transparent);
+			native.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+			// Optional: disable spell-check underline for unknown words
+			native.InputType |= Android.Text.InputTypes.TextFlagNoSuggestions;
+			native.SetPadding(0, 0, 0, 0);
+			native.StateListAnimator = null;
+			native.SetHighlightColor(Android.Graphics.Color.Transparent);
+		});
+#endif
+
 #if DEBUG
 		builder.Logging.AddDebug()
 			// Reduce verbosity of EF Core to minimise log overhead during development

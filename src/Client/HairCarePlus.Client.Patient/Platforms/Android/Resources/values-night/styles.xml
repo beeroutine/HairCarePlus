@@ -1,0 +1,36 @@
+<resources>
+    <style name="MainTheme.Base" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/pageBackgroundColorDark</item> <!-- Use dark background -->
+    </style>
+
+    <style name="MainTheme" parent="MainTheme.Base">
+        <!-- Transparent status bar -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item> <!-- Icons should be light for dark background -->
+        
+        <!-- Transparent navigation bar -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">false</item> <!-- Icons should be light for dark background -->
+        
+        <!-- Ensure the content draws behind the system bars -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:fitsSystemWindows">false</item>
+
+        <!-- Style for BottomNavigationView (TabBar) -->
+        <item name="bottomNavigationStyle">@style/Widget.App.BottomNavigationView</item>
+    </style>
+
+    <!-- Custom BottomNavigationView style (can be same as light or specific for dark) -->
+    <style name="Widget.App.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemRippleColor">@android:color/transparent</item>
+        <!-- Ensure no extra padding that might cause the gap -->
+        <item name="android:paddingBottom">0dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+</resources> 
