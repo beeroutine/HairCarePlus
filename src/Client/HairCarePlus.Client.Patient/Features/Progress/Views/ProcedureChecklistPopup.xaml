@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.ProcedureChecklistPopup"
+              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+              xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+              xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
+              x:DataType="vm:ProcedureChecklistViewModel"
+              CanBeDismissedByTappingOutsideOfPopup="True"
+              Color="#80000000">
+    <Border BackgroundColor="{StaticResource Surface}" Padding="24" StrokeShape="RoundRectangle 16">
+        <VerticalStackLayout Spacing="16" WidthRequest="300">
+            <Label Text="Today's procedures" FontAttributes="Bold" FontSize="18" />
+            <CollectionView ItemsSource="{Binding Procedures}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProcedureCheck">
+                        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                            <CheckBox IsChecked="{Binding IsDone}" />
+                            <Label Text="{Binding Title}" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Done" Command="{Binding CloseCommand}" />
+        </VerticalStackLayout>
+    </Border>
+</toolkit:Popup> 

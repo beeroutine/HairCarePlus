@@ -17,12 +17,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
     public sealed class JsonHairTransplantEventGenerator : IHairTransplantEventGenerator
     {
         private const string ScheduleFileName = "HairTransplantSchedule.json";
+        private const string RestrictionScheduleFileName = "RestrictionSchedule.json";
 
         private readonly Lazy<Task<List<ScheduleDay>>> _lazySchedule;
+        private readonly Lazy<Task<List<RestrictionItem>>> _lazyRestrictionSchedule;
 
         public JsonHairTransplantEventGenerator()
         {
             _lazySchedule = new Lazy<Task<List<ScheduleDay>>>(LoadScheduleAsync);
+            _lazyRestrictionSchedule = new Lazy<Task<List<RestrictionItem>>>(LoadRestrictionScheduleAsync);
         }
 
         #region Public IHairTransplantEventGenerator implementation
@@ -70,8 +73,35 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
 
         public async Task<IEnumerable<CalendarEvent>> GenerateRestrictionEventsAsync(DateTime startDate)
         {
-            var schedule = await _lazySchedule.Value;
-            return FilterByType(schedule, startDate, "CriticalWarning");
+            var restrictionSchedule = await _lazyRestrictionSchedule.Value;
+
+            var events = new List<CalendarEvent>();
+
+            foreach (var item in restrictionSchedule)
+            {
+                var restrictionStart = startDate.Date.AddDays(item.StartDay - 1);
+                var restrictionEnd = startDate.Date.AddDays(item.EndDay - 1);
+
+                if (restrictionEnd < startDate.Date) continue;
+
+                var now = DateTime.UtcNow;
+
+                events.Add(new CalendarEvent
+                {
+                    Title = item.Title,
+                    Description = item.Description ?? string.Empty,
+                    Date = restrictionStart,
+                    StartDate = restrictionStart,
+                    EndDate = restrictionEnd,
+                    EventType = EventType.CriticalWarning,
+                    Priority = EventPriority.Normal,
+                    TimeOfDay = TimeOfDay.Morning,
+                    CreatedAt = now,
+                    ModifiedAt = now
+                });
+            }
+
+            return events;
         }
 
         public async Task<IEnumerable<CalendarEvent>> GenerateRecommendationEventsAsync(DateTime startDate)
@@ -142,6 +172,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             return schedule ?? new List<ScheduleDay>();
         }
 
+        private static async Task<List<RestrictionItem>> LoadRestrictionScheduleAsync()
+        {
+            await using var stream = await FileSystem.OpenAppPackageFileAsync(RestrictionScheduleFileName);
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+
+            var list = JsonSerializer.Deserialize<List<RestrictionItem>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            return list ?? new List<RestrictionItem>();
+        }
+
         #endregion
 
         #region DTOs
@@ -155,6 +199,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
         {
             public string Title { get; set; } = string.Empty;
             public string Type { get; set; } = string.Empty;
+        }
+
+        private sealed class RestrictionItem
+        {
+            public string Title { get; set; } = string.Empty;
+            public int StartDay { get; set; }
+            public int EndDay { get; set; }
+            public int DurationDays { get; set; }
+            public string? Description { get; set; }
         }
         #endregion
     }

@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
-		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net8.0-android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
+		<!-- Upgrade to .NET 9 TFMs -->
+		<TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
+		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net9.0-android'">android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -16,7 +17,7 @@
 
 		<OutputType>Exe</OutputType>
 		<RootNamespace>HairCarePlus.Client.Patient</RootNamespace>
-		<UseMaui>true</UseMaui>
+		<UsingMaui>true</UsingMaui>
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -27,15 +28,14 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.haircareplus.client.patient</ApplicationId>
-		<ApplicationIdGuid>5F05E0E4-8F6F-4F0D-8E69-9BF88B8866D6</ApplicationIdGuid>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
@@ -61,30 +61,43 @@
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 
+		<!-- SVG Restriction Icons - используем MauiImage, чтобы MAUI сконвертировал их в PNG -->
+		<MauiImage Include="Resources\AppIcon\svg\*.svg">
+		  <!-- Файлы будут доступны по имени без подпапок -->
+		  <LogicalName>%(Filename).png</LogicalName>
+		</MauiImage>
+
 		<!-- Custom Fonts -->
-		<MauiFont Include="Resources\Fonts\*" />
+		<MauiFont Include="Resources\Fonts\**\*.ttf" />
 
 		<!-- Add Material Icons font -->
 		<MauiFont Include="Resources\Fonts\MaterialIcons-Regular.ttf" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+
+		<!-- Make AppIcon PNGs accessible at runtime -->
+		<MauiImage Include="Resources\AppIcon\*.png" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Maui" Version="8.*" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.*" />
-		<PackageReference Include="Syncfusion.Maui.Scheduler" Version="28.*" />
-		<PackageReference Include="Syncfusion.Maui.Core" Version="28.*" />
-		<PackageReference Include="Syncfusion.Maui.TabView" Version="28.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*">
+		
+		<PackageReference Include="CommunityToolkit.Maui" Version="9.0.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Core" Version="9.0.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Markup" Version="5.0.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Camera" Version="2.0.3" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-preview.5.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0-preview.5.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.5.*">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+		<!-- Replace Syncfusion commercial controls with free MIT-licensed calendar control -->
+		<PackageReference Include="Plugin.Maui.Calendar" Version="2.0.5" />
+		<PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -111,6 +124,12 @@
 	<!-- Include hair transplant schedule as Maui asset to be accessible via FileSystem.OpenAppPackageFileAsync -->
 	<ItemGroup>
 	  <MauiAsset Include="Features\Calendar\Data\HairTransplantSchedule.json" LogicalName="HairTransplantSchedule.json" />
+	  <MauiAsset Include="Features\Calendar\Data\RestrictionSchedule.json" LogicalName="RestrictionSchedule.json" />
+	</ItemGroup>
+
+	<!-- CQRS shared abstractions -->
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
 	</ItemGroup>
 
 </Project>

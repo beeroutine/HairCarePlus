@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HairCarePlus.Client.Patient.Features.PhotoCapture.Views.PhotoCapturePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities"
+    xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Converters"
+    xmlns:common="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    x:DataType="vm:PhotoCaptureViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="Transparent">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="..\Styles\PhotoCaptureStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:EqualityConverter x:Key="EqualityConverter" />
+            <converters:LuxOkConverter x:Key="LuxOkConverter" />
+            <common:InverseBoolConverter x:Key="InverseBoolConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid
+        RowDefinitions="Auto,*,Auto"
+        ColumnDefinitions="*"
+        Padding="0">
+        
+        <!-- Top bar: template selector + switch camera button -->
+        <Grid Grid.Row="0" Grid.Column="0" Padding="16,12" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+            <!-- Zone selector -->
+            <CollectionView
+                ItemsSource="{Binding Templates}"
+                SelectionMode="Single"
+                SelectedItem="{Binding SelectedTemplate}"
+                x:Name="TemplatesCollection"
+                HorizontalScrollBarVisibility="Never"
+                HeightRequest="44">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="16" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:CaptureTemplate">
+                        <Border Style="{StaticResource CaptureTemplateChipStyle}"
+                                IsEnabled="{Binding IsCaptured, Converter={StaticResource InverseBoolConverter}}">
+                            <Grid>
+                                <Label x:Name="PART_Text" Text="{Binding Name}" FontSize="14" />
+                                <Label Text="✓" IsVisible="{Binding IsCaptured}" HorizontalOptions="End" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Switch camera button -->
+            <ImageButton Grid.Column="1" WidthRequest="40" HeightRequest="40" BackgroundColor="Transparent" Command="{Binding ToggleFacingCommand}">
+                <ImageButton.Source>
+                    <!-- Use MaterialIcons which is bundled with the app to avoid missing font warnings -->
+                    <FontImageSource Glyph="↻" Size="26" FontFamily="MaterialIcons" Color="{StaticResource colorOnSurface}" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+
+        <!-- Camera preview with overlay -->
+        <Grid Grid.Row="1" Grid.Column="0">
+            <!-- Actual camera preview -->
+            <toolkit:CameraView x:Name="Camera" HorizontalOptions="Fill" VerticalOptions="Fill" />
+
+            <!-- Overlay image to guide user -->
+            <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
+
+            <!-- Semi-transparent badge showing current Lux level -->
+            <Border BackgroundColor="#66000000"
+                    Padding="6,2"
+                    StrokeThickness="0"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Start"
+                    Margin="12">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="6" />
+                </Border.StrokeShape>
+                <HorizontalStackLayout Spacing="4">
+                    <Label Text="{Binding Lux, StringFormat='{0} lx'}" FontSize="14" TextColor="White" />
+                    <Label Text="✓" IsVisible="{Binding Lux, Converter={StaticResource LuxOkConverter}}" FontSize="14" TextColor="Lime" />
+                </HorizontalStackLayout>
+            </Border>
+
+            <!-- Button to preview the last captured photo -->
+            <ImageButton
+                x:Name="PreviewButton"
+                WidthRequest="44" HeightRequest="44"
+                HorizontalOptions="End" VerticalOptions="End"
+                Margin="16"
+                BackgroundColor="Transparent"
+                IsVisible="{Binding LastPhotoPath, Converter={StaticResource StringNotEmptyConverter}}"
+                Clicked="OnPreviewClicked">
+                <ImageButton.Source>
+                    <FontImageSource Glyph="{StaticResource IconPhoto}" Size="26" FontFamily="MaterialIcons" Color="{StaticResource colorOnSurface}" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+
+        <!-- Shutter button -->
+        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource ShutterButtonStyle}">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnShutterTapped" />
+            </Border.GestureRecognizers>
+        </Border>
+    </Grid>
+</ContentPage> 

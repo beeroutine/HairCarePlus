@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Тень по умолчанию для карточек -->
+    <Shadow x:Key="SmallShadow" Radius="6" Opacity="0.3" Offset="0,2" />
+
+    <!-- Базовый стиль карточки для Today и Progress страниц -->
+    <Style x:Key="BaseCardStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, 
+                                       Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="4,6" />
+    </Style>
+    
+    <!-- Минималистичный стиль кругов -->
+    <Style x:Key="MinimalCircleStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="Ellipse" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="44" />
+        <Setter Property="WidthRequest" Value="44" />
+    </Style>
+
+    <!-- Стиль для основного заголовка страницы -->
+    <Style x:Key="PageHeaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+    </Style>
+
+    <!-- Стиль для подзаголовков -->
+    <Style x:Key="SectionHeaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+    </Style>
+
+    <!-- Стиль для основного текста -->
+    <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
+        <Setter Property="LineHeight" Value="1.4" />
+    </Style>
+
+    <!-- Стиль для вспомогательного текста -->
+    <Style x:Key="CaptionTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
+    </Style>
+
+    <!-- Стандартные отступы и интервалы -->
+    <x:Double x:Key="PagePadding">20</x:Double>
+    <x:Double x:Key="PageTopPadding">24</x:Double>
+    <x:Double x:Key="StandardSpacing">16</x:Double>
+    <x:Double x:Key="SmallSpacing">8</x:Double>
+    <x:Double x:Key="LargeSpacing">24</x:Double>
+
+    <!-- Размеры элементов -->
+    <x:Double x:Key="StandardCircleSize">44</x:Double>
+    <x:Double x:Key="LargeCircleSize">112</x:Double>
+    <x:Double x:Key="StandardCornerRadius">20</x:Double>
+    <x:Double x:Key="SmallCornerRadius">8</x:Double>
+
+</ResourceDictionary> 

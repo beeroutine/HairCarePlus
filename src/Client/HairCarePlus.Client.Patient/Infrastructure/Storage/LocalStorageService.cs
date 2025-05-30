@@ -48,136 +48,28 @@ public class LocalStorageService : ILocalStorageService
         try
         {
             using var context = GetDbContext();
+            // Ensure the EF Core model is applied; this creates missing tables based on the model metadata.
+            await context.Database.EnsureCreatedAsync();
             if (!await DoesDatabaseExistAsync())
             {
                 _logger?.LogDebug("Database does not exist, creating...");
-                await CreateDatabaseWithSqliteAsync();
-                _logger?.LogDebug("Database created successfully");
+                await context.Database.EnsureCreatedAsync();
+                _logger?.LogDebug("Database created successfully via EF EnsureCreated");
             }
             else
             {
-                _logger?.LogDebug("Database exists, verifying schema...");
-                if (!await VerifyDatabaseTablesAsync())
-                {
-                    _logger?.LogDebug("Database schema verification failed, recreating...");
-                    await CreateDatabaseWithSqliteAsync();
-                    _logger?.LogDebug("Database recreated successfully");
-                }
+                _logger?.LogDebug("Database exists, verifying schema via EF model...");
+                // EnsureCreated will create missing tables without dropping existing data.
+                var created = await context.Database.EnsureCreatedAsync();
+                if (created)
+                    _logger?.LogDebug("Database schema was missing and is now created");
                 else
-                {
-                    _logger?.LogDebug("Database schema verified, skipping initialization");
-                }
+                    _logger?.LogDebug("Database schema verified, skipping manual recreation");
             }
         }
         finally
         {
             _initLock.Release();
-        }
-    }
-
-    private async Task<bool> VerifyDatabaseTablesExistAsync()
-    {
-        try
-        {
-            using var connection = new SqliteConnection($"Data Source={_databasePath}");
-            await connection.OpenAsync();
-            
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
-                SELECT name FROM sqlite_master 
-                WHERE type='table' 
-                AND name IN ('Events', 'ChatMessages')";
-            
-            using var reader = await command.ExecuteReaderAsync();
-            var tableCount = 0;
-            while (await reader.ReadAsync())
-            {
-                tableCount++;
-                _logger?.LogDebug("Found table: {Table}", reader.GetString(0));
-            }
-            
-            return tableCount == 2; // We need both Events and ChatMessages tables
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogDebug(ex, "Error verifying database tables");
-            return false;
-        }
-    }
-
-    private async Task CreateDatabaseWithSqliteAsync()
-    {
-        try
-        {
-            _logger?.LogDebug("Creating database tables using direct SQL commands");
-            
-            using var connection = new SqliteConnection($"Data Source={_databasePath}");
-            await connection.OpenAsync();
-            
-            // Create Events table
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Events (
-                    Id TEXT PRIMARY KEY,
-                    Title TEXT NOT NULL,
-                    Description TEXT NOT NULL,
-                    Date TEXT NOT NULL,
-                    StartDate TEXT NOT NULL,
-                    EndDate TEXT,
-                    CreatedAt TEXT NOT NULL,
-                    ModifiedAt TEXT NOT NULL,
-                    IsCompleted INTEGER NOT NULL,
-                    EventType INTEGER NOT NULL,
-                    Priority INTEGER NOT NULL,
-                    TimeOfDay INTEGER NOT NULL,
-                    ReminderTime TEXT NOT NULL,
-                    ExpirationDate TEXT
-                )";
-                await command.ExecuteNonQueryAsync();
-                _logger?.LogDebug("Created Events table");
-            }
-            
-            // Create ChatMessages table (not Messages)
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = @"
-                CREATE TABLE IF NOT EXISTS ChatMessages (
-                    LocalId INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ServerMessageId TEXT,
-                    ConversationId TEXT NOT NULL,
-                    Content TEXT NOT NULL,
-                    SentAt TEXT NOT NULL,
-                    Timestamp TEXT,
-                    SenderId TEXT NOT NULL,
-                    RecipientId TEXT,
-                    Type INTEGER,
-                    Status INTEGER,
-                    SyncStatus INTEGER,
-                    IsRead INTEGER,
-                    AttachmentUrl TEXT,
-                    LocalAttachmentPath TEXT,
-                    ThumbnailUrl TEXT,
-                    LocalThumbnailPath TEXT,
-                    FileSize INTEGER,
-                    FileName TEXT,
-                    MimeType TEXT,
-                    ReadAt TEXT,
-                    DeliveredAt TEXT,
-                    ReplyToLocalId INTEGER,
-                    CreatedAt TEXT,
-                    LastModifiedAt TEXT
-                )";
-                await command.ExecuteNonQueryAsync();
-                _logger?.LogDebug("Created ChatMessages table");
-            }
-            
-            _logger?.LogDebug("Database schema created successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Error creating database with SQLite");
-            throw;
         }
     }
 
@@ -278,36 +170,6 @@ public class LocalStorageService : ILocalStorageService
         }
         catch
         {
-            return false;
-        }
-    }
-
-    private async Task<bool> VerifyDatabaseTablesAsync()
-    {
-        try
-        {
-            using var connection = new SqliteConnection($"Data Source={_databasePath}");
-            await connection.OpenAsync();
-            
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
-                SELECT name FROM sqlite_master 
-                WHERE type='table' 
-                AND name IN ('Events', 'ChatMessages')";
-            
-            using var reader = await command.ExecuteReaderAsync();
-            var tableCount = 0;
-            while (await reader.ReadAsync())
-            {
-                tableCount++;
-                _logger?.LogDebug("Found table: {Table}", reader.GetString(0));
-            }
-            
-            return tableCount == 2; // We need both Events and ChatMessages tables
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogDebug(ex, "Error verifying database tables");
             return false;
         }
     }

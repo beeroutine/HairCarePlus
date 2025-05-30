@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# HairCarePlus Development Guidelines
+
+The HairCare+ codebase adheres to Clean Architecture, MVVM, CQRS, SOLID, and KISS principles.
+
+Key reference documents (always consult before coding):
+- README.md — core architecture, tech stack, and UX rules
+- Features/Calendar/overview.md (Calendar module)
+- Features/Calendar/todaypage.md (Today Page spec)
+- Features/Chat/chat.md (Chat module)
+- Features/Notifications/notifications.md (Notifications module)
+- Features/PhotoCapture/photo_capture.md (Photo Capture module)
+- Features/Progress/progress.md (Progress module)
+
+Essential guidelines:
+1. Project structure: `src/Client`, `src/Server`, `Shared`.
+2. .NET MAUI 9.0.51 SR best practices:
+   - UI in XAML with compiled bindings (`x:DataType`)
+   - Use `VisualStateManager` for state transitions
+   - DI in `MauiProgram` with `ILogger<>`
+3. Coding patterns:
+   - MVVM for UI
+   - CQRS: commands **mutate**, queries **read**
+   - Clean Architecture layering: UI → Application → Domain → Infrastructure
+4. Naming conventions:
+   - `[FeatureName]FeatureType.cs` (e.g., `ChatViewModel.cs`)
+   - Folders: `Application`, `Domain`, `Services`, `ViewModels`, `Views`, `doc`
+5. Logging via `ILogger<>`; do not use `Debug.WriteLine`.
+6. UI/UX:
+   - Theming via `ResourceDictionary` and `AppThemeBinding`
+   - No hard-coded colors; use semantic resources
+   - Accessibility: high contrast, `AutomationProperties`
+7. Testing & CI:
+   - Unit-test ViewModels and handlers (`dotnet test` must pass)
+   - Treat warnings as errors in CI
+   - Follow commit and PR conventions
+
+Before each commit:
+- Run `dotnet test` → zero failures
+- Verify code against the above docs
+- Ensure consistency across platforms
+
+Use these guidelines to deliver clean, maintainable, and cross-platform code for HairCare+.

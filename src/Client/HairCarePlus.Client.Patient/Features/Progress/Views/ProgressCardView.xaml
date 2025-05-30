@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.ProgressCardView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+             xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
+             x:DataType="models:ProgressFeedItem">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
+            <conv:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <conv:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBoolConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Instagram-подобная карточка во всю ширину -->
+    <Border Style="{StaticResource InstagramCardStyle}"
+            Margin="16,8"
+            Padding="0">
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="0">
+            
+            <!-- Фото область с floating badge дня -->
+            <Border Grid.Row="0" 
+                    StrokeThickness="0"
+                    HeightRequest="300">
+                <Grid>
+                    <!-- CarouselView для 3 типов фото: фронт, темя, затылок -->
+                    <CarouselView ItemsSource="{Binding Photos}"
+                                  IndicatorView="{x:Reference photoIndicators}"
+                                  IsSwipeEnabled="True"
+                                  PeekAreaInsets="0"
+                                  IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
+                        <CarouselView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProgressPhoto">
+                                <Grid>
+                                    <!-- Убрал TapGestureRecognizer для KISS принципа -->
+                                    <Image Source="{Binding LocalPath}"
+                                           Aspect="AspectFill" />
+                                    <!-- Градиент для лучшего контраста с badge -->
+                                    <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
+                                               VerticalOptions="Start"
+                                               HeightRequest="60" />
+                                </Grid>
+                            </DataTemplate>
+                        </CarouselView.ItemTemplate>
+                    </CarouselView>
+                    
+                    <!-- Floating badge дня -->
+                    <Border Style="{StaticResource FloatingDayBadgeStyle}"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Start"
+                            Margin="16,16">
+                        <Label Text="{Binding Title}"
+                               Style="{StaticResource DayBadgeTextStyle}" />
+                    </Border>
+
+                    <!-- AI Score badge в правом верхнем углу -->
+                    <Border Style="{StaticResource AIScoreBadgeStyle}"
+                            HorizontalOptions="End"
+                            VerticalOptions="Start"
+                            Margin="16,16"
+                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="AI" 
+                                   Style="{StaticResource AIScoreLabelStyle}" />
+                            <Label Text="{Binding AiReport.Score}"
+                                   Style="{StaticResource AIScoreValueStyle}" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Контент области с отступами -->
+            <VerticalStackLayout Grid.Row="1" 
+                                Padding="16,12"
+                                Spacing="12">
+                
+                <!-- Photo indicators как в Instagram - ниже фото -->
+                <IndicatorView x:Name="photoIndicators"
+                               Style="{StaticResource InstagramPhotoIndicatorStyle}"
+                               HorizontalOptions="Center"
+                               IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}, ConverterParameter=1}" />
+                
+                <!-- Дата в Instagram стиле -->
+                <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
+                       Style="{StaticResource InstagramDateStyle}" />
+
+                <!-- Комментарии с приоритетом врачебных -->
+                <VerticalStackLayout Spacing="8">
+                    
+                    <!-- Комментарий врача (приоритет) - всегда показываем для демонстрации -->
+                    <Border Style="{StaticResource DoctorCommentStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="Комментарий врача" 
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
+                            <Label Text="Прогресс идет отлично! Заживление проходит без осложнений. Продолжайте соблюдать рекомендации."
+                                   Style="{StaticResource CommentTextStyle}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    
+                    <!-- AI анализ -->
+                    <Border Style="{StaticResource AICommentStyle}"
+                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource AIIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="AI анализ" 
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding AiReport.Summary}"
+                                   Style="{StaticResource CommentTextStyle}"
+                                   MaxLines="3"
+                                   LineBreakMode="TailTruncation" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+        </Grid>
+
+        <!-- VisualStateManager для анимаций -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Scale" Value="0.98" />
+                            <Setter Property="Opacity" Value="0.9" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </VisualStateManager.VisualStateGroups>
+    </Border>
+</ContentView> 

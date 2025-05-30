@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Models"
-             xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Converters"
              xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
@@ -15,34 +13,12 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
-            <converters:MessageBackgroundConverter x:Key="MessageBackgroundConverter" />
             <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
             <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
             <commonConverters:EqualityConverter x:Key="EqualityConverter" />
             
-            <Style x:Key="SelectedMessageFrame" TargetType="Frame">
-                <Setter Property="BorderColor" Value="{AppThemeBinding Light=#3B82F6, Dark=#60A5FA}" />
-                <Setter Property="Opacity" Value="0.95" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#90C3FF, Dark=#2C4F7F}" />
-                <Setter Property="Shadow">
-                    <Setter.Value>
-                        <Shadow Brush="{AppThemeBinding Light=#3B82F6, Dark=#60A5FA}"
-                                Offset="0,0"
-                                Radius="6"
-                                Opacity="0.7" />
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style x:Key="MessageFrameStyle" TargetType="Frame">
-                <Setter Property="Padding" Value="12,8" />
-                <Setter Property="HasShadow" Value="True" />
-                <Setter Property="Shadow" Value="{OnPlatform iOS={StaticResource SmallShadow}}" />
-                <Setter Property="BorderColor" Value="Transparent" />
-                <Setter Property="MaximumWidthRequest" Value="280" />
-                <Setter Property="CornerRadius" Value="18" />
-            </Style>
+            <!-- Removed old Border styles (SelectedMessageFrame, MessageFrameStyle) as alignment now handled via DataTriggers -->
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -93,133 +69,153 @@
             </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="entities:ChatMessage">
-                    <Grid Padding="4,2">
+                    <Grid Padding="4,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Message -->
-                        <Frame Grid.Column="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='column'}"
-                               Style="{StaticResource MessageFrameStyle}"
-                               BackgroundColor="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}}"
-                               HorizontalOptions="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='alignment'}"
-                               Margin="{Binding SenderId, Converter={StaticResource MessageBackgroundConverter}, ConverterParameter='margin'}">
-                            <Frame.Behaviors>
-                                <behaviors:VisualFeedbackBehavior />
-                            </Frame.Behaviors>
-                            <Frame.GestureRecognizers>
-                                <!-- Нажатие для ответа на сообщение (только для сообщений от доктора) -->
-                                <TapGestureRecognizer 
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HandleReplyToMessageCommand}"
-                                    CommandParameter="{Binding .}"
-                                    NumberOfTapsRequired="1" />
-                                
-                                <!-- Долгое нажатие для меню редактирования (только для сообщений пациента) -->
-                                <SwipeGestureRecognizer Direction="Left" 
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditMessageCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Frame.GestureRecognizers>
-                            <Frame.Triggers>
-                                <DataTrigger TargetType="Frame"
-                                           Binding="{Binding SenderId}"
-                                           Value="patient">
-                                    <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Frame"
-                                           Binding="{Binding SenderId}"
-                                           Value="doctor">
-                                    <Setter Property="BackgroundColor"
-                                            Value="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Frame"
-                                           Binding="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ReplyToMessage}"
-                                           Value="{Binding .}">
-                                    <Setter Property="Style" Value="{StaticResource SelectedMessageFrame}" />
-                                    <Setter Property="Scale" Value="1.03" />
-                                    <Setter Property="BorderColor" Value="{AppThemeBinding Light=Red, Dark=OrangeRed}" />
-                                </DataTrigger>
-                                <DataTrigger TargetType="Frame"
-                                           Binding="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditingMessage}"
-                                           Value="{Binding .}">
-                                    <Setter Property="BorderColor" Value="{StaticResource Primary}" />
-                                </DataTrigger>
-                            </Frame.Triggers>
-                            <VerticalStackLayout Spacing="2">
-                                <!-- Reply Preview -->
-                                <Grid IsVisible="{Binding ReplyTo, Converter={StaticResource IsNotNullConverter}}"
-                                      Margin="0,0,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="4" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <!-- Вертикальная полоса, связывающая с оригинальным сообщением -->
-                                    <BoxView Grid.Column="0" 
-                                             BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
-                                             CornerRadius="2"
-                                             Margin="0,2,0,2"
-                                             HorizontalOptions="Start" />
-                                     
-                                    <Frame Grid.Column="1"
-                                           Padding="6,3"
-                                           CornerRadius="8"
-                                           BackgroundColor="{Binding ReplyTo.SenderId, Converter={StaticResource MessageBackgroundConverter}}"
-                                           Opacity="0.85"
-                                           BorderColor="Transparent"
-                                           HasShadow="False">
-                                        <StackLayout Orientation="Vertical" Spacing="2">
-                                            <StackLayout Orientation="Horizontal" Spacing="3">
-                                                <Image Source="{FontImageSource FontFamily=MaterialIcons, Glyph=&#xe15e;, Size=12, Color={AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}}"
-                                                       VerticalOptions="Center"
-                                                       Margin="0,0,0,0" />
-                                                <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
-                                                       TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
-                                                       FontSize="10"
-                                                       FontAttributes="Bold"
-                                                       VerticalOptions="Center">
-                                                    <Label.Triggers>
-                                                        <DataTrigger TargetType="Label"
-                                                                   Binding="{Binding ReplyTo.SenderId}"
-                                                                   Value="patient">
-                                                            <Setter Property="Text" Value="Reply to you"/>
-                                                        </DataTrigger>
-                                                    </Label.Triggers>
-                                                </Label>
+                        <SwipeView>
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Execute">
+                                    <SwipeItem BackgroundColor="Transparent"
+                                               Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditMessageCommand}"
+                                               CommandParameter="{Binding .}"
+                                               Text="Edit" />
+                                    <SwipeItem BackgroundColor="{AppThemeBinding Light=#EF4444, Dark=#B91C1C}"
+                                               Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteMessageCommand}"
+                                               CommandParameter="{Binding .}"
+                                               Text="Delete"
+                                               IconImageSource="trash" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+                            <Border x:Name="bubbleBorder"
+                                    Grid.Column="0"
+                                    BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                                    HorizontalOptions="Start"
+                                    Margin="8,6,80,6"
+                                    StrokeShape="RoundRectangle 18"
+                                    StrokeThickness="0"
+                                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                                    Padding="12,8">
+                                <Border.Triggers>
+                                    <!-- Settings for patient messages -->
+                                    <DataTrigger TargetType="Border" Binding="{Binding SenderId}" Value="patient">
+                                        <Setter Property="Grid.Column" Value="1" />
+                                        <Setter Property="HorizontalOptions" Value="End" />
+                                        <Setter Property="Margin" Value="80,6,8,6" />
+                                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.Behaviors>
+                                    <behaviors:VisualFeedbackBehavior />
+                                </Border.Behaviors>
+                                <Border.GestureRecognizers>
+                                    <!-- Tap to reply -->
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HandleReplyToMessageCommand}"
+                                                         CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="2">
+                                    <!-- Reply Preview -->
+                                    <Grid IsVisible="{Binding ReplyTo, Converter={StaticResource IsNotNullConverter}}"
+                                          Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="4" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Вертикальная полоса, связывающая с оригинальным сообщением -->
+                                        <BoxView Grid.Column="0" 
+                                                 BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
+                                                 CornerRadius="2"
+                                                 Margin="0,2,0,2"
+                                                 HorizontalOptions="Start" />
+                                         
+                                        <Frame Grid.Column="1"
+                                               Padding="6,3"
+                                               CornerRadius="8"
+                                               BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                                               Opacity="0.85"
+                                               BorderColor="Transparent"
+                                               HasShadow="False">
+                                            <Frame.Triggers>
+                                                <DataTrigger TargetType="Frame" Binding="{Binding ReplyTo.SenderId}" Value="patient">
+                                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
+                                                </DataTrigger>
+                                            </Frame.Triggers>
+                                            <StackLayout Orientation="Vertical" Spacing="2">
+                                                <StackLayout Orientation="Horizontal" Spacing="3">
+                                                    <Image Source="{FontImageSource FontFamily=MaterialIcons, Glyph=&#xe15e;, Size=12, Color={AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}}"
+                                                           VerticalOptions="Center"
+                                                           Margin="0,0,0,0" />
+                                                    <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
+                                                           TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
+                                                           FontSize="10"
+                                                           FontAttributes="Bold"
+                                                           VerticalOptions="Center">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label"
+                                                                       Binding="{Binding ReplyTo.SenderId}"
+                                                                       Value="patient">
+                                                                <Setter Property="Text" Value="Reply to you"/>
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </StackLayout>
+                                                <Label Text="{Binding ReplyTo.Content}"
+                                                       TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
+                                                       FontSize="11"
+                                                       MaxLines="1"
+                                                       LineBreakMode="TailTruncation"
+                                                       Margin="0,0,0,0"/>
                                             </StackLayout>
-                                            <Label Text="{Binding ReplyTo.Content}"
-                                                   TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
-                                                   FontSize="11"
-                                                   MaxLines="1"
-                                                   LineBreakMode="TailTruncation"
-                                                   Margin="0,0,0,0"/>
-                                        </StackLayout>
-                                    </Frame>
-                                </Grid>
+                                        </Frame>
+                                    </Grid>
 
-                                <Label Text="{Binding Content}" 
-                                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-                                       FontSize="17"
-                                       Margin="0,4,0,0"
-                                       LineBreakMode="WordWrap"
-                                       LineHeight="1.25"
-                                       VerticalOptions="Center">
-                                    <Label.Triggers>
-                                        <DataTrigger TargetType="Label"
-                                                   Binding="{Binding SenderId}"
-                                                   Value="doctor">
-                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                        </DataTrigger>
-                                    </Label.Triggers>
-                                </Label>
-                                <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                                       FontSize="11"
-                                       Opacity="0.8"
-                                       HorizontalOptions="End"/>
-                            </VerticalStackLayout>
-                        </Frame>
+                                    <!-- Text content -->
+                                    <Label x:Name="MessageText"
+                                           Text="{Binding Content}" 
+                                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                           FontSize="17"
+                                           Margin="0,4,0,0"
+                                           LineBreakMode="WordWrap"
+                                           LineHeight="1.25"
+                                           VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <!-- sender colour tweak -->
+                                            <DataTrigger TargetType="Label" Binding="{Binding SenderId}" Value="doctor">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                            </DataTrigger>
+                                            <!-- hide text if this message is an image -->
+                                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+
+                                    <!-- Image content -->
+                                    <Image x:Name="MessageImage"
+                                           Source="{Binding LocalAttachmentPath}"
+                                           Aspect="AspectFill"
+                                           HeightRequest="200"
+                                           IsVisible="False"
+                                           Margin="0,4,0,0">
+                                        <Image.Triggers>
+                                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                                <Setter Property="IsVisible" Value="True" />
+                                            </DataTrigger>
+                                        </Image.Triggers>
+                                    </Image>
+
+                                    <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                           FontSize="11"
+                                           Opacity="0.8"
+                                           HorizontalOptions="End"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </SwipeView>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
@@ -250,13 +246,18 @@
                          HorizontalOptions="Start" />
                 
                 <Frame Grid.Column="1"
-                       BackgroundColor="{Binding ReplyToMessage.SenderId, Converter={StaticResource MessageBackgroundConverter}}"
+                       BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
                        Opacity="0.85"
                        Padding="10,6"
                        CornerRadius="12"
                        x:Name="ReplyIndicator"
                        BorderColor="Transparent"
                        HasShadow="{OnPlatform iOS=True, Android=False}">
+                    <Frame.Triggers>
+                        <DataTrigger TargetType="Frame" Binding="{Binding ReplyToMessage.SenderId}" Value="patient">
+                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
+                        </DataTrigger>
+                    </Frame.Triggers>
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Spacing="2">
                             <StackLayout Orientation="Horizontal" Spacing="3">

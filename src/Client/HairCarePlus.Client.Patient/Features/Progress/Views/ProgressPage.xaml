@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.ProgressPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.ViewModels"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+    xmlns:selectors="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Selectors"
+    xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
+    xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    x:DataType="vm:ProgressViewModel"
+    Shell.NavBarIsVisible="True"
+    Title=""
+    BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
+    x:Name="RootPage">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Styles/ProgressStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="models:RestrictionTimer">
+                <VerticalStackLayout WidthRequest="80" HorizontalOptions="Center" Spacing="8">
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
+                    </VerticalStackLayout.GestureRecognizers>
+                    
+                    <Grid WidthRequest="64" HeightRequest="64"
+                          HorizontalOptions="Center" VerticalOptions="Center">
+
+                        <!-- Кружок: белый фон в обоих темах -->
+                        <Border StrokeShape="Ellipse"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
+                                WidthRequest="56" HeightRequest="56"
+                                HorizontalOptions="Center" VerticalOptions="Center"
+                                StrokeThickness="0"/>
+
+                        <!-- Базовая иконка ограничения -->
+                        <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                               WidthRequest="32" HeightRequest="32"
+                               HorizontalOptions="Center" VerticalOptions="Center"
+                               Aspect="AspectFit">
+                            <Image.Behaviors>
+                                <!-- В светлой теме иконка — чёрная; в тёмной — чёрная (можно изменить при необходимости) -->
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource Black}}" />
+                            </Image.Behaviors>
+                        </Image>
+                    </Grid>
+                    
+                    <!-- Короткая фраза ограничения -->
+                    <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
+                           Style="{StaticResource RestrictionLabelStyle}"
+                           AutomationProperties.IsInAccessibleTree="True"
+                           AutomationProperties.Name="{Binding DaysRemaining, StringFormat='Осталось {0} дней'}" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="vm:ShowMoreRestrictionPlaceholderViewModel">
+                <VerticalStackLayout WidthRequest="80" HorizontalOptions="Center" Spacing="8">
+                    <Grid WidthRequest="64" HeightRequest="64"
+                          HorizontalOptions="Center" VerticalOptions="Center">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
+                        </Grid.GestureRecognizers>
+                        
+                        <!-- Кружок "Показать еще" -->
+                        <Border StrokeShape="Ellipse"
+                                WidthRequest="64" HeightRequest="64"
+                                StrokeThickness="2"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}"
+                                AutomationProperties.IsInAccessibleTree="True"
+                                AutomationProperties.Name="Show more restrictions">
+                        </Border>
+                        
+                        <!-- Иконка "•••" или "+" -->
+                        <Label Text="••• "
+                               FontSize="16" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
+                        
+                        <!-- Badge с количеством -->
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                                StrokeThickness="0"
+                                StrokeShape="Ellipse"
+                                WidthRequest="22" HeightRequest="22"
+                                HorizontalOptions="End" VerticalOptions="Start"
+                                Margin="0,-3,-3,0">
+                            
+                            <Label Text="{Binding CountLabel}" 
+                                   FontSize="11" FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}"
+                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        
+                        <!-- VisualStateManager для анимаций -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroupList>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Property="Scale" Value="0.92" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                    
+                    <Label Text="Еще"
+                           Style="{StaticResource RestrictionLabelStyle}" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <selectors:RestrictionItemTemplateSelector x:Key="RestrictionItemTemplateSelector" 
+                                                  StandardTemplate="{StaticResource StandardRestrictionTimerTemplate}" 
+                                                  ShowMoreTemplate="{StaticResource ShowMoreRestrictionsTemplate}" />
+
+            <!-- Converter to decide whether to display the "Read more" link -->
+            <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
+            <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <conv:RestrictionStrokeColorConverter x:Key="RestrictionStrokeConverter" />
+            <conv:RestrictionGlyphConverter x:Key="RestrictionGlyphConverter" />
+            <conv:RestrictionFillColorConverter x:Key="RestrictionFillConverter" />
+            <conv:RestrictionShortPhraseConverter x:Key="RestrictionShortPhraseConverter" />
+            <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <conv:EqualToConverter x:Key="EqualToConverter" />
+
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.Shell.TitleView>
+        <!-- Удалено для минималистичного дизайна -->
+    </ContentPage.Shell.TitleView>
+
+    <!-- Instagram-подобная структура с фокусом на ленте -->
+    <Grid RowDefinitions="Auto,*" RowSpacing="16" Padding="0,24,0,0">
+        
+        <!-- Модернизированные таймеры ограничений -->
+        <ScrollView Grid.Row="0" 
+                    Orientation="Horizontal" 
+                    HorizontalScrollBarVisibility="Never"
+                    Padding="20,0"
+                    HeightRequest="110">
+            <CollectionView ItemsSource="{Binding VisibleRestrictionItems}"
+                            SelectionMode="None"
+                            ItemTemplate="{StaticResource RestrictionItemTemplateSelector}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+            </CollectionView>
+        </ScrollView>
+
+        <!-- Instagram-подобная лента прогресса -->
+        <RefreshView Grid.Row="1"
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
+                     Margin="0">
+            <CollectionView ItemsSource="{Binding Feed}"
+                            SelectionMode="None"
+                            HorizontalScrollBarVisibility="Never"
+                            VerticalScrollBarVisibility="Never"
+                            Margin="0">
+                <CollectionView.EmptyView>
+                    <StackLayout HorizontalOptions="Center" 
+                                VerticalOptions="CenterAndExpand" 
+                                Padding="32"
+                                Spacing="16">
+                        <Label Text="📸" 
+                               FontSize="48"
+                               HorizontalOptions="Center" />
+                        <Label Text="Нет записей прогресса" 
+                               FontSize="18" 
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                        <Label Text="Начните фотографировать свой прогресс&#x0a;для отслеживания восстановления" 
+                               FontSize="14" 
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                    </StackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+                                 <CollectionView.ItemTemplate>
+                     <DataTemplate x:DataType="models:ProgressFeedItem">
+                         <views:ProgressCardView xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views" />
+                     </DataTemplate>
+                 </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+    <!-- FAB removed as per design -->
+</ContentPage> 

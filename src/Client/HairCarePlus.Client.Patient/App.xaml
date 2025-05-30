@@ -10,13 +10,17 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Dimensions.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+                <ResourceDictionary Source="Features/Progress/Styles/ProgressStyles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/ChatStyles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Icons/icons.xaml" />
+                <ResourceDictionary Source="Resources/Styles/IconResources.xaml" />
                 <ResourceDictionary>
                     <converters:DateToColorConverter x:Key="DateToColorConverter" />
                     <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
                     <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter" />
+                    <converters:DaysToStrokeColorConverter x:Key="DaysToStrokeColorConverter" />
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
             

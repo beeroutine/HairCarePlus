@@ -17,6 +17,17 @@ using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.Calendar.Messages;
 using Microsoft.Maui.Graphics;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
+using HairCarePlus.Shared.Common.CQRS;
+using HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.ApplicationModel; // for MainThread
+using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
+using ICommand = System.Windows.Input.ICommand;
+using CalendarCommands = HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
+
+// Alias to disambiguate with namespace HairCarePlus.Client.Patient.Features.Calendar.Application
+using MauiApp = Microsoft.Maui.Controls.Application;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 {
@@ -27,6 +38,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly ICalendarLoader _eventLoader;
         private readonly IProgressCalculator _progressCalculator;
         private readonly ILogger<TodayViewModel> _logger;
+        private readonly IMessenger _messenger;
+        private readonly ICommandBus _commandBus;
+        private readonly IQueryBus _queryBus;
+        private readonly IProfileService _profileService;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
@@ -148,26 +163,37 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        // New property to signal scroll target
-        private DateTime? _scrollToIndexTarget;
-        public DateTime? ScrollToIndexTarget
+        private DateTime _visibleDate;
+        /// <summary>
+        /// Date used for displaying current month/year in header. It updates when user scrolls horizontally or selects a date.
+        /// </summary>
+        public DateTime VisibleDate
         {
-            get => _scrollToIndexTarget;
-            set => SetProperty(ref _scrollToIndexTarget, value);
+            get => _visibleDate;
+            set
+            {
+                if (SetProperty(ref _visibleDate, value))
+                {
+                    OnPropertyChanged(nameof(CurrentMonthName));
+                    OnPropertyChanged(nameof(CurrentYear));
+                }
+            }
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger, IProfileService profileService)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
             _eventLoader = eventLoader;
             _progressCalculator = progressCalculator;
             _logger = logger;
+            _messenger = messenger;
+            _commandBus = commandBus;
+            _queryBus = queryBus;
+            _profileService = profileService;
             
             // Всегда начинаем с сегодняшней даты (игнорируем сохранённое состояние прошлой сессии)
             _selectedDate = DateTime.Today;
-            // Задаём цель прокрутки, чтобы горизонтальный календарь сразу отцентровался на сегодня
-            ScrollToIndexTarget = _selectedDate;
             _lastLoadedDate = DateTime.Today.AddDays(30); // Initial last loaded date
             
             _eventCountsByDate = new Dictionary<DateTime, Dictionary<EventType, int>>();
@@ -180,9 +206,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _loadingState = LoadingState.NotStarted;
             Title = "Today";
             
+            VisibleDate = _selectedDate; // initialize visible date for header
+            
             // Initialize commands
             RefreshCommand = new Command(async () => await RefreshDataAsync());
-            ToggleEventCompletionCommand = new Command<CalendarEvent>(async (calendarEvent) => await ToggleEventCompletionAsync(calendarEvent));
+            ToggleEventCompletionCommand = new AsyncRelayCommand<CalendarEvent>(async (calendarEvent) =>
+            {
+                if (calendarEvent == null) return;
+                await ToggleEventCompletionAsync(calendarEvent);
+            });
             SelectDateCommand = new Command<DateTime>(async (date) => await SelectDateAsync(date));
             OpenMonthCalendarCommand = new Command<DateTime>(async (date) => await OpenMonthCalendarAsync(date));
             ViewEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ViewEventDetailsAsync(calendarEvent));
@@ -191,8 +223,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
             GoToTodayCommand = new Command(ExecuteGoToToday);
             
+            // Toggle restrictions visibility
+            ToggleRestrictionsVisibilityCommand = new Command(() =>
+            {
+                AreRestrictionsVisible = !AreRestrictionsVisible;
+            });
+            
             // Lazy initialization – фактическая загрузка отложена до первого OnAppearing
             _initializationTask = null;
+
+            // Subscribe to event update messages to refresh UI
+            _messenger.Register<EventUpdatedMessage>(this, async (recipient, message) =>
+            {
+                try
+                {
+                    _logger?.LogDebug("Received EventUpdatedMessage for {EventId}", message.Value);
+
+                    // Simple approach: reload events for selected date if it matches today (or contains the event)
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await LoadTodayEventsAsync();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error handling EventUpdatedMessage");
+                }
+            });
         }
         
         private Task? _initializationTask;
@@ -209,10 +266,33 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private async Task LoadInitialAsync()
         {
-            // 1. Загружаем календарные дни на год вперёд (синхронно как раньше)
-            LoadCalendarDays();
-            // 2. Подгружаем события для выбранной today‑даты
-            await LoadTodayEventsAsync();
+            try
+            {
+                // 1. Загружаем календарные дни на год вперёд
+                LoadCalendarDays();
+
+                // 2. Устанавливаем текущий день как выбранный
+                var today = DateTime.Today;
+                SelectedDate = today;
+                VisibleDate = today;
+
+                // 3. Подгружаем события для выбранной даты
+                await LoadTodayEventsAsync();
+
+                // 4. Загружаем активные ограничения
+                await CheckAndLoadActiveRestrictionsAsync();
+
+                // 5. Прокручиваем к выбранной дате
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    OnPropertyChanged(nameof(SelectedDate));
+                    OnPropertyChanged(nameof(VisibleDate));
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in LoadInitialAsync");
+            }
         }
         
         public DateTime SelectedDate
@@ -225,15 +305,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 #if DEBUG
                     Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
 #endif
+                    // Update events for selected date
                     Task.Run(async () => 
                     {
                         await LoadTodayEventsAsync();
-                        // Сохраняем выбранную дату при каждом изменении
+                        // Save selected date between sessions
                         SaveSelectedDate(value);
                     });
+
+                    // Update VisibleDate month/year if month or year differs from current
+                    if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
+                    {
+                        VisibleDate = value;
+                    }
+
                     OnPropertyChanged(nameof(FormattedSelectedDate));
                     OnPropertyChanged(nameof(CurrentMonthName));
                     OnPropertyChanged(nameof(CurrentYear));
+                    OnPropertyChanged(nameof(DaysSinceTransplant));
+                    OnPropertyChanged(nameof(DaysSinceTransplantSubtitle));
                 }
             }
         }
@@ -242,9 +332,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public string FormattedTodayDate => DateTime.Today.ToString("ddd, MMM d");
         
-        public string CurrentMonthName => SelectedDate.ToString("MMMM");
+        // NEW: Separate fields for today day number and day-of-week (used in header circle)
+        public int TodayDay => DateTime.Today.Day;
+        public string TodayDayOfWeek => DateTime.Today.ToString("ddd");
         
-        public string CurrentYear => SelectedDate.ToString("yyyy");
+        public string CurrentMonthName => VisibleDate.ToString("MMMM");
+        
+        public string CurrentYear => VisibleDate.ToString("yyyy");
+        
+        // Added: SurgeryDate and DaysSinceTransplant for header subtitle
+        public int DaysSinceTransplant => (SelectedDate.Date - _profileService.SurgeryDate.Date).Days + 1;
+        public string DaysSinceTransplantSubtitle => $"Day {DaysSinceTransplant} post hair transplant";
         
         public ObservableCollection<DateTime> CalendarDays
         {
@@ -303,36 +401,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             set => SetProperty(ref _completionPercentage, value);
         }
         
-        // Restriction-related properties
-        private bool _hasActiveRestriction;
+        // NEW: Collection for active restrictions for UI
+        public ObservableCollection<RestrictionInfo> ActiveRestrictions { get; } = new();
+        private bool _hasActiveRestriction; // Keep the backing field for the property
+        
+        // RESTORED Property definition (now triggers AreRestrictionsVisible update)
         public bool HasActiveRestriction
         {
             get => _hasActiveRestriction;
-            set => SetProperty(ref _hasActiveRestriction, value);
+            private set
+            {
+                if (SetProperty(ref _hasActiveRestriction, value))
+                {
+                    OnPropertyChanged(nameof(AreRestrictionsVisible));
+                }
+            }
         }
-        
-        private Color _restrictionBackgroundColor = Colors.LightSalmon;
-        public Color RestrictionBackgroundColor
+
+        // Property to allow user to hide/show restrictions panel
+        private bool _restrictionsVisible = true;
+        public bool AreRestrictionsVisible
         {
-            get => _restrictionBackgroundColor;
-            set => SetProperty(ref _restrictionBackgroundColor, value);
+            get => _restrictionsVisible && HasActiveRestriction;
+            set => SetProperty(ref _restrictionsVisible, value);
         }
-        
-        // Using Material Icons glyphs instead of external PNG images to avoid missing-resource warnings
-        // "\ue002" – warning, "\ue88e" – info
-        private string _restrictionIcon = "\ue88e";
-        public string RestrictionIcon
-        {
-            get => _restrictionIcon;
-            set => SetProperty(ref _restrictionIcon, value);
-        }
-        
-        private string _currentRestrictionText = "No active restrictions";
-        public string CurrentRestrictionText
-        {
-            get => _currentRestrictionText;
-            set => SetProperty(ref _currentRestrictionText, value);
-        }
+
+        public ICommand ToggleRestrictionsVisibilityCommand { get; }
         
         // Selected date events
         private ObservableCollection<CalendarEvent> _eventsForSelectedDate;
@@ -350,6 +444,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ICommand ShowEventDetailsCommand { get; }
         public ICommand LoadMoreDatesCommand { get; }
         
+        // Summary presentation of the FIRST (highest-priority) active restriction for legacy UI bindings
+        private string _restrictionIcon;
+        public string RestrictionIcon
+        {
+            get => _restrictionIcon;
+            private set => SetProperty(ref _restrictionIcon, value);
+        }
+
+        private string _currentRestrictionText;
+        public string CurrentRestrictionText
+        {
+            get => _currentRestrictionText;
+            private set => SetProperty(ref _currentRestrictionText, value);
+        }
+
+        private Color _restrictionBackgroundColor = Colors.Transparent;
+        public Color RestrictionBackgroundColor
+        {
+            get => _restrictionBackgroundColor;
+            private set => SetProperty(ref _restrictionBackgroundColor, value);
+        }
+
+        private List<CalendarEvent> _allEventsForSelectedDate = new();
+
         private void LoadCalendarDays()
         {
             try
@@ -443,7 +561,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     LoadingProgress = (int)((double)processedDays / totalDaysToLoad * 100);
 
                     // Add new dates to collection on the main thread
-                    await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                    await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
                     {
                         foreach (var date in batchDates)
                         {
@@ -607,8 +725,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             _logger.LogInformation("Loading events for {Date}", selectedDateKey.ToShortDateString());
                         }
                         
-                        // Загрузка событий для выбранной даты
-                        events = (await _calendarService.GetEventsForDateAsync(selectedDateKey)).ToList();
+                        // Загрузка событий через CQRS QueryBus
+                        events = (await _queryBus.SendAsync<IEnumerable<CalendarEvent>>(new GetEventsForDateQuery(selectedDateKey))).ToList();
                         
                         // Проверка отмены
                         cancellationToken.ThrowIfCancellationRequested();
@@ -647,9 +765,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         // Показываем сообщение об ошибке только если нет кэша
                         if (cachedEvents == null || !cachedEvents.Any())
                         {
-                            await Application.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                            await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(async () =>
                             {
-                                await Application.Current.MainPage.DisplayAlert(
+                                await MauiApp.Current.MainPage.DisplayAlert(
                                     "Error",
                                     "Failed to refresh events. Using cached data if available.",
                                     "OK"
@@ -692,13 +810,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             if (cancellationToken.IsCancellationRequested) return;
 
-            await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+            await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
             {
                 var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-                FlattenedEvents = new ObservableCollection<CalendarEvent>(eventsList);
+
+                // UI показывает ТОЛЬКО невыполненные карточки и не-restriction
+                var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
+
+                FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
                 SortedEvents = new ObservableCollection<CalendarEvent>(
-                    eventsList.OrderBy(e => e.Date.TimeOfDay).ToList());
-                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(eventsList);
+                    visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
+                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
+
+                // Храним полный список для расчёта прогресса и возможных деталей
+                _allEventsForSelectedDate = eventsList;
 
                 var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
                 CompletionProgress = prog;
@@ -724,7 +849,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 return;
                 
             // Пример отображения полных деталей события
-            await Application.Current.MainPage.DisplayAlert(
+            await MauiApp.Current.MainPage.DisplayAlert(
                 calendarEvent.Title,
                 calendarEvent.Description,
                 "OK");
@@ -740,242 +865,20 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             try
             {
-                _eventCountsRequests++;
-                _logger.LogInformation("LoadEventCountsForVisibleDaysAsync started (request #{Count}). Range: {StartDate} to {EndDate}", 
-                    _eventCountsRequests, 
-                    CalendarDays.First().ToShortDateString(), 
-                    CalendarDays.Last().ToShortDateString());
-                
-                // Создаем CancellationTokenSource с таймаутом
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                var cancellationToken = cts.Token;
-                
-                // Подготовка результирующего словаря для всего диапазона дат
-                var result = new Dictionary<DateTime, Dictionary<EventType, int>>();
-                
-                // Инициализируем словарь для всех дней с нулевыми счетчиками
-                foreach (var day in CalendarDays)
+                var counts = await _queryBus.SendAsync<Dictionary<DateTime, Dictionary<EventType, int>>>(
+                    new GetEventCountsForDatesQuery(CalendarDays.ToList()));
+
+                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
-                    result[day.Date] = new Dictionary<EventType, int>
-                    {
-                        { EventType.MedicationTreatment, 0 },
-                        { EventType.Photo, 0 },
-                        { EventType.CriticalWarning, 0 },
-                        { EventType.Video, 0 },
-                        { EventType.MedicalVisit, 0 },
-                        { EventType.GeneralRecommendation, 0 }
-                    };
-                }
-                
-                // 1. Разделяем даты на "кэшированные" и "требующие загрузки"
-                var cachedDates = new List<DateTime>();
-                var datesToLoad = new List<DateTime>();
-                
-                foreach (var day in CalendarDays)
-                {
-                    var date = day.Date;
-                    if (TryGetCache(date, out var cachedEvents, out var lastUpdate) &&
-                        (DateTimeOffset.Now - lastUpdate) <= TimeSpan.FromMinutes(10))
-                    {
-                        // Дата уже есть в кэше и обновлялась недавно
-                        cachedDates.Add(date);
-                    }
-                    else
-                    {
-                        // Дата отсутствует в кэше или устарела
-                        datesToLoad.Add(date);
-                    }
-                }
-                
-                _logger.LogInformation("Dates analysis: {CachedCount} cached, {ToLoadCount} to load", 
-                    cachedDates.Count, datesToLoad.Count);
-                
-                // 2. Обрабатываем кэшированные даты (если они есть)
-                if (cachedDates.Any())
-                {
-                    _eventCountsCacheHits++;
-                    _logger.LogInformation("Using cached data for {Count} dates. Cache hit rate: {Rate}%", 
-                        cachedDates.Count, 
-                        (int)((_eventCountsCacheHits / (float)_eventCountsRequests) * 100));
-                    
-                    foreach (var date in cachedDates)
-                    {
-                        if (TryGetCache(date, out var events, out _))
-                        {
-                            UpdateEventCounts(result, events);
-                        }
-                    }
-                }
-                
-                // 3. Группируем даты, требующие загрузки, в смежные диапазоны
-                if (datesToLoad.Any())
-                {
-                    var dateRanges = GroupDatesIntoRanges(datesToLoad);
-                    _logger.LogInformation("Grouped {DatesToLoad} dates into {RangeCount} request ranges", 
-                        datesToLoad.Count, dateRanges.Count);
-                    
-                    _eventCountsBatchRequests += dateRanges.Count;
-                    
-                    // 4. Загружаем данные для каждого диапазона дат
-                    foreach (var range in dateRanges)
-                    {
-                        try
-                        {
-                            _logger.LogInformation("Loading events for date range: {StartDate} to {EndDate}", 
-                                range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
-                            
-                            // Загружаем данные для диапазона дат
-                            var rangeEvents = await _calendarService.GetEventsForDateRangeAsync(range.startDate, range.endDate);
-                            
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                _logger.LogWarning("Loading events was cancelled");
-                                break;
-                            }
-                            
-                            // Обновляем результаты для этого диапазона
-                            UpdateEventCounts(result, rangeEvents);
-                            
-                            // Обновляем кэш для каждой даты в диапазоне
-                            UpdateCacheForDateRange(range.startDate, range.endDate, rangeEvents);
-                            
-                            _logger.LogInformation("Successfully loaded {Count} events for range {StartDate} to {EndDate}",
-                                rangeEvents.Count(), range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error loading events for date range {StartDate} to {EndDate}", 
-                                range.startDate.ToShortDateString(), range.endDate.ToShortDateString());
-                            
-                            // Продолжаем с другими диапазонами, но не прерываем выполнение метода
-                        }
-                    }
-                }
-                
-                // 5. Обновляем общий результат
-                await Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
-                {
-                    EventCountsByDate = result;
+                    EventCountsByDate = counts;
                     OnPropertyChanged(nameof(EventCountsByDate));
                 });
-                
-                _logger.LogInformation("LoadEventCountsForVisibleDaysAsync completed. Processed {DateCount} dates", 
-                    result.Count);
+
+                _logger.LogInformation("LoadEventCountsForVisibleDaysAsync completed. Processed {DateCount} dates", counts.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in LoadEventCountsForVisibleDaysAsync");
-                
-                // Возвращаем частичный результат, если он есть
-                if (EventCountsByDate == null || !EventCountsByDate.Any())
-                {
-                    // Если у нас совсем нет данных, создаем пустой результат
-                    var emptyResult = new Dictionary<DateTime, Dictionary<EventType, int>>();
-                    
-                    foreach (var day in CalendarDays)
-                    {
-                        emptyResult[day.Date] = new Dictionary<EventType, int>
-                        {
-                            { EventType.MedicationTreatment, 0 },
-                            { EventType.Photo, 0 },
-                            { EventType.CriticalWarning, 0 },
-                            { EventType.Video, 0 },
-                            { EventType.MedicalVisit, 0 },
-                            { EventType.GeneralRecommendation, 0 }
-                        };
-                    }
-                    
-                    EventCountsByDate = emptyResult;
-                    OnPropertyChanged(nameof(EventCountsByDate));
-                }
-            }
-        }
-        
-        private List<(DateTime startDate, DateTime endDate)> GroupDatesIntoRanges(List<DateTime> dates)
-        {
-            if (dates == null || !dates.Any())
-                return new List<(DateTime, DateTime)>();
-                
-            var sortedDates = dates.OrderBy(d => d).ToList();
-            var result = new List<(DateTime startDate, DateTime endDate)>();
-            
-            DateTime rangeStart = sortedDates[0];
-            DateTime rangeEnd = rangeStart;
-            
-            for (int i = 1; i < sortedDates.Count; i++)
-            {
-                var currentDate = sortedDates[i];
-                
-                // Если текущая дата следует сразу за предыдущей, расширяем диапазон
-                if ((currentDate - rangeEnd).TotalDays <= 1)
-                {
-                    rangeEnd = currentDate;
-                }
-                else
-                {
-                    // Иначе закрываем текущий диапазон и начинаем новый
-                    result.Add((rangeStart, rangeEnd));
-                    rangeStart = currentDate;
-                    rangeEnd = currentDate;
-                }
-            }
-            
-            // Добавляем последний диапазон
-            result.Add((rangeStart, rangeEnd));
-            
-            return result;
-        }
-        
-        private void UpdateCacheForDateRange(DateTime startDate, DateTime endDate, IEnumerable<CalendarEvent> events)
-        {
-            var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-            if (!eventsList.Any()) return; // Если событий нет, ничего не делаем с кэшем
-
-            // Группируем ПОЛУЧЕННЫЕ события по датам
-            var eventsByDate = eventsList.GroupBy(e => e.Date.Date)
-                                     .ToDictionary(g => g.Key, g => g.ToList());
-
-            // Обновляем кэш ТОЛЬКО для тех дат, для которых пришли события
-            foreach (var kvp in eventsByDate)
-            {
-                var date = kvp.Key;
-                var dateEvents = kvp.Value;
-                if (date >= startDate.Date && date <= endDate.Date)
-                {
-                    SetCache(date, dateEvents);
-                }
-            }
-            // Мы НЕ итерируем по всем датам диапазона и НЕ перезаписываем кэш пустыми списками.
-        }
-        
-        private void UpdateEventCounts(Dictionary<DateTime, Dictionary<EventType, int>> result, IEnumerable<CalendarEvent> events)
-        {
-            foreach (var evt in events)
-            {
-                if (evt.IsMultiDay && evt.EndDate.HasValue)
-                {
-                    // Обрабатываем многодневные события
-                    var currentDate = evt.Date.Date;
-                    var endDate = evt.EndDate.Value.Date;
-                    
-                    while (currentDate <= endDate)
-                    {
-                        if (result.ContainsKey(currentDate))
-                        {
-                            result[currentDate][evt.EventType]++;
-                        }
-                        currentDate = currentDate.AddDays(1);
-                    }
-                }
-                else
-                {
-                    // Обрабатываем однодневные события
-                    var eventDate = evt.Date.Date;
-                    if (result.ContainsKey(eventDate))
-                    {
-                        result[eventDate][evt.EventType]++;
-                    }
-                }
             }
         }
         
@@ -1027,21 +930,49 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public async Task ToggleEventCompletionAsync(CalendarEvent calendarEvent)
         {
+            // Verbose logging for diagnostics
+            _logger?.LogInformation("ToggleEventCompletionAsync invoked. SelectedDate={SelectedDate}, Today={Today}, EventId={EventId}, Title='{Title}', CurrentlyCompleted={IsCompleted}",
+                SelectedDate.ToShortDateString(), DateTime.Today.ToShortDateString(), calendarEvent?.Id, calendarEvent?.Title, calendarEvent?.IsCompleted);
+
+            // Restrict completion to events that belong to TODAY only
+            if (SelectedDate.Date != DateTime.Today)
+            {
+                _logger?.LogWarning("Attempt to complete an event that is not in today's list – operation aborted");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await MauiApp.Current.MainPage.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                });
+                return;
+            }
             if (calendarEvent != null)
             {
                 try
                 {
                     // Capture original state for rollback
                     var originalState = calendarEvent.IsCompleted;
+                    _logger?.LogDebug("Original IsCompleted state for event {EventId}: {State}", calendarEvent.Id, originalState);
                     
                     try
                     {
                         // Toggle state first
                         calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
+                        _logger?.LogDebug("Toggled IsCompleted for event {EventId} to {State}", calendarEvent.Id, calendarEvent.IsCompleted);
                         
-                        // Call service with single parameter
-                        await _calendarService.MarkEventAsCompletedAsync(calendarEvent.Id);
+                        // Update the IsCompleted state in the master list _allEventsForSelectedDate
+                        var eventInMasterList = _allEventsForSelectedDate?.FirstOrDefault(e => e.Id == calendarEvent.Id);
+                        if (eventInMasterList != null)
+                        {
+                            eventInMasterList.IsCompleted = calendarEvent.IsCompleted;
+                            _logger?.LogDebug("Updated IsCompleted for event {EventId} in _allEventsForSelectedDate to {State}", eventInMasterList.Id, eventInMasterList.IsCompleted);
+                        }
+                        else
+                        {
+                            _logger?.LogWarning("Event {EventId} not found in _allEventsForSelectedDate during toggle. Progress might be inaccurate.", calendarEvent.Id);
+                        }
                         
+                        // Persist via CQRS command handler
+                        await _commandBus.SendAsync(new CalendarCommands.ToggleEventCompletionCommand(calendarEvent.Id));
+
                         // Update cache if needed
                         if (TryGetCache(SelectedDate.Date, out var cachedEvents, out _))
                         {
@@ -1051,6 +982,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             {
                                 eventToUpdate.IsCompleted = calendarEvent.IsCompleted;
                                 SetCache(SelectedDate.Date, cachedEvents);
+                                _logger?.LogDebug("Cache updated for event {EventId}", calendarEvent.Id);
                             }
                         }
                         
@@ -1059,6 +991,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         {
                             await CheckOverdueEventsAsync();
                         }
+
+                        // Immediately recalculate progress and notify UI
+                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        {
+                            // Re-filter and update UI collections based on the new state in _allEventsForSelectedDate
+                            var visibleEvents = _allEventsForSelectedDate
+                                .Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning)
+                                .ToList();
+
+                            FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
+                            SortedEvents = new ObservableCollection<CalendarEvent>(
+                                visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
+                            EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
+
+                            OnPropertyChanged(nameof(FlattenedEvents));
+                            OnPropertyChanged(nameof(SortedEvents));
+                            OnPropertyChanged(nameof(EventsForSelectedDate));
+
+                            // Recalculate progress using the updated _allEventsForSelectedDate
+                            var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
+                            CompletionProgress = prog;
+                            CompletionPercentage = percent;
+                            OnPropertyChanged(nameof(CompletionProgress));
+                            OnPropertyChanged(nameof(CompletionPercentage));
+                            _logger?.LogInformation("Progress recalculated after event toggle: {Percent}% ({ProgressF:P2})", percent, prog);
+                        });
                     }
                     catch (Exception ex)
                     {
@@ -1066,9 +1024,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         _logger.LogError(ex, "Error toggling event completion");
                         calendarEvent.IsCompleted = originalState;
                         
-                        await Application.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                        await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(async () =>
                         {
-                            await Application.Current.MainPage.DisplayAlert(
+                            await MauiApp.Current.MainPage.DisplayAlert(
                                 "Error",
                                 "Failed to update event status. Please try again.",
                                 "OK"
@@ -1106,9 +1064,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 OnPropertyChanged(nameof(SelectedDate));
                 OnPropertyChanged(nameof(FormattedSelectedDate));
 
-                // Уведомляем о выбранной дате и вызываем ScrollToIndexTarget для центрирования
-                ScrollToIndexTarget = date;
-                
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
 
@@ -1139,7 +1094,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             SelectedDate = date;
             
             // Вместо навигации к несуществующей странице покажем сообщение
-            await Application.Current.MainPage.DisplayAlert(
+            await MauiApp.Current.MainPage.DisplayAlert(
                 "Календарь", 
                 $"Полный календарь для даты {date:dd.MM.yyyy} находится в разработке",
                 "OK");
@@ -1168,7 +1123,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             // и сохранения измененного события
             
             // Пример отложения события на день (заглушка для демонстрации):
-            await Application.Current.MainPage.DisplayActionSheet(
+            await MauiApp.Current.MainPage.DisplayActionSheet(
                 "Postpone Event", 
                 "Cancel", 
                 null,
@@ -1200,7 +1155,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                string savedDateString = Preferences.Get(SelectedDateKey, null);
+                string savedDateString = Preferences.Get(SelectedDateKey, string.Empty);
                 if (!string.IsNullOrEmpty(savedDateString) && DateTime.TryParse(savedDateString, out DateTime savedDate))
                 {
                     return savedDate;
@@ -1246,16 +1201,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 _logger.LogInformation("GoToTodayCommand executed.");
                 // Set SelectedDate to trigger event loading and UI updates
-                SelectedDate = DateTime.Today;
+                var today = DateTime.Today;
+                SelectedDate = today;
+                VisibleDate = today; // Explicitly update VisibleDate as well
 
-                // Set the target property to trigger scroll in the View
-                ScrollToIndexTarget = DateTime.Today;
-                // Log the value safely BEFORE it might be reset by the handler
-                _logger.LogInformation($"ScrollToIndexTarget set to {DateTime.Today.ToShortDateString()}");
-                
                 // Make sure the date gets visually selected in the DateSelector
                 // by explicitly raising property changed for SelectedDate
                 OnPropertyChanged(nameof(SelectedDate));
+                // Explicitly notify that VisibleDate changed too
+                OnPropertyChanged(nameof(VisibleDate)); 
             }
             catch (Exception ex)
             {
@@ -1296,49 +1250,137 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             try
             {
-                // Get any active restrictions
-                var activeRestrictions = await _calendarService.GetActiveRestrictionsAsync();
-                
-                // Update UI properties based on restrictions
-                HasActiveRestriction = activeRestrictions != null && activeRestrictions.Any();
-                
-                if (HasActiveRestriction && activeRestrictions.Count > 0)
+                var fetchedRestrictions = await _queryBus.SendAsync<IReadOnlyList<RestrictionInfo>>(new GetActiveRestrictionsQuery());
+                _logger.LogInformation("Fetched {Count} potential restrictions.", fetchedRestrictions?.Count ?? 0);
+
+                // Use Dispatcher for UI collection modification safety
+                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
-                    // Use the most critical restriction if there are multiple
-                    var criticalRestriction = activeRestrictions.FirstOrDefault(r => r.EventType == EventType.CriticalWarning) 
-                                             ?? activeRestrictions.First();
-                    
-                    CurrentRestrictionText = criticalRestriction.Description;
-                    
-                    // Set appropriate colors based on restriction type
-                    switch (criticalRestriction.EventType)
+                    ActiveRestrictions.Clear();
+                    var today = DateTime.Today;
+                    int validRestrictionsCount = 0;
+
+                    if (fetchedRestrictions != null)
                     {
-                        case EventType.CriticalWarning:
-                            RestrictionBackgroundColor = Color.FromArgb("#FFEBEE"); // Light red
-                            RestrictionIcon = "\ue002"; // warning glyph
-                            break;
-                        default:
-                            RestrictionBackgroundColor = Color.FromArgb("#FFF8E1"); // Light amber
-                            RestrictionIcon = "\ue88e"; // info glyph
-                            break;
+                        var categoryDict = new Dictionary<string, RestrictionInfo>();
+
+                        foreach (var restriction in fetchedRestrictions)
+                        {
+                            var (glyph, description) = GetRestrictionUIDetails(restriction.OriginalType);
+                            if (string.IsNullOrEmpty(glyph))
+                            {
+                                // try keyword mapping from description
+                                (glyph, description) = GetRestrictionGlyph(restriction.Description);
+                            }
+
+                            if (string.IsNullOrEmpty(glyph)) continue;
+
+                            // Deduplicate by description; keep the shortest remaining days
+                            if (categoryDict.TryGetValue(description, out var existing))
+                            {
+                                if (restriction.RemainingDays < existing.RemainingDays)
+                                {
+                                    existing.RemainingDays = restriction.RemainingDays;
+                                    existing.EndDate = restriction.EndDate;
+                                }
+                            }
+                            else
+                            {
+                                restriction.IconGlyph = glyph;
+                                restriction.Description = description;
+                                categoryDict[description] = restriction;
+                            }
+                        }
+
+                        foreach (var info in categoryDict.Values)
+                        {
+                            ActiveRestrictions.Add(info);
+                        }
+                        validRestrictionsCount = ActiveRestrictions.Count;
+
+                        // Update legacy single-restriction bindings using first restriction (if any)
+                        var first = ActiveRestrictions.FirstOrDefault();
+                        if (first != null)
+                        {
+                            RestrictionIcon = first.IconGlyph;
+                            CurrentRestrictionText = first.Description;
+                            // Background accent – red if ≤3 days, else neutral subtle gray
+                            RestrictionBackgroundColor = first.RemainingDays <= 3
+                                ? Color.FromArgb("#FFFFE5E5") // light red tint
+                                : Color.FromArgb("#FFF0F0F0");
+                        }
+                        else
+                        {
+                            RestrictionIcon = string.Empty;
+                            CurrentRestrictionText = string.Empty;
+                            RestrictionBackgroundColor = Colors.Transparent;
+                        }
                     }
-                }
-                else
-                {
-                    // Default values when no restrictions
-                    CurrentRestrictionText = "No active restrictions";
-                    RestrictionBackgroundColor = Colors.LightSalmon;
-                    RestrictionIcon = "\ue88e"; // info glyph
-                }
-                
-                _logger.LogInformation("Active restrictions check completed. HasActiveRestriction: {HasActiveRestriction}", HasActiveRestriction);
+
+                    HasActiveRestriction = ActiveRestrictions.Any();
+                    _logger.LogInformation("Processed restrictions. Added {Count} valid restrictions to UI collection. HasActiveRestriction: {HasActive}", 
+                                            validRestrictionsCount, HasActiveRestriction);
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking active restrictions");
-                HasActiveRestriction = false;
-                CurrentRestrictionText = "Unable to check restrictions";
+                 _logger.LogError(ex, "Error checking active restrictions");
+                 await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() => 
+                 {
+                     ActiveRestrictions.Clear();
+                     HasActiveRestriction = false;
+                 });
             }
+        }
+
+        // Helper method for mapping EventType to UI details
+        private (string Icon, string Description) GetRestrictionUIDetails(EventType eventType)
+        {
+            // TODO: Define actual icons and short descriptions based on EventType values
+            switch (eventType)
+            {
+                // Example mappings (replace with actual Material Icon glyphs and short names)
+                case EventType.CriticalWarning: // Assuming this could be a general restriction
+                    return ("\ue002", "Warning"); // warning
+                case EventType.MedicalVisit:
+                     return ("\ue87d", "Visit"); // medical_services
+                // Add specific restriction types if they exist in EventType enum
+                // case EventType.NoSport:
+                //     return ("\ue52f", "Спорт"); // directions_run
+                // case EventType.NoWater:
+                //     return ("\ue1a1", "Вода"); // water_drop
+                // case EventType.NoHaircut:
+                //     return ("\ue530", "Стрижка"); // content_cut
+                default:
+                    _logger.LogWarning("No UI mapping defined for EventType: {EventType}", eventType);
+                    return (string.Empty, string.Empty); // No icon/desc for unknown/unmapped types
+            }
+        }
+
+        // New helper: map by title keyword (simple heuristic)
+        private (string Icon, string Description) GetRestrictionGlyph(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return (string.Empty, string.Empty);
+
+            title = title.ToLowerInvariant();
+
+            // Map keywords to image file names located in Resources/AppIcon/
+            if (title.Contains("курен")) return ("\uebc3", "Smoking");          // smoking rooms
+            if (title.Contains("алкогол")) return ("\ueadf", "Alcohol");         // liquor
+            if (title.Contains("спорт")) return ("\ue566", "Sport");           // fitness_center
+            if (title.Contains("загар")) return ("\ue430", "Sun");             // wb_sunny
+            if (title.Contains("45")) return ("\uebed", "Sleep45");           // airline_seat_recline_extra
+            if (title.Contains("стрижк")) return ("\ue14e", "Haircut");        // content_cut
+            if (title.Contains("секс")) return ("no_sex.png", "Sex");
+            if (title.Contains("головн") && title.Contains("убор")) return ("no_headwear.png", "Headwear");
+            if (title.Contains("потоотд") || title.Contains("пот")) return ("no_sweating.png", "Sweat");
+            if (title.Contains("бассейн") || title.Contains("плаван") || title.Contains("swimm")) return ("no_swimming.png", "Swimming");
+            if (title.Contains("наклон") || title.Contains("голов") && title.Contains("вниз")) return ("no_head_tilt.png", "HeadTilt");
+            if (title.Contains("стрижка")) return ("no_haircut.png", "Haircut");
+            if (title.Contains("стайл") || title.Contains("уклад") || title.Contains("средств")) return ("no_styling.png", "Styling");
+            if (title.Contains("горизонталь") || title.Contains("лежа")) return ("no_horizontal_sleep.png", "HorizontalSleep");
+
+            return (string.Empty, string.Empty);
         }
 
         #region CacheHelpers

@@ -2,7 +2,12 @@
 <?xaml-comp compile="true" ?>
 <ResourceDictionary 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="CommonStyles.xaml" />
+    </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="ActivityIndicator">
         <Setter Property="Color" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
@@ -452,10 +457,23 @@
     </Style>
 
     <!-- Shadows -->
-    <Shadow x:Key="SmallShadow"
-            Brush="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
-            Offset="0,1"
-            Radius="2"
-            Opacity="0.1"/>
+    <Shadow x:Key="SmallShadow" Radius="6" Opacity="0.3" Offset="0,2" />
+
+    <!-- Shadow taken from light theme chat message style -->
+    <Shadow x:Key="CalendarCardShadow"
+            Radius="6"
+            Offset="0,2"
+            Opacity="0.3"
+            Brush="{AppThemeBinding Light=#CCE0F6, Dark=#0000004D}" />
+    
+    <!-- Calendar card reusable style -->
+    <Style x:Key="CalendarCardBorderStyle" TargetType="Border">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="4,6" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="Shadow" Value="{StaticResource SmallShadow}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
+    </Style>
 
 </ResourceDictionary>

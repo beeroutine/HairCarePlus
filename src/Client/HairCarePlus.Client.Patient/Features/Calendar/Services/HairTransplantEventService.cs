@@ -160,8 +160,20 @@ public class HairTransplantEventService : ICalendarService
 
     async Task<List<CalendarEvent>> ICalendarService.GetActiveRestrictionsAsync()
     {
-        // For now, no separate restriction storage; return empty list
-        return new List<CalendarEvent>();
+        // Актуальные ограничения — это события-предупреждения (CriticalWarning)
+        // с датой окончания в будущем.
+
+        var today = DateTime.Today;
+        var rangeEnd = today.AddDays(365);
+
+        var events = await GetEventsForRangeAsync(today, rangeEnd);
+
+        var activeRestrictions = events
+            .Where(e => e.Type == DomainEventType.Warning && e.EndDate >= today)
+            .Select(MapToCalendarEvent)
+            .ToList();
+
+        return activeRestrictions;
     }
 
     async Task<List<CalendarEvent>> ICalendarService.GetPendingNotificationEventsAsync()

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolkit:Popup x:Class="HairCarePlus.Client.Patient.Features.Progress.Views.RestrictionStoriesPopup"
+               xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+               x:DataType="models:RestrictionTimer"
+               CanBeDismissedByTappingOutsideOfPopup="True">
+
+    <Grid BackgroundColor="#CC000000"
+          HorizontalOptions="FillAndExpand"
+          VerticalOptions="FillAndExpand">
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnBackgroundTapped" />
+        </Grid.GestureRecognizers>
+
+        <Border
+            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource OffBlack}}"
+            Padding="24"
+            StrokeShape="RoundRectangle 24"
+            HorizontalOptions="Center"
+            VerticalOptions="Center">
+            <VerticalStackLayout Spacing="32">
+                <!-- Большой кружок с числом дней -->
+                <Border StrokeShape="Ellipse"
+                        HeightRequest="120"
+                        WidthRequest="120"
+                        StrokeThickness="3"
+                        Stroke="White"
+                        BackgroundColor="Transparent"
+                        HorizontalOptions="Center">
+                    <Label Text="{Binding DaysRemaining}"
+                           FontSize="42"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+                
+                <!-- Заголовок ограничения -->
+                <Label Text="{Binding Title}"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       Margin="0,-8,0,0" />
+                
+                <!-- Простое описание без навязчивого блока -->
+                <Label Text="{Binding DetailedDescription}"
+                       FontSize="16"
+                       LineHeight="1.4"
+                       TextColor="#B0B0B0"
+                       HorizontalTextAlignment="Center"
+                       Margin="16,8,16,0" />
+                
+                <!-- Инструкция закрытия -->
+                <Label Text="Нажмите в любом месте, чтобы закрыть"
+                       FontSize="14"
+                       TextColor="#60FFFFFF"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,16,0,0" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</toolkit:Popup> 

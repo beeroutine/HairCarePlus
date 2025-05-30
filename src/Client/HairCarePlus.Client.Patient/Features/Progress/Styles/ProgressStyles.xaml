@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    
+    <!-- ============== ЦВЕТА И ГРАДИЕНТЫ ============== -->
+    
+    <!-- Градиент для overlay на фото -->
+    <LinearGradientBrush x:Key="PhotoOverlayGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40000000" Offset="0" />
+        <GradientStop Color="Transparent" Offset="1" />
+    </LinearGradientBrush>
+    
+    <!-- Цвета индикаторов -->
+    <Color x:Key="DoctorIndicatorColor">#4CAF50</Color>
+    <Color x:Key="AIIndicatorColor">#3478F6</Color>
+    
+    <!-- Цвета ограничений по срочности (приглушенные, как в Today Page) -->
+    <Color x:Key="CriticalRestrictionColor">#DC4545</Color>
+    <Color x:Key="CriticalRestrictionBackground">#FFF5F5</Color>
+    <Color x:Key="SoonRestrictionColor">#F59E0B</Color>
+    <Color x:Key="SoonRestrictionBackground">#FFFBEB</Color>
+    <Color x:Key="CompletedRestrictionColor">#10B981</Color>
+    <Color x:Key="CompletedRestrictionBackground">#F0FDF4</Color>
+    
+    <!-- ============== ОСНОВНЫЕ СТИЛИ КАРТОЧЕК ============== -->
+    
+    <!-- Instagram-подобная карточка -->
+    <Style x:Key="InstagramCardStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
+                        Offset="0,2"
+                        Radius="8"
+                        Opacity="0.2" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- ============== FLOATING BADGES ============== -->
+    
+    <!-- Floating badge для дня -->
+    <Style x:Key="FloatingDayBadgeStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light=#F0F0F0F0, Dark=#2E2E2EF0}" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#40000000"
+                        Offset="0,2"
+                        Radius="4"
+                        Opacity="0.3" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- AI Score badge -->
+    <Style x:Key="AIScoreBadgeStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#40000000"
+                        Offset="0,2"
+                        Radius="4"
+                        Opacity="0.3" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- ============== КОММЕНТАРИИ И БЛОКИ ============== -->
+    
+    <!-- Комментарий врача -->
+    <Style x:Key="DoctorCommentStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{StaticResource DoctorIndicatorColor}" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light=#F8FFF8, Dark=#1A2E1A}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+    
+    <!-- AI комментарий -->
+    <Style x:Key="AICommentStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{StaticResource AIIndicatorColor}" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light=#F8FBFF, Dark=#1A1E2E}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+    
+    <!-- ============== ИНДИКАТОРЫ И РАЗДЕЛИТЕЛИ ============== -->
+    
+    <!-- Photo indicators -->
+    <Style x:Key="PhotoIndicatorStyle" TargetType="IndicatorView">
+        <Setter Property="IndicatorColor" 
+                Value="{AppThemeBinding Light=#40FFFFFF, Dark=#40000000}" />
+        <Setter Property="SelectedIndicatorColor" 
+                Value="{AppThemeBinding Light=White, Dark={StaticResource Gray200}}" />
+        <Setter Property="IndicatorSize" Value="8" />
+    </Style>
+    
+    <!-- Instagram-подобные индикаторы фото (ниже изображения) -->
+    <Style x:Key="InstagramPhotoIndicatorStyle" TargetType="IndicatorView">
+        <Setter Property="IndicatorColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+        <Setter Property="SelectedIndicatorColor" 
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="IndicatorSize" Value="6" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+    
+
+    
+    <!-- ============== ТИПОГРАФИКА ============== -->
+    
+    <!-- День badge текст -->
+    <Style x:Key="DayBadgeTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark=White}" />
+    </Style>
+    
+    <!-- AI Score label -->
+    <Style x:Key="AIScoreLabelStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+    </Style>
+    
+    <!-- AI Score value -->
+    <Style x:Key="AIScoreValueStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+    </Style>
+    
+    <!-- Instagram дата -->
+    <Style x:Key="InstagramDateStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+        <Setter Property="FontAttributes" Value="None" />
+    </Style>
+    
+    <!-- Заголовок комментария -->
+    <Style x:Key="CommentHeaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+    </Style>
+    
+    <!-- Текст комментария -->
+    <Style x:Key="CommentTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineHeight" Value="1.4" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
+    </Style>
+    
+    <!-- ============== LEGACY СТИЛИ (сохранены для совместимости) ============== -->
+    
+    <!-- Минималистичный стиль кругов -->
+    <Style x:Key="MinimalCircleStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="Ellipse" />
+        <Setter Property="StrokeThickness" Value="2" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="48" />
+        <Setter Property="WidthRequest" Value="48" />
+    </Style>
+    
+    <!-- Базовый стиль карточки -->
+    <Style x:Key="BaseCardStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, 
+                                       Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="Margin" Value="4,6" />
+    </Style>
+    
+    <!-- Restriction circle использует MinimalCircleStyle -->
+    <Style x:Key="RestrictionCircleStyle" TargetType="Border" BasedOn="{StaticResource MinimalCircleStyle}">
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+    </Style>
+
+    <!-- Feed card background использует BaseCardStyle -->
+    <Style x:Key="PhotoCardStyle" TargetType="Border" BasedOn="{StaticResource BaseCardStyle}" />
+
+    <!-- Dock button uses shared PrimaryButton style -->
+    <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
+
+    <!-- ============== СТИЛИ ТАЙМЕРОВ ОГРАНИЧЕНИЙ ============== -->
+    
+    <!-- Модернизированный стиль кружочков ограничений -->
+    <Style x:Key="ModernRestrictionCircleStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="Ellipse" />
+        <Setter Property="StrokeThickness" Value="2" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="50" />
+        <Setter Property="WidthRequest" Value="50" />
+        <Setter Property="Stroke" 
+                Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
+                        Offset="0,1"
+                        Radius="3"
+                        Opacity="0.15" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- Стиль для чисел в кружочках ограничений -->
+    <Style x:Key="RestrictionDaysTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+    </Style>
+    
+    <!-- Стиль для подписей ограничений -->
+    <Style x:Key="RestrictionLabelStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="MaxLines" Value="2" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+    </Style>
+    
+    <!-- Стиль для кружочка "Еще" -->
+    <Style x:Key="ShowMoreRestrictionCircleStyle" TargetType="Border" BasedOn="{StaticResource ModernRestrictionCircleStyle}">
+        <Setter Property="Stroke" 
+                Value="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="BackgroundColor" 
+                Value="{AppThemeBinding Light=#F8F8F8, Dark=#2A2A2A}" />
+    </Style>
+    
+    <!-- Стиль для текста в кружочке "Еще" -->
+    <Style x:Key="ShowMoreTextStyle" TargetType="Label" BasedOn="{StaticResource RestrictionDaysTextStyle}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontAttributes" Value="None" />
+        <Setter Property="TextColor" 
+                Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
+    </Style>
+    
+</ResourceDictionary> 

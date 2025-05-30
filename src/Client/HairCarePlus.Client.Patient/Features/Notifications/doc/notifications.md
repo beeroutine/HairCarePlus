@@ -1,137 +1,56 @@
-# Приложение HairCare+ для пациентов: Функция уведомлений
+# Notifications Module
 
-## Обзор
+> Version: September 2025 | .NET MAUI 9.0.51 SR
 
-Функция уведомлений в приложении HairCare+ для пациентов обеспечивает систему оповещений о важных событиях, таких как прием лекарств, медицинские процедуры, напоминания о необходимости отправки фотографий и другие события, связанные с послеоперационным периодом трансплантации волос.
+## TL;DR
+Schedules and manages local and calendar-triggered notifications for patient care reminders with offline-first reliability.
 
-## Архитектура
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Functionality](#functionality)
+4. [Technical Implementation](#technical-implementation)
+5. [Platform Considerations](#platform-considerations)
+6. [Integration](#integration)
+7. [Security](#security)
 
-Функция уведомлений реализована с использованием сервисного подхода:
+## Overview
+The Notifications module provides timely reminders for medications, procedures, photo submissions, and other postoperative care events.
 
-- **Сервисы**: Основная бизнес-логика для планирования и управления уведомлениями
-- **Интерфейсы**: Определяют контракты для реализации на разных платформах
-- **Платформенные реализации**: Специфичные для iOS и Android имплементации
+## Architecture
+Implements a service-based pattern:
+- **Interfaces:** Contracts for notification scheduling and management
+- **Services:** Business logic for scheduling, canceling, and handling notifications
+- **Platform Implementations:** iOS/Android native APIs via DI
 
-## Функциональность
+## Functionality
+### Current Implementation
+- Schedule, cancel, and cancel-all local notifications
+- Attach optional data payloads to each notification
+- Automatic notification creation for calendar events
 
-### Текущая реализация
+### Planned Features
+- Customizable repeat intervals and priority categories
+- Interactive notification actions (mark as done, snooze)
+- Rich media content and grouped notifications
 
-1. **Базовые возможности уведомлений**
-   - Планирование уведомлений на определенное время
-   - Отмена запланированных уведомлений
-   - Отмена всех уведомлений
-   - Передача дополнительных данных с уведомлениями
+## Technical Implementation
+- **INotificationService:**
+  - `ScheduleNotificationAsync(title, message, scheduledTime, data)`
+  - `CancelNotificationAsync(notificationId)`
+  - `CancelAllNotificationsAsync()`
+- **NotificationService:** Debug stub; replace with platform-specific implementations
+- **DI Registration:** `services.AddScoped<INotificationService, NotificationService>()`
 
-2. **Интеграция с системой событий**
-   - Автоматическое создание уведомлений для событий календаря
-   - Напоминания о предстоящих медицинских процедурах
-   - Оповещения о необходимости приема лекарств
+## Platform Considerations
+- **iOS:** `UNUserNotificationCenter` permissions, actions, and categories
+- **Android:** `NotificationChannel` and `NotificationManager` with `AndroidX.Core.App.NotificationCompat`
 
-### Планируемые функции (В РАЗРАБОТКЕ)
+## Integration
+- **Calendar Module:** Sync scheduling and cancellation with calendar events
+- **Chat Module:** Push notifications for new messages with deep links to chat
 
-1. **Расширенная настройка уведомлений**
-   - Настройка частоты повторения уведомлений
-   - Категоризация уведомлений по приоритету
-   - Пользовательские настройки времени уведомлений
-
-2. **Улучшенное взаимодействие**
-   - Действия в уведомлениях (отметить как выполненное, отложить)
-   - Богатый контент в уведомлениях (изображения, дополнительные кнопки)
-   - Группировка серии уведомлений
-
-## Техническая реализация
-
-### Интерфейс INotificationService
-
-Основной интерфейс для работы с уведомлениями:
-
-```csharp
-public interface INotificationService
-{
-    /// <summary>
-    /// Планирует локальное уведомление
-    /// </summary>
-    /// <param name="title">Заголовок уведомления</param>
-    /// <param name="message">Текст сообщения</param>
-    /// <param name="scheduledTime">Время показа уведомления</param>
-    /// <param name="data">Дополнительные данные для уведомления</param>
-    /// <returns>Идентификатор уведомления</returns>
-    Task<string> ScheduleNotificationAsync(string title, string message, DateTime scheduledTime, string data = null);
-    
-    /// <summary>
-    /// Отменяет запланированное уведомление
-    /// </summary>
-    /// <param name="notificationId">ID уведомления для отмены</param>
-    Task CancelNotificationAsync(string notificationId);
-    
-    /// <summary>
-    /// Отменяет все запланированные уведомления
-    /// </summary>
-    Task CancelAllNotificationsAsync();
-}
-```
-
-### Базовая реализация NotificationService
-
-```csharp
-public class NotificationService : INotificationService
-{
-    public Task<string> ScheduleNotificationAsync(string title, string message, DateTime scheduledTime, string data = null)
-    {
-        // Реализация использует API уведомлений для конкретной платформы
-        // В текущей версии заглушка для отладки
-        string notificationId = Guid.NewGuid().ToString();
-        Console.WriteLine($"Notification scheduled: {title}, {message}, {scheduledTime}");
-        return Task.FromResult(notificationId);
-    }
-    
-    public Task CancelNotificationAsync(string notificationId)
-    {
-        // Реализация использует API уведомлений для конкретной платформы
-        Console.WriteLine($"Notification cancelled: {notificationId}");
-        return Task.CompletedTask;
-    }
-    
-    public Task CancelAllNotificationsAsync()
-    {
-        // Реализация использует API уведомлений для конкретной платформы
-        Console.WriteLine("All notifications cancelled");
-        return Task.CompletedTask;
-    }
-}
-```
-
-## Особенности платформ
-
-### iOS особенности
-- Использование UNUserNotificationCenter для планирования уведомлений
-- Запрос разрешений у пользователя для отображения уведомлений
-- Поддержка сворачивания и действий в уведомлениях
-
-### Android особенности
-- Использование NotificationManager и NotificationChannel (для Android 8.0+)
-- Обеспечение обратной совместимости через AndroidX.Core.App.NotificationCompat
-- Корректная обработка разрешений для различных версий Android
-
-## Интеграция с другими функциями
-
-### Календарь событий
-- Автоматическое создание уведомлений для запланированных событий
-- Синхронизация отмены или переноса событий с соответствующими уведомлениями
-
-### Чат с врачом
-- Уведомления о новых сообщениях от врача
-- Возможность быстрого перехода к чату из уведомления
-
-## Безопасность и приватность
-
-- Отсутствие конфиденциальной медицинской информации в тексте уведомлений
-- Шифрование дополнительных данных, связанных с уведомлениями
-- Соблюдение политик приватности при использовании уведомлений
-
-## Рекомендации по разработке
-
-- При расширении функциональности уведомлений сохранять совместимость с интерфейсом INotificationService
-- Использовать специфичные для платформы реализации для оптимального пользовательского опыта
-- Тщательно тестировать на реальных устройствах под различными версиями iOS и Android
-- Обеспечивать корректную обработку разрешений и настроек пользователя 
+## Security
+- No protected health information in notification bodies
+- Encrypt sensitive payload data as needed
+- Adhere to privacy policies and secure storage guidelines 

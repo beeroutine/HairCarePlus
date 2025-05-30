@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# HairCare+ — Core Documentation Reference
+
+AI assistants must always consult the following files when analyzing, navigating, or modifying code:
+
+1. README.md — core architecture, tech stack, and UX guidelines
+2. Features/Calendar/overview.md — Calendar module overview
+3. Features/Calendar/todaypage.md — Today Page detailed spec
+4. Features/Chat/chat.md — Chat module documentation
+5. Features/Notifications/notifications.md — Notifications module documentation
+6. Features/PhotoCapture/photo_capture.md — Photo Capture module documentation
+7. Features/Progress/progress.md — Progress module documentation
+
+Follow these principles:
+- .NET MAUI 9.0.51 SR best practices (VisualStateManager, DI via MauiProgram, ILogger<>, x:DataType)
+- SOLID and KISS
+- Clean Architecture, MVVM, CQRS
+
+Before making changes, ensure new solutions do not conflict with any of the above documents.

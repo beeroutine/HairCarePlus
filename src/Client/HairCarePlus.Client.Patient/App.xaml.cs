@@ -13,22 +13,13 @@ public partial class App : Application
 
 	public App()
 	{
-		try
-		{
-			_logger = IPlatformApplication.Current.Services.GetRequiredService<ILogger<App>>();
-			_logger.LogDebug("App constructor start");
-			InitializeComponent();
-			_logger.LogDebug("App InitializeComponent completed");
-			
-			// Show loading screen while startup tasks execute
-			MainPage = new LoadingPage();
-			_logger.LogDebug("LoadingPage set as MainPage");
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Exception in App constructor");
-			// Consider showing an error message to the user here
-		}
+		InitializeComponent();
+
+		// Fallback logger (safe) — will be replaced in OnStart when DI is ready
+		_logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<App>();
+
+		// Show loading screen while startup tasks execute
+		MainPage = new LoadingPage();
 	}
 
 	protected override async void OnStart()

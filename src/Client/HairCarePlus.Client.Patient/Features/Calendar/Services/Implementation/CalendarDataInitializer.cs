@@ -87,17 +87,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
                     await _dbContext.SaveChangesAsync(cancellationToken);
                 }
 
-                // Generate and store events
+                // Generate and store calendar events
                 _logger.LogInformation("Generating calendar events for initialization.");
                 var startDate = DateTime.Today;
                 var endDate = startDate.AddDays(364); // Generate events for 1 year
-                var events = await _eventGenerator.GenerateEventsForPeriodAsync(startDate, endDate);
-                var total = events.Count();
-                _logger.LogInformation("Generated {EventCount} events for initialization.", total);
+                var events = (await _eventGenerator.GenerateEventsForPeriodAsync(startDate, endDate)).ToList();
+
+                // Generate and include restriction events from dedicated schedule
+                var restrictionEvents = (await _eventGenerator.GenerateRestrictionEventsAsync(startDate)).ToList();
+
+                _logger.LogInformation("Generated {EventCount} standard events and {RestrictionCount} restriction events for initialization.",
+                                        events.Count, restrictionEvents.Count);
+
+                events.AddRange(restrictionEvents);
 
                 await _dbContext.Events.AddRangeAsync(events, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Successfully saved {EventCount} events to the database.", total);
+
+                var total = events.Count;
+                _logger.LogInformation("Successfully saved {EventCount} events to the database (including restrictions).", total);
 
                 // Set the initialization flag in Preferences
                 Preferences.Set(DATA_INITIALIZED_KEY, true);
