@@ -958,6 +958,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         calendarEvent.IsCompleted = !calendarEvent.IsCompleted;
                         _logger?.LogDebug("Toggled IsCompleted for event {EventId} to {State}", calendarEvent.Id, calendarEvent.IsCompleted);
                         
+                        // Update the IsCompleted state in the master list _allEventsForSelectedDate
+                        var eventInMasterList = _allEventsForSelectedDate?.FirstOrDefault(e => e.Id == calendarEvent.Id);
+                        if (eventInMasterList != null)
+                        {
+                            eventInMasterList.IsCompleted = calendarEvent.IsCompleted;
+                            _logger?.LogDebug("Updated IsCompleted for event {EventId} in _allEventsForSelectedDate to {State}", eventInMasterList.Id, eventInMasterList.IsCompleted);
+                        }
+                        else
+                        {
+                            _logger?.LogWarning("Event {EventId} not found in _allEventsForSelectedDate during toggle. Progress might be inaccurate.", calendarEvent.Id);
+                        }
+                        
                         // Persist via CQRS command handler
                         await _commandBus.SendAsync(new CalendarCommands.ToggleEventCompletionCommand(calendarEvent.Id));
 
@@ -983,25 +995,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         // Immediately recalculate progress and notify UI
                         await MainThread.InvokeOnMainThreadAsync(() =>
                         {
-                            if (calendarEvent.IsCompleted)
-                            {
-                                // Remove from interactive UI collections – the master list (_allEventsForSelectedDate) remains intact
-                                FlattenedEvents?.Remove(calendarEvent);
-                                SortedEvents?.Remove(calendarEvent);
-                                EventsForSelectedDate?.Remove(calendarEvent);
-                            }
+                            // Re-filter and update UI collections based on the new state in _allEventsForSelectedDate
+                            var visibleEvents = _allEventsForSelectedDate
+                                .Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning)
+                                .ToList();
 
-                            // --- DEBUG LOGGING START ---
-                            _logger?.LogDebug("[Progress Recalc] Events in _allEventsForSelectedDate ({Count}):", _allEventsForSelectedDate?.Count ?? 0);
-                            if (_allEventsForSelectedDate != null)
-                            {
-                                foreach (var evt in _allEventsForSelectedDate)
-                                {
-                                    _logger?.LogDebug("  - ID: {Id}, Title: '{Title}', IsCompleted: {IsCompleted}, Type: {Type}", evt.Id, evt.Title, evt.IsCompleted, evt.EventType);
-                                }
-                            }
-                            // --- DEBUG LOGGING END ---
+                            FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
+                            SortedEvents = new ObservableCollection<CalendarEvent>(
+                                visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
+                            EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
 
+                            OnPropertyChanged(nameof(FlattenedEvents));
+                            OnPropertyChanged(nameof(SortedEvents));
+                            OnPropertyChanged(nameof(EventsForSelectedDate));
+
+                            // Recalculate progress using the updated _allEventsForSelectedDate
                             var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
                             CompletionProgress = prog;
                             CompletionPercentage = percent;

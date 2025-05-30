@@ -35,19 +35,18 @@ namespace HairCarePlus.Client.Patient.Common.Views
                 canvas.StrokeSize = StrokeWidth;
                 canvas.StrokeLineCap = LineCap.Round; // Round ends for the progress arc
 
-                // DrawArc expects start and end angles in degrees, clockwise from 3 o'clock.
-                // We want to start at 12 o'clock (-90 degrees).
-                float startAngle = -90;
-                float endAngle = startAngle + (360 * Progress);
+                // DrawArc with sweepAngle for clockwise fill
+                float startAngle = -90f; // 12 o'clock
+                float sweepAngle = 360f * Progress; // calculate sweep based on progress
 
-                // Define the bounding box for the arc
+                // Define bounding box
                 float left = centerX - radius;
                 float top = centerY - radius;
                 float width = radius * 2;
                 float height = radius * 2;
                 
-                // Draw the arc clockwise so filling direction matches clock hands
-                canvas.DrawArc(left, top, width, height, startAngle, endAngle, true, false);
+                // Draw stroke-only arc clockwise
+                canvas.DrawArc(left, top, width, height, startAngle, sweepAngle, false, true);
             }
         }
     }

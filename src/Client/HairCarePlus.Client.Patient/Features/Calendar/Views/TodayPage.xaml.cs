@@ -17,6 +17,11 @@ using AndroidX.RecyclerView.Widget;
 #endif
 using System.Threading;
 using HairCarePlus.Client.Patient.Common.Utils;
+using SkiaSharp.Extended.UI.Controls;
+using SkiaSharp;
+using HairCarePlus.Client.Patient.Common.Views;
+using Microsoft.Maui.Graphics;
+using System.Collections.Generic;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -25,6 +30,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         private readonly ILogger<TodayPage> _logger;
         private TodayViewModel? _viewModel;
         private bool _isUpdatingFromScroll = false; // flag to avoid recursive scroll/selection updates
+        private Random _confettiRandom = new Random(); // Random generator for confetti
 
         public TodayPage(TodayViewModel viewModel, ILogger<TodayPage> logger)
         {
@@ -93,6 +99,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     };
                 }
 #endif
+
+                // subscribe to completed event for confetti
+                if (ProgressRingRef != null)
+                {
+                    ProgressRingRef.Completed += OnRingCompleted;
+                }
             }
             catch (Exception ex)
             {
@@ -153,6 +165,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 // Add delay and explicit state update after scroll completes
                 await Task.Delay(200); // Slightly longer delay for animated scroll
         // UpdateVisibleItemStates(); // Удалено для устранения ошибки и избежания двойной подсветки
+            }
+            else if (e?.PropertyName == nameof(TodayViewModel.CompletionProgress)
+                     && ProgressRingRef != null && _viewModel != null)
+            {
+                try
+                {
+                    // Progress is now a bindable property on SkiaProgressRing, direct animation call not needed from here
+                    // The SkiaProgressRing will internally animate when its Progress property changes.
+                    // We just need to ensure the ViewModel's CompletionProgress is bound to SkiaProgressRing.Progress in XAML.
+                    // For now, let's assume the binding is set up correctly. If direct animation is still desired,
+                    // SkiaProgressRing would need an AnimateToAsync method similar to the old one.
+                    // Forcing a property update if binding doesn't trigger for some reason (defensive):
+                    if (ProgressRingRef.Progress != _viewModel.CompletionProgress)
+                    {
+                        ProgressRingRef.Progress = _viewModel.CompletionProgress;
+                    }
+                }
+                catch { /* ignore */ }
             }
         }
         
@@ -221,6 +251,22 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 // Загружаем данные
                 await _viewModel.EnsureLoadedAsync();
                 _logger.LogInformation("EnsureLoadedAsync completed in OnAppearing");
+
+                // Инициализируем прогресс кольца после загрузки данных
+                if (ProgressRingRef != null && _viewModel != null)
+                {
+                    try
+                    {
+                        // Similar to OnViewModelPropertyChanged, assuming Progress is bound.
+                        // Forcing initial update:
+                        ProgressRingRef.Progress = _viewModel.CompletionProgress;
+                        _logger.LogDebug("Initial progress animation completed: {Progress}", _viewModel.CompletionProgress);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error during initial progress animation");
+                    }
+                }
 
                 // Убеждаемся, что текущая дата выбрана и видима
                 if (DateSelectorView != null)
@@ -299,6 +345,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             }
 
+            if (ProgressRingRef != null)
+            {
+                ProgressRingRef.Completed -= OnRingCompleted;
+            }
+
             // Отписываемся от события смены темы
             Microsoft.Maui.Controls.Application.Current.RequestedThemeChanged -= OnThemeChanged;
 
@@ -362,5 +413,107 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             public void OnChildViewDetachedFromWindow(Android.Views.View view) { /* no-op */ }
         }
 #endif
+
+        private void OnRingCompleted(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (ConfettiView is SKConfettiView sk && sk.Width > 0 && sk.Height > 0)
+                {
+                    sk.IsAnimationEnabled = false;
+                    sk.Systems.Clear();
+
+                    var baseColors = new List<Microsoft.Maui.Graphics.Color>
+                    {
+                        Microsoft.Maui.Graphics.Colors.Gold,
+                        Microsoft.Maui.Graphics.Colors.White,
+                        Microsoft.Maui.Graphics.Colors.Cyan.WithAlpha(0.6f),
+                        Microsoft.Maui.Graphics.Colors.LightPink.WithAlpha(0.6f),
+                        Microsoft.Maui.Graphics.Colors.LightSkyBlue.WithAlpha(0.6f),
+                        Microsoft.Maui.Graphics.Colors.PaleVioletRed.WithAlpha(0.6f)
+                    };
+
+                    int numberOfFireworks = _confettiRandom.Next(5, 8); // 5 to 7 fireworks
+
+                    for (int i = 0; i < numberOfFireworks; i++)
+                    {
+                        // Select a subset of colors for this firework burst for variety
+                        var currentFireworkColors = new SKConfettiColorCollection();
+                        var shuffledColors = baseColors.OrderBy(c => _confettiRandom.Next()).ToList();
+                        int colorCountForBurst = _confettiRandom.Next(2, 4); // 2 or 3 colors per burst
+                        for(int cIdx = 0; cIdx < colorCountForBurst; cIdx++)
+                        {
+                            currentFireworkColors.Add(shuffledColors[cIdx % shuffledColors.Count]);
+                        }
+
+                        var shapes = new SKConfettiShapeCollection();
+                        shapes.Add(new SKConfettiCircleShape()); // Small sparks (dots)
+
+                        // Add a couple of streak shapes with random lengths
+                        int streakCount = _confettiRandom.Next(2, 5); // 2 to 4 streaks per firework
+                        for (int j = 0; j < streakCount; j++)
+                        {
+                            var streakPath = new SKPath();
+                            streakPath.MoveTo(0, 0);
+                            streakPath.LineTo(0, (float)(_confettiRandom.NextDouble() * 8.0 + 6.0)); // Length 6 to 14
+                            shapes.Add(new SKConfettiPathShape(streakPath));
+                        }
+
+                        var physicsCollection = new SKConfettiPhysicsCollection();
+                        int physicsTypeCount = _confettiRandom.Next(2, 4); // 2 or 3 physics types for variation
+                        for (int k = 0; k < physicsTypeCount; k++)
+                        {
+                            physicsCollection.Add(new SKConfettiPhysics(
+                                size: _confettiRandom.NextDouble() * 0.5 + 0.5,  // Size from 0.5 to 1.0
+                                mass: _confettiRandom.NextDouble() * 0.4 + 0.6)); // Mass from 0.6 to 1.0
+                        }
+                        if (!physicsCollection.Any()) // Fallback
+                        {
+                            physicsCollection.Add(new SKConfettiPhysics(size: 0.7, mass: 0.7));
+                        }
+
+                        // Emitter position - random within the view
+                        float emitterX = (float)(_confettiRandom.NextDouble() * sk.Width);
+                        // Spawn in the upper 70% of the screen, avoiding edges too much
+                        float emitterY = (float)(_confettiRandom.NextDouble() * (sk.Height * 0.70) + (sk.Height * 0.05));
+                        
+                        var fireworkSystem = new SKConfettiSystem
+                        {
+                            Emitter = SKConfettiEmitter.Burst(_confettiRandom.Next(25, 46)), // 25-45 particles per burst
+                            EmitterBounds = SKConfettiEmitterBounds.Point(new Microsoft.Maui.Graphics.Point(emitterX, emitterY)),
+                            Colors = currentFireworkColors,
+                            Shapes = shapes,
+                            Physics = physicsCollection,
+                            Lifetime = (_confettiRandom.NextDouble() * 1.2 + 1.3), // Lifetime 1.3 to 2.5 seconds
+                            MinimumInitialVelocity = _confettiRandom.Next(200, 351), // 200-350
+                            MaximumInitialVelocity = _confettiRandom.Next(400, 701), // 400-700
+                            MinimumRotationVelocity = -250,
+                            MaximumRotationVelocity = 250,
+                            Gravity = new Microsoft.Maui.Graphics.Point(0, _confettiRandom.Next(80, 131)), // Gravity 80-130
+                            FadeOut = true,
+                            StartAngle = 0,
+                            EndAngle = 360
+                        };
+                        
+                        if (fireworkSystem.MaximumInitialVelocity <= fireworkSystem.MinimumInitialVelocity)
+                        {
+                            fireworkSystem.MaximumInitialVelocity = fireworkSystem.MinimumInitialVelocity + _confettiRandom.Next(50, 101); // Add 50-100
+                        }
+
+                        sk.Systems.Add(fireworkSystem);
+                    }
+
+                    sk.IsAnimationEnabled = true;
+                }
+                else if (ConfettiView is SKConfettiView skView)
+                {
+                    _logger?.LogWarning("ConfettiView is not sized correctly for fireworks animation. Width: {Width}, Height: {Height}", skView.Width, skView.Height);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error in OnRingCompleted for stylish micro fireworks confetti");
+            }
+        }
     }
 } 
