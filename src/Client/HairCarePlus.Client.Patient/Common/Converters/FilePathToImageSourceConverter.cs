@@ -10,7 +10,7 @@ namespace HairCarePlus.Client.Patient.Common.Converters;
 /// </summary>
 public sealed class FilePathToImageSourceConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string path || string.IsNullOrWhiteSpace(path))
             return null;
@@ -26,5 +26,5 @@ public sealed class FilePathToImageSourceConverter : IValueConverter
         return ImageSource.FromUri(new Uri(path));
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotImplementedException();
 } 

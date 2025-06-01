@@ -28,10 +28,19 @@ namespace HairCarePlus.Client.Patient.Common.Views
             float cy = rect.Center.Y;
             float radius = Math.Min(rect.Width, rect.Height) / 2f - thick / 2f;
 
-            // Semi-transparent track 
-            var trackColor = Application.Current.RequestedTheme == AppTheme.Dark
-                ? (Color)Application.Current.Resources["ProgressTrackDark"]
-                : (Color)Application.Current.Resources["ProgressTrackLight"];
+            // Semi-transparent track — fallback на серый если Application/ресурсы недоступны
+            Color trackColor;
+            var app = Application.Current;
+            if (app?.Resources is not ResourceDictionary res)
+            {
+                trackColor = Colors.Gray; // safe default
+            }
+            else
+            {
+                var dark = app.RequestedTheme == AppTheme.Dark;
+                var key = dark ? "ProgressTrackDark" : "ProgressTrackLight";
+                trackColor = res.TryGetValue(key, out var obj) && obj is Color c ? c : Colors.Gray;
+            }
             canvas.StrokeColor = trackColor.WithAlpha(0.5f);
             canvas.StrokeSize = thick;
             canvas.StrokeLineCap = LineCap.Round;

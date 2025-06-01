@@ -7,7 +7,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class EventTypeToIconConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is EventType eventType)
             {
@@ -25,7 +25,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return "\ue88e"; // info
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

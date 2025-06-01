@@ -80,7 +80,8 @@
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="80" 
-                            Margin="0,0,0,10">
+                            Margin="0,0,0,10"
+                            SelectionChanged="OnDateSelectionChanged">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
@@ -128,6 +129,7 @@
             <converters:EventPriorityToIconConverter x:Key="EventPriorityToIconConverter"/>
             <converters:PriorityVisibilityConverter x:Key="PriorityVisibilityConverter"/>
             <converters:ProgressToAngleConverter x:Key="ProgressToAngleConverter"/>
+            <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter"/>
             <x:Double x:Key="CircleSize">88</x:Double>
             
             <!-- Layout Resources -->
@@ -170,20 +172,6 @@
                             </VisualState>
                         </VisualStateGroup>
                     </VisualStateManager.VisualStateGroups>
-
-                    <!-- Add trigger for current date -->
-                    <Grid.Triggers>
-                        <DataTrigger TargetType="Grid" 
-                                   Binding="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate, Converter={StaticResource DateEqualityConverter}}"
-                                   Value="{Binding .}">
-                            <Setter Property="Grid.BackgroundColor" Value="Transparent" />
-                            <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" 
-                                    Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                            <Setter TargetName="dayNumberLabel" Property="Label.TextColor" 
-                                    Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                            <Setter Property="Grid.Scale" Value="1.1" />
-                        </DataTrigger>
-                    </Grid.Triggers>
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -228,22 +216,6 @@
                              Margin="0,4,0,0"
                              Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
                              IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
-                    
-                    <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
-                                             CommandParameter="{Binding .}" />
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
-                                             CommandParameter="{Binding .}"
-                                             NumberOfTapsRequired="2" />
-                    </Grid.GestureRecognizers>
-                    
-                    <!-- Using proper MAUI 9 binding syntax for BackgroundColor -->
-                    <!-- This binding might conflict with VSM, removing for now as VSM controls rootContainer's BackgroundColor -->
-                    <!-- 
-                    <Grid.BackgroundColor>
-                        <Binding Source="{x:Reference rootContainer}" Path="BackgroundColor" />
-                    </Grid.BackgroundColor> 
-                    -->
                 </Grid>
             </DataTemplate>
 
@@ -253,7 +225,8 @@
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Execute">
                             <SwipeItem
-                                    BackgroundColor="Transparent"
+                                    Text="✓"
+                                    BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#66BB6A}"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
                                     CommandParameter="{Binding .}">
                             </SwipeItem>
@@ -264,6 +237,52 @@
                             HorizontalOptions="Fill"
                             BackgroundColor="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}"
                             Padding="16,16,16,16">
+                        <!-- Visual State Manager для анимаций -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Property="Border.Scale" Value="1.0" />
+                                        <Setter Property="Border.Opacity" Value="1.0" />
+                                    </VisualState.Setters>
+                                    <VisualState.StateTriggers>
+                                        <StateTrigger IsActive="True" />
+                                    </VisualState.StateTriggers>
+                                </VisualState>
+                                <VisualState Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Property="Border.Scale" Value="0.95" />
+                                        <Setter Property="Border.Opacity" Value="0.8" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Property="Border.Scale" Value="1.02" />
+                                        <Setter Property="Border.Opacity" Value="1.0" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        
+                        <Border.Behaviors>
+                            <toolkit:TouchBehavior
+                                LongPressCommand="{Binding Path=BindingContext.ToggleEventCompletionCommand, Source={x:Reference TodayPageRoot}}"
+                                LongPressCommandParameter="{Binding .}"
+                                PressedScale="0.95"
+                                PressedOpacity="0.8" />
+                        </Border.Behaviors>
+                        <Border.GestureRecognizers>
+                             <TapGestureRecognizer Tapped="OnEventCardTapped" />
+                        </Border.GestureRecognizers>
+                        
+                        <!-- Shadow для глубины -->
+                        <Border.Shadow>
+                            <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
+                                    Offset="0,2"
+                                    Radius="4"
+                                    Opacity="0.3" />
+                        </Border.Shadow>
+                        
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16" VerticalOptions="Start">
                             <!-- Icon with background -->
                             <Border Grid.Column="0" Grid.Row="0" VerticalOptions="Start"

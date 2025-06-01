@@ -16,7 +16,7 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters
         // Deprecated FontAwesome map kept for binary compatibility of static method GetFontAwesomeIcon
         private static readonly Dictionary<RestrictionIconType, string> _dummy = new(); // kept for static init
 
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is not RestrictionIconType iconType)
                 return "no_smoking.png";
@@ -30,7 +30,7 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters
         public static string GetFontAwesomeIcon(RestrictionIconType iconType) =>
             Services.Implementation.RestrictionIconMapper.ToFaGlyph(iconType);
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

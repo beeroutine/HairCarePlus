@@ -46,7 +46,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
             {
                 if (_cache.TryGetValue(date.Date, out events) && _updateTimes.TryGetValue(date.Date, out lastUpdate))
                     return true;
-                events = null;
+                events = new List<CalendarEvent>();
                 lastUpdate = default;
                 return false;
             }

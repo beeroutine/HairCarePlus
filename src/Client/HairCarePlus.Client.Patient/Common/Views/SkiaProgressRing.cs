@@ -114,6 +114,9 @@ namespace HairCarePlus.Client.Patient.Common.Views
 
         async void AnimateProgressAsync(double target)
         {
+            if (Math.Abs(target - _animatedProgress) < 0.0001)
+                return; // нет изменения – не анимируем
+
             var from = _animatedProgress;
             var tcs = new TaskCompletionSource<bool>();
             var animation = new Animation(v =>
@@ -121,7 +124,9 @@ namespace HairCarePlus.Client.Patient.Common.Views
                 _animatedProgress = v;
                 _canvas.InvalidateSurface();
             }, from, target, Easing.Linear);
-            animation.Commit(this, "skiaRing", 16, 700, finished: (l, c) =>
+
+            // fps 25 → 40 ms
+            animation.Commit(this, "skiaRing", 40, 700, finished: (l, c) =>
             {
                 if (target >= 1)
                     Completed?.Invoke(this, EventArgs.Empty);

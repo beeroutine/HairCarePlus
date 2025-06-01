@@ -18,7 +18,6 @@
                 <ResourceDictionary Source="..\Styles\PhotoCaptureStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <converters:EqualityConverter x:Key="EqualityConverter" />
             <converters:LuxOkConverter x:Key="LuxOkConverter" />
             <common:InverseBoolConverter x:Key="InverseBoolConverter" />
         </ResourceDictionary>

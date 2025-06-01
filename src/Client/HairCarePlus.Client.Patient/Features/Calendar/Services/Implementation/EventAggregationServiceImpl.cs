@@ -24,7 +24,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             _logger = logger;
         }
 
-        public async Task<Dictionary<TimeOfDay, List<CalendarEvent>>> GroupEventsByTimeOfDayAsync(IEnumerable<CalendarEvent> events)
+        public Task<Dictionary<TimeOfDay, List<CalendarEvent>>> GroupEventsByTimeOfDayAsync(IEnumerable<CalendarEvent> events)
         {
             var result = new Dictionary<TimeOfDay, List<CalendarEvent>>
             {
@@ -37,32 +37,24 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             {
                 var hour = calendarEvent.Date.Hour;
                 if (hour >= 5 && hour < 12)
-                {
                     result[TimeOfDay.Morning].Add(calendarEvent);
-                }
                 else if (hour >= 12 && hour < 17)
-                {
                     result[TimeOfDay.Afternoon].Add(calendarEvent);
-                }
                 else
-                {
                     result[TimeOfDay.Evening].Add(calendarEvent);
-                }
             }
 
-            return result;
+            return Task.FromResult(result);
         }
 
-        public async Task<Dictionary<EventType, int>> GetEventCountsByTypeAsync(IEnumerable<CalendarEvent> events)
+        public Task<Dictionary<EventType, int>> GetEventCountsByTypeAsync(IEnumerable<CalendarEvent> events)
         {
             var result = new Dictionary<EventType, int>();
 
             foreach (EventType type in Enum.GetValues(typeof(EventType)))
-            {
                 result[type] = events.Count(e => e.EventType == type);
-            }
 
-            return result;
+            return Task.FromResult(result);
         }
 
         public async Task<Dictionary<DateTime, Dictionary<EventType, int>>> GetEventCountsByDateAndTypeAsync(IEnumerable<CalendarEvent> events, DateTime startDate, DateTime endDate)

@@ -4,12 +4,13 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using MauiApp = Microsoft.Maui.Controls.Application;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class DateHasAnyEventColorConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             try
             {
@@ -18,18 +19,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                     // Получаем ViewModel через BindingContext или другую привязку
                     TodayViewModel viewModel = null;
                     
-                    // Безопасный доступ к MainPage и его BindingContext
-                    if (MauiApp.Current.MainPage != null && 
-                        MauiApp.Current.MainPage.BindingContext is TodayViewModel vm1)
+                    // Получаем текущую страницу через Shell или Window API (не используем устаревший MainPage)
+                    var page = Shell.Current?.CurrentPage ?? MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+                    if (page?.BindingContext is TodayViewModel vm)
                     {
-                        viewModel = vm1;
-                    }
-                    // Пытаемся найти TodayViewModel в навигационном стеке, если он существует
-                    else if (MauiApp.Current.MainPage?.Navigation?.NavigationStack != null && 
-                             MauiApp.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
-                             MauiApp.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
-                    {
-                        viewModel = vm2;
+                        viewModel = vm;
                     }
 
                     // Проверяем наличие событий только если viewModel и EventCountsByDate существуют
@@ -62,7 +56,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return Colors.Transparent;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

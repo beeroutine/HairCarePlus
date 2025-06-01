@@ -29,8 +29,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
 
         public async Task<List<CalendarEvent>> LoadEventsForDateAsync(DateTime date, CancellationToken cancellationToken = default)
         {
-            List<CalendarEvent> events = null;
-            Exception lastException = null;
+            Exception? lastException = null;
 
             for (int attempt = 0; attempt < MaxRetryAttempts; attempt++)
             {
@@ -47,8 +46,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
                         await Task.Delay(RetryDelays[attempt - 1], cancellationToken);
                     }
 
-                    events = (await _calendarService.GetEventsForDateAsync(date)).ToList();
-                    return events;
+                    return (await _calendarService.GetEventsForDateAsync(date)).ToList();
                 }
                 catch (OperationCanceledException)
                 {
@@ -62,7 +60,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services
             }
 
             _logger.LogError(lastException, "Failed to load events for {Date} after {Attempts} attempts", date.ToShortDateString(), MaxRetryAttempts);
-            throw lastException;
+            throw lastException ?? new Exception("Unknown error while loading events");
         }
     }
 } 

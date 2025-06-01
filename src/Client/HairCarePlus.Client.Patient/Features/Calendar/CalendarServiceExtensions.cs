@@ -121,9 +121,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
                 
             if (!MauiApp.Current.Resources.ContainsKey("EventIndicatorsConverter"))
                 MauiApp.Current.Resources.Add("EventIndicatorsConverter", new EventIndicatorsConverter());
-
-            if (!MauiApp.Current.Resources.ContainsKey("DaysToStrokeColorConverter"))
-                MauiApp.Current.Resources.Add("DaysToStrokeColorConverter", new DaysToStrokeColorConverter());
         }
     }
 } 

@@ -20,7 +20,6 @@
                     <converters:DateToColorConverter x:Key="DateToColorConverter" />
                     <converters:EventTypeToColorConverter x:Key="EventTypeToColorConverter" />
                     <converters:EventTypeToIconConverter x:Key="EventTypeToIconConverter" />
-                    <converters:DaysToStrokeColorConverter x:Key="DaysToStrokeColorConverter" />
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
             

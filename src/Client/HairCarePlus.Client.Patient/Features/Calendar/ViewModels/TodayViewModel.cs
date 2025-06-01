@@ -107,6 +107,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         public ICommand RefreshCommand { get; private set; }
         public ICommand GoToTodayCommand { get; private set; }
+        public ICommand TestLongPressCommand { get; } // Removed for diagnostics
 
         public enum LoadingState
         {
@@ -212,12 +213,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             RefreshCommand = new Command(async () => await RefreshDataAsync());
             ToggleEventCompletionCommand = new AsyncRelayCommand<CalendarEvent>(async (calendarEvent) =>
             {
+                _logger?.LogInformation("🔥 ToggleEventCompletionCommand EXECUTED in constructor lambda. Event: {EventTitle}", calendarEvent?.Title ?? "null");
                 if (calendarEvent == null) return;
                 await ToggleEventCompletionAsync(calendarEvent);
             });
             SelectDateCommand = new Command<DateTime>(async (date) => await SelectDateAsync(date));
             OpenMonthCalendarCommand = new Command<DateTime>(async (date) => await OpenMonthCalendarAsync(date));
-            ViewEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ViewEventDetailsAsync(calendarEvent));
+            ViewEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => 
+            {
+                _logger?.LogInformation("👆 ViewEventDetailsCommand EXECUTED in constructor lambda");
+                await ViewEventDetailsAsync(calendarEvent);
+            });
             PostponeEventCommand = new Command<CalendarEvent>(async (calendarEvent) => await PostponeEventAsync(calendarEvent));
             ShowEventDetailsCommand = new Command<CalendarEvent>(async (calendarEvent) => await ShowEventDetailsAsync(calendarEvent));
             LoadMoreDatesCommand = new Command(async () => await LoadMoreDatesAsync(), () => !IsLoading);
@@ -302,10 +308,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
+                    _logger?.LogInformation("SelectedDate changed to {SelectedDate}", value);
 #if DEBUG
                     Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
 #endif
                     // Update events for selected date
+                    _logger?.LogInformation("SelectedDate setter: Queuing LoadTodayEventsAsync for {Value}", value);
                     Task.Run(async () => 
                     {
                         await LoadTodayEventsAsync();
@@ -648,6 +656,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         public async Task LoadTodayEventsAsync()
         {
+            var localSelectedDate = SelectedDate; // Capture current SelectedDate for this execution
+            _logger?.LogInformation("LoadTodayEventsAsync: START for date {LocalSelectedDate}", localSelectedDate);
             // Защита от слишком частых запросов (throttling)
             var now = DateTime.UtcNow;
             if ((now - _lastRefreshTime) < _throttleInterval)
@@ -710,6 +720,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         (int)((_cacheMisses / (float)_totalRequests) * 100));
                 }
                 
+                _logger?.LogInformation("LoadTodayEventsAsync: Attempting to fetch events for {SelectedDateKey}", selectedDateKey);
                 List<CalendarEvent> events = null;
                 for (int retryCount = 0; retryCount <= MaxRetryAttempts; retryCount++)
                 {
@@ -808,6 +819,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private async Task UpdateUIWithEvents(IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
         {
+            _logger?.LogInformation("UpdateUIWithEvents: START. Received {Count} events. Current SelectedDate in VM: {SelectedDate}", events?.Count() ?? 0, _selectedDate.ToShortDateString());
             if (cancellationToken.IsCancellationRequested) return;
 
             await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
@@ -834,6 +846,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
                 // Логируем актуальное количество после обновления
                 _logger.LogDebug("UpdateUIWithEvents: Updated FlattenedEvents with {Count} events for date {Date}", FlattenedEvents.Count, SelectedDate.ToShortDateString());
+
+                _logger?.LogInformation("UI collections updated: Remaining cards={Count}", FlattenedEvents.Count);
+
+                _logger?.LogInformation("Progress now {Percent}% ({Progress:P2})", CompletionPercentage, CompletionProgress);
             });
         }
         
@@ -928,19 +944,27 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             return 0;
         }
         
-        public async Task ToggleEventCompletionAsync(CalendarEvent calendarEvent)
+        public async Task ToggleEventCompletionAsync(CalendarEvent? calendarEvent)
         {
-            // Verbose logging for diagnostics
-            _logger?.LogInformation("ToggleEventCompletionAsync invoked. SelectedDate={SelectedDate}, Today={Today}, EventId={EventId}, Title='{Title}', CurrentlyCompleted={IsCompleted}",
-                SelectedDate.ToShortDateString(), DateTime.Today.ToShortDateString(), calendarEvent?.Id, calendarEvent?.Title, calendarEvent?.IsCompleted);
+            _logger?.LogInformation("🔥 ToggleEventCompletionAsync CALLED! Event: {EventTitle}", calendarEvent?.Title ?? "null");
 
-            // Restrict completion to events that belong to TODAY only
-            if (SelectedDate.Date != DateTime.Today)
+            if (calendarEvent == null)
             {
-                _logger?.LogWarning("Attempt to complete an event that is not in today's list – operation aborted");
+                _logger?.LogWarning("ToggleEventCompletionAsync called with null CalendarEvent");
+                return;
+            }
+
+            // Original logic from here
+            _logger?.LogInformation("Successfully received CalendarEvent. Event: {EventTitle}", calendarEvent.Title);
+
+            // Разрешаем отмечать выполненными задачи за прошедшие даты и сегодня;
+            // запрещаем только будущие события (SelectedDate > Today)
+            if (SelectedDate.Date > DateTime.Today)
+            {
+                _logger?.LogWarning("Attempt to complete a future event – operation aborted");
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await MauiApp.Current.MainPage.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                    await MauiApp.Current.MainPage.DisplayAlert("Недоступно", "Задачи из будущего отмечать нельзя", "OK");
                 });
                 return;
             }
@@ -995,19 +1019,21 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         // Immediately recalculate progress and notify UI
                         await MainThread.InvokeOnMainThreadAsync(() =>
                         {
-                            // Re-filter and update UI collections based on the new state in _allEventsForSelectedDate
-                            var visibleEvents = _allEventsForSelectedDate
-                                .Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning)
-                                .ToList();
-
-                            FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
-                            SortedEvents = new ObservableCollection<CalendarEvent>(
-                                visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
-                            EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
-
-                            OnPropertyChanged(nameof(FlattenedEvents));
-                            OnPropertyChanged(nameof(SortedEvents));
-                            OnPropertyChanged(nameof(EventsForSelectedDate));
+                            // Удаляем или возвращаем карточку без пересоздания коллекций
+                            if (calendarEvent.IsCompleted)
+                            {
+                                FlattenedEvents.Remove(calendarEvent);
+                                SortedEvents.Remove(calendarEvent);
+                                EventsForSelectedDate.Remove(calendarEvent);
+                            }
+                            else
+                            {
+                                // вернули невыполненной – вставляем в нужное место
+                                int insert = SortedEvents.TakeWhile(e => e.Date.TimeOfDay < calendarEvent.Date.TimeOfDay).Count();
+                                FlattenedEvents.Add(calendarEvent);
+                                SortedEvents.Insert(insert, calendarEvent);
+                                EventsForSelectedDate.Add(calendarEvent);
+                            }
 
                             // Recalculate progress using the updated _allEventsForSelectedDate
                             var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
@@ -1015,7 +1041,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             CompletionPercentage = percent;
                             OnPropertyChanged(nameof(CompletionProgress));
                             OnPropertyChanged(nameof(CompletionPercentage));
-                            _logger?.LogInformation("Progress recalculated after event toggle: {Percent}% ({ProgressF:P2})", percent, prog);
                         });
                     }
                     catch (Exception ex)
@@ -1043,6 +1068,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private async Task SelectDateAsync(DateTime date)
         {
+            _logger?.LogInformation("SelectDateAsync invoked with {SelectedDate}", date);
             if (date.Date == SelectedDate.Date)
             {
                 _logger.LogDebug("SelectDateAsync: Same date selected, ignoring");
@@ -1103,14 +1129,47 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         // Переход к детальной странице события
         private async Task ViewEventDetailsAsync(CalendarEvent calendarEvent)
         {
+            _logger?.LogInformation("👆 ViewEventDetailsAsync CALLED! Event: {EventTitle} (ID: {EventId})", calendarEvent?.Title ?? "null", calendarEvent?.Id);
+
             if (calendarEvent == null)
+            {
+                _logger?.LogWarning("ViewEventDetailsAsync called with null CalendarEvent");
                 return;
+            }
                 
-            // В реальном приложении здесь был бы код для навигации к детальной странице события
-            // Например, с использованием Shell.Current.GoToAsync или INavigationService
-            
-            // Пример перехода к детальной странице (заглушка для демонстрации):
-            await Shell.Current.GoToAsync($"//calendar/event?id={calendarEvent.Id}");
+            try
+            {
+                // Показываем детали события в простом диалоге (временно, пока нет детальной страницы)
+                var details = $"Событие: {calendarEvent.Title}\n" +
+                             $"Описание: {calendarEvent.Description ?? "Нет описания"}\n" +
+                             $"Дата: {calendarEvent.Date:dd.MM.yyyy HH:mm}\n" +
+                             $"Тип: {calendarEvent.EventType}\n" +
+                             $"Статус: {(calendarEvent.IsCompleted ? "Выполнено" : "Не выполнено")}";
+
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await MauiApp.Current.MainPage.DisplayAlert(
+                        "Детали события",
+                        details,
+                        "OK"
+                    );
+                });
+
+                _logger?.LogInformation("Event details dialog shown for event: {EventTitle}", calendarEvent.Title);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error showing event details for event: {EventTitle}", calendarEvent?.Title);
+                
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await MauiApp.Current.MainPage.DisplayAlert(
+                        "Ошибка",
+                        "Не удалось показать детали события",
+                        "OK"
+                    );
+                });
+            }
         }
         
         // Отложить событие на более позднее время

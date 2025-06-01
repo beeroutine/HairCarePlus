@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using System.Linq;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using MauiApp = Microsoft.Maui.Controls.Application;
 
@@ -10,24 +11,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class DateHasAnyEventConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             try
             {
                 if (value is DateTime date)
                 {
                     // Получаем ViewModel через BindingContext или другую привязку
-                    TodayViewModel viewModel = null;
+                    TodayViewModel? viewModel = null;
                     
-                    if (MauiApp.Current?.MainPage?.BindingContext is TodayViewModel vm1)
+                    var page = Shell.Current?.CurrentPage ?? MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+                    if (page?.BindingContext is TodayViewModel vm)
                     {
-                        viewModel = vm1;
-                    }
-                    else if (MauiApp.Current?.MainPage?.Navigation?.NavigationStack != null && 
-                        MauiApp.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
-                        MauiApp.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
-                    {
-                        viewModel = vm2;
+                        viewModel = vm;
                     }
 
                     // Проверяем наличие событий в указанную дату
@@ -113,7 +109,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return false;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

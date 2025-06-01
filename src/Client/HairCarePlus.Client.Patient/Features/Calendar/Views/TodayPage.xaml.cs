@@ -137,7 +137,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         {
             if (e?.PropertyName == nameof(TodayViewModel.SelectedDate) && DateSelectorView != null && _viewModel != null)
             {
-                _logger.LogDebug("ViewModel SelectedDate changed to {SelectedDate}, updating UI.", _viewModel.SelectedDate);
+                _logger.LogInformation("ViewModel SelectedDate changed to {SelectedDate}, updating UI.", _viewModel.SelectedDate);
                 
                 // Используем индекс, чтобы гарантировать корректное применение выделения (особенно для DateTime-структур)
                 if (_viewModel.CalendarDays is not null)
@@ -513,6 +513,119 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error in OnRingCompleted for stylish micro fireworks confetti");
+            }
+        }
+
+        /// <summary>
+        /// Event handler for CollectionView selection changes - replaces problematic TapGestureRecognizer
+        /// </summary>
+        private void OnDateSelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                _logger.LogInformation("OnDateSelectionChanged event fired. CurrentSelection count: {Count}", e.CurrentSelection?.Count ?? 0);
+                
+                if (e.CurrentSelection?.FirstOrDefault() is DateTime selectedDate)
+                {
+                    _logger.LogInformation("Date selected via CollectionView: {SelectedDate}", selectedDate);
+                    
+                    if (_viewModel != null)
+                    {
+                        // Call the SelectDateCommand manually
+                        if (_viewModel.SelectDateCommand.CanExecute(selectedDate))
+                        {
+                            _logger.LogInformation("Executing SelectDateCommand with date: {SelectedDate}", selectedDate);
+                            _viewModel.SelectDateCommand.Execute(selectedDate);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("SelectDateCommand.CanExecute returned false for date: {SelectedDate}", selectedDate);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("ViewModel is null in OnDateSelectionChanged");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("OnDateSelectionChanged called but no valid DateTime in CurrentSelection. CurrentSelection: {CurrentSelection}", 
+                        e.CurrentSelection?.FirstOrDefault()?.GetType().Name ?? "null");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in OnDateSelectionChanged");
+            }
+        }
+
+        private void OnEventCardTapped(object? sender, TappedEventArgs e)
+        {
+            _logger?.LogInformation("OnEventCardTapped triggered.");
+            if (sender is not BindableObject bindableObject)
+            {
+                _logger?.LogWarning("OnEventCardTapped: Sender is not a BindableObject.");
+                return;
+            }
+
+            if (bindableObject.BindingContext is not CalendarEvent calendarEvent)
+            {
+                _logger?.LogWarning("OnEventCardTapped: BindingContext of sender is not CalendarEvent. Actual type: {Type}", bindableObject.BindingContext?.GetType().FullName ?? "null");
+                return;
+            }
+
+            _logger?.LogInformation("OnEventCardTapped: CalendarEvent '{Title}' tapped.", calendarEvent.Title);
+
+            if (_viewModel == null)
+            {
+                _logger?.LogWarning("OnEventCardTapped: ViewModel is null.");
+                return;
+            }
+
+            if (_viewModel.ToggleEventCompletionCommand.CanExecute(calendarEvent))
+            {
+                _logger?.LogInformation("OnEventCardTapped: Executing ToggleEventCompletionCommand for event '{Title}'.", calendarEvent.Title);
+                _viewModel.ToggleEventCompletionCommand.Execute(calendarEvent);
+            }
+            else
+            {
+                _logger?.LogWarning("OnEventCardTapped: ToggleEventCompletionCommand cannot execute for event '{Title}'.", calendarEvent.Title);
+            }
+        }
+
+        private void OnTaskLongPressed(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Получаем элемент Border, на котором произошло событие
+                if (sender is not Border border)
+                {
+                    _logger.LogWarning("OnTaskLongPressed: sender is not Border, but {Type}", sender?.GetType().Name ?? "null");
+                    return;
+                }
+
+                // Получаем CalendarEvent из BindingContext
+                if (border.BindingContext is not CalendarEvent calendarEvent)
+                {
+                    _logger.LogWarning("OnTaskLongPressed: BindingContext is not CalendarEvent, but {Type}", border.BindingContext?.GetType().Name ?? "null");
+                    return;
+                }
+
+                _logger.LogInformation("OnTaskLongPressed: Task '{Title}' long-pressed, executing ToggleEventCompletionCommand", calendarEvent.Title);
+
+                // Вызываем команду ViewModel
+                if (_viewModel?.ToggleEventCompletionCommand?.CanExecute(calendarEvent) == true)
+                {
+                    _viewModel.ToggleEventCompletionCommand.Execute(calendarEvent);
+                }
+                else
+                {
+                    _logger.LogWarning("OnTaskLongPressed: ToggleEventCompletionCommand cannot execute or is null");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in OnTaskLongPressed");
             }
         }
     }

@@ -7,18 +7,19 @@
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
              xmlns:entities="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Domain.Entities"
              xmlns:android="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.AndroidSpecific;assembly=Microsoft.Maui.Controls"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.ViewModels"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
              NavigationPage.HasNavigationBar="False"
-             android:Application.WindowSoftInputModeAdjust="Resize">
+             android:Application.WindowSoftInputModeAdjust="Resize"
+             x:DataType="vm:ChatViewModel">
 
     <ContentPage.Resources>
         <ResourceDictionary>
             <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
             <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
-            <commonConverters:EqualityConverter x:Key="EqualityConverter" />
             
             <!-- Removed old Border styles (SelectedMessageFrame, MessageFrameStyle) as alignment now handled via DataTriggers -->
         </ResourceDictionary>

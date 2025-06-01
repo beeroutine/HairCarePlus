@@ -6,7 +6,7 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters;
 
 public class StringNullOrEmptyBoolConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is string str)
         {
@@ -15,7 +15,7 @@ public class StringNullOrEmptyBoolConverter : IValueConverter
         return false;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }

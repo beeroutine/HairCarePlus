@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Linq;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.Services;
 using HairCarePlus.Client.Patient.Features.Calendar.Services.Interfaces;
@@ -59,7 +60,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 // В реальном приложении здесь был бы код логирования ошибки
                 Console.WriteLine($"Error loading event: {ex.Message}");
-                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to load event details.", "OK");
+                var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                    await page.DisplayAlert("Error", "Failed to load event details.", "OK");
             }
             finally
             {
@@ -108,9 +111,13 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             if (Event == null)
                 return;
 
+            var page = Shell.Current?.CurrentPage ?? MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page == null)
+                return;
+
             try
             {
-                string action = await MauiApp.Current.MainPage.DisplayActionSheet(
+                string action = await page.DisplayActionSheet(
                     "Postpone Event", 
                     "Cancel", 
                     null,
@@ -144,7 +151,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // После изменения даты сохраняем изменения
                 // await _calendarService.UpdateEventAsync(Event);
                 
-                await MauiApp.Current.MainPage.DisplayAlert("Success", $"Event postponed: {action}", "OK");
+                await page.DisplayAlert("Success", $"Event postponed: {action}", "OK");
                 
                 // Возвращаемся на предыдущую страницу
                 await Shell.Current.GoToAsync("..");
@@ -153,7 +160,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 // В реальном приложении здесь был бы код логирования ошибки
                 Console.WriteLine($"Error postponing event: {ex.Message}");
-                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to postpone event.", "OK");
+                await page.DisplayAlert("Error", "Failed to postpone event.", "OK");
             }
         }
     }

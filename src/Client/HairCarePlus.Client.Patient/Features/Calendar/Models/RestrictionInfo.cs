@@ -12,7 +12,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         /// <summary>
         /// Unicode glyph (from Material Symbols) representing this restriction.
         /// </summary>
-        public string IconGlyph { get; set; }
+        public string IconGlyph { get; set; } = string.Empty;
 
 #pragma warning disable CS0618 // keep for backward-compat during refactor
         [Obsolete("Use IconGlyph instead.")]
@@ -27,7 +27,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Models
         /// <summary>
         /// Short description of the restriction (e.g., "Sport", "Water").
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         /// <summary>
         /// The original EventType from the CalendarEvent.

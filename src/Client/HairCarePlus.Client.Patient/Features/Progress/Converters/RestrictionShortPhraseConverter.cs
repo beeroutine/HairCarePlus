@@ -10,7 +10,7 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters;
 /// </summary>
 public class RestrictionShortPhraseConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string restrictionTitle)
             return "Не нарушать";
@@ -38,7 +38,7 @@ public class RestrictionShortPhraseConverter : IValueConverter
         };
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException("RestrictionShortPhraseConverter does not support ConvertBack");
     }
