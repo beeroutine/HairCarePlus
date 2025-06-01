@@ -41,6 +41,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             services.AddSingleton<PerformanceMonitor>();
             services.AddScoped<ICalendarLoader, CalendarLoaderService>();
             services.AddScoped<IProgressCalculator, ProgressCalculatorService>();
+            services.AddScoped<IPreloadingService, PreloadingService>();
             
             // Register repository
             services.AddScoped<IHairTransplantEventRepository, CalendarRepository>();

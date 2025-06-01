@@ -27,6 +27,7 @@ using CalendarCommands = HairCarePlus.Client.Patient.Features.Calendar.Applicati
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Common.Utils;
 using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
+using HairCarePlus.Client.Patient.Common.Services;
 
 // Alias to disambiguate with namespace HairCarePlus.Client.Patient.Features.Calendar.Application
 using MauiApp = Microsoft.Maui.Controls.Application;
@@ -44,6 +45,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private readonly ICommandBus _commandBus;
         private readonly IQueryBus _queryBus;
         private readonly IProfileService _profileService;
+        private readonly IPreloadingService _preloadingService;
+        private readonly IConfettiManager _confettiManager;
         private DateTime _selectedDate;
         private ObservableCollection<DateTime> _calendarDays;
         private ObservableCollection<GroupedCalendarEvents> _todayEvents;
@@ -111,7 +114,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
-        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger, IProfileService profileService)
+        public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger, IProfileService profileService, IPreloadingService preloadingService, IConfettiManager confettiManager)
         {
             _calendarService = calendarService;
             _cacheService = cacheService;
@@ -122,6 +125,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _commandBus = commandBus;
             _queryBus = queryBus;
             _profileService = profileService;
+            _preloadingService = preloadingService;
+            _confettiManager = confettiManager;
             
             // Инициализируем дебаунсер для оптимизации частых изменений даты
             _dateChangeDebouncer = new Debouncer();
@@ -318,8 +323,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
                 // 4. Загружаем активные ограничения
                 await CheckAndLoadActiveRestrictionsAsync();
+                
+                // 5. Запускаем фоновую предзагрузку
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _preloadingService.StartBackgroundPreloadingAsync();
+                        // Предзагружаем ближайшие даты
+                        await _preloadingService.PreloadDateRangeAsync(
+                            DateTime.Today.AddDays(-7), 
+                            DateTime.Today.AddDays(30));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Error starting background preloading");
+                    }
+                });
 
-                // 5. Прокручиваем к выбранной дате
+                // 6. Прокручиваем к выбранной дате
                 await MainThread.InvokeOnMainThreadAsync(() =>
                 {
                     OnPropertyChanged(nameof(SelectedDate));
@@ -360,6 +382,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         await LoadTodayEventsAsync();
                         // Сохраняем выбранную дату между сессиями
                         SaveSelectedDate(value);
+                        
+                        // Предзагружаем соседние даты
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _preloadingService.PreloadAdjacentDatesAsync(value, daysBefore: 7, daysAfter: 7);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(ex, "Error preloading adjacent dates");
+                            }
+                        });
                     });
                 }
             }
@@ -885,6 +920,22 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 {
                     CompletionProgress = prog;
                     CompletionPercentage = percent;
+                    
+                    // Показываем конфетти при 100% завершении
+                    if (percent == 100 && !_confettiManager.IsAnimating)
+                    {
+                        _logger.LogInformation("All tasks completed! Showing confetti animation");
+                        _ = Task.Run(async () =>
+                        {
+                            // Настраиваем производительность в зависимости от платформы
+#if ANDROID
+                            _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Low);
+#else
+                            _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Medium);
+#endif
+                            await _confettiManager.ShowConfettiAsync(duration: 3000, particleCount: 60);
+                        });
+                    }
                 }
 
                 // Логируем актуальное количество после обновления

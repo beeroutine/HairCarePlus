@@ -30,6 +30,7 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture;
 using HairCarePlus.Client.Patient.Features.Progress;
 using Microsoft.Maui.Handlers;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using HairCarePlus.Client.Patient.Common.Services;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -116,6 +117,9 @@ public static class MauiProgram
 
 		// Register IMessenger singleton using WeakReferenceMessenger.Default
 		builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+
+		// Register IConfettiManager
+		builder.Services.AddSingleton<IConfettiManager, ConfettiManager>();
 
 #if IOS
 		EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
