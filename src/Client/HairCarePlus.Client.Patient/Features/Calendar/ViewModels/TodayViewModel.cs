@@ -25,6 +25,8 @@ using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
 using ICommand = System.Windows.Input.ICommand;
 using CalendarCommands = HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
+using HairCarePlus.Client.Patient.Common.Utils;
+using HairCarePlus.Client.Patient.Features.Calendar.Helpers;
 
 // Alias to disambiguate with namespace HairCarePlus.Client.Patient.Features.Calendar.Application
 using MauiApp = Microsoft.Maui.Controls.Application;
@@ -66,101 +68,29 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private const int MaxRetryAttempts = 3;
         private const int BatchSize = 10;
         private const int RefreshTimeoutMilliseconds = 30000; // 30 seconds timeout
-        // Предопределенные интервалы для retry (в миллисекундах): 1s, 2s, 4s
-        private static readonly int[] RetryDelays = { 1000, 2000, 4000 };
-        private SemaphoreSlim _refreshSemaphore = new SemaphoreSlim(1, 1);
-        private CancellationTokenSource _refreshCancellationTokenSource;
-
-        private bool _isRefreshing;
-        private const string SelectedDateKey = "LastSelectedDate";
         
-        private DateTime _lastRefreshTime = DateTime.MinValue;
-        private readonly TimeSpan _throttleInterval = TimeSpan.FromMilliseconds(300); // Минимальный интервал между запросами
+        // Поля для оптимизации обновлений
+        private readonly Debouncer _dateChangeDebouncer;
+        private bool _isUpdatingDateProperties;
+        private DateDisplayInfo? _cachedDateDisplayInfo;
         
-        // Диагностические счетчики для тестирования эффективности
-        private static int _totalRequests = 0;
-        private static int _cacheHits = 0;
-        private static int _cacheMisses = 0;
-        private static int _throttledRequests = 0;
-        private static int _concurrentRejections = 0;
-        
-        // Диагностические счетчики для дополнительных метрик
-        private int _eventCountsRequests = 0;
-        private int _eventCountsCacheHits = 0;
-        private int _eventCountsBatchRequests = 0;
-        
-        private bool _isDataLoaded;
-        private bool _isRefreshingData;
-        
-        private bool _isLoading;
-        public bool IsLoading
+        // Группированное свойство для отображения информации о дате
+        public DateDisplayInfo DateDisplayProperties
         {
-            get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
-        }
-
-        public bool IsRefreshing
-        {
-            get => _isRefreshing;
-            set => SetProperty(ref _isRefreshing, value);
-        }
-
-        public ICommand RefreshCommand { get; private set; }
-        public ICommand GoToTodayCommand { get; private set; }
-        public ICommand TestLongPressCommand { get; } // Removed for diagnostics
-
-        public enum LoadingState
-        {
-            NotStarted,
-            Loading,
-            Completed,
-            Error
-        }
-
-        private LoadingState _loadingState;
-        
-        public LoadingState CurrentLoadingState
-        {
-            get => _loadingState;
-            private set
+            get
             {
-                if (_loadingState != value)
+                if (_cachedDateDisplayInfo == null || _isUpdatingDateProperties)
                 {
-                    _loadingState = value;
-                    OnPropertyChanged(nameof(CurrentLoadingState));
-                    OnPropertyChanged(nameof(IsLoading));
-                    OnPropertyChanged(nameof(HasError));
-                    OnPropertyChanged(nameof(IsContentVisible));
+                    _cachedDateDisplayInfo = new DateDisplayInfo
+                    {
+                        FormattedSelectedDate = SelectedDate.ToString("ddd, MMM d"),
+                        CurrentMonthName = VisibleDate.ToString("MMMM"),
+                        CurrentYear = VisibleDate.ToString("yyyy"),
+                        DaysSinceTransplant = (SelectedDate.Date - _profileService.SurgeryDate.Date).Days + 1,
+                        DaysSinceTransplantSubtitle = $"Day {((SelectedDate.Date - _profileService.SurgeryDate.Date).Days + 1)} post hair transplant"
+                    };
                 }
-            }
-        }
-
-        public bool HasError => CurrentLoadingState == LoadingState.Error;
-        public bool IsContentVisible => CurrentLoadingState != LoadingState.Loading && CurrentLoadingState != LoadingState.Error;
-
-        public int LoadingProgress
-        {
-            get => _loadingProgress;
-            private set
-            {
-                if (_loadingProgress != value)
-                {
-                    _loadingProgress = value;
-                    OnPropertyChanged(nameof(LoadingProgress));
-                }
-            }
-        }
-
-        public string LoadingStatus
-        {
-            get => _loadingStatus;
-            private set
-            {
-                if (_loadingStatus != value)
-                {
-                    _loadingStatus = value;
-                    OnPropertyChanged(nameof(LoadingStatus));
-                }
+                return _cachedDateDisplayInfo;
             }
         }
 
@@ -192,6 +122,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _commandBus = commandBus;
             _queryBus = queryBus;
             _profileService = profileService;
+            
+            // Инициализируем дебаунсер для оптимизации частых изменений даты
+            _dateChangeDebouncer = new Debouncer();
+            
+            // Инициализируем коллекции
+            _calendarDays = new ObservableCollection<DateTime>();
+            _todayEvents = new ObservableCollection<GroupedCalendarEvents>();
+            _flattenedEvents = new ObservableCollection<CalendarEvent>();
+            _sortedEvents = new ObservableCollection<CalendarEvent>();
+            _eventsForSelectedDate = new ObservableCollection<CalendarEvent>();
             
             // Всегда начинаем с сегодняшней даты (игнорируем сохранённое состояние прошлой сессии)
             _selectedDate = DateTime.Today;
@@ -243,12 +183,84 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 try
                 {
-                    _logger?.LogDebug("Received EventUpdatedMessage for {EventId}", message.Value);
+                    _logger?.LogDebug("Received EventUpdatedMessage for EventId={EventId}", message.Value);
 
-                    // Simple approach: reload events for selected date if it matches today (or contains the event)
                     await MainThread.InvokeOnMainThreadAsync(async () =>
                     {
-                        await LoadTodayEventsAsync();
+                        // Находим событие в коллекциях
+                        var eventToUpdate = FlattenedEvents.FirstOrDefault(e => e.Id == message.Value);
+                        var eventInMaster = _allEventsForSelectedDate?.FirstOrDefault(e => e.Id == message.Value);
+                        
+                        // Загружаем событие для получения актуального состояния
+                        CalendarEvent? updatedEvent = null;
+                        try
+                        {
+                            updatedEvent = await _queryBus.SendAsync<CalendarEvent?>(
+                                new GetEventByIdQuery(message.Value));
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "Error loading event {EventId}", message.Value);
+                        }
+                        
+                        if (updatedEvent != null)
+                        {
+                            // Обновляем в мастер-списке
+                            if (eventInMaster != null)
+                            {
+                                eventInMaster.IsCompleted = updatedEvent.IsCompleted;
+                            }
+                            
+                            // Обновляем в видимых коллекциях
+                            if (eventToUpdate != null)
+                            {
+                                if (updatedEvent.IsCompleted)
+                                {
+                                    // Удаляем завершенное событие
+                                    FlattenedEvents.Remove(eventToUpdate);
+                                    SortedEvents.Remove(eventToUpdate);
+                                    EventsForSelectedDate.Remove(eventToUpdate);
+                                    _logger?.LogDebug("Removed completed event {EventId} from visible collections", message.Value);
+                                }
+                                else
+                                {
+                                    // Обновляем свойства
+                                    eventToUpdate.IsCompleted = updatedEvent.IsCompleted;
+                                    eventToUpdate.Title = updatedEvent.Title;
+                                    eventToUpdate.Description = updatedEvent.Description;
+                                    _logger?.LogDebug("Updated event {EventId} properties", message.Value);
+                                }
+                            }
+                            else if (!updatedEvent.IsCompleted && 
+                                     updatedEvent.Date.Date == SelectedDate.Date && 
+                                     updatedEvent.EventType != EventType.CriticalWarning)
+                            {
+                                // Новое невыполненное событие для текущей даты
+                                FlattenedEvents.Add(updatedEvent);
+                                
+                                // Вставляем в правильное место в отсортированной коллекции
+                                var insertIndex = SortedEvents.TakeWhile(e => e.Date.TimeOfDay < updatedEvent.Date.TimeOfDay).Count();
+                                SortedEvents.Insert(insertIndex, updatedEvent);
+                                
+                                EventsForSelectedDate.Add(updatedEvent);
+                                
+                                // Добавляем в мастер-список
+                                _allEventsForSelectedDate?.Add(updatedEvent);
+                                
+                                _logger?.LogDebug("Added new event {EventId} to collections", message.Value);
+                            }
+                        }
+                        
+                        // Пересчитываем прогресс только если есть изменения
+                        if (_allEventsForSelectedDate != null)
+                        {
+                            var (prog, percent) = _progressCalculator.CalculateProgress(_allEventsForSelectedDate);
+                            if (Math.Abs(CompletionProgress - prog) > 0.01)
+                            {
+                                CompletionProgress = prog;
+                                CompletionPercentage = percent;
+                            }
+                        }
                     });
                 }
                 catch (Exception ex)
@@ -256,6 +268,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     _logger?.LogError(ex, "Error handling EventUpdatedMessage");
                 }
             });
+        }
+        
+        /// <summary>
+        /// Группирует обновления свойств, связанных с датой, для уменьшения количества перерисовок UI
+        /// </summary>
+        private void BatchUpdateDateProperties(Action updateAction)
+        {
+            _isUpdatingDateProperties = true;
+            _cachedDateDisplayInfo = null; // Сбрасываем кэш
+            try
+            {
+                updateAction();
+            }
+            finally
+            {
+                _isUpdatingDateProperties = false;
+                // Одно обновление вместо множественных
+                OnPropertyChanged(nameof(DateDisplayProperties));
+            }
         }
         
         private Task? _initializationTask;
@@ -308,30 +339,28 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
-                    _logger?.LogInformation("SelectedDate changed to {SelectedDate}", value);
+                    _logger?.LogInformation("SelectedDate setter: Date changed to {Value}", value);
 #if DEBUG
-                    Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
+                    Debug.WriteLine($"SelectedDate setter: {value.ToShortDateString()}");
 #endif
-                    // Update events for selected date
-                    _logger?.LogInformation("SelectedDate setter: Queuing LoadTodayEventsAsync for {Value}", value);
-                    Task.Run(async () => 
+                    
+                    // Группируем обновления свойств, связанных с датой
+                    BatchUpdateDateProperties(() =>
+                    {
+                        if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
+                        {
+                            VisibleDate = value;
+                        }
+                    });
+                    
+                    // Используем дебаунсинг для загрузки событий
+                    _logger?.LogInformation("SelectedDate setter: Queueing debounced LoadTodayEventsAsync for {Value}", value);
+                    _dateChangeDebouncer.Debounce(300, async () =>
                     {
                         await LoadTodayEventsAsync();
-                        // Save selected date between sessions
+                        // Сохраняем выбранную дату между сессиями
                         SaveSelectedDate(value);
                     });
-
-                    // Update VisibleDate month/year if month or year differs from current
-                    if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
-                    {
-                        VisibleDate = value;
-                    }
-
-                    OnPropertyChanged(nameof(FormattedSelectedDate));
-                    OnPropertyChanged(nameof(CurrentMonthName));
-                    OnPropertyChanged(nameof(CurrentYear));
-                    OnPropertyChanged(nameof(DaysSinceTransplant));
-                    OnPropertyChanged(nameof(DaysSinceTransplantSubtitle));
                 }
             }
         }
@@ -829,26 +858,39 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // UI показывает ТОЛЬКО невыполненные карточки и не-restriction
                 var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
 
-                FlattenedEvents = new ObservableCollection<CalendarEvent>(visibleEvents);
-                SortedEvents = new ObservableCollection<CalendarEvent>(
-                    visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList());
-                EventsForSelectedDate = new ObservableCollection<CalendarEvent>(visibleEvents);
+                // Используем CollectionUpdater для эффективного обновления без пересоздания
+                CollectionUpdater.UpdateCollection(
+                    FlattenedEvents, 
+                    visibleEvents, 
+                    (a, b) => a.Id == b.Id);
+                
+                // Обновляем с сортировкой
+                CollectionUpdater.UpdateCollectionWithSort(
+                    SortedEvents,
+                    visibleEvents,
+                    (a, b) => a.Id == b.Id,
+                    e => e.Date.TimeOfDay);
+                
+                CollectionUpdater.UpdateCollection(
+                    EventsForSelectedDate,
+                    visibleEvents,
+                    (a, b) => a.Id == b.Id);
 
                 // Храним полный список для расчёта прогресса и возможных деталей
                 _allEventsForSelectedDate = eventsList;
 
+                // Обновляем прогресс только если изменения значительны
                 var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
-                CompletionProgress = prog;
-                CompletionPercentage = percent;
-                OnPropertyChanged(nameof(FlattenedEvents));
-                OnPropertyChanged(nameof(SortedEvents));
-                OnPropertyChanged(nameof(EventsForSelectedDate));
+                if (Math.Abs(CompletionProgress - prog) > 0.01)
+                {
+                    CompletionProgress = prog;
+                    CompletionPercentage = percent;
+                }
 
                 // Логируем актуальное количество после обновления
                 _logger.LogDebug("UpdateUIWithEvents: Updated FlattenedEvents with {Count} events for date {Date}", FlattenedEvents.Count, SelectedDate.ToShortDateString());
 
                 _logger?.LogInformation("UI collections updated: Remaining cards={Count}", FlattenedEvents.Count);
-
                 _logger?.LogInformation("Progress now {Percent}% ({Progress:P2})", CompletionPercentage, CompletionProgress);
             });
         }
@@ -1448,6 +1490,104 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void SetCache(DateTime date, IEnumerable<CalendarEvent> events) => _cacheService.Set(date, events);
         #endregion
+
+        // Предопределенные интервалы для retry (в миллисекундах): 1s, 2s, 4s
+        private static readonly int[] RetryDelays = { 1000, 2000, 4000 };
+        private SemaphoreSlim _refreshSemaphore = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource _refreshCancellationTokenSource;
+
+        private bool _isRefreshing;
+        private const string SelectedDateKey = "LastSelectedDate";
+        
+        private DateTime _lastRefreshTime = DateTime.MinValue;
+        private readonly TimeSpan _throttleInterval = TimeSpan.FromMilliseconds(300); // Минимальный интервал между запросами
+        
+        // Диагностические счетчики для тестирования эффективности
+        private static int _totalRequests = 0;
+        private static int _cacheHits = 0;
+        private static int _cacheMisses = 0;
+        private static int _throttledRequests = 0;
+        private static int _concurrentRejections = 0;
+        
+        // Диагностические счетчики для дополнительных метрик
+        private int _eventCountsRequests = 0;
+        private int _eventCountsCacheHits = 0;
+        private int _eventCountsBatchRequests = 0;
+        
+        private bool _isDataLoaded;
+        private bool _isRefreshingData;
+        
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
+
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set => SetProperty(ref _isRefreshing, value);
+        }
+
+        public ICommand RefreshCommand { get; private set; }
+        public ICommand GoToTodayCommand { get; private set; }
+        public ICommand TestLongPressCommand { get; } // Removed for diagnostics
+
+        public enum LoadingState
+        {
+            NotStarted,
+            Loading,
+            Completed,
+            Error
+        }
+
+        private LoadingState _loadingState;
+        
+        public LoadingState CurrentLoadingState
+        {
+            get => _loadingState;
+            private set
+            {
+                if (_loadingState != value)
+                {
+                    _loadingState = value;
+                    OnPropertyChanged(nameof(CurrentLoadingState));
+                    OnPropertyChanged(nameof(IsLoading));
+                    OnPropertyChanged(nameof(HasError));
+                    OnPropertyChanged(nameof(IsContentVisible));
+                }
+            }
+        }
+
+        public bool HasError => CurrentLoadingState == LoadingState.Error;
+        public bool IsContentVisible => CurrentLoadingState != LoadingState.Loading && CurrentLoadingState != LoadingState.Error;
+
+        public int LoadingProgress
+        {
+            get => _loadingProgress;
+            private set
+            {
+                if (_loadingProgress != value)
+                {
+                    _loadingProgress = value;
+                    OnPropertyChanged(nameof(LoadingProgress));
+                }
+            }
+        }
+
+        public string LoadingStatus
+        {
+            get => _loadingStatus;
+            private set
+            {
+                if (_loadingStatus != value)
+                {
+                    _loadingStatus = value;
+                    OnPropertyChanged(nameof(LoadingStatus));
+                }
+            }
+        }
     }
     
     // Класс для группировки событий по времени суток

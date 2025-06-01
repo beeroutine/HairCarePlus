@@ -9,190 +9,41 @@
 
 ## 📅 Этапы рефакторинга
 
-### Этап 1: Оптимизация обновлений свойств (1-2 дня)
+### ✅ Этап 1: Оптимизация обновлений свойств (Выполнено: 01.06.2025)
 
 #### 🎯 Цель
 Уменьшить количество вызовов OnPropertyChanged и перерисовок UI
 
-#### 📝 Шаги
+#### 📝 Выполнено
+- ✅ Создан класс `DateDisplayInfo` для группировки свойств даты
+- ✅ Создан класс `Debouncer` для отложенного выполнения операций
+- ✅ Обновлен `TodayViewModel` с методом `BatchUpdateDateProperties`
+- ✅ Добавлен `PerformanceMonitor` для измерения производительности
+- ✅ Обновлены привязки в XAML для использования `DateDisplayProperties`
 
-**1.1 Создать группировку обновлений свойств**
-
-```csharp
-// TodayViewModel.cs
-private bool _isUpdatingDateProperties;
-
-private void BatchUpdateDateProperties(Action updateAction)
-{
-    _isUpdatingDateProperties = true;
-    updateAction();
-    _isUpdatingDateProperties = false;
-    
-    // Одно обновление вместо множественных
-    OnPropertyChanged(nameof(DateDisplayProperties));
-}
-
-// Новое computed свойство
-public DateDisplayInfo DateDisplayProperties => new DateDisplayInfo
-{
-    FormattedSelectedDate = SelectedDate.ToString("ddd, MMM d"),
-    CurrentMonthName = VisibleDate.ToString("MMMM"),
-    CurrentYear = VisibleDate.ToString("yyyy"),
-    DaysSinceTransplant = (SelectedDate.Date - _profileService.SurgeryDate.Date).Days + 1,
-    DaysSinceTransplantSubtitle = $"Day {DaysSinceTransplant} post hair transplant"
-};
-```
-
-**1.2 Оптимизировать setter SelectedDate**
-
-```csharp
-public DateTime SelectedDate
-{
-    get => _selectedDate;
-    set
-    {
-        if (SetProperty(ref _selectedDate, value))
-        {
-            BatchUpdateDateProperties(() =>
-            {
-                if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
-                {
-                    VisibleDate = value;
-                }
-            });
-            
-            // Дебаунс для загрузки событий
-            _dateChangeDebouncer.Debounce(300, async () =>
-            {
-                await LoadTodayEventsAsync();
-                SaveSelectedDate(value);
-            });
-        }
-    }
-}
-```
-
-### Этап 2: Оптимизация работы с коллекциями (2-3 дня)
+### ✅ Этап 2: Оптимизация работы с коллекциями (Выполнено: 01.06.2025)
 
 #### 🎯 Цель
-Избежать пересоздания коллекций, использовать DiffUtil паттерн
+Избежать пересоздания ObservableCollection при каждом обновлении
 
-#### 📝 Шаги
+#### 📝 Выполнено
+- ✅ Создан `CollectionUpdater` с методами:
+  - `UpdateCollection` - обновление без пересоздания
+  - `UpdateCollectionWithSort` - обновление с сортировкой
+  - `BatchUpdateCollection` - батчинг для больших коллекций
+- ✅ Обновлен метод `UpdateUIWithEvents` для использования `CollectionUpdater`
+- ✅ Инициализированы коллекции в конструкторе
 
-**2.1 Создать CollectionUpdater хелпер**
-
-```csharp
-// Helpers/CollectionUpdater.cs
-public static class CollectionUpdater
-{
-    public static void UpdateCollection<T>(
-        ObservableCollection<T> target, 
-        IEnumerable<T> source,
-        Func<T, T, bool> comparer)
-    {
-        var sourceList = source.ToList();
-        
-        // Удаляем элементы, которых нет в source
-        for (int i = target.Count - 1; i >= 0; i--)
-        {
-            if (!sourceList.Any(s => comparer(s, target[i])))
-            {
-                target.RemoveAt(i);
-            }
-        }
-        
-        // Добавляем новые элементы
-        foreach (var item in sourceList)
-        {
-            if (!target.Any(t => comparer(item, t)))
-            {
-                target.Add(item);
-            }
-        }
-        
-        // Сортируем, если нужно
-        target.Sort(comparer);
-    }
-}
-```
-
-**2.2 Обновить UpdateUIWithEvents**
-
-```csharp
-private async Task UpdateUIWithEvents(IEnumerable<CalendarEvent> events, CancellationToken cancellationToken)
-{
-    if (cancellationToken.IsCancellationRequested) return;
-
-    await MainThread.InvokeOnMainThreadAsync(() =>
-    {
-        var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-        var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
-
-        // Обновляем без пересоздания
-        CollectionUpdater.UpdateCollection(
-            FlattenedEvents, 
-            visibleEvents, 
-            (a, b) => a.Id == b.Id);
-        
-        CollectionUpdater.UpdateCollection(
-            SortedEvents,
-            visibleEvents.OrderBy(e => e.Date.TimeOfDay),
-            (a, b) => a.Id == b.Id);
-
-        // Обновляем прогресс
-        var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
-        if (Math.Abs(CompletionProgress - prog) > 0.01)
-        {
-            CompletionProgress = prog;
-            CompletionPercentage = percent;
-        }
-    });
-}
-```
-
-### Этап 3: Оптимизация Messenger (1 день)
+### ✅ Этап 3: Оптимизация Messenger (Выполнено: 01.06.2025)
 
 #### 🎯 Цель
 Избежать полной перезагрузки при обновлении одного события
 
-#### 📝 Шаги
-
-**3.1 Создать умный обработчик сообщений**
-
-```csharp
-// В конструкторе TodayViewModel
-_messenger.Register<EventUpdatedMessage>(this, async (recipient, message) =>
-{
-    await MainThread.InvokeOnMainThreadAsync(() =>
-    {
-        // Находим событие в коллекциях
-        var eventToUpdate = FlattenedEvents.FirstOrDefault(e => e.Id == message.EventId);
-        if (eventToUpdate != null)
-        {
-            // Если событие стало completed, удаляем из видимых
-            if (message.IsCompleted)
-            {
-                FlattenedEvents.Remove(eventToUpdate);
-                SortedEvents.Remove(eventToUpdate);
-                EventsForSelectedDate.Remove(eventToUpdate);
-            }
-            else
-            {
-                // Обновляем свойства
-                eventToUpdate.IsCompleted = message.IsCompleted;
-            }
-            
-            // Обновляем только прогресс
-            RecalculateProgress();
-        }
-        else if (!message.IsCompleted && message.Date == SelectedDate)
-        {
-            // Новое невыполненное событие для текущей даты
-            await LoadSingleEventAsync(message.EventId);
-        }
-    });
-});
-```
+#### 📝 Выполнено
+- ✅ Создан умный обработчик сообщений в `EventUpdatedMessage`
+- ✅ Добавлен `GetEventByIdQuery` для загрузки отдельного события
+- ✅ Реализовано интеллектуальное обновление только измененных элементов
+- ✅ Добавлена поддержка добавления новых событий без перезагрузки
 
 ### Этап 4: Замена горизонтального CollectionView (3-4 дня)
 

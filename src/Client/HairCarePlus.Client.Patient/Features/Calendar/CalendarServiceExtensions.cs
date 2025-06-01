@@ -19,6 +19,7 @@ using HairCarePlus.Client.Patient.Features.Calendar.Application.Commands;
 using HairCarePlus.Client.Patient.Features.Calendar.Application.Queries;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Shared.Common.CQRS;
+using HairCarePlus.Client.Patient.Common.Utils;
 // Alias to avoid conflict with Application namespace
 using MauiApp = Microsoft.Maui.Controls.Application;
 
@@ -37,8 +38,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             // Register services
             services.AddScoped<ICalendarService, HairTransplantEventService>();
             services.AddSingleton<ICalendarCacheService, CalendarCacheService>();
-            services.AddSingleton<ICalendarLoader, CalendarLoaderService>();
-            services.AddSingleton<IProgressCalculator, ProgressCalculatorService>();
+            services.AddSingleton<PerformanceMonitor>();
+            services.AddScoped<ICalendarLoader, CalendarLoaderService>();
+            services.AddScoped<IProgressCalculator, ProgressCalculatorService>();
             
             // Register repository
             services.AddScoped<IHairTransplantEventRepository, CalendarRepository>();
@@ -62,6 +64,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             services.AddScoped<IQueryHandler<GetEventsForDateQuery, IEnumerable<CalendarEvent>>, GetEventsForDateHandler>();
             services.AddScoped<IQueryHandler<GetEventCountsForDatesQuery, Dictionary<DateTime, Dictionary<EventType, int>>>, GetEventCountsForDatesHandler>();
             services.AddScoped<IQueryHandler<GetActiveRestrictionsQuery, IReadOnlyList<RestrictionInfo>>, GetActiveRestrictionsHandler>();
+            services.AddScoped<IQueryHandler<GetEventByIdQuery, CalendarEvent?>, GetEventByIdHandler>();
             
             // Register calendar views
             services.AddTransient<TodayPage>();

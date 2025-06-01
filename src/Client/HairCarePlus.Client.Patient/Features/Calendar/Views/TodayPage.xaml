@@ -58,12 +58,12 @@
 
                 <!-- Right Side: Selected Date's Month and Transplant Info -->
                 <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="EndAndExpand" Spacing="4">
-                    <Label Text="{Binding CurrentMonthName}" 
+                    <Label Text="{Binding DateDisplayProperties.CurrentMonthName}" 
                            FontSize="28" 
                            FontAttributes="Bold"
                            TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                            HorizontalOptions="End"/>
-                    <Label Text="{Binding DaysSinceTransplantSubtitle}" 
+                    <Label Text="{Binding DateDisplayProperties.DaysSinceTransplantSubtitle}" 
                            FontSize="14" 
                            TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}"
                            HorizontalOptions="End"/>
