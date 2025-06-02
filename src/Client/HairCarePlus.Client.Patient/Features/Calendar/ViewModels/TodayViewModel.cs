@@ -73,7 +73,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private const int RefreshTimeoutMilliseconds = 30000; // 30 seconds timeout
         
         // Поля для оптимизации обновлений
-        private readonly Debouncer _dateChangeDebouncer;
         private bool _isUpdatingDateProperties;
         private DateDisplayInfo? _cachedDateDisplayInfo;
         
@@ -127,9 +126,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _profileService = profileService;
             _preloadingService = preloadingService;
             _confettiManager = confettiManager;
-            
-            // Инициализируем дебаунсер для оптимизации частых изменений даты
-            _dateChangeDebouncer = new Debouncer();
             
             // Инициализируем коллекции
             _calendarDays = new ObservableCollection<DateTime>();
@@ -366,7 +362,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Debug.WriteLine($"SelectedDate setter: {value.ToShortDateString()}");
 #endif
                     
-                    // Группируем обновления свойств, связанных с датой
                     BatchUpdateDateProperties(() =>
                     {
                         if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
@@ -375,32 +370,19 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         }
                     });
                     
-                    // Используем дебаунсинг для загрузки событий
-                    _logger?.LogInformation("SelectedDate setter: Queueing debounced LoadTodayEventsAsync for {Value}", value);
-                    
-                    // Даем время для завершения анимации прокрутки (300-400мс)
-                    // перед загрузкой событий, чтобы избежать рывков
-                    _dateChangeDebouncer.Debounce(400, async () =>
+                    // Немедленно сохраняем дату и стартуем предзагрузку соседних дней.
+                    SaveSelectedDate(value);
+
+                    _ = Task.Run(async () =>
                     {
-                        // Показываем индикатор загрузки
-                        IsRefreshing = true;
-                        
-                        await LoadTodayEventsAsync();
-                        // Сохраняем выбранную дату между сессиями
-                        SaveSelectedDate(value);
-                        
-                        // Предзагружаем соседние даты
-                        _ = Task.Run(async () =>
+                        try
                         {
-                            try
-                            {
-                                await _preloadingService.PreloadAdjacentDatesAsync(value, daysBefore: 3, daysAfter: 3);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger?.LogError(ex, "Failed to preload events for adjacent dates");
-                            }
-                        });
+                            await _preloadingService.PreloadAdjacentDatesAsync(value, daysBefore: 3, daysAfter: 3);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "Failed to preload events for adjacent dates");
+                        }
                     });
                 }
             }
@@ -1364,20 +1346,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     return;
                 }
                 
-                // Временно отключаем дебаунсинг для мгновенного отклика
-                _dateChangeDebouncer.Cancel();
-                
-                // Устанавливаем даты - сеттеры сами вызовут OnPropertyChanged
+                // Обновляем даты
                 SelectedDate = today;
                 VisibleDate = today;
                 
-                // Принудительно загружаем события без дебаунсинга
-                _ = Task.Run(async () => 
-                {
-                    // Небольшая задержка для завершения анимации центрирования
-                    await Task.Delay(200);
-                    await LoadTodayEventsAsync(skipThrottling: true);
-                });
+                // Загрузка задач произойдёт после завершения анимации прокрутки (ScrollIdleNotifierBehavior)
             }
             catch (Exception ex)
             {

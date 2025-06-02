@@ -22,6 +22,7 @@ using SkiaSharp;
 using HairCarePlus.Client.Patient.Common.Views;
 using Microsoft.Maui.Graphics;
 using System.Collections.Generic;
+using HairCarePlus.Client.Patient.Common.Behaviors;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Views
 {
@@ -104,6 +105,25 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 if (ProgressRingRef != null)
                 {
                     ProgressRingRef.Completed += OnRingCompleted;
+                }
+
+                // Attach idle notifier to trigger data load when scroll stops
+                if (DateSelectorView != null)
+                {
+                    ScrollIdleNotifier.Attach(DateSelectorView, async () =>
+                    {
+                        if (_viewModel != null)
+                        {
+                            try
+                            {
+                                await _viewModel.LoadTodayEventsAsync(skipThrottling: true);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(ex, "Error loading events after scroll idle");
+                            }
+                        }
+                    });
                 }
             }
             catch (Exception ex)
@@ -519,7 +539,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
         /// <summary>
         /// Event handler for CollectionView selection changes - replaces problematic TapGestureRecognizer
         /// </summary>
-        private void OnDateSelectionChanged(object? sender, SelectionChangedEventArgs e)
+        private async void OnDateSelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             try
             {
@@ -546,6 +566,23 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     {
                         _logger.LogWarning("ViewModel is null in OnDateSelectionChanged");
                     }
+
+                    // MAUI-only approach: запускаем загрузку через ~300 мс, чтобы дать анимации ScrollTo завершиться.
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(350);
+                        try
+                        {
+                            if (_viewModel != null && _viewModel.SelectedDate.Date == selectedDate.Date)
+                            {
+                                await _viewModel.LoadTodayEventsAsync(skipThrottling: true);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "Deferred task load failed");
+                        }
+                    });
                 }
                 else
                 {
