@@ -17,8 +17,8 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             {
                 if (collectionView.Handler?.PlatformView is UICollectionView uiCollection)
                 {
-                    var tracker = new IdleObserver(uiCollection, onIdle);
-                    collectionView.SetValue(_trackerProperty, tracker);
+                    var idleDelegate = new IdleDelegate(uiCollection, onIdle);
+                    collectionView.SetValue(_delegateProperty, idleDelegate);
                 }
             }
 
@@ -26,31 +26,46 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
             TryAttach();
         }
 
-        private static readonly BindableProperty _trackerProperty =
-            BindableProperty.CreateAttached("_scrollIdleObserver", typeof(IdleObserver), typeof(ScrollIdleNotifier), default(IdleObserver));
+        private static readonly BindableProperty _delegateProperty =
+            BindableProperty.CreateAttached("_scrollIdleDelegate", typeof(IdleDelegate), typeof(ScrollIdleNotifier), default(IdleDelegate));
 
-        private sealed class IdleObserver : NSObject
+        private sealed class IdleDelegate : UICollectionViewDelegateFlowLayout
         {
-            private readonly NSObject _decelObserver;
-            private readonly NSObject _dragObserver;
             private readonly Action _callback;
+            private readonly WeakReference<NSObject> _prevDelegate;
 
-            public IdleObserver(UIScrollView scrollView, Action callback)
+            public IdleDelegate(UICollectionView collectionView, Action cb)
             {
-                _callback = callback;
+                _callback = cb;
+                _prevDelegate = new WeakReference<NSObject>(collectionView.Delegate as NSObject);
+                collectionView.Delegate = this;
+            }
 
-                var decelKey = new NSString("UIScrollViewDidEndDeceleratingNotification");
-                var dragKey  = new NSString("UIScrollViewDidEndDraggingNotification");
+            public override void DecelerationEnded(UIScrollView scrollView)
+            {
+                _callback?.Invoke();
+                base.DecelerationEnded(scrollView);
+            }
 
-                _decelObserver = NSNotificationCenter.DefaultCenter.AddObserver(decelKey, _ => _callback?.Invoke(), scrollView);
+            public override void DraggingEnded(UIScrollView scrollView, bool willDecelerate)
+            {
+                if (!willDecelerate)
+                    _callback?.Invoke();
+                base.DraggingEnded(scrollView, willDecelerate);
+            }
 
-                _dragObserver = NSNotificationCenter.DefaultCenter.AddObserver(dragKey, note =>
-                {
-                    var willDecelerate = ((NSNumber?)note.UserInfo?[
-                        new NSString("UIScrollViewWillDecelerateKey")])?.BoolValue ?? false;
-                    if (!willDecelerate)
-                        _callback?.Invoke();
-                }, scrollView);
+            public override void ScrollAnimationEnded(UIScrollView scrollView)
+            {
+                _callback?.Invoke();
+                base.ScrollAnimationEnded(scrollView);
+            }
+
+            public override bool RespondsToSelector(ObjCRuntime.Selector sel)
+            {
+                if (base.RespondsToSelector(sel)) return true;
+                if (_prevDelegate.TryGetTarget(out var prev))
+                    return prev.RespondsToSelector(sel);
+                return false;
             }
 
             protected override void Dispose(bool disposing)
@@ -58,8 +73,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 base.Dispose(disposing);
                 if (disposing)
                 {
-                    NSNotificationCenter.DefaultCenter.RemoveObserver(_decelObserver);
-                    NSNotificationCenter.DefaultCenter.RemoveObserver(_dragObserver);
+                    _prevDelegate.SetTarget(null);
                 }
             }
         }

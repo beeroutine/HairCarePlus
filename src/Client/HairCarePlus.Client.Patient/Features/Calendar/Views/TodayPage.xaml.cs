@@ -567,22 +567,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         _logger.LogWarning("ViewModel is null in OnDateSelectionChanged");
                     }
 
-                    // MAUI-only approach: запускаем загрузку через ~300 мс, чтобы дать анимации ScrollTo завершиться.
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(350);
-                        try
-                        {
-                            if (_viewModel != null && _viewModel.SelectedDate.Date == selectedDate.Date)
-                            {
-                                await _viewModel.LoadTodayEventsAsync(skipThrottling: true);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.LogError(ex, "Deferred task load failed");
-                        }
-                    });
+                    // Загрузка задач произойдёт по событию Idle из ScrollIdleNotifier (iOS/Android) 
                 }
                 else
                 {
