@@ -16,7 +16,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
     {
         private CollectionView? _associatedCollection;
         private CancellationTokenSource? _debounceCts;
-        private const int DebounceDelayMs = 120;
+        private const int DebounceDelayMs = 60;
 
         #region Bindable Properties
 

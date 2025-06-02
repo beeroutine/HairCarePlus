@@ -14,6 +14,8 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
     {
         private CollectionView? _collection;
         private CancellationTokenSource? _debounceTokenSource;
+        private bool _isInitializing = true;
+        private object? _lastProgrammaticSelection;
 
         protected override void OnAttachedTo(CollectionView bindable)
         {
@@ -51,19 +53,39 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         }
 
         // Animate scroll when the user changes selection so the movement feels natural.
-        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => ScrollToCenter(animate: true);
+        private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e) 
+        {
+            // SelectionChanged обычно вызывается при взаимодействии пользователя
+            // Если выбор был программным (через SelectedItem binding), мы это уже обработали в OnPropertyChanged
+            if (_collection?.SelectedItem != null && !_isInitializing && 
+                _collection.SelectedItem != _lastProgrammaticSelection)
+            {
+                // Это пользовательское взаимодействие - анимируем
+                ScrollToCenter(animate: true);
+            }
+            // Сбрасываем флаг программного выбора
+            _lastProgrammaticSelection = null;
+        }
 
         private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CollectionView.ItemsSource))
             {
                 // ItemsSource changed – initial positioning without animation while layout settles.
+                _isInitializing = true;
                 ScrollToCenter(animate: false);
+                // Сбрасываем флаг инициализации через небольшую задержку
+                Task.Delay(500).ContinueWith(_ => _isInitializing = false);
             }
             else if (e.PropertyName == nameof(CollectionView.SelectedItem))
             {
-                // SelectedItem set programmatically (e.g., via ViewModel) – animate to keep UX consistent.
-                ScrollToCenter(animate: true);
+                // SelectedItem изменен программно (через binding)
+                // Запоминаем это значение, чтобы игнорировать последующий SelectionChanged
+                _lastProgrammaticSelection = _collection?.SelectedItem;
+                
+                // Если это первоначальная загрузка - без анимации
+                // Иначе - с анимацией (например, при нажатии кнопки "Сегодня")
+                ScrollToCenter(animate: !_isInitializing);
             }
         }
 

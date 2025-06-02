@@ -81,7 +81,8 @@
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="80" 
                             Margin="0,0,0,10"
-                            SelectionChanged="OnDateSelectionChanged">
+                            SelectionChanged="OnDateSelectionChanged"
+                            ItemSizingStrategy="MeasureFirstItem">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
@@ -91,17 +92,28 @@
             </CollectionView>
 
             <!-- Events List -->
-            <CollectionView Grid.Row="2"
-                            ItemsSource="{Binding FlattenedEvents}"
-                            ItemTemplate="{StaticResource EventTemplate}"
-                            SelectionMode="None"
-                            VerticalScrollBarVisibility="Never"
-                            EmptyView="{StaticResource EventsEmptyViewTemplate}"
-                            Margin="0,5,0,0">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
-                </CollectionView.ItemsLayout>
-            </CollectionView>
+            <Grid Grid.Row="2">
+                <CollectionView ItemsSource="{Binding FlattenedEvents}"
+                                ItemTemplate="{StaticResource EventTemplate}"
+                                SelectionMode="None"
+                                VerticalScrollBarVisibility="Never"
+                                EmptyView="{StaticResource EventsEmptyViewTemplate}"
+                                Margin="0,5,0,0"
+                                IsVisible="{Binding IsRefreshing, Converter={toolkit:InvertedBoolConverter}}">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
+                    </CollectionView.ItemsLayout>
+                </CollectionView>
+                
+                <!-- Loading indicator -->
+                <ActivityIndicator IsRunning="{Binding IsRefreshing}"
+                                   IsVisible="{Binding IsRefreshing}"
+                                   VerticalOptions="Center"
+                                   HorizontalOptions="Center"
+                                   Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Primary}}"
+                                   WidthRequest="40"
+                                   HeightRequest="40"/>
+            </Grid>
 
             <!-- Confetti overlay using SkiaSharp -->
             <skia:SKConfettiView x:Name="ConfettiView"
@@ -136,7 +148,7 @@
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
                              Orientation="Horizontal" 
                              ItemSpacing="6"
-                             SnapPointsType="None"
+                             SnapPointsType="MandatorySingle"
                              SnapPointsAlignment="Center"/>
             
             <!-- Date Selector Item Template -->
@@ -227,7 +239,7 @@
                             <SwipeItem
                                     Text="✓"
                                     BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#66BB6A}"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
+                                    Command="{Binding Path=BindingContext.ToggleEventCompletionCommand, Source={x:Reference TodayPageRoot}}"
                                     CommandParameter="{Binding .}">
                             </SwipeItem>
                         </SwipeItems>

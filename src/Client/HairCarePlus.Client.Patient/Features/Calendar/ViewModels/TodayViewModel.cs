@@ -58,7 +58,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private int _completionPercentage;
         private bool _isLoadingMore;
         private const int PreDaysToLoad = 30; // количество дней ДО операции/сегодня
-        private const int InitialDaysToLoad = 365; // дни ВПЕРЁД (1 год)
+        private const int InitialDaysToLoad = 90; // дни ВПЕРЁД (3 месяца вместо года)
         private const int DaysToLoadMore = 60; // подгрузка вперёд
         private const int MaxTotalDays = PreDaysToLoad + InitialDaysToLoad + 365; // расширенный лимит (≈2 года)
         private DateTime _lastLoadedDate;
@@ -377,8 +377,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     
                     // Используем дебаунсинг для загрузки событий
                     _logger?.LogInformation("SelectedDate setter: Queueing debounced LoadTodayEventsAsync for {Value}", value);
-                    _dateChangeDebouncer.Debounce(300, async () =>
+                    
+                    // Даем время для завершения анимации прокрутки (300-400мс)
+                    // перед загрузкой событий, чтобы избежать рывков
+                    _dateChangeDebouncer.Debounce(400, async () =>
                     {
+                        // Показываем индикатор загрузки
+                        IsRefreshing = true;
+                        
                         await LoadTodayEventsAsync();
                         // Сохраняем выбранную дату между сессиями
                         SaveSelectedDate(value);
@@ -388,11 +394,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         {
                             try
                             {
-                                await _preloadingService.PreloadAdjacentDatesAsync(value, daysBefore: 7, daysAfter: 7);
+                                await _preloadingService.PreloadAdjacentDatesAsync(value, daysBefore: 3, daysAfter: 3);
                             }
                             catch (Exception ex)
                             {
-                                _logger?.LogError(ex, "Error preloading adjacent dates");
+                                _logger?.LogError(ex, "Failed to preload events for adjacent dates");
                             }
                         });
                     });
@@ -718,32 +724,29 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _cacheService.CleanupOldEntries(30);
         }
         
-        public async Task LoadTodayEventsAsync()
+        public async Task LoadTodayEventsAsync() => await LoadTodayEventsAsync(false);
+        
+        public async Task LoadTodayEventsAsync(bool skipThrottling)
         {
             var localSelectedDate = SelectedDate; // Capture current SelectedDate for this execution
-            _logger?.LogInformation("LoadTodayEventsAsync: START for date {LocalSelectedDate}", localSelectedDate);
-            // Защита от слишком частых запросов (throttling)
-            var now = DateTime.UtcNow;
-            if ((now - _lastRefreshTime) < _throttleInterval)
-            {
-                _throttledRequests++;
-                _logger.LogDebug("Request throttled. Last refresh was {ElapsedTime}ms ago. Total throttled: {ThrottledRequests}", 
-                    (now - _lastRefreshTime).TotalMilliseconds, _throttledRequests);
-                return;
-            }
+            _logger?.LogInformation("LoadTodayEventsAsync: START for date {LocalSelectedDate}, skipThrottling={SkipThrottling}", localSelectedDate, skipThrottling);
             
-            // Проверка, активен ли уже другой запрос
-            if (!await _refreshSemaphore.WaitAsync(0))
+            // Если skipThrottling = true, пропускаем проверку семафора
+            if (!skipThrottling)
             {
-                _concurrentRejections++;
-                _logger.LogInformation("Refresh operation already in progress. Total rejections: {ConcurrentRejections}", _concurrentRejections);
-                return;
+                // Проверка, активен ли уже другой запрос
+                if (!await _refreshSemaphore.WaitAsync(0))
+                {
+                    _concurrentRejections++;
+                    _logger.LogInformation("Refresh operation already in progress. Total rejections: {ConcurrentRejections}", _concurrentRejections);
+                    return;
+                }
             }
             
             try
             {
                 _totalRequests++;
-                _lastRefreshTime = now;
+                _lastRefreshTime = DateTime.UtcNow;
                 _logger.LogDebug("Starting LoadTodayEventsAsync request #{TotalRequests}", _totalRequests);
                 
                 // Отмена предыдущих операций
@@ -876,8 +879,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Очищаем старые записи из кэша (старше 24 часов)
                 CleanupCacheEntries();
                 
-                // Освобождаем семафор
-                _refreshSemaphore.Release();
+                // Освобождаем семафор только если мы его захватывали
+                if (!skipThrottling)
+                {
+                    _refreshSemaphore.Release();
+                }
             }
         }
         
@@ -886,25 +892,29 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             _logger?.LogInformation("UpdateUIWithEvents: START. Received {Count} events. Current SelectedDate in VM: {SelectedDate}", events?.Count() ?? 0, _selectedDate.ToShortDateString());
             if (cancellationToken.IsCancellationRequested) return;
 
+            // Подготавливаем данные вне UI потока для оптимизации
+            var eventsList = events?.ToList() ?? new List<CalendarEvent>();
+            var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
+            var sortedVisibleEvents = visibleEvents.OrderBy(e => e.Date.TimeOfDay).ToList();
+            
+            // Вычисляем прогресс вне UI потока
+            var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
+            var shouldUpdateProgress = Math.Abs(CompletionProgress - prog) > 0.01;
+            var shouldShowConfetti = percent == 100 && !_confettiManager.IsAnimating;
+
             await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
             {
-                var eventsList = events?.ToList() ?? new List<CalendarEvent>();
-
-                // UI показывает ТОЛЬКО невыполненные карточки и не-restriction
-                var visibleEvents = eventsList.Where(e => !e.IsCompleted && e.EventType != EventType.CriticalWarning).ToList();
-
-                // Используем CollectionUpdater для эффективного обновления без пересоздания
+                // Быстрое обновление коллекций с уже подготовленными данными
                 CollectionUpdater.UpdateCollection(
                     FlattenedEvents, 
                     visibleEvents, 
                     (a, b) => a.Id == b.Id);
                 
-                // Обновляем с сортировкой
-                CollectionUpdater.UpdateCollectionWithSort(
+                // Используем уже отсортированный список
+                CollectionUpdater.UpdateCollection(
                     SortedEvents,
-                    visibleEvents,
-                    (a, b) => a.Id == b.Id,
-                    e => e.Date.TimeOfDay);
+                    sortedVisibleEvents,
+                    (a, b) => a.Id == b.Id);
                 
                 CollectionUpdater.UpdateCollection(
                     EventsForSelectedDate,
@@ -915,27 +925,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _allEventsForSelectedDate = eventsList;
 
                 // Обновляем прогресс только если изменения значительны
-                var (prog, percent) = _progressCalculator.CalculateProgress(eventsList);
-                if (Math.Abs(CompletionProgress - prog) > 0.01)
+                if (shouldUpdateProgress)
                 {
                     CompletionProgress = prog;
                     CompletionPercentage = percent;
-                    
-                    // Показываем конфетти при 100% завершении
-                    if (percent == 100 && !_confettiManager.IsAnimating)
-                    {
-                        _logger.LogInformation("All tasks completed! Showing confetti animation");
-                        _ = Task.Run(async () =>
-                        {
-                            // Настраиваем производительность в зависимости от платформы
-#if ANDROID
-                            _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Low);
-#else
-                            _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Medium);
-#endif
-                            await _confettiManager.ShowConfettiAsync(duration: 3000, particleCount: 60);
-                        });
-                    }
                 }
 
                 // Логируем актуальное количество после обновления
@@ -944,6 +937,22 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger?.LogInformation("UI collections updated: Remaining cards={Count}", FlattenedEvents.Count);
                 _logger?.LogInformation("Progress now {Percent}% ({Progress:P2})", CompletionPercentage, CompletionProgress);
             });
+            
+            // Показываем конфетти вне UI потока если нужно
+            if (shouldShowConfetti)
+            {
+                _logger.LogInformation("All tasks completed! Showing confetti animation");
+                _ = Task.Run(async () =>
+                {
+                    // Настраиваем производительность в зависимости от платформы
+#if ANDROID
+                    _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Low);
+#else
+                    _confettiManager.ConfigurePerformance(ConfettiPerformanceLevel.Medium);
+#endif
+                    await _confettiManager.ShowConfettiAsync(duration: 3000, particleCount: 60);
+                });
+            }
         }
         
         private void CleanupCacheEntries()
@@ -1178,10 +1187,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
             try
             {
-                // Обновляем дату (это вызовет изменение UI)
+                // Обновляем дату - setter уже вызовет OnPropertyChanged и LoadTodayEventsAsync через дебаунсер
                 SelectedDate = date;
-                OnPropertyChanged(nameof(SelectedDate));
-                OnPropertyChanged(nameof(FormattedSelectedDate));
 
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
@@ -1189,9 +1196,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 #if DEBUG
                 Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
 #endif
-
-                // Загружаем события для выбранной даты
-                await LoadTodayEventsAsync();
             }
             catch (Exception ex)
             {
@@ -1201,8 +1205,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 if (previousDate != date)
                 {
                     SelectedDate = previousDate;
-                    OnPropertyChanged(nameof(SelectedDate));
-                    OnPropertyChanged(nameof(FormattedSelectedDate));
                 }
             }
         }
@@ -1352,16 +1354,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             try
             {
                 _logger.LogInformation("GoToTodayCommand executed.");
-                // Set SelectedDate to trigger event loading and UI updates
+                
                 var today = DateTime.Today;
+                
+                // Проверяем, если уже на сегодняшней дате - не обновляем
+                if (SelectedDate.Date == today.Date && VisibleDate.Date == today.Date)
+                {
+                    _logger.LogDebug("Already on today's date, skipping update");
+                    return;
+                }
+                
+                // Временно отключаем дебаунсинг для мгновенного отклика
+                _dateChangeDebouncer.Cancel();
+                
+                // Устанавливаем даты - сеттеры сами вызовут OnPropertyChanged
                 SelectedDate = today;
-                VisibleDate = today; // Explicitly update VisibleDate as well
-
-                // Make sure the date gets visually selected in the DateSelector
-                // by explicitly raising property changed for SelectedDate
-                OnPropertyChanged(nameof(SelectedDate));
-                // Explicitly notify that VisibleDate changed too
-                OnPropertyChanged(nameof(VisibleDate)); 
+                VisibleDate = today;
+                
+                // Принудительно загружаем события без дебаунсинга
+                _ = Task.Run(async () => 
+                {
+                    // Небольшая задержка для завершения анимации центрирования
+                    await Task.Delay(200);
+                    await LoadTodayEventsAsync(skipThrottling: true);
+                });
             }
             catch (Exception ex)
             {
