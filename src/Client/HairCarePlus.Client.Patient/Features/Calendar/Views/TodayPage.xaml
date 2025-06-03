@@ -239,7 +239,7 @@
                             <SwipeItem
                                     Text="✓"
                                     BackgroundColor="{AppThemeBinding Light=#4CAF50, Dark=#66BB6A}"
-                                    Command="{Binding Path=BindingContext.ToggleEventCompletionCommand, Source={x:Reference TodayPageRoot}}"
+                                    Command="{Binding Source={x:Reference TodayPageRoot}, Path=BindingContext.ToggleEventCompletionCommand}"
                                     CommandParameter="{Binding .}">
                             </SwipeItem>
                         </SwipeItems>
@@ -278,7 +278,7 @@
                         
                         <Border.Behaviors>
                             <toolkit:TouchBehavior
-                                LongPressCommand="{Binding Path=BindingContext.ToggleEventCompletionCommand, Source={x:Reference TodayPageRoot}}"
+                                LongPressCommand="{Binding Source={x:Reference TodayPageRoot}, Path=BindingContext.ToggleEventCompletionCommand}"
                                 LongPressCommandParameter="{Binding .}"
                                 PressedScale="0.95"
                                 PressedOpacity="0.8" />

@@ -116,7 +116,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         {
                             try
                             {
-                                await _viewModel.LoadTodayEventsAsync(skipThrottling: true);
+                                _logger.LogInformation("ScrollIdleNotifier: Scroll has settled. Current VM.SelectedDate: {SelectedDate}. Triggering LoadTodayEventsAsync.", _viewModel.SelectedDate);
+                                await _viewModel.LoadTodayEventsAsync(); // Теперь без skipThrottling
                             }
                             catch (Exception ex)
                             {
@@ -159,32 +160,61 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 _logger.LogInformation("ViewModel SelectedDate changed to {SelectedDate}, updating UI.", _viewModel.SelectedDate);
                 
-                // Используем индекс, чтобы гарантировать корректное применение выделения (особенно для DateTime-структур)
+                // Synchronize DateSelectorView.SelectedItem with ViewModel.SelectedDate
+                // This ensures that CenterOnSelectedBehavior reacts to the ViewModel's state.
                 if (_viewModel.CalendarDays is not null)
                 {
-                    var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
-                    if (index >= 0)
+                    var targetDate = _viewModel.SelectedDate.Date;
+                    if (DateSelectorView.SelectedItem is DateTime currentItemDate && currentItemDate.Date == targetDate)
                     {
-                        var itemRef = _viewModel.CalendarDays[index];
-                        if (!Equals(DateSelectorView.SelectedItem, itemRef))
+                        _logger.LogDebug("DateSelectorView.SelectedItem is already synchronized with ViewModel.SelectedDate ({TargetDate}). No UI update needed from OnViewModelPropertyChanged.", targetDate);
+                    }
+                    else
+                    {
+                        var index = _viewModel.CalendarDays.IndexOf(targetDate);
+                        if (index >= 0)
                         {
-                            DateSelectorView.SelectedItem = itemRef;
+                            var itemToSelect = _viewModel.CalendarDays[index];
+                            _logger.LogDebug("Setting DateSelectorView.SelectedItem to {ItemToSelect} based on ViewModel.SelectedDate.", itemToSelect);
+                            DateSelectorView.SelectedItem = itemToSelect;
+                        }
+                        else
+                        {
+                             _logger.LogWarning("Date {TargetDate} not found in CalendarDays. Cannot set DateSelectorView.SelectedItem.", targetDate);
                         }
                     }
                 }
                 
                 // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
+                // This part is mostly for the month/year header, not directly for selection.
+                // Consider if CollectionViewHeaderSyncBehavior should solely manage VisibleDate based on scroll.
+                // For now, we keep it to ensure responsiveness of the header if a date is selected far off.
                 await Microsoft.Maui.Controls.Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
                 {
-                  _viewModel.VisibleDate = _viewModel.SelectedDate; 
+                  if(_viewModel.VisibleDate.Date != _viewModel.SelectedDate.Date) // Update only if different
+                  {
+                    _viewModel.VisibleDate = _viewModel.SelectedDate; 
+                    _logger.LogDebug("Updated ViewModel.VisibleDate to {VisibleDate} in OnViewModelPropertyChanged.", _viewModel.VisibleDate);
+                  }
                 });
                 
-                // Scroll to selected date with animation - REMOVED, let CenterOnSelectedBehavior handle it
-                // _ = CenterSelectedDateAsync(); 
+                // NEW: Ensure the newly selected date is centered in the horizontal calendar
+                try
+                {
+                    await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        DateSelectorView?.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: true);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error performing explicit ScrollTo in OnViewModelPropertyChanged");
+                }
                 
-                // Add delay and explicit state update after scroll completes
-                await Task.Delay(200); // Slightly longer delay for animated scroll
-        // UpdateVisibleItemStates(); // Удалено для устранения ошибки и избежания двойной подсветки
+                // REMOVED Task.Delay and subsequent UpdateVisibleItemStates as it's problematic
+                // VisualStateManager and DataTriggers should handle visual updates.
+                // CenterOnSelectedBehavior handles scrolling.
+                // ScrollIdleNotifier handles data loading after scroll.
             }
             else if (e?.PropertyName == nameof(TodayViewModel.CompletionProgress)
                      && ProgressRingRef != null && _viewModel != null)
@@ -294,6 +324,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
                         // Определяем индекс выбранной даты в источнике данных
+                        // Эта часть кода гарантирует, что DateSelectorView.SelectedItem
+                        // синхронизирован с _viewModel.SelectedDate.
+                        // Это важно, так как CenterOnSelectedBehavior будет реагировать на SelectedItem.
                         if (_viewModel.CalendarDays is not null)
                         {
                             var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
@@ -307,42 +340,50 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                             }
                             else
                             {
-                                // Fallback: если элемент не найден (что маловероятно) – используем старую логику
-                                DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                                // Fallback: если элемент не найден
+                                if (!Equals(DateSelectorView.SelectedItem, _viewModel.SelectedDate))
+                                {
+                                    DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                                }
                             }
                         }
                         else
                         {
-                            DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                           if (!Equals(DateSelectorView.SelectedItem, _viewModel.SelectedDate))
+                           {
+                               DateSelectorView.SelectedItem = _viewModel.SelectedDate;
+                           }
                         }
                         
-                        // Прокручиваем к выбранной дате без анимации
-                        if (_viewModel.CalendarDays is not null)
-                        {
-                            var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
-                            if (index >= 0)
-                            {
-                                DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: false);
-                            }
-                            else
-                            {
-                                DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
-                            }
-                        }
-                        else
-                        {
-                            DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
-                        }
+                        // Удаляем явный вызов ScrollTo.
+                        // CenterOnSelectedBehavior должен сам обработать изменение SelectedItem
+                        // и выполнить прокрутку для центрирования.
+                        // if (_viewModel.CalendarDays is not null)
+                        // {
+                        //     var index = _viewModel.CalendarDays.IndexOf(_viewModel.SelectedDate.Date);
+                        //     if (index >= 0)
+                        //     {
+                        //         DateSelectorView.ScrollTo(index, position: ScrollToPosition.Center, animate: false);
+                        //     }
+                        //     else
+                        //     {
+                        //         DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        //     }
+                        // }
+                        // else
+                        // {
+                        //     DateSelectorView.ScrollTo(_viewModel.SelectedDate, position: ScrollToPosition.Center, animate: false);
+                        // }
                         
                         // Принудительно обновляем состояние выделения
-                        var selectedItem = DateSelectorView.GetVisualTreeDescendants()
+                        var selectedItemVisual = DateSelectorView.GetVisualTreeDescendants()
                             .OfType<Grid>()
                             .FirstOrDefault(g => g.BindingContext is DateTime date && date.Date == _viewModel.SelectedDate.Date);
                             
-                        if (selectedItem != null)
+                        if (selectedItemVisual != null)
                         {
-                            VisualStateManager.GoToState(selectedItem, "Selected");
-                            _logger.LogInformation("Visual state updated for selected date: {Date}", _viewModel.SelectedDate.Date);
+                            VisualStateManager.GoToState(selectedItemVisual, "Selected");
+                            _logger.LogInformation("Visual state updated for selected date: {Date} in OnAppearing", _viewModel.SelectedDate.Date);
                         }
                     });
                 }
@@ -545,21 +586,45 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
             {
                 _logger.LogInformation("OnDateSelectionChanged event fired. CurrentSelection count: {Count}", e.CurrentSelection?.Count ?? 0);
                 
-                if (e.CurrentSelection?.FirstOrDefault() is DateTime selectedDate)
+                if (e.CurrentSelection?.FirstOrDefault() is DateTime selectedDateFromEvent)
                 {
-                    _logger.LogInformation("Date selected via CollectionView: {SelectedDate}", selectedDate);
+                    _logger.LogInformation("Date selected via CollectionView: {SelectedDateFromEvent}", selectedDateFromEvent);
                     
                     if (_viewModel != null)
                     {
-                        // Call the SelectDateCommand manually
-                        if (_viewModel.SelectDateCommand.CanExecute(selectedDate))
+                        // Check if the ViewModel's SelectedDate is already what the event is reporting
+                        // This is to prevent re-processing if a behavior changed SelectedItem,
+                        // which updated ViewModel.SelectedDate via two-way binding, and then this event fired.
+                        if (_viewModel.SelectedDate.Date == selectedDateFromEvent.Date)
                         {
-                            _logger.LogInformation("Executing SelectDateCommand with date: {SelectedDate}", selectedDate);
-                            _viewModel.SelectDateCommand.Execute(selectedDate);
+                            _logger.LogInformation("OnDateSelectionChanged: selectedDateFromEvent ({SelectedDateFromEvent}) already matches ViewModel.SelectedDate. Skipping command execution.", selectedDateFromEvent.ToShortDateString());
                         }
                         else
                         {
-                            _logger.LogWarning("SelectDateCommand.CanExecute returned false for date: {SelectedDate}", selectedDate);
+                            // Call the SelectDateCommand manually
+                            if (_viewModel.SelectDateCommand.CanExecute(selectedDateFromEvent))
+                            {
+                                _logger.LogInformation("Executing SelectDateCommand with date: {SelectedDateFromEvent}", selectedDateFromEvent);
+                                _viewModel.SelectDateCommand.Execute(selectedDateFromEvent);
+                                // После выполнения команды SelectedDate в ViewModel обновится.
+                                // CenterOnSelectedBehavior подхватит это изменение и начнет анимацию.
+                                // ScrollIdleNotifier затем вызовет LoadTodayEventsAsync.
+
+                                // Явный вызов ScrollTo с анимацией – дополнительная гарантия, что дата окажется по центру,
+                                // даже если CenterOnSelectedBehavior по какой-то причине не сработает.
+                                try
+                                {
+                                    DateSelectorView?.ScrollTo(selectedDateFromEvent, position: ScrollToPosition.Center, animate: true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger?.LogError(ex, "Error in explicit ScrollTo after date tap");
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogWarning("SelectDateCommand.CanExecute returned false for date: {SelectedDateFromEvent}", selectedDateFromEvent);
+                            }
                         }
                     }
                     else
@@ -567,11 +632,30 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                         _logger.LogWarning("ViewModel is null in OnDateSelectionChanged");
                     }
 
-                    // Загрузка задач произойдёт по событию Idle из ScrollIdleNotifier (iOS/Android) 
+                    // Загрузка задач произойдёт по событию Idle из ScrollIdleNotifier (iOS/Android)
+                    // после того, как SelectedDate в ViewModel обновится и CenterOnSelectedBehavior завершит анимацию.
+
+                    // Fallback: если анимация центрирования была минимальной и ScrollIdleNotifier не сработает,
+                    // запустим подгрузку задач через небольшую задержку.
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(450);
+                        try
+                        {
+                            if (_viewModel != null && _viewModel.SelectedDate.Date == selectedDateFromEvent.Date)
+                            {
+                                await _viewModel.LoadTodayEventsAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "Delayed fallback LoadTodayEventsAsync failed");
+                        }
+                    });
                 }
                 else
                 {
-                    _logger.LogWarning("OnDateSelectionChanged called but no valid DateTime in CurrentSelection. CurrentSelection: {CurrentSelection}", 
+                    _logger.LogWarning("OnDateSelectionChanged called but no valid DateTime in CurrentSelection. CurrentSelection: {CurrentSelectionType}", 
                         e.CurrentSelection?.FirstOrDefault()?.GetType().Name ?? "null");
                 }
             }

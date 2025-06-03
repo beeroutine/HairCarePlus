@@ -384,6 +384,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                             _logger?.LogError(ex, "Failed to preload events for adjacent dates");
                         }
                     });
+
+                    // ЗАГРУЗКА ДАННЫХ БУДЕТ ИНИЦИИРОВАНА ИЗ VIEW (TodayPage.xaml.cs) ПОСЛЕ ЗАВЕРШЕНИЯ АНИМАЦИИ/ПРОКРУТКИ
+                    // через ScrollIdleNotifier, который вызовет LoadTodayEventsAsync.
                 }
             }
         }
@@ -711,19 +714,17 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public async Task LoadTodayEventsAsync(bool skipThrottling)
         {
             var localSelectedDate = SelectedDate; // Capture current SelectedDate for this execution
-            _logger?.LogInformation("LoadTodayEventsAsync: START for date {LocalSelectedDate}, skipThrottling={SkipThrottling}", localSelectedDate, skipThrottling);
+            _logger?.LogInformation("LoadTodayEventsAsync: START for date {LocalSelectedDate}", localSelectedDate);
             
-            // Если skipThrottling = true, пропускаем проверку семафора
-            if (!skipThrottling)
+            // Всегда используем семафор для предотвращения одновременного выполнения
+            if (!await _loadEventsSemaphore.WaitAsync(0)) // Переименован семафор
             {
-                // Проверка, активен ли уже другой запрос
-                if (!await _refreshSemaphore.WaitAsync(0))
-                {
-                    _concurrentRejections++;
-                    _logger.LogInformation("Refresh operation already in progress. Total rejections: {ConcurrentRejections}", _concurrentRejections);
-                    return;
-                }
+                _concurrentRejections++;
+                _logger.LogInformation("LoadTodayEventsAsync operation already in progress. Total rejections: {ConcurrentRejections}", _concurrentRejections);
+                return;
             }
+            
+            IsRefreshing = true; // Устанавливаем IsRefreshing сразу после захвата семафора
             
             try
             {
@@ -731,11 +732,11 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _lastRefreshTime = DateTime.UtcNow;
                 _logger.LogDebug("Starting LoadTodayEventsAsync request #{TotalRequests}", _totalRequests);
                 
-                // Отмена предыдущих операций
-                _refreshCancellationTokenSource?.Cancel();
-                _refreshCancellationTokenSource?.Dispose();
-                _refreshCancellationTokenSource = new CancellationTokenSource(RefreshTimeoutMilliseconds);
-                var cancellationToken = _refreshCancellationTokenSource.Token;
+                // Отмена предыдущих операций и создание нового токена
+                _loadEventsCts?.Cancel(); // Переименован CancellationTokenSource
+                _loadEventsCts?.Dispose();
+                _loadEventsCts = new CancellationTokenSource(RefreshTimeoutMilliseconds);
+                var cancellationToken = _loadEventsCts.Token;
                 
                 // Проверка кэша перед загрузкой
                 DateTime selectedDateKey = SelectedDate.Date;
@@ -861,11 +862,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Очищаем старые записи из кэша (старше 24 часов)
                 CleanupCacheEntries();
                 
-                // Освобождаем семафор только если мы его захватывали
-                if (!skipThrottling)
-                {
-                    _refreshSemaphore.Release();
-                }
+                _loadEventsSemaphore.Release(); // Освобождаем семафор
             }
         }
         
@@ -1350,7 +1347,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 SelectedDate = today;
                 VisibleDate = today;
                 
-                // Загрузка задач произойдёт после завершения анимации прокрутки (ScrollIdleNotifierBehavior)
+                // Загрузка задач произойдёт из TodayPage.xaml.cs через ScrollIdleNotifier 
+                // после того, как SelectedDate обновится и CollectionView отцентрируется.
             }
             catch (Exception ex)
             {
@@ -1533,8 +1531,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         // Предопределенные интервалы для retry (в миллисекундах): 1s, 2s, 4s
         private static readonly int[] RetryDelays = { 1000, 2000, 4000 };
-        private SemaphoreSlim _refreshSemaphore = new SemaphoreSlim(1, 1);
-        private CancellationTokenSource _refreshCancellationTokenSource;
+        private readonly SemaphoreSlim _loadEventsSemaphore = new SemaphoreSlim(1, 1); // Переименован семафор
+        private CancellationTokenSource? _loadEventsCts; // Переименован CancellationTokenSource
 
         private bool _isRefreshing;
         private const string SelectedDateKey = "LastSelectedDate";
