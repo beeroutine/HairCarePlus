@@ -10,6 +10,11 @@ using UIKit; // Added for iOS specific types
 // using Microsoft.Maui.Platform; // Removed from here
 #endif
 
+#if ANDROID
+using AndroidX.RecyclerView.Widget;
+using Android.Views;
+#endif
+
 namespace HairCarePlus.Client.Patient.Common.Utils;
 
 /// <summary>
@@ -75,9 +80,54 @@ internal static class CollectionViewExtensions
             yield break; // Important: If iOS implementation ran, stop here.
         }
 #elif ANDROID
-        // TODO: Add optimized Android implementation if needed, potentially using RecyclerView methods.
-        // _logger?.LogWarning("VisibleCells on Android using fallback LogicalChildren traversal.");
-        // Fall through to LogicalChildren for now
+        // Android-specific implementation using RecyclerView
+        if (collectionView.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView recyclerView)
+        {
+            var layoutManager = recyclerView.GetLayoutManager();
+            if (layoutManager != null)
+            {
+                var llm = layoutManager as LinearLayoutManager;
+                if (llm != null)
+                {
+                    var firstVisible = llm.FindFirstVisibleItemPosition();
+                    var lastVisible = llm.FindLastVisibleItemPosition();
+                    if (firstVisible >= 0 && lastVisible >= 0)
+                    {
+                        for (int i = firstVisible; i <= lastVisible; i++)
+                        {
+                            var viewHolder = recyclerView.FindViewHolderForAdapterPosition(i);
+                            if (viewHolder?.ItemView != null)
+                            {
+                                // Get MAUI view from the native view
+                                var platformView = viewHolder.ItemView;
+                                if (platformView.GetType().GetProperty("VirtualView")?.GetValue(platformView) is VisualElement ve)
+                                {
+                                    yield return ve;
+                                }
+                                else
+                                {
+                                    // Alternative approach: search through view hierarchy
+                                    var mauiContext = collectionView.Handler?.MauiContext;
+                                    if (mauiContext != null)
+                                    {
+                                        var element = platformView.FindMauiView();
+                                        if (element is VisualElement visualElement)
+                                        {
+                                            yield return visualElement;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    yield break;
+                }
+            }
+            yield break; // Important: If Android implementation ran, stop here.
+        }
 #endif
 
         // Fallback for other platforms or if Handler/PlatformView is null
@@ -115,6 +165,33 @@ internal static class CollectionViewExtensions
         }
 
         return null; // Nothing found
+    }
+#endif
+
+#if ANDROID
+    /// <summary>
+    /// Helper to find MAUI view from Android native view
+    /// </summary>
+    private static VisualElement? FindMauiView(this Android.Views.View view)
+    {
+        if (view == null) return null;
+        
+        // Direct property check
+        if (view.GetType().GetProperty("VirtualView")?.GetValue(view) is VisualElement ve)
+            return ve;
+            
+        // Check if it's a ViewGroup and search children
+        if (view is ViewGroup viewGroup)
+        {
+            for (int i = 0; i < viewGroup.ChildCount; i++)
+            {
+                var child = viewGroup.GetChildAt(i);
+                var result = child?.FindMauiView();
+                if (result != null) return result;
+            }
+        }
+        
+        return null;
     }
 #endif
 } 

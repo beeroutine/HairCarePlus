@@ -74,6 +74,8 @@ Client/Common/             # Reusable UI components
 - **.NET MAUI:** 9.0.51 SR
 - **ASP.NET Core + SignalR**
 - **Entity Framework Core**
+- **ReactiveUI:** 19.5.41 (Calendar module)
+- **DynamicData:** 8.3.27 (Reactive collections)
 
 ## Architecture Principles
 - **Clean Architecture:** UI → Application → Domain → Shared Kernel

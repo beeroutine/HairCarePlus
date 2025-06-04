@@ -53,6 +53,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             services.AddTransient<TodayViewModel>();
             services.AddTransient<EventDetailViewModel>();
             
+            // Register ReactiveUI ViewModels
+            services.AddTransient<TodayViewModelReactive>();
+            
             // CQRS kernel & handlers
             services.AddCqrs();
             services.AddScoped<ToggleEventCompletionHandler>();
@@ -66,6 +69,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             // Register calendar views
             services.AddTransient<TodayPage>();
             services.AddTransient<EventDetailPage>();
+            
+            // Register ReactiveUI views
+            services.AddTransient<TodayPageReactive>();
             
             // Register converters as resources
             RegisterConverters();
@@ -87,6 +93,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar
             
             // Register routes for calendar navigation
             RegisterRoute("today", typeof(TodayPage));
+            RegisterRoute("today-reactive", typeof(TodayPageReactive));
             RegisterRoute("calendar/event", typeof(EventDetailPage));
             
             return builder;

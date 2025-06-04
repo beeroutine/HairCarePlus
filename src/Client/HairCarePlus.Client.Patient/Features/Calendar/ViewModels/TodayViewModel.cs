@@ -180,6 +180,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
 
+        private DateTime _lastGoToTodayTime = DateTime.MinValue;
+        private readonly TimeSpan _goToTodayThrottle = TimeSpan.FromMilliseconds(500);
+
         public TodayViewModel(ICalendarService calendarService, ICalendarCacheService cacheService, ICalendarLoader eventLoader, IProgressCalculator progressCalculator, ILogger<TodayViewModel> logger, ICommandBus commandBus, IQueryBus queryBus, IMessenger messenger, IProfileService profileService)
         {
             _calendarService = calendarService;
@@ -1197,24 +1200,32 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
         private void ExecuteGoToToday()
         {
-            try
+            // Throttle rapid taps
+            var now = DateTime.UtcNow;
+            if (now - _lastGoToTodayTime < _goToTodayThrottle)
             {
-                _logger.LogInformation("GoToTodayCommand executed.");
-                // Set SelectedDate to trigger event loading and UI updates
-                var today = DateTime.Today;
-                SelectedDate = today;
-                VisibleDate = today; // Explicitly update VisibleDate as well
-
-                // Make sure the date gets visually selected in the DateSelector
-                // by explicitly raising property changed for SelectedDate
+                _logger?.LogDebug("GoToToday throttled - too soon after last call");
+                return;
+            }
+            _lastGoToTodayTime = now;
+            
+            var today = DateTime.Today;
+            
+            // If already on today, just ensure UI is in sync
+            if (SelectedDate.Date == today)
+            {
+                _logger?.LogDebug("Already on today, ensuring UI sync");
+                // Force property notifications to ensure UI updates
                 OnPropertyChanged(nameof(SelectedDate));
-                // Explicitly notify that VisibleDate changed too
-                OnPropertyChanged(nameof(VisibleDate)); 
+                OnPropertyChanged(nameof(VisibleDate));
+                return;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error executing GoToTodayCommand.");
-            }
+            
+            _logger?.LogInformation("Navigating to today: {Today}", today);
+            
+            // Update both dates to ensure header updates immediately
+            SelectedDate = today;
+            VisibleDate = today;
         }
 
         // Add a new public method that can be called to initialize data

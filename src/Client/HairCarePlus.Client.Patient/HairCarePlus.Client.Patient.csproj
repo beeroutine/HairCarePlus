@@ -98,6 +98,15 @@
 		<!-- Replace Syncfusion commercial controls with free MIT-licensed calendar control -->
 		<PackageReference Include="Plugin.Maui.Calendar" Version="2.0.5" />
 		<PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
+		<PackageReference Include="ReactiveUI.Maui" Version="19.5.41" />
+		<PackageReference Include="ReactiveUI" Version="19.5.41" />
+		<PackageReference Include="ReactiveUI.Fody" Version="19.5.41" />
+		<PackageReference Include="System.Reactive" Version="6.0.0" />
+		<PackageReference Include="Fody" Version="6.8.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="DynamicData" Version="8.3.27" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -131,6 +140,10 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Features\Calendar\Tests\**\*.cs" />
 	</ItemGroup>
 
 </Project>

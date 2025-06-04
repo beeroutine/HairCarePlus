@@ -3,6 +3,9 @@ using Microsoft.Maui.Controls;
 using System;
 using System.Threading.Tasks;
 using System.Threading; // Added for CancellationTokenSource
+#if ANDROID
+using AndroidX.RecyclerView.Widget;
+#endif
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
@@ -105,19 +108,61 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 if (_collection?.SelectedItem == null || _collection.ItemsSource == null)
                     return;
 
-                int index = -1;
-                if (_collection.ItemsSource is System.Collections.IList list)
+#if ANDROID
+                // Android-specific handling for smoother scrolling
+                if (_collection.Handler?.PlatformView is RecyclerView recyclerView)
                 {
-                    try
+                    var layoutManager = recyclerView.GetLayoutManager();
+                    if (layoutManager != null)
                     {
-                        index = list.IndexOf(_collection.SelectedItem);
-                    }
-                    catch (ArgumentException) // Item might not be in the list temporarily during updates
-                    {
-                        index = -1; 
+                        int itemIndex = GetItemIndex();
+                        if (itemIndex >= 0)
+                        {
+                            // Use RecyclerView's native smooth scroll for better performance
+                            if (animate)
+                            {
+                                var smoothScroller = new LinearSmoothScroller(recyclerView.Context)
+                                {
+                                    TargetPosition = itemIndex
+                                };
+                                smoothScroller.ComputeScrollVectorForPosition(itemIndex);
+                                layoutManager.StartSmoothScroll(smoothScroller);
+                                
+                                // Additional centering after scroll completes
+                                Task.Delay(300).ContinueWith(_ => 
+                                {
+                                    _collection.Dispatcher.Dispatch(() =>
+                                    {
+                                        if (layoutManager is LinearLayoutManager llm)
+                                        {
+                                            var offset = (recyclerView.Width / 2) - (recyclerView.GetChildAt(0)?.Width ?? 0) / 2;
+                                            llm.ScrollToPositionWithOffset(itemIndex, offset);
+                                        }
+                                    });
+                                });
+                            }
+                            else
+                            {
+                                // Instant scroll with centering
+                                if (layoutManager is LinearLayoutManager llm)
+                                {
+                                    var offset = (recyclerView.Width / 2) - (recyclerView.GetChildAt(0)?.Width ?? 0) / 2;
+                                    llm.ScrollToPositionWithOffset(itemIndex, offset);
+                                }
+                                else
+                                {
+                                    layoutManager.ScrollToPosition(itemIndex);
+                                }
+                            }
+                            return;
+                        }
                     }
                 }
+#endif
 
+                // Default MAUI implementation for other platforms
+                int index = GetItemIndex();
+                
                 if (index < 0)
                 {
                     // Fallback: if item is not found by index (e.g. list doesn't implement IList or item not present)
@@ -132,6 +177,22 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                     _collection.ScrollTo(index, position: ScrollToPosition.Center, animate: animate);
                 }
             });
+        }
+        
+        private int GetItemIndex()
+        {
+            if (_collection?.ItemsSource is System.Collections.IList list)
+            {
+                try
+                {
+                    return list.IndexOf(_collection.SelectedItem);
+                }
+                catch (ArgumentException)
+                {
+                    return -1;
+                }
+            }
+            return -1;
         }
     }
 } 
