@@ -55,9 +55,7 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-				fonts.AddFont("FontAwesome/FontAwesome.ttf", "FontAwesome");
 				fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
-				fonts.AddFont("MaterialSymbolsOutlined.ttf", "MaterialSymbolsOutlined");
 			});
 
 		// Add services to the container

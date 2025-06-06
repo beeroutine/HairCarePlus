@@ -57,14 +57,15 @@
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
-		<!-- Images -->
+		<!-- Images with optimization -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
 
-		<!-- SVG Restriction Icons - используем MauiImage, чтобы MAUI сконвертировал их в PNG -->
+		<!-- SVG Restriction Icons - конвертируем в PNG с оптимизацией -->
 		<MauiImage Include="Resources\AppIcon\svg\*.svg">
-		  <!-- Файлы будут доступны по имени без подпапок -->
 		  <LogicalName>%(Filename).png</LogicalName>
+		  <!-- Оптимизируем размер иконок -->
+		  <BaseSize>48,48</BaseSize>
 		</MauiImage>
 
 		<!-- Custom Fonts -->
@@ -72,12 +73,19 @@
 
 		<!-- Add Material Icons font -->
 		<MauiFont Include="Resources\Fonts\MaterialIcons-Regular.ttf" />
+		
+		<!-- Исключаем неиспользуемые шрифты -->
+		<MauiFont Remove="Resources\Fonts\FontAwesome\**" />
+		<MauiFont Remove="Resources\Fonts\MaterialSymbolsOutlined.ttf" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 
 		<!-- Make AppIcon PNGs accessible at runtime -->
-		<MauiImage Include="Resources\AppIcon\*.png" />
+		<MauiImage Include="Resources\AppIcon\*.png">
+			<!-- Оптимизируем размер -->
+			<BaseSize>96,96</BaseSize>
+		</MauiImage>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -154,26 +162,55 @@
 		<!-- Сборка только под arm64 для реальных устройств -->
 		<RuntimeIdentifier>android-arm64</RuntimeIdentifier>
 
-		<!-- AOT отключаем, т.к. может вызывать проблемы с ReactiveUI -->
+		<!-- AOT отключаем, т.к. вызывает проблемы с ReactiveUI -->
 		<AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
 		<RunAOTCompilation>false</RunAOTCompilation>
-
-		<!-- Включаем безопасный линкер -->
+		
+		<!-- Используем Startup Tracing для ускорения запуска -->
+		<AndroidEnableStartupTracing>true</AndroidEnableStartupTracing>
+		<AndroidUseDefaultAotProfile>false</AndroidUseDefaultAotProfile>
+		
+		<!-- Используем безопасный линкер -->
 		<PublishTrimmed>true</PublishTrimmed>
 		<TrimMode>partial</TrimMode>
 		<AndroidLinkMode>SdkOnly</AndroidLinkMode>
+		<AndroidLinkSkip>ReactiveUI;DynamicData;System.Reactive;System.Linq.Expressions</AndroidLinkSkip>
 
 		<!-- Оставляем глобализацию включенной для корректной работы локализации -->
 		<InvariantGlobalization>false</InvariantGlobalization>
 
-		<!-- Включаем символы для лучшей диагностики (можно отключить позже) -->
-		<DebugType>portable</DebugType>
-		<DebugSymbols>true</DebugSymbols>
+		<!-- Отключаем отладочные символы для уменьшения размера -->
+		<DebugType>none</DebugType>
+		<DebugSymbols>false</DebugSymbols>
 		
 		<!-- Дополнительные оптимизации -->
 		<AndroidEnableMultiDex>false</AndroidEnableMultiDex>
 		<AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
 		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		
+		<!-- Отключаем ProGuard из-за проблем с конфигурацией -->
+		<AndroidEnableProguard>false</AndroidEnableProguard>
+		<AndroidDexTool>d8</AndroidDexTool>
+		
+		<!-- НЕ создаем отдельные APK для тестирования -->
+		<AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
+		
+		<!-- Включаем сжатие assemblies -->
+		<EnableCompression>true</EnableCompression>
+		<AndroidEnableAssemblyCompression>true</AndroidEnableAssemblyCompression>
+		
+		<!-- Оптимизация размера APK -->
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<AndroidUseAapt2>true</AndroidUseAapt2>
+		
+		<!-- Удаляем неиспользуемые ресурсы -->
+		<AndroidLinkResources>true</AndroidLinkResources>
+		<AndroidEnableResourceTrimming>true</AndroidEnableResourceTrimming>
 	</PropertyGroup>
+
+	<!-- Android specific ProGuard configuration -->
+	<ItemGroup Condition="'$(TargetFramework)'=='net9.0-android'">
+		<ProguardConfiguration Include="Platforms\Android\proguard.cfg" />
+	</ItemGroup>
 
 </Project>

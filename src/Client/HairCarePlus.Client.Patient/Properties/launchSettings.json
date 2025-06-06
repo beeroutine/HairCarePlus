@@ -11,6 +11,22 @@
     "Android": {
       "commandName": "Device",
       "targetProject": "Android"
+    },
+    "Android Debug": {
+      "commandName": "Project",
+      "commandLineArgs": "-f net9.0-android -c Debug"
+    },
+    "Android Release": {
+      "commandName": "Project", 
+      "commandLineArgs": "-f net9.0-android -c Release"
+    },
+    "iOS Debug": {
+      "commandName": "Project",
+      "commandLineArgs": "-f net9.0-ios -c Debug"
+    },
+    "iOS Release": {
+      "commandName": "Project",
+      "commandLineArgs": "-f net9.0-ios -c Release"
     }
   }
 }
