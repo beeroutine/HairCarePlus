@@ -23,8 +23,6 @@
         <ResourceDictionary>
             <converters:EventIndicatorsConverter x:Key="EventIndicatorsConverter"/>
             <converters:DateHasEventTypeConverter x:Key="DateHasEventTypeConverter"/>
-            <converters:DateHasAnyEventConverter x:Key="DateHasAnyEventConverter"/>
-            <converters:DateHasAnyEventColorConverter x:Key="DateHasAnyEventColorConverter"/>
             <converters:TimeOfDayToStringConverter x:Key="TimeOfDayToStringConverter"/>
             <converters:TimeOfDayToColorConverter x:Key="TimeOfDayToColorConverter"/>
             <converters:IsExpiredConverter x:Key="IsExpiredConverter"/>
@@ -39,42 +37,22 @@
             <LinearItemsLayout x:Key="HorizontalLinearLayout" 
                              Orientation="Horizontal" 
                              ItemSpacing="6"
-                             SnapPointsType="None"
+                             SnapPointsType="MandatorySingle"
                              SnapPointsAlignment="Center"/>
             
             <!-- Date Selector Item Template -->
-            <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
+            <DataTemplate x:Key="DateTemplate" x:DataType="models:CalendarDay">
                 <Grid x:Name="rootContainer" 
                       WidthRequest="60"
                       HeightRequest="75"
                       Padding="0" 
                       Margin="0">
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup Name="CommonStates">
-                            <VisualState Name="Normal">
-                                <VisualState.Setters>
-                                    <Setter Property="Grid.BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="dayOfWeekLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
-                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
-                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" Value="Transparent" />
-                                    <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
-                                    <Setter Property="Grid.Scale" Value="1" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState Name="Selected">
-                                <VisualState.Setters>
-                                    <Setter Property="Grid.BackgroundColor" Value="Transparent" /> 
-                                    <Setter TargetName="dayOfWeekLabel" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" /> 
-                                    <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" 
-                                            Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" /> 
-                                    <Setter TargetName="dayCircleBorder" Property="Border.StrokeThickness" Value="0" />
-                                    <Setter TargetName="dayNumberLabel" Property="Label.TextColor" 
-                                            Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                                    <Setter Property="Grid.Scale" Value="1.1" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
+                    <!-- DataTriggers вместо VisualStateManager -->
+                    <Grid.Triggers>
+                        <DataTrigger TargetType="Grid" Binding="{Binding IsSelected}" Value="True">
+                            <Setter Property="Scale" Value="1.1" />
+                        </DataTrigger>
+                    </Grid.Triggers>
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -85,7 +63,7 @@
                     <!-- Day of Week -->
                     <Label Grid.Row="0" 
                           x:Name="dayOfWeekLabel"
-                          Text="{Binding ., StringFormat='{0:ddd}'}"
+                          Text="{Binding Date, StringFormat='{0:ddd}'}"
                           FontSize="15"
                           FontAttributes="None"
                           HorizontalOptions="Center"
@@ -103,11 +81,22 @@
                            BackgroundColor="Transparent" 
                            HorizontalOptions="Center"
                            VerticalOptions="Center">
-                        <Label Text="{Binding ., StringFormat='{0:%d}'}"
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Label Text="{Binding Date, StringFormat='{0:%d}'}"
                                FontSize="18"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
-                               x:Name="dayNumberLabel"/>
+                               x:Name="dayNumberLabel">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
                     </Border>
 
                     <!-- Unified indicator bar instead of three dots -->
@@ -117,12 +106,12 @@
                              WidthRequest="24"
                              HorizontalOptions="Center"
                              Margin="0,4,0,0"
-                             Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
-                             IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
+                             Color="{Binding IndicatorColor}"
+                             IsVisible="{Binding HasEvents}" />
                     
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModelReactive}}, Path=SelectDateCommand}"
-                                             CommandParameter="{Binding .}" />
+                                             CommandParameter="{Binding Date}" />
                     </Grid.GestureRecognizers>
                 </Grid>
             </DataTemplate>
@@ -314,10 +303,10 @@
             <CollectionView Grid.Row="1"
                             x:Name="DateSelectorView"
                             ItemsSource="{Binding CalendarDays}"
-                            SelectionMode="Single" 
-                            SelectedItem="{Binding SelectedDate, Mode=TwoWay}"
+                            SelectionMode="Single"
                             ItemTemplate="{StaticResource DateTemplate}"
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
+                            ItemSizingStrategy="MeasureFirstItem"
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="80" 
                             Margin="0,0,0,10">

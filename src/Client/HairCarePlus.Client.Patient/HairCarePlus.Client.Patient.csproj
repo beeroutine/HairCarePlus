@@ -136,6 +136,10 @@
 	  <MauiAsset Include="Features\Calendar\Data\RestrictionSchedule.json" LogicalName="RestrictionSchedule.json" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <LinkerDescriptor Include="Linker.xml" />
+	</ItemGroup>
+
 	<!-- CQRS shared abstractions -->
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
@@ -145,5 +149,31 @@
 	<ItemGroup>
 	  <Compile Remove="Features\Calendar\Tests\**\*.cs" />
 	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Release' and '$(TargetFramework)'=='net9.0-android'">
+		<!-- Сборка только под arm64 для реальных устройств -->
+		<RuntimeIdentifier>android-arm64</RuntimeIdentifier>
+
+		<!-- AOT отключаем, т.к. может вызывать проблемы с ReactiveUI -->
+		<AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+		<RunAOTCompilation>false</RunAOTCompilation>
+
+		<!-- Включаем безопасный линкер -->
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+		<AndroidLinkMode>SdkOnly</AndroidLinkMode>
+
+		<!-- Оставляем глобализацию включенной для корректной работы локализации -->
+		<InvariantGlobalization>false</InvariantGlobalization>
+
+		<!-- Включаем символы для лучшей диагностики (можно отключить позже) -->
+		<DebugType>portable</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		
+		<!-- Дополнительные оптимизации -->
+		<AndroidEnableMultiDex>false</AndroidEnableMultiDex>
+		<AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+	</PropertyGroup>
 
 </Project>

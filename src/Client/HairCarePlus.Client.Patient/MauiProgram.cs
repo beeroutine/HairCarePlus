@@ -129,15 +129,11 @@ public static class MauiProgram
 		UICollectionViewCell.Appearance.BackgroundColor = UIColor.Clear;
 #endif
 
-#if DEBUG
-		builder.Logging.AddDebug()
-			// Reduce verbosity of EF Core to minimise log overhead during development
-			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning)
-			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Warning)
-			.AddFilter("Microsoft.EntityFrameworkCore.Database.Transaction", LogLevel.Warning)
-			.AddFilter("Microsoft.EntityFrameworkCore.Update", LogLevel.Warning)
-			// Keep other categories at Information for useful context without flooding the output
-			.SetMinimumLevel(LogLevel.Information);
+#if !DEBUG
+		builder.Logging.ClearProviders();
+		builder.Logging.AddDebug(); // временно включаем поток логов на устройство
+		builder.Logging.SetMinimumLevel(LogLevel.Information);
+		builder.Logging.AddFilter("HairCarePlus", LogLevel.Information);
 #endif
 
 		var app = builder.Build();

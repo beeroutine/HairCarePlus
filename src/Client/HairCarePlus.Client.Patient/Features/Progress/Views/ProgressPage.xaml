@@ -133,10 +133,6 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <ContentPage.Shell.TitleView>
-        <!-- Удалено для минималистичного дизайна -->
-    </ContentPage.Shell.TitleView>
-
     <!-- Instagram-подобная структура с фокусом на ленте -->
     <Grid RowDefinitions="Auto,*" RowSpacing="16" Padding="0,24,0,0">
         

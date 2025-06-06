@@ -8,6 +8,7 @@ using ReactiveUI;
 using ReactiveUI.Maui;
 using System.ComponentModel;
 using System.Reactive;
+using HairCarePlus.Client.Patient.Features.Calendar.Models;
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
@@ -51,13 +52,13 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         }
         
         public static readonly BindableProperty CalendarDaysProperty = BindableProperty.Create(
-            nameof(CalendarDays), 
-            typeof(IList<DateTime>), 
+            nameof(CalendarDays),
+            typeof(IList<CalendarDay>),
             typeof(ReactiveCalendarBehavior));
             
-        public IList<DateTime>? CalendarDays
+        public IList<CalendarDay>? CalendarDays
         {
-            get => (IList<DateTime>?)GetValue(CalendarDaysProperty);
+            get => (IList<CalendarDay>?)GetValue(CalendarDaysProperty);
             set => SetValue(CalendarDaysProperty, value);
         }
         
@@ -104,10 +105,10 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(args =>
                 {
-                    if (args.EventArgs.CurrentSelection.FirstOrDefault() is DateTime date)
+                    if (args.EventArgs.CurrentSelection.FirstOrDefault() is CalendarDay day)
                     {
-                        SelectedDate = date;
-                        CenterDate(date, animate: true);
+                        SelectedDate = day.Date;
+                        CenterDate(day.Date, animate: true);
                     }
                 })
                 .DisposeWith(_disposables);
@@ -133,30 +134,15 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ =>
                 {
-                    if (_collectionView?.SelectedItem is not DateTime currentSelection || 
-                        currentSelection.Date != SelectedDate.Date)
+                    if (_collectionView == null || CalendarDays == null) return;
+                    var target = CalendarDays.FirstOrDefault(d => d.Date.Date == SelectedDate.Date);
+                    if (target == null) return;
+                    if (!_collectionView.SelectedItem?.Equals(target) ?? true)
                     {
-                        _collectionView.SelectedItem = SelectedDate;
+                        _collectionView.SelectedItem = target;
                         CenterDate(SelectedDate, animate: true);
                     }
                 })
-                .DisposeWith(_disposables);
-            
-            // Update visual states on visible cells
-            var scrolledObservable = Observable.FromEventPattern<EventHandler<ItemsViewScrolledEventArgs>, ItemsViewScrolledEventArgs>(
-                    h => _collectionView.Scrolled += h,
-                    h => _collectionView.Scrolled -= h);
-
-            var selectionObservable = Observable.FromEventPattern<EventHandler<SelectionChangedEventArgs>, SelectionChangedEventArgs>(
-                    h => _collectionView.SelectionChanged += h,
-                    h => _collectionView.SelectionChanged -= h);
-
-            Observable.Merge(
-                    scrolledObservable.Select(_ => Unit.Default),
-                    selectionObservable.Select(_ => Unit.Default))
-                .Throttle(TimeSpan.FromMilliseconds(50))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => UpdateVisualStates())
                 .DisposeWith(_disposables);
             
             // Initial centering
@@ -168,16 +154,16 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         
         private DateTime CalculateVisibleDate(ItemsViewScrolledEventArgs args)
         {
-            if (CalendarDays == null || CalendarDays.Count == 0) 
+            if (CalendarDays == null || CalendarDays.Count == 0)
                 return VisibleDate;
-                
-            var centerIndex = args.CenterItemIndex >= 0 
-                ? args.CenterItemIndex 
+
+            var centerIndex = args.CenterItemIndex >= 0
+                ? args.CenterItemIndex
                 : (args.FirstVisibleItemIndex + args.LastVisibleItemIndex) / 2;
-                
+
             if (centerIndex >= 0 && centerIndex < CalendarDays.Count)
             {
-                return CalendarDays[centerIndex];
+                return CalendarDays[centerIndex].Date;
             }
             
             return VisibleDate;
@@ -187,95 +173,19 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         {
             if (_collectionView == null || CalendarDays == null) return;
             
-            var index = CalendarDays.IndexOf(date.Date);
+            var index = -1;
+            for(int i=0;i<CalendarDays.Count;i++)
+            {
+                if(CalendarDays[i].Date==date.Date)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
             if (index >= 0)
             {
-#if ANDROID
-                // Android-specific smooth scrolling
-                if (_collectionView.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView recyclerView)
-                {
-                    var layoutManager = recyclerView.GetLayoutManager();
-                    if (layoutManager is AndroidX.RecyclerView.Widget.LinearLayoutManager llm)
-                    {
-                        if (animate)
-                        {
-                            recyclerView.Post(() =>
-                            {
-                                var smoothScroller = new AndroidX.RecyclerView.Widget.LinearSmoothScroller(recyclerView.Context);
-                                smoothScroller.TargetPosition = index;
-                                layoutManager.StartSmoothScroll(smoothScroller);
-                                
-                                // Center after scroll
-                                recyclerView.PostDelayed(() =>
-                                {
-                                    var view = layoutManager.FindViewByPosition(index);
-                                    if (view != null)
-                                    {
-                                        var offset = (recyclerView.Width - view.Width) / 2;
-                                        llm.ScrollToPositionWithOffset(index, offset);
-                                    }
-                                }, 300);
-                            });
-                        }
-                        else
-                        {
-                            var offset = recyclerView.Width / 2;
-                            llm.ScrollToPositionWithOffset(index, offset);
-                        }
-                        return;
-                    }
-                }
-#endif
-                // Default MAUI implementation
                 _collectionView.ScrollTo(index, position: ScrollToPosition.Center, animate: animate);
-            }
-        }
-        
-        private void UpdateVisualStates()
-        {
-            if (_collectionView == null) return;
-            
-            var selectedDate = SelectedDate.Date;
-            
-#if ANDROID
-            // Use Android-specific visible cells implementation
-            if (_collectionView.Handler?.PlatformView is AndroidX.RecyclerView.Widget.RecyclerView recyclerView)
-            {
-                var layoutManager = recyclerView.GetLayoutManager();
-                if (layoutManager != null)
-                {
-                    if (layoutManager is AndroidX.RecyclerView.Widget.LinearLayoutManager llm)
-                    {
-                        var first = llm.FindFirstVisibleItemPosition();
-                        var last = llm.FindLastVisibleItemPosition();
-                        
-                        for (int i = first; i <= last && i >= 0; i++)
-                        {
-                            var holder = recyclerView.FindViewHolderForAdapterPosition(i);
-                            if (holder?.ItemView != null)
-                            {
-                                var element = holder.ItemView.GetMauiElement();
-                                if (element is VisualElement ve && ve.BindingContext is DateTime date)
-                                {
-                                    var state = date.Date == selectedDate ? "Selected" : "Normal";
-                                    VisualStateManager.GoToState(ve, state);
-                                }
-                            }
-                        }
-                    }
-                }
-                return;
-            }
-#endif
-            
-            // Fallback for other platforms
-            foreach (var child in _collectionView.LogicalChildren.OfType<VisualElement>())
-            {
-                if (child.BindingContext is DateTime date)
-                {
-                    var state = date.Date == selectedDate ? "Selected" : "Normal";
-                    VisualStateManager.GoToState(child, state);
-                }
             }
         }
     }

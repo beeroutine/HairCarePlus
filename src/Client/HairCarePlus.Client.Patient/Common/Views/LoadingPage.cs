@@ -6,9 +6,8 @@ namespace HairCarePlus.Client.Patient.Common.Views
     {
         public LoadingPage()
         {
-            BackgroundColor = Application.Current?.Resources.TryGetValue("PageBackgroundColor", out var val) == true
-                ? (Color)val
-                : Colors.White;
+            // Упрощаем - всегда используем безопасный цвет
+            BackgroundColor = Microsoft.Maui.Graphics.Colors.White;
 
             Content = new Grid
             {

@@ -43,7 +43,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         
         private readonly SourceCache<CalendarEvent, Guid> _eventsCache;
         private readonly ReadOnlyObservableCollection<CalendarEvent> _flattenedEvents;
-        private readonly ReadOnlyObservableCollection<DateTime> _calendarDays;
+        private readonly SourceList<CalendarDay> _calendarDaysSource;
+        private readonly ReadOnlyObservableCollection<CalendarDay> _calendarDays;
+        private readonly ObservableCollection<RestrictionInfo> _activeRestrictions;
         
         #region Reactive Properties
         
@@ -75,8 +77,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         #region Collections
         
         public ReadOnlyObservableCollection<CalendarEvent> FlattenedEvents => _flattenedEvents;
-        public ReadOnlyObservableCollection<DateTime> CalendarDays => _calendarDays;
-        public ObservableCollection<RestrictionInfo> ActiveRestrictions { get; }
+        public ReadOnlyObservableCollection<CalendarDay> CalendarDays => _calendarDays;
+        public ObservableCollection<RestrictionInfo> ActiveRestrictions => _activeRestrictions;
         
         #endregion
         
@@ -90,6 +92,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         public ReactiveCommand<Unit, Unit> LoadMoreDatesCommand { get; private set; }
         
         #endregion
+        
+        private readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(10);
+        private const int PrefetchWindow = 3; // days before/after selected
         
         public TodayViewModelReactive(
             ICalendarService calendarService,
@@ -114,7 +119,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             Title = "Today";
             SelectedDate = DateTime.Today;
             VisibleDate = DateTime.Today;
-            ActiveRestrictions = new ObservableCollection<RestrictionInfo>();
+            _activeRestrictions = new ObservableCollection<RestrictionInfo>();
             
             // Initialize caches
             _eventsCache = new SourceCache<CalendarEvent, Guid>(e => e.Id);
@@ -135,10 +140,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 .Select(_ => DateTime.Today.ToString("ddd"))
                 .ToProperty(this, x => x.TodayDayOfWeek);
             
-            // Calendar days generation
-            var calendarDaysSource = new SourceList<DateTime>();
-            GenerateCalendarDays(calendarDaysSource);
-            calendarDaysSource
+            // Создаём кэш дат календаря с признаком наличия событий
+            _calendarDaysSource = new SourceList<CalendarDay>();
+            GenerateCalendarDays(_calendarDaysSource);
+            _calendarDaysSource
                 .Connect()
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Bind(out _calendarDays)
@@ -163,11 +168,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             base.HandleActivation(disposables);
             
-            // Selected date change triggers event loading
+            // Selected date change triggers event loading and обновляет выделение в модели CalendarDay
             this.WhenAnyValue(x => x.SelectedDate)
-                .Throttle(TimeSpan.FromMilliseconds(300))
+                .Do(date => UpdateCalendarDaysSelection(date))
+                .Throttle(TimeSpan.FromMilliseconds(600))
                 .DistinctUntilChanged()
-                .SelectMany(date => Observable.FromAsync(() => LoadEventsForDateAsync(date)))
+                .SelectMany(date => Observable.FromAsync(async () =>
+                {
+                    await PrefetchAdjacentDatesAsync(date);
+                    await LoadEventsForDateAsync(date);
+                }))
                 .Subscribe()
                 .DisposeWith(disposables);
             
@@ -349,7 +359,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 // Check cache first
                 if (_cacheService.TryGet(date, out var cachedEvents, out var lastUpdate) &&
-                    (DateTimeOffset.Now - lastUpdate) <= TimeSpan.FromMinutes(1))
+                    (DateTimeOffset.Now - lastUpdate) <= _cacheTtl)
                 {
                     Logger?.LogInformation("Using cached events for {Date}", date);
                     UpdateEventsCache(cachedEvents);
@@ -363,6 +373,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Update caches
                 UpdateEventsCache(events);
                 _cacheService.Set(date, events);
+                
+                // Обновляем индикатор для выбранной даты
+                UpdateCalendarDayForDate(date, events.Any());
                 
                 Logger?.LogInformation("Loaded {Count} events for {Date}", events.Count, date);
             }
@@ -410,12 +423,12 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 
                 await MauiApplication.Current.Dispatcher.DispatchAsync(() =>
                 {
-                    ActiveRestrictions.Clear();
+                    _activeRestrictions.Clear();
                     foreach (var restriction in restrictions ?? Enumerable.Empty<RestrictionInfo>())
                     {
-                        ActiveRestrictions.Add(restriction);
+                        _activeRestrictions.Add(restriction);
                     }
-                    HasActiveRestriction = ActiveRestrictions.Any();
+                    HasActiveRestriction = _activeRestrictions.Any();
                 });
             }
             catch (Exception ex)
@@ -424,23 +437,71 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             }
         }
         
-        private void GenerateCalendarDays(ISourceList<DateTime> source)
+        private void GenerateCalendarDays(ISourceList<CalendarDay> source)
         {
             const int preDays = 30;
             const int futureDays = 365;
             
             var startDate = DateTime.Today.AddDays(-preDays);
-            var days = Enumerable.Range(0, preDays + futureDays)
-                .Select(i => startDate.AddDays(i))
+            var items = Enumerable.Range(0, preDays + futureDays)
+                .Select(i => new CalendarDay(startDate.AddDays(i)))
                 .ToList();
                 
-            source.AddRange(days);
+            source.AddRange(items);
+        }
+        
+        private void UpdateCalendarDaysSelection(DateTime selectedDate)
+        {
+            foreach (var day in _calendarDays)
+            {
+                day.IsSelected = day.Date.Date == selectedDate.Date;
+            }
+        }
+        
+        private void UpdateCalendarDayForDate(DateTime date, bool hasEvents)
+        {
+            var day = _calendarDays.FirstOrDefault(d => d.Date == date.Date);
+            if (day != null)
+            {
+                day.HasEvents = hasEvents;
+                day.IndicatorColor = hasEvents
+                    ? (MauiApplication.Current?.RequestedTheme == AppTheme.Dark ? Colors.White : Colors.Black)
+                    : Colors.Transparent;
+            }
         }
         
         private async Task LoadMoreDatesAsync()
         {
             // Implementation for loading more dates
             await Task.CompletedTask;
+        }
+        
+        private async Task PrefetchAdjacentDatesAsync(DateTime centerDate)
+        {
+            var datesToFetch = Enumerable.Range(-PrefetchWindow, PrefetchWindow*2 + 1)
+                .Select(offset => centerDate.Date.AddDays(offset))
+                .Where(d => d != centerDate.Date) // исключаем выбранный, он будет загружен отдельно
+                .ToList();
+
+            foreach (var date in datesToFetch)
+            {
+                try
+                {
+                    if (_cacheService.TryGet(date, out _, out var lastUpd) &&
+                        (DateTimeOffset.Now - lastUpd) <= _cacheTtl)
+                    {
+                        continue; // свежий кэш
+                    }
+
+                    var events = (await _queryBus.SendAsync<IEnumerable<CalendarEvent>>(new GetEventsForDateQuery(date))).ToList();
+                    _cacheService.Set(date, events);
+                    UpdateCalendarDayForDate(date, events.Any());
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWarning(ex, "Error prefetching events for {Date}", date);
+                }
+            }
         }
     }
 } 

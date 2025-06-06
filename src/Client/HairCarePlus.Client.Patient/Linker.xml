@@ -1,0 +1,27 @@
+<linker>
+  <assembly fullname="System.Core">
+    <!-- Используется System.Linq.Expressions в DynamicData/ReactiveUI -->
+    <type fullname="System.Linq.Expressions*" />
+  </assembly>
+  <assembly fullname="ReactiveUI">
+    <type fullname="*" preserve="all" />
+  </assembly>
+  <assembly fullname="ReactiveUI.Maui">
+    <type fullname="*" preserve="all" />
+  </assembly>
+    <assembly fullname="ReactiveUI.Fody">
+    <type fullname="*" preserve="all" />
+  </assembly>
+  <assembly fullname="DynamicData">
+    <type fullname="*" preserve="all" />
+  </assembly>
+  <assembly fullname="Microsoft.EntityFrameworkCore">
+    <type fullname="*" preserve="all" />
+  </assembly>
+  <assembly fullname="Microsoft.EntityFrameworkCore.Sqlite">
+    <type fullname="*" preserve="all" />
+  </assembly>
+  <assembly fullname="SkiaSharp.Extended.UI.Maui">
+	<type fullname="*" preserve="all" />
+  </assembly>
+</linker> 
