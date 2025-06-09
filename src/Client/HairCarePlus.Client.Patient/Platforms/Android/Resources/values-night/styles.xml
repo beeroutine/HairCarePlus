@@ -19,4 +19,13 @@
         <item name="android:fitsSystemWindows">false</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
+    
+    <!-- Splash theme for dark mode -->
+    <style name="Maui.SplashTheme" parent="Maui.MainTheme">
+        <item name="android:windowBackground">@color/backgroundColor</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
 </resources> 
