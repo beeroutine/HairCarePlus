@@ -12,18 +12,26 @@
              xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
              xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
              xmlns:commonViews="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
+             ios:Page.UseSafeArea="False"
+             Shell.NavBarIsVisible="False"
              Title="">
 
     <ContentPage.Content>
         <Grid RowDefinitions="Auto, Auto, *" 
-              RowSpacing="16" 
-              Padding="20,24,20,0">
+              RowSpacing="12">
+            <Grid.Padding>
+                <OnPlatform x:TypeArguments="Thickness">
+                    <On Platform="iOS" Value="20,64,20,0" />
+                    <On Platform="Android" Value="20,24,20,0" />
+                </OnPlatform>
+            </Grid.Padding>
 
             <!-- New Header Section -->
-            <Grid Grid.Row="0" ColumnDefinitions="Auto, *" ColumnSpacing="12" Margin="0,0,0,12">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto, *" ColumnSpacing="12" Margin="0,0,0,8">
                 <!-- Left Side: Today's Date Circle with Progress -->
                 <Border WidthRequest="112" 
                         HeightRequest="112" 
@@ -80,7 +88,7 @@
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="80" 
-                            Margin="0,0,0,10">
+                            Margin="0,0,0,4">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
@@ -91,12 +99,13 @@
 
             <!-- Events List -->
             <CollectionView Grid.Row="2"
+                            x:Name="EventsCollectionView"
                             ItemsSource="{Binding FlattenedEvents}"
                             ItemTemplate="{StaticResource EventTemplate}"
                             SelectionMode="None"
                             VerticalScrollBarVisibility="Never"
                             EmptyView="{StaticResource EventsEmptyViewTemplate}"
-                            Margin="0,5,0,0">
+                            Margin="0,0,0,0">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
                 </CollectionView.ItemsLayout>

@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#512BD4</color>
-    <color name="colorAccent">#2B0B98</color>
+    <color name="colorPrimary">#3478F6</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorAccent">#3478F6</color>
+    
+    <!-- Background colors -->
+    <color name="backgroundColor">#F7F7F7</color>
+    <color name="backgroundColorDark">#1C1C1E</color>
+    
+    <!-- Status bar colors -->
+    <color name="statusBarColor">#FFFFFF</color>
+    <color name="statusBarColorDark">#121212</color>
+    
+    <!-- Navigation bar colors -->
+    <color name="navigationBarColor">#FFFFFF</color>
+    <color name="navigationBarColorDark">#121212</color>
 </resources>

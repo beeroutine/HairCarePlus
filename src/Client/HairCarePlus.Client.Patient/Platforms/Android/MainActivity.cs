@@ -57,7 +57,12 @@ public class MainActivity : MauiAppCompatActivity
     void UpdateStatusbarAndNavigationBarColors()
     {
         var isDarkTheme = (Resources.Configuration.UiMode & Android.Content.Res.UiMode.NightMask) == Android.Content.Res.UiMode.NightYes;
-        var color = isDarkTheme ? Android.Graphics.Color.ParseColor("#121212") : Android.Graphics.Color.White;
+        
+        // Используем цвета из ресурсов вместо захардкоженных значений
+        var color = isDarkTheme 
+            ? Android.Graphics.Color.ParseColor("#1C1C1E")  // Соответствует backgroundColorDark
+            : Android.Graphics.Color.ParseColor("#F7F7F7"); // Соответствует backgroundColor
+            
         Window.SetStatusBarColor(color);
         Window.SetNavigationBarColor(color);
     }
