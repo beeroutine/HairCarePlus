@@ -17,53 +17,58 @@ public class MainActivity : MauiAppCompatActivity
     }
 
     /// <summary>
-    /// Прячем status-bar и navigation-bar, разрешаем рисовать под ними.
+    /// Полностью скрываем системные кнопки Android и создаем Instagram-стиль с нашим TabBar внизу
     /// </summary>
     void MakeEdgeToEdge()
     {
         var window = Window;
 
-        // 1. Разрешаем окну занимать всю область, включая system bars
+        // 1. Разрешаем окну занимать всю область экрана
         WindowCompat.SetDecorFitsSystemWindows(window, false);
 
-#if ANDROID33_OR_GREATER   // API 33+
+        // 2. Полностью скрываем системную навигацию
         var controller = WindowCompat.GetInsetsController(window, window.DecorView);
         if (controller != null)
         {
-            controller.Hide(WindowInsetsCompat.Type.SystemBars());
+            // Скрываем системные кнопки навигации полностью
+            controller.Hide(WindowInsetsCompat.Type.NavigationBars());
+            
+            // Устанавливаем поведение: показывать системные кнопки только при свайпе от края
             controller.SystemBarsBehavior = WindowInsetsControllerCompat.BehaviorShowTransientBarsBySwipe;
         }
-#else                      // API 21-32
-        const SystemUiFlags flags =
-            SystemUiFlags.HideNavigation |
-            SystemUiFlags.Fullscreen     |
-            SystemUiFlags.ImmersiveSticky;
 
-        window.DecorView.SystemUiVisibility = (StatusBarVisibility)
-            ((int)window.DecorView.SystemUiVisibility | (int)flags);
-#endif
-
-        // 2. Сделаем панели прозрачными, чтобы, когда пользователь их «вытащит» свайпом,
-        //    под ними была всё та же белая (или любая ваша) подложка.
-        UpdateStatusbarAndNavigationBarColors();
+        // 3. Делаем status bar прозрачным
+        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
+        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+        
+        // 4. Устанавливаем layout для работы с вырезами экрана (notch)
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+        {
+            window.Attributes.LayoutInDisplayCutoutMode = LayoutInDisplayCutoutMode.ShortEdges;
+        }
+        
+        // 5. Настраиваем светлые/темные иконки status bar
+        UpdateSystemBarsAppearance();
     }
 
     protected override void OnResume()
     {
         base.OnResume();
-        UpdateStatusbarAndNavigationBarColors();
+        // Переустанавливаем edge-to-edge режим при возврате в приложение
+        MakeEdgeToEdge();
     }
 
-    void UpdateStatusbarAndNavigationBarColors()
+    void UpdateSystemBarsAppearance()
     {
         var isDarkTheme = (Resources.Configuration.UiMode & Android.Content.Res.UiMode.NightMask) == Android.Content.Res.UiMode.NightYes;
         
-        // Используем цвета из ресурсов вместо захардкоженных значений
-        var color = isDarkTheme 
-            ? Android.Graphics.Color.ParseColor("#1C1C1E")  // Соответствует backgroundColorDark
-            : Android.Graphics.Color.ParseColor("#F7F7F7"); // Соответствует backgroundColor
-            
-        Window.SetStatusBarColor(color);
-        Window.SetNavigationBarColor(color);
+        var window = Window;
+        var controller = WindowCompat.GetInsetsController(window, window.DecorView);
+        
+        if (controller != null)
+        {
+            // Устанавливаем цвет иконок в status bar
+            controller.AppearanceLightStatusBars = !isDarkTheme;
+        }
     }
 }

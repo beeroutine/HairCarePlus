@@ -13,13 +13,6 @@
     ios:Page.UseSafeArea="False"
     Title="HairCarePlus">
 
-    <Shell.Padding>
-        <OnPlatform x:TypeArguments="Thickness">
-            <On Platform="iOS" Value="0,64,0,34" />
-            <On Platform="Android" Value="0,24,0,0" />
-        </OnPlatform>
-    </Shell.Padding>
-
     <Shell.Resources>
         <Style TargetType="Tab">
             <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
