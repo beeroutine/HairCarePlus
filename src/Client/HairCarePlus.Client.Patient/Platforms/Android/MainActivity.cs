@@ -45,7 +45,20 @@ public class MainActivity : MauiAppCompatActivity
 
         // 2. Сделаем панели прозрачными, чтобы, когда пользователь их «вытащит» свайпом,
         //    под ними была всё та же белая (или любая ваша) подложка.
-        window.SetStatusBarColor(Android.Graphics.Color.Transparent);
-        window.SetNavigationBarColor(Android.Graphics.Color.Transparent);
+        UpdateStatusbarAndNavigationBarColors();
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        UpdateStatusbarAndNavigationBarColors();
+    }
+
+    void UpdateStatusbarAndNavigationBarColors()
+    {
+        var isDarkTheme = (Resources.Configuration.UiMode & Android.Content.Res.UiMode.NightMask) == Android.Content.Res.UiMode.NightYes;
+        var color = isDarkTheme ? Android.Graphics.Color.ParseColor("#121212") : Android.Graphics.Color.White;
+        Window.SetStatusBarColor(color);
+        Window.SetNavigationBarColor(color);
     }
 }
