@@ -3,24 +3,19 @@
     x:Class="HairCarePlus.Client.Patient.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:calendar="clr-namespace:HairCarePlus.Client.Patient.Features.Calendar.Views"
     xmlns:chat="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Views"
     xmlns:photo="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Views"
     xmlns:progress="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Views"
     Shell.FlyoutBehavior="Disabled"
-    Shell.NavBarIsVisible="False"
-    ios:Page.UseSafeArea="False"
+    Shell.NavBarIsVisible="True"
     Title="HairCarePlus">
 
     <Shell.Resources>
         <Style TargetType="Tab">
-            <!-- Match horizontal calendar accent: Black in light theme, White in dark theme -->
-            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-            <!-- Ensure contrast for selected tab title/icon -->
-            <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-            <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-            <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+            <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
+            <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
         </Style>
     </Shell.Resources>
 
@@ -31,7 +26,7 @@
                 Title="Today"
                 ContentTemplate="{DataTemplate calendar:TodayPage}"
                 Route="today"
-                Shell.NavBarIsVisible="False"
+                Shell.NavBarIsVisible="True"
                 Shell.TabBarIsVisible="True"
                 Shell.FlyoutBehavior="Disabled"
                 Shell.PresentationMode="ModalNotAnimated" />

@@ -22,44 +22,40 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <!-- Custom in-page header (replaces Shell.TitleView for immersive mode) -->
-    <Grid RowDefinitions="*,Auto">
-        <!-- Header (overlay) -->
-        <Grid
-              ColumnDefinitions="44,*,Auto"
-              Padding="20,20,20,8">
-            <!-- Back button -->
-            <Button Grid.Column="0"
-                    Text="←"
+    <Shell.TitleView>
+        <Grid ColumnDefinitions="80,*,80">
+            <Button Text="←"
                     Command="{Binding BackCommand}"
-                    BackgroundColor="Transparent"
-                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                    HorizontalOptions="Start"
                     FontSize="24"
                     FontAttributes="Bold"
+                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                    BackgroundColor="Transparent"
+                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    Margin="0"
                     Padding="0"
                     HeightRequest="44"
-                    WidthRequest="44"
-                    HorizontalOptions="Start"/>
-
-            <!-- Doctor name -->
+                    WidthRequest="44" />
+            
             <Label Grid.Column="1"
                    Text="{Binding Doctor.Name}"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
-                   FontAttributes="Bold"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                    FontSize="18"
-                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
-
-            <!-- Online status -->
+                   FontAttributes="Bold" />
+            
             <Label Grid.Column="2"
                    Text="{Binding Doctor.IsOnline, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Online,Offline'}"
+                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}"
                    HorizontalOptions="End"
                    VerticalOptions="Center"
-                   FontSize="15"
-                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}"
-                   Margin="0,0,0,0"/>
+                   Margin="0,0,16,0"
+                   FontSize="15" />
         </Grid>
+    </Shell.TitleView>
 
+    <Grid RowDefinitions="*,Auto">
         <!-- Messages -->
         <CollectionView Grid.Row="0"
                        x:Name="MessagesCollection"
