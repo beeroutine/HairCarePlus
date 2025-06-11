@@ -13,13 +13,16 @@
 
     <Shell.Resources>
         <Style TargetType="Tab">
-            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
+            <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light=#F7F7F7, Dark=#121212}" />
             <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
             <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}" />
         </Style>
     </Shell.Resources>
 
-    <TabBar>
+    <TabBar
+        Shell.TabBarBackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
+        Shell.TabBarTitleColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}"
+        Shell.TabBarUnselectedColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}">
         <!-- Today - главная страница -->
         <Tab Title="Today">
             <ShellContent

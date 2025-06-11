@@ -18,6 +18,7 @@
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              ios:Page.UseSafeArea="False"
              Shell.NavBarIsVisible="False"
+             Shell.TabBarBackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              Title="">
 
     <ContentPage.Content>
