@@ -77,14 +77,14 @@
 
     <!-- Circle icon button (e.g., switch camera) -->
     <Style x:Key="CircleIconButtonStyle" TargetType="Border">
-        <Setter Property="HeightRequest" Value="60" />
-        <Setter Property="WidthRequest" Value="60" />
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="WidthRequest" Value="52" />
         <Setter Property="StrokeThickness" Value="0" />
-        <Setter Property="BackgroundColor" Value="#262626" />
-        <Setter Property="Opacity" Value="0.92" />
+        <Setter Property="BackgroundColor" Value="#99000000" />
+        <Setter Property="Opacity" Value="1" />
         <Setter Property="Shadow">
             <Setter.Value>
-                <Shadow Brush="#80000000" Offset="0,2" Radius="4" />
+                <Shadow Brush="#80000000" Offset="0,3" Radius="6" />
             </Setter.Value>
         </Setter>
         <Setter Property="HorizontalOptions" Value="End" />

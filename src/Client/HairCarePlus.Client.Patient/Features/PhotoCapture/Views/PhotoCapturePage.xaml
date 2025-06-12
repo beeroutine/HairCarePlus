@@ -29,7 +29,7 @@
     <Grid>
         
         <!-- Top bar: template selector + switch camera button -->
-        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" Grid.ZIndex="1" Margin="20,20,20,0">
+        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" ZIndex="1" Margin="20,20,20,0">
             <!-- Zone selector -->
             <CollectionView
                 ItemsSource="{Binding Templates}"
@@ -65,7 +65,7 @@
         </Grid>
 
         <!-- Shutter button -->
-        <Border Style="{StaticResource ShutterButtonStyle}" HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,34" Grid.ZIndex="1" x:Name="ShutterBorder">
+        <Border Style="{StaticResource ShutterButtonStyle}" HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,34" ZIndex="1" x:Name="ShutterBorder">
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnShutterTapped" />
             </Border.GestureRecognizers>
@@ -74,19 +74,14 @@
 
         <!-- Switch camera circle button -->
         <Border Style="{StaticResource CircleIconButtonStyle}"
-                Grid.ZIndex="1"
+                ZIndex="1"
                 Margin="0,0,20,34"
                 HorizontalOptions="End"
                 VerticalOptions="End">
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
             </Border.GestureRecognizers>
-            <Label Text="↻"
-                   FontFamily="MaterialIcons"
-                   FontSize="24"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+            <Image Source="change_camera.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center" VerticalOptions="Center" />
         </Border>
     </Grid>
 </ContentPage> 
