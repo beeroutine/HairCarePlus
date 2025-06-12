@@ -12,7 +12,10 @@
     Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
-    ios:Page.UseSafeArea="False">
+    ios:Page.UseSafeArea="False"
+    Shell.TabBarIsVisible="False"
+    NavigationPage.HasNavigationBar="False"
+    Shell.BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
 
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -29,7 +32,7 @@
     <Grid>
         
         <!-- Top bar: template selector + switch camera button -->
-        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" ZIndex="1" Margin="20,20,20,0">
+        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" ZIndex="1" Margin="20,80,20,0">
             <!-- Zone selector -->
             <CollectionView
                 ItemsSource="{Binding Templates}"
@@ -81,7 +84,30 @@
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
             </Border.GestureRecognizers>
-            <Image Source="change_camera.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Center" VerticalOptions="Center" />
+            <Image Source="change_camera.png" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center" />
         </Border>
     </Grid>
+
+    <!-- Header similar to ChatPage -->
+    <Shell.TitleView>
+        <Grid ColumnDefinitions="80,*,80">
+            <Button Text="←"
+                    Command="{Binding BackCommand}"
+                    HorizontalOptions="Start"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                    BackgroundColor="Transparent"
+                    Padding="0"
+                    HeightRequest="44"
+                    WidthRequest="44" />
+            <Label Grid.Column="1"
+                   Text="Camera"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                   FontSize="18"
+                   FontAttributes="Bold" />
+        </Grid>
+    </Shell.TitleView>
 </ContentPage> 
