@@ -23,7 +23,7 @@
 
     <ContentPage.Content>
         <Grid RowDefinitions="Auto, Auto, *" 
-              RowSpacing="4">
+              RowSpacing="6">
             <Grid.Padding>
                 <OnPlatform x:TypeArguments="Thickness">
                     <On Platform="iOS" Value="20,44,20,0" />
@@ -89,7 +89,7 @@
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
                             HeightRequest="75" 
-                            Margin="0,0,0,0">
+                            Margin="0,8,0,0">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
