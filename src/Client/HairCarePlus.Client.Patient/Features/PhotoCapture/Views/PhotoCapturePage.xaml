@@ -10,7 +10,9 @@
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     x:DataType="vm:PhotoCaptureViewModel"
     Shell.NavBarIsVisible="False"
-    BackgroundColor="Transparent">
+    BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
+    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+    ios:Page.UseSafeArea="False">
 
     <ContentPage.Resources>
         <ResourceDictionary>
@@ -24,13 +26,10 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid
-        RowDefinitions="Auto,*,Auto"
-        ColumnDefinitions="*"
-        Padding="0">
+    <Grid>
         
         <!-- Top bar: template selector + switch camera button -->
-        <Grid Grid.Row="0" Grid.Column="0" Padding="16,12" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" Grid.ZIndex="1" Margin="20,20,20,0">
             <!-- Zone selector -->
             <CollectionView
                 ItemsSource="{Binding Templates}"
@@ -54,60 +53,40 @@
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
-
-            <!-- Switch camera button -->
-            <ImageButton Grid.Column="1" WidthRequest="40" HeightRequest="40" BackgroundColor="Transparent" Command="{Binding ToggleFacingCommand}">
-                <ImageButton.Source>
-                    <!-- Use MaterialIcons which is bundled with the app to avoid missing font warnings -->
-                    <FontImageSource Glyph="↻" Size="26" FontFamily="MaterialIcons" Color="{StaticResource colorOnSurface}" />
-                </ImageButton.Source>
-            </ImageButton>
         </Grid>
 
         <!-- Camera preview with overlay -->
-        <Grid Grid.Row="1" Grid.Column="0">
+        <Grid Grid.ZIndex="0">
             <!-- Actual camera preview -->
             <toolkit:CameraView x:Name="Camera" HorizontalOptions="Fill" VerticalOptions="Fill" />
 
             <!-- Overlay image to guide user -->
             <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
-
-            <!-- Semi-transparent badge showing current Lux level -->
-            <Border BackgroundColor="#66000000"
-                    Padding="6,2"
-                    StrokeThickness="0"
-                    HorizontalOptions="Start"
-                    VerticalOptions="Start"
-                    Margin="12">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="6" />
-                </Border.StrokeShape>
-                <HorizontalStackLayout Spacing="4">
-                    <Label Text="{Binding Lux, StringFormat='{0} lx'}" FontSize="14" TextColor="White" />
-                    <Label Text="✓" IsVisible="{Binding Lux, Converter={StaticResource LuxOkConverter}}" FontSize="14" TextColor="Lime" />
-                </HorizontalStackLayout>
-            </Border>
-
-            <!-- Button to preview the last captured photo -->
-            <ImageButton
-                x:Name="PreviewButton"
-                WidthRequest="44" HeightRequest="44"
-                HorizontalOptions="End" VerticalOptions="End"
-                Margin="16"
-                BackgroundColor="Transparent"
-                IsVisible="{Binding LastPhotoPath, Converter={StaticResource StringNotEmptyConverter}}"
-                Clicked="OnPreviewClicked">
-                <ImageButton.Source>
-                    <FontImageSource Glyph="{StaticResource IconPhoto}" Size="26" FontFamily="MaterialIcons" Color="{StaticResource colorOnSurface}" />
-                </ImageButton.Source>
-            </ImageButton>
         </Grid>
 
         <!-- Shutter button -->
-        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource ShutterButtonStyle}">
+        <Border Style="{StaticResource ShutterButtonStyle}" HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,34" Grid.ZIndex="1" x:Name="ShutterBorder">
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnShutterTapped" />
             </Border.GestureRecognizers>
+            <Border HeightRequest="64" WidthRequest="64" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 32" />
+        </Border>
+
+        <!-- Switch camera circle button -->
+        <Border Style="{StaticResource CircleIconButtonStyle}"
+                Grid.ZIndex="1"
+                Margin="0,0,20,34"
+                HorizontalOptions="End"
+                VerticalOptions="End">
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
+            </Border.GestureRecognizers>
+            <Label Text="↻"
+                   FontFamily="MaterialIcons"
+                   FontSize="24"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
         </Border>
     </Grid>
 </ContentPage> 
