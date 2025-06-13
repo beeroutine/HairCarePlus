@@ -106,26 +106,26 @@
         <Grid Grid.Row="2"
               BackgroundColor="{AppThemeBinding Light=#000000, Dark=#000000}"
               Padding="0,0,0,34"
-              HeightRequest="120">
-            <HorizontalStackLayout HorizontalOptions="Center" VerticalOptions="Start" Spacing="40" Margin="0,12,0,0">
-                <!-- Shutter Button -->
-                <Border Style="{StaticResource ShutterButtonStyle}" VerticalOptions="Center" HorizontalOptions="Center">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnShutterTapped" />
-                    </Border.GestureRecognizers>
-                    <Border HeightRequest="64" WidthRequest="64" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 32" />
-                </Border>
+              HeightRequest="120"
+              ColumnDefinitions="*,Auto,*">
+            <!-- Shutter Button (centered) -->
+            <Border Grid.Column="1" Style="{StaticResource ShutterButtonStyle}" VerticalOptions="Start" HorizontalOptions="Center" Margin="0,12,0,0">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnShutterTapped" />
+                </Border.GestureRecognizers>
+                <Border HeightRequest="64" WidthRequest="64" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 32" />
+            </Border>
 
-                <!-- Switch camera -->
-                <Border Style="{StaticResource CircleIconButtonStyle}"
-                        BackgroundColor="{AppThemeBinding Light=#D1D1D6, Dark=#3A3A3C}"
-                        VerticalOptions="Center" HorizontalOptions="Center">
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
-                    </Border.GestureRecognizers>
-                    <Image Source="change_camera.png" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center" />
-                </Border>
-            </HorizontalStackLayout>
+            <!-- Switch camera – immediately to the right of shutter -->
+            <Border Grid.Column="2"
+                    Style="{StaticResource CircleIconButtonStyle}"
+                    BackgroundColor="{AppThemeBinding Light=#D1D1D6, Dark=#3A3A3C}"
+                    VerticalOptions="Start" HorizontalOptions="Start" Margin="40,12,0,0">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
+                </Border.GestureRecognizers>
+                <Image Source="change_camera.png" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
         </Grid>
     </Grid>
 
