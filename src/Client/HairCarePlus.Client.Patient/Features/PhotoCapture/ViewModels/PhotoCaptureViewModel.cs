@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Queries;
 using System.Linq;
+using Microsoft.Maui.Controls;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
 
@@ -41,6 +42,12 @@ public partial class PhotoCaptureViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _lastPhotoPath;
+
+    [ObservableProperty]
+    private string? _instructionText;
+
+    [ObservableProperty]
+    private bool _showInstruction;
 
     public enum CameraFacing
     {
@@ -88,12 +95,36 @@ public partial class PhotoCaptureViewModel : ObservableObject
 
     partial void OnSelectedTemplateChanged(CaptureTemplate? oldValue, CaptureTemplate? newValue)
     {
-        // future logic maybe update overlay etc.
+        if (newValue != null)
+        {
+            InstructionText = $"Сфотографируйте {newValue.Name}";
+            ShowInstruction = true;
+        }
     }
 
     public void MarkCurrentAsCaptured()
     {
-        if (SelectedTemplate != null) SelectedTemplate.IsCaptured = true;
+        if (SelectedTemplate != null)
+        {
+            SelectedTemplate.IsCaptured = true;
+            ShowInstruction = false;
+            // Wait briefly then move to next template and show again
+            global::Microsoft.Maui.Controls.Application.Current?.Dispatcher.Dispatch(async () =>
+            {
+                await Task.Delay(600); // match fade time
+                var currentIndex = Templates.IndexOf(SelectedTemplate);
+                if (currentIndex + 1 < Templates.Count)
+                {
+                    SelectedTemplate = Templates[currentIndex + 1];
+                }
+            });
+        }
+    }
+
+    [RelayCommand]
+    private async Task Back()
+    {
+        await Shell.Current.GoToAsync("//today");
     }
 
     private async Task LoadTemplatesAsync()

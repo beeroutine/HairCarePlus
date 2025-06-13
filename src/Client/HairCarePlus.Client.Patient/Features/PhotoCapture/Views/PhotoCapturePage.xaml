@@ -8,8 +8,8 @@
     xmlns:converters="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Converters"
     xmlns:common="clr-namespace:HairCarePlus.Client.Patient.Common.Converters"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
     x:DataType="vm:PhotoCaptureViewModel"
-    Shell.NavBarIsVisible="False"
     BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     ios:Page.UseSafeArea="False"
@@ -23,69 +23,110 @@
                 <ResourceDictionary Source="..\Styles\PhotoCaptureStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <converters:EqualityConverter x:Key="EqualityConverter" />
-            <converters:LuxOkConverter x:Key="LuxOkConverter" />
+            <converters:NameToInitialConverter x:Key="NameToInitialConverter" />
             <common:InverseBoolConverter x:Key="InverseBoolConverter" />
+            
+            <Style x:Key="CaptureIndicatorStyle" TargetType="Border">
+                <Setter Property="HeightRequest" Value="42" />
+                <Setter Property="WidthRequest" Value="42" />
+                <Setter Property="Stroke" Value="White" />
+                <Setter Property="StrokeThickness" Value="2" />
+                <Setter Property="StrokeShape" Value="Ellipse" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+
+            <Style x:Key="CaptureIndicatorLabelStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="FontAttributes" Value="Bold" />
+                <Setter Property="HorizontalOptions" Value="Center" />
+                <Setter Property="VerticalOptions" Value="Center" />
+                <Setter Property="TextColor" Value="White" />
+            </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid>
-        
-        <!-- Top bar: template selector + switch camera button -->
-        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Start" HorizontalOptions="Fill" ZIndex="1" Margin="20,80,20,0">
-            <!-- Zone selector -->
-            <CollectionView
-                ItemsSource="{Binding Templates}"
-                SelectionMode="Single"
-                SelectedItem="{Binding SelectedTemplate}"
-                x:Name="TemplatesCollection"
-                HorizontalScrollBarVisibility="Never"
-                HeightRequest="44">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="16" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:CaptureTemplate">
-                        <Border Style="{StaticResource CaptureTemplateChipStyle}"
-                                IsEnabled="{Binding IsCaptured, Converter={StaticResource InverseBoolConverter}}">
-                            <Grid>
-                                <Label x:Name="PART_Text" Text="{Binding Name}" FontSize="14" />
-                                <Label Text="✓" IsVisible="{Binding IsCaptured}" HorizontalOptions="End" VerticalOptions="Center" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </Grid>
+    <Grid IgnoreSafeArea="True" RowDefinitions="*,Auto,Auto">
+
+        <!-- Instruction Text -->
+        <Label Grid.Row="0"
+               Text="{Binding InstructionText}"
+               HorizontalOptions="Center"
+               VerticalOptions="Start"
+               Margin="0,12,0,0"
+               TextColor="White"
+               FontSize="18"
+               FontAttributes="Bold"
+               Opacity="0">
+            <Label.Triggers>
+                <DataTrigger TargetType="Label" Binding="{Binding ShowInstruction}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <behaviors:FadeToAction Opacity="0.9" Length="300" />
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <behaviors:FadeToAction Opacity="0" Length="300" />
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </Label.Triggers>
+        </Label>
 
         <!-- Camera preview with overlay -->
-        <Grid Grid.ZIndex="0">
-            <!-- Actual camera preview -->
+        <Grid Grid.Row="0" Grid.RowSpan="3" ZIndex="-1">
             <toolkit:CameraView x:Name="Camera" HorizontalOptions="Fill" VerticalOptions="Fill" />
-
-            <!-- Overlay image to guide user -->
             <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
         </Grid>
 
-        <!-- Shutter button -->
-        <Border Style="{StaticResource ShutterButtonStyle}" HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,34" ZIndex="1" x:Name="ShutterBorder">
-            <Border.GestureRecognizers>
-                <TapGestureRecognizer Tapped="OnShutterTapped" />
-            </Border.GestureRecognizers>
-            <Border HeightRequest="64" WidthRequest="64" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 32" />
-        </Border>
+        <!-- Numeric zone selector placed just above action bar -->
+        <HorizontalStackLayout Grid.Row="1" BindableLayout.ItemsSource="{Binding Templates}"
+                               HorizontalOptions="Center"
+                               Spacing="20"
+                               Margin="0,0,0,12">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="models:CaptureTemplate">
+                    <Border Style="{StaticResource CaptureIndicatorStyle}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsCaptured}" Value="True">
+                                <Setter Property="BackgroundColor" Value="White" />
+                                <Setter Property="StrokeThickness" Value="0" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Label Text="{Binding Name, Converter={StaticResource NameToInitialConverter}}"
+                               Style="{StaticResource CaptureIndicatorLabelStyle}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsCaptured}" Value="True">
+                                    <Setter Property="TextColor" Value="Black" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </HorizontalStackLayout>
 
-        <!-- Switch camera circle button -->
-        <Border Style="{StaticResource CircleIconButtonStyle}"
-                ZIndex="1"
-                Margin="0,0,20,34"
-                HorizontalOptions="End"
-                VerticalOptions="End">
-            <Border.GestureRecognizers>
-                <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
-            </Border.GestureRecognizers>
-            <Image Source="change_camera.png" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center" />
-        </Border>
+        <!-- Bottom action bar -->
+        <Grid Grid.Row="2"
+              BackgroundColor="{AppThemeBinding Light=#000000, Dark=#000000}"
+              Padding="0,0,0,34"
+              HeightRequest="120">
+            <HorizontalStackLayout HorizontalOptions="Center" VerticalOptions="Start" Spacing="40" Margin="0,12,0,0">
+                <!-- Shutter Button -->
+                <Border Style="{StaticResource ShutterButtonStyle}" VerticalOptions="Center" HorizontalOptions="Center">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnShutterTapped" />
+                    </Border.GestureRecognizers>
+                    <Border HeightRequest="64" WidthRequest="64" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 32" />
+                </Border>
+
+                <!-- Switch camera -->
+                <Border Style="{StaticResource CircleIconButtonStyle}"
+                        BackgroundColor="{AppThemeBinding Light=#D1D1D6, Dark=#3A3A3C}"
+                        VerticalOptions="Center" HorizontalOptions="Center">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleFacingCommand}" />
+                    </Border.GestureRecognizers>
+                    <Image Source="change_camera.png" HeightRequest="32" WidthRequest="32" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </HorizontalStackLayout>
+        </Grid>
     </Grid>
 
     <!-- Header similar to ChatPage -->

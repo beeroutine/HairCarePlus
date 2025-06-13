@@ -177,11 +177,9 @@ public partial class PhotoCapturePage : ContentPage
         // Now apply facing (this will select the appropriate camera) and start preview
         ApplyFacing();
 
-        if (!_previewReady)
-        {
-            _logger.LogWarning("Preview not ready – attempting to start preview before capture.");
+        // Always attempt to (re)start preview on appearing to avoid frozen frame after navigation.
+        _logger.LogInformation("Attempting to start camera preview on appearing.");
             await TryStartPreviewAsync(CancellationToken.None);
-        }
     }
 
     protected override void OnDisappearing()
@@ -192,6 +190,7 @@ public partial class PhotoCapturePage : ContentPage
         try
         {
             Camera.StopCameraPreview();
+            _previewReady = false; // ensure preview restarts next time
             _logger.LogInformation("Camera preview stopped on disappearing.");
         }
         catch (Exception ex)
