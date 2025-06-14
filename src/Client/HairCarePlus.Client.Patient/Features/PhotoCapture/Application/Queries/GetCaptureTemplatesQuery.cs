@@ -15,9 +15,9 @@ public sealed class GetCaptureTemplatesHandler : IQueryHandler<GetCaptureTemplat
         // Пока используем жёстко заданные шаблоны. Позже можно загружать с сервера.
         IReadOnlyList<CaptureTemplate> templates = new List<CaptureTemplate>
         {
-            new() { Id = "front", Name = "Фронт", OverlayAsset = "front_head.png", RecommendedDistanceMm = 300 },
-            new() { Id = "top", Name = "Темя", OverlayAsset = "top_head.png", RecommendedDistanceMm = 350 },
-            new() { Id = "back", Name = "Затылок", OverlayAsset = "back_head.png", RecommendedDistanceMm = 300 }
+            new() { Id = "front", Name = "Фронт", OverlayAsset = "front_head_white.png", RecommendedDistanceMm = 300 },
+            new() { Id = "top", Name = "Темя", OverlayAsset = "top_head_white.png", RecommendedDistanceMm = 350 },
+            new() { Id = "back", Name = "Затылок", OverlayAsset = "back_head_white.png", RecommendedDistanceMm = 300 }
         };
 
         return Task.FromResult(templates);

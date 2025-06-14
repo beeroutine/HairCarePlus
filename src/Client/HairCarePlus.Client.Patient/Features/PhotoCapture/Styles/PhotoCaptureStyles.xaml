@@ -5,9 +5,15 @@
     <!-- Chip (template selector) -->
     <Style x:Key="CaptureTemplateChipStyle" TargetType="Border">
         <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="{AppThemeBinding Light=#26000000, Dark=#66000000}" Offset="0,1" Radius="2" />
+            </Setter.Value>
+        </Setter>
         <Setter Property="StrokeThickness" Value="1" />
-        <Setter Property="Stroke" Value="{StaticResource Primary}" />
-        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F6F6F6, Dark=#2C2C2E}" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter TargetName="PART_Text" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="10" />
@@ -20,8 +26,8 @@
                         <VisualState Name="Normal" />
                         <VisualState Name="Selected">
                             <VisualState.Setters>
-                                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryLight}" />
-                                <Setter TargetName="PART_Text" Property="Label.TextColor" Value="{StaticResource White}" />
+                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                <Setter TargetName="PART_Text" Property="Label.TextColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
                             </VisualState.Setters>
                         </VisualState>
                         <VisualState Name="Disabled">
@@ -43,10 +49,10 @@
         <Setter Property="HeightRequest" Value="80" />
         <Setter Property="WidthRequest" Value="80" />
         <Setter Property="StrokeThickness" Value="2" />
-        <Setter Property="Stroke" Value="{StaticResource Primary}" />
+        <Setter Property="Stroke" Value="White" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="HorizontalOptions" Value="Center" />
         <Setter Property="VerticalOptions" Value="Center" />
-        <Setter Property="BackgroundColor" Value="Transparent" />
         <Setter Property="StrokeShape">
             <Setter.Value>
                 <RoundRectangle CornerRadius="40" />
@@ -61,6 +67,41 @@
                             <VisualState.Setters>
                                 <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
                                 <Setter Property="Stroke" Value="Transparent" />
+                            </VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateGroupList>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Circle icon button (e.g., switch camera) -->
+    <Style x:Key="CircleIconButtonStyle" TargetType="Border">
+        <Setter Property="HeightRequest" Value="52" />
+        <Setter Property="WidthRequest" Value="52" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor" Value="#99000000" />
+        <Setter Property="Opacity" Value="1" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#80000000" Offset="0,3" Radius="6" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="HorizontalOptions" Value="End" />
+        <Setter Property="VerticalOptions" Value="End" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="28" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <Setter.Value>
+                <VisualStateGroupList>
+                    <VisualStateGroup Name="TouchStates">
+                        <VisualState Name="Normal" />
+                        <VisualState Name="Pressed">
+                            <VisualState.Setters>
+                                <Setter Property="Opacity" Value="0.8" />
                             </VisualState.Setters>
                         </VisualState>
                     </VisualStateGroup>

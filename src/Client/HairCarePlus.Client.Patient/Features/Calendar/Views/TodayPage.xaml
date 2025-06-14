@@ -12,21 +12,30 @@
              xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
              xmlns:skia="clr-namespace:SkiaSharp.Extended.UI.Controls;assembly=SkiaSharp.Extended.UI"
              xmlns:commonViews="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              x:Class="HairCarePlus.Client.Patient.Features.Calendar.Views.TodayPage"
              x:DataType="viewmodels:TodayViewModel"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
+             ios:Page.UseSafeArea="False"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarBackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              Title="">
 
     <ContentPage.Content>
         <Grid RowDefinitions="Auto, Auto, *" 
-              RowSpacing="16" 
-              Padding="20,24,20,0">
+              RowSpacing="6">
+            <Grid.Padding>
+                <OnPlatform x:TypeArguments="Thickness">
+                    <On Platform="iOS" Value="20,44,20,0" />
+                    <On Platform="Android" Value="20,24,20,0" />
+                </OnPlatform>
+            </Grid.Padding>
 
             <!-- New Header Section -->
-            <Grid Grid.Row="0" ColumnDefinitions="Auto, *" ColumnSpacing="12" Margin="0,0,0,12">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto, *" ColumnSpacing="12" Margin="0,0,0,4">
                 <!-- Left Side: Today's Date Circle with Progress -->
-                <Border WidthRequest="112" 
-                        HeightRequest="112" 
+                <Border WidthRequest="100" 
+                        HeightRequest="100" 
                         StrokeShape="Ellipse"
                         BackgroundColor="Transparent"
                         StrokeThickness="0"
@@ -38,18 +47,18 @@
                         <commonViews:SkiaProgressRing
                             x:Name="ProgressRingRef"
                             Progress="{Binding CompletionProgress}"
-                            Thickness="6"
-                            HeightRequest="112"
-                            WidthRequest="112"
+                            Thickness="5"
+                            HeightRequest="100"
+                            WidthRequest="100"
                             HorizontalOptions="Center"
                             VerticalOptions="Center"/>
                         <VerticalStackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center" Padding="0">
                             <Label Text="{Binding TodayDay}"
-                                   FontSize="48" FontAttributes="Bold"
+                                   FontSize="42" FontAttributes="Bold"
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                                    HorizontalOptions="Center"/>
                             <Label Text="{Binding TodayDayOfWeek}" 
-                                   FontSize="18"
+                                   FontSize="16"
                                    TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}"
                                    HorizontalOptions="Center"/>
                         </VerticalStackLayout>
@@ -57,14 +66,14 @@
                 </Border>
 
                 <!-- Right Side: Selected Date's Month and Transplant Info -->
-                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="EndAndExpand" Spacing="4">
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="End" HorizontalOptions="EndAndExpand" Spacing="4">
                     <Label Text="{Binding CurrentMonthName}" 
-                           FontSize="28" 
+                           FontSize="26" 
                            FontAttributes="Bold"
                            TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                            HorizontalOptions="End"/>
                     <Label Text="{Binding DaysSinceTransplantSubtitle}" 
-                           FontSize="14" 
+                           FontSize="13" 
                            TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}"
                            HorizontalOptions="End"/>
                 </VerticalStackLayout>
@@ -79,8 +88,8 @@
                             ItemTemplate="{StaticResource DateTemplate}"
                             ItemsLayout="{StaticResource HorizontalLinearLayout}"
                             HorizontalScrollBarVisibility="Never"
-                            HeightRequest="80" 
-                            Margin="0,0,0,10">
+                            HeightRequest="75" 
+                            Margin="0,20,0,8">
                 <CollectionView.Behaviors>
                     <behaviors:CollectionViewHeaderSyncBehavior VisibleDate="{Binding VisibleDate, Mode=TwoWay}"
                                                                 SelectableDates="{Binding CalendarDays}" />
@@ -91,12 +100,13 @@
 
             <!-- Events List -->
             <CollectionView Grid.Row="2"
+                            x:Name="EventsCollectionView"
                             ItemsSource="{Binding FlattenedEvents}"
                             ItemTemplate="{StaticResource EventTemplate}"
                             SelectionMode="None"
                             VerticalScrollBarVisibility="Never"
                             EmptyView="{StaticResource EventsEmptyViewTemplate}"
-                            Margin="0,5,0,0">
+                            Margin="0,0,0,0">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="10"/>
                 </CollectionView.ItemsLayout>
@@ -140,8 +150,8 @@
             <!-- Date Selector Item Template -->
             <DataTemplate x:Key="DateTemplate" x:DataType="system:DateTime">
                 <Grid x:Name="rootContainer" 
-                      WidthRequest="60"
-                      HeightRequest="75"
+                      WidthRequest="58"
+                      HeightRequest="70"
                       Padding="0" 
                       Margin="0">
                     <VisualStateManager.VisualStateGroups>
@@ -195,25 +205,25 @@
                     <Label Grid.Row="0" 
                           x:Name="dayOfWeekLabel"
                           Text="{Binding ., StringFormat='{0:ddd}'}"
-                          FontSize="15"
+                          FontSize="14"
                           FontAttributes="None"
                           HorizontalOptions="Center"
-                          Margin="0,0,0,4"
+                          Margin="0,0,0,2"
                           InputTransparent="True"/>
 
                     <!-- Day number in circle/just text -->
                     <Border Grid.Row="1"
                            x:Name="dayCircleBorder" 
                            Padding="0"
-                           WidthRequest="44"
-                           HeightRequest="44"
+                           WidthRequest="42"
+                           HeightRequest="42"
                            StrokeShape="Ellipse"
                            StrokeThickness="0" 
                            BackgroundColor="Transparent" 
                            HorizontalOptions="Center"
                            VerticalOptions="Center">
                         <Label Text="{Binding ., StringFormat='{0:%d}'}"
-                               FontSize="18"
+                               FontSize="17"
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
                                x:Name="dayNumberLabel"/>
@@ -225,7 +235,7 @@
                              CornerRadius="1.5"
                              WidthRequest="24"
                              HorizontalOptions="Center"
-                             Margin="0,4,0,0"
+                             Margin="0,2,0,0"
                              Color="{Binding Converter={StaticResource DateHasAnyEventColorConverter}}"
                              IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
                     

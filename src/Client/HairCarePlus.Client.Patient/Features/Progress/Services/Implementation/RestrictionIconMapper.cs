@@ -70,7 +70,8 @@ public static class RestrictionIconMapper
             var s when s.Contains("солнц")  || s.Contains("загар")            => RestrictionIconType.NoSun,
             var s when s.Contains("стрижк") || s.Contains("брить")            => RestrictionIconType.NoHairCutting,
             var s when s.Contains("басс")   || s.Contains("плаван")           => RestrictionIconType.NoSwimming,
-            var s when s.Contains("шляп")   || s.Contains("шапк")             => RestrictionIconType.NoHatWearing,
+            var s when s.Contains("шляп")   || s.Contains("шапк") || s.Contains("кепк") || s.Contains("головн") || s.Contains("убор")
+                => RestrictionIconType.NoHatWearing,
             var s when s.Contains("наклон") || s.Contains("голов")            => RestrictionIconType.NoTilting,
             var s when s.Contains("лежать") || s.Contains("спать")            => RestrictionIconType.NoLaying,
             var s when s.Contains("секс")   || s.Contains("интим")            => RestrictionIconType.NoSex,

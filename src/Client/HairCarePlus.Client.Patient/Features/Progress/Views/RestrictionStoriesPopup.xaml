@@ -4,10 +4,18 @@
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                xmlns:models="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Domain.Entities"
+               xmlns:commonViews="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
+               xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
                x:DataType="models:RestrictionTimer"
                CanBeDismissedByTappingOutsideOfPopup="True">
 
-    <Grid BackgroundColor="#CC000000"
+    <toolkit:Popup.Resources>
+        <ResourceDictionary>
+            <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+        </ResourceDictionary>
+    </toolkit:Popup.Resources>
+
+    <Grid BackgroundColor="#80000000"
           HorizontalOptions="FillAndExpand"
           VerticalOptions="FillAndExpand">
         <Grid.GestureRecognizers>
@@ -18,46 +26,52 @@
             BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceColor}, Dark={StaticResource OffBlack}}"
             Padding="24"
             StrokeShape="RoundRectangle 24"
+            Stroke="Transparent"
+            StrokeThickness="0"
             HorizontalOptions="Center"
             VerticalOptions="Center">
             <VerticalStackLayout Spacing="32">
-                <!-- Большой кружок с числом дней -->
-                <Border StrokeShape="Ellipse"
-                        HeightRequest="120"
-                        WidthRequest="120"
-                        StrokeThickness="3"
-                        Stroke="White"
-                        BackgroundColor="Transparent"
-                        HorizontalOptions="Center">
-                    <Label Text="{Binding DaysRemaining}"
-                           FontSize="42"
+                <!-- Кольцо прогресса с иконкой -->
+                <Grid HeightRequest="120" WidthRequest="120" HorizontalOptions="Center">
+                    <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="6"
+                                                 HeightRequest="120" WidthRequest="120" />
+                    <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                           WidthRequest="56" HeightRequest="56"
+                           HorizontalOptions="Center" VerticalOptions="Center">
+                        <Image.Behaviors>
+                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark=White}" />
+                        </Image.Behaviors>
+                    </Image>
+                </Grid>
+                
+                <!-- Осталось X дней -->
+                <Label Text="{Binding DaysRemaining, StringFormat='Осталось {0} дней'}"
+                       FontSize="20"
                            FontAttributes="Bold"
-                           TextColor="White"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                </Border>
+                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark=White}"
+                       HorizontalTextAlignment="Center" />
                 
                 <!-- Заголовок ограничения -->
                 <Label Text="{Binding Title}"
                        FontSize="24"
                        FontAttributes="Bold"
-                       TextColor="White"
+                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark=White}"
                        HorizontalTextAlignment="Center"
                        HorizontalOptions="Center"
                        Margin="0,-8,0,0" />
                 
-                <!-- Простое описание без навязчивого блока -->
+                <!-- Подробное описание -->
                 <Label Text="{Binding DetailedDescription}"
                        FontSize="16"
                        LineHeight="1.4"
-                       TextColor="#B0B0B0"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}"
                        HorizontalTextAlignment="Center"
                        Margin="16,8,16,0" />
                 
                 <!-- Инструкция закрытия -->
                 <Label Text="Нажмите в любом месте, чтобы закрыть"
                        FontSize="14"
-                       TextColor="#60FFFFFF"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray500}}"
                        HorizontalTextAlignment="Center"
                        Margin="0,16,0,0" />
             </VerticalStackLayout>

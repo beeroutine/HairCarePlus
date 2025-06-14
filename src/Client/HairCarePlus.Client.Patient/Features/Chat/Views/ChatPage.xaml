@@ -9,7 +9,8 @@
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
-             NavigationPage.HasNavigationBar="False">
+             NavigationPage.HasNavigationBar="False"
+             Shell.BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
 
     <ContentPage.Resources>
         <ResourceDictionary>

@@ -26,4 +26,15 @@ public sealed partial class RestrictionTimer : ObservableObject
 
     [ObservableProperty]
     private int _daysRemaining;
+
+    public int TotalDays { get; init; }
+
+    /// <summary>
+    /// Normalised progress (0-1) from the operation/start date to the restriction cancellation date.
+    /// Used by progress ring in UI.
+    /// </summary>
+    public double Progress => TotalDays <= 0 ? 1 : Math.Clamp((double)(TotalDays - DaysRemaining) / TotalDays, 0d, 1d);
+
+    // Notify UI when DaysRemaining changes so that Progress is recalculated
+    partial void OnDaysRemainingChanged(int oldValue, int newValue) => OnPropertyChanged(nameof(Progress));
 } 
