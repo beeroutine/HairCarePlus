@@ -52,6 +52,7 @@ public sealed class RestrictionServiceCalendarAdapter : IRestrictionService
                         Title = e.Title,
                         IconType = RestrictionIconMapper.FromTitle(e.Title),
                         DaysRemaining = Math.Max(1, (e.EndDate!.Value.Date - today.Date).Days + 1),
+                        TotalDays = Math.Max(1, (e.EndDate!.Value.Date - e.StartDate.Date).Days + 1),
                         DetailedDescription = string.IsNullOrWhiteSpace(e.Description) ? GetDetailedDescription(e.Title) : e.Description
                     })
                     .OrderByDescending(t => t.DaysRemaining)
@@ -72,6 +73,7 @@ public sealed class RestrictionServiceCalendarAdapter : IRestrictionService
                         Title = r.Title,
                         IconType = RestrictionIconMapper.FromTitle(r.Title),
                         DaysRemaining = Math.Max(1, (surgeryDate.AddDays(r.EndDay - 1) - today).Days + 1),
+                        TotalDays = r.DurationDays > 0 ? r.DurationDays : Math.Max(1, r.EndDay - r.StartDay + 1),
                         DetailedDescription = r.Description
                     })
                     .OrderBy(t => t.DaysRemaining)

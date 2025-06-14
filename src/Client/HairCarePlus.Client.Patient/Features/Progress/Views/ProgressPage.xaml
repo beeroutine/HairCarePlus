@@ -10,6 +10,7 @@
     xmlns:conv="clr-namespace:HairCarePlus.Client.Patient.Features.Progress.Converters"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+    xmlns:commonViews="clr-namespace:HairCarePlus.Client.Patient.Common.Views"
     x:DataType="vm:ProgressViewModel"
     Shell.NavBarIsVisible="False"
     ios:Page.UseSafeArea="False"
@@ -32,26 +33,24 @@
                     <Grid WidthRequest="64" HeightRequest="64"
                           HorizontalOptions="Center" VerticalOptions="Center">
 
-                        <!-- Кружок: белый фон в обоих темах -->
-                        <Border StrokeShape="Ellipse"
-                                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource White}}"
-                                WidthRequest="56" HeightRequest="56"
-                                HorizontalOptions="Center" VerticalOptions="Center"
-                                StrokeThickness="0"/>
+                        <!-- Кольцо прогресса -->
+                        <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="5"
+                                                     WidthRequest="64" HeightRequest="64"
+                                                     HorizontalOptions="Center" VerticalOptions="Center" />
 
-                        <!-- Базовая иконка ограничения -->
+                        <!-- Иконка ограничения -->
                         <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
                                WidthRequest="32" HeightRequest="32"
                                HorizontalOptions="Center" VerticalOptions="Center"
                                Aspect="AspectFit">
                             <Image.Behaviors>
-                                <!-- В светлой теме иконка — чёрная; в тёмной — чёрная (можно изменить при необходимости) -->
-                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource Black}}" />
+                                <!-- Светлая тема — чёрная; тёмная тема — белая -->
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                             </Image.Behaviors>
                         </Image>
                     </Grid>
                     
-                    <!-- Короткая фраза ограничения -->
+                    <!-- Остаток дней -->
                     <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
                            Style="{StaticResource RestrictionLabelStyle}"
                            AutomationProperties.IsInAccessibleTree="True"

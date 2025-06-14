@@ -156,7 +156,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
             Feed.Clear();
             // Требование: показывать только дни, где есть хотя бы одна фотография
             var visible = feedItems.Where(f => f.Photos?.Any() == true)
-                                   .OrderBy(f => f.Date);
+                                   .OrderByDescending(f => f.Date);
 
             foreach (var item in visible)
             {
@@ -204,7 +204,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
             {
                 DoctorReportSummary = string.Empty
             };
-            Feed.Add(existing);
+            Feed.Insert(0, existing);
         }
 
         var photoList = existing.Photos as List<ProgressPhoto> ?? new List<ProgressPhoto>(existing.Photos);
