@@ -47,7 +47,7 @@
                 <!-- Осталось X дней -->
                 <Label Text="{Binding DaysRemaining, StringFormat='Осталось {0} дней'}"
                        FontSize="20"
-                       FontAttributes="Bold"
+                           FontAttributes="Bold"
                        TextColor="{AppThemeBinding Light={StaticResource Black}, Dark=White}"
                        HorizontalTextAlignment="Center" />
                 
