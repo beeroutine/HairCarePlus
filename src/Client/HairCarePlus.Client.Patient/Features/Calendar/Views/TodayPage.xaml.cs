@@ -246,6 +246,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 return;
             }
 
+            // (Re)Subscribe to events that were detached in OnDisappearing
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+            if (ProgressRingRef != null)
+            {
+                ProgressRingRef.Completed += OnRingCompleted;
+            }
+
             try
             {
                 // Загружаем данные

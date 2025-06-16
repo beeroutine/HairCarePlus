@@ -32,12 +32,38 @@ namespace HairCarePlus.Client.Patient.Common.Views
 
         readonly SKCanvasView _canvas;
         double _animatedProgress;
+        bool _isLoaded; // tracks whether the native handler is attached so animations can safely run
+        double? _pendingTarget; // stores a progress value that arrived while unloaded
 
         public SkiaProgressRing()
         {
             _canvas = new SKCanvasView { IgnorePixelScaling = false };
             _canvas.PaintSurface += OnPaintSurface;
             Content = _canvas;
+
+            // MAUI 8/9 provides Loaded / Unloaded events that fire when the handler is attached/detached.
+            // We use them to avoid starting animations while the control is off-screen (e.g., when the user
+            // switches to another tab). Starting an animation without a handler silently fails and the progress
+            // ring appears to "freeze" when the user returns to the Today page.
+            Loaded += (s, e) =>
+            {
+                _isLoaded = true;
+                // ensure the canvas represents the latest value when the view becomes visible again
+                _canvas.InvalidateSurface();
+
+                // If we received a progress change while not loaded, animate to it now
+                if (_pendingTarget is double pending)
+                {
+                    _pendingTarget = null;
+                    // Start animation from current _animatedProgress to pending target
+                    AnimateProgressAsync(pending);
+                }
+            };
+
+            Unloaded += (s, e) =>
+            {
+                _isLoaded = false;
+            };
             // Subscribe to theme changes to invalidate the canvas and redraw with new theme colors
             Application.Current.RequestedThemeChanged += (s, a) => _canvas.InvalidateSurface();
         }
@@ -114,19 +140,33 @@ namespace HairCarePlus.Client.Patient.Common.Views
 
         async void AnimateProgressAsync(double target)
         {
+            // If the control is not currently loaded (its native handler is detached), postpone the animation
+            // until Loaded fires to guarantee a valid handler and visible surface.
+            if (!_isLoaded || Handler == null)
+            {
+                _pendingTarget = target;
+                return;
+            }
+
             var from = _animatedProgress;
             var tcs = new TaskCompletionSource<bool>();
+
+            // Ensure any previous animation with the same key is cancelled before starting a new one.
+            this.AbortAnimation("skiaRing");
+
             var animation = new Animation(v =>
             {
                 _animatedProgress = v;
                 _canvas.InvalidateSurface();
             }, from, target, Easing.Linear);
+
             animation.Commit(this, "skiaRing", 16, 700, finished: (l, c) =>
             {
                 if (target >= 1)
                     Completed?.Invoke(this, EventArgs.Empty);
                 tcs.SetResult(true);
             });
+
             await tcs.Task;
         }
     }
