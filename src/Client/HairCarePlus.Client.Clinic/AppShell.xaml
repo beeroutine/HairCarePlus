@@ -3,13 +3,24 @@
     x:Class="HairCarePlus.Client.Clinic.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:local="clr-namespace:HairCarePlus.Client.Clinic"
     Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False"
+    ios:Page.UseSafeArea="False"
     Title="HairCarePlus.Client.Clinic">
+
+    <Shell.Padding>
+        <OnPlatform x:TypeArguments="Thickness">
+            <On Platform="iOS" Value="0,64,0,34" />
+            <On Platform="Android" Value="0,24,0,0" />
+        </OnPlatform>
+    </Shell.Padding>
 
     <ShellContent
         Title="Home"
         ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Route="MainPage"
+        Shell.NavBarIsVisible="False" />
 
 </Shell>

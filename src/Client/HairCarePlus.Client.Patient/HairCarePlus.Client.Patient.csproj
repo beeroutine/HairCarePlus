@@ -89,9 +89,10 @@
 		<PackageReference Include="CommunityToolkit.Maui.Markup" Version="5.0.0" />
 		<PackageReference Include="CommunityToolkit.Maui.Camera" Version="2.0.3" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-preview.5.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0-preview.5.*" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.5.*">
+		<!-- Use stable .NET 8 packages compatible with .NET 9 while previews are unavailable -->
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>

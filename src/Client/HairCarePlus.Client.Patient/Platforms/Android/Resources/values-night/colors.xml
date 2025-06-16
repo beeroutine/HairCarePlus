@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Override colors for dark theme -->
+    <color name="backgroundColor">#1C1C1E</color>
+    <color name="statusBarColor">#121212</color>
+    <color name="navigationBarColor">#121212</color>
+</resources> 

@@ -44,5 +44,9 @@
 	<string>This app needs access to your calendar to display and manage treatment events.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>This app needs access to your reminders to schedule treatment reminder notifications.</string>
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 </dict>
 </plist>
