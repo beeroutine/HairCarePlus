@@ -42,7 +42,7 @@ Dependencies: UI → **Application (CQRS)** → Domain → Infrastructure
 ## Data Flow (TodayPage)
 1. TodayPage triggers `LoadCalendarDaysAsync()` in `TodayViewModel` on appearing
 2. ViewModel dispatches `GetEventsForDateQuery` and `GetEventCountsForDatesQuery` via `IQueryBus`
-3. User gestures (swipe/long-press) send `ToggleEventCompletionCommand` via `ICommandBus`
+3. User gesture (**swipe left-to-right**) on an event card sends `ToggleEventCompletionCommand` via `ICommandBus` (long-press support was removed)
 4. Command handlers update the repository and publish `EventUpdatedMessage`; ViewModel listens and refreshes the UI
 5. On first launch, `CalendarDataInitializer` and `JsonHairTransplantEventGenerator` seed initial events
 

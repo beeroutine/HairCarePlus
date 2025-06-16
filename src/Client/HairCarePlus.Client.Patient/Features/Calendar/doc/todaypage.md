@@ -1,91 +1,81 @@
-# Today Page Module
+# Today Page (Patient App)
 
-> Version: September 2025 | .NET MAUI 9.0.51 SR
+> Updated: June 2025 | Tested on .NET MAUI 9.0.51 SR / iOS 17 & Android 14
 
-## TL;DR
-Displays the patient's daily calendar events with offline-first support, gesture controls, and adaptive theming.
-
-## Table of Contents
-1. [Purpose](#purpose)
-2. [Features](#features)
-3. [UI Structure](#ui-structure)
-4. [Technical Implementation](#technical-implementation)
-5. [Interaction Flow](#interaction-flow)
-6. [Accessibility & Performance](#accessibility--performance)
-7. [Platform Considerations](#platform-considerations)
-8. [Architecture](#architecture)
-9. [DI Registration](#di-registration)
+---
 
 ## Purpose
-The Today Page serves as the main calendar interface in the Patient App, displaying events for the current day and enabling horizontal navigation between dates.
+The Today Page is the home-screen of the Patient application. It shows the list of calendar events for the **selected date** (today by default) and gives the patient quick feedback on recovery progress via an animated progress ring.
 
-## Features
-- Current date and days-since-transplant display
-- Horizontal date selector with VisualStateManager styling
-- List of events with type indicators (medication, photo, video)
-- Color coding via DataTrigger and resource dictionaries
-- Toggle completion via swipe-left or long-press (≥2s)
-- Animated progress ring around today's date, tap-to-jump
-- Adaptive Light/Dark theming
-- Persistence of selected date across sessions
+## Key Features (current implementation)
+* Shows **today's date** and **day-counter since surgery** in the header.
+* Horizontal **date selector** built with `CollectionView` + `VisualStateManager`.
+* Vertical list of **calendar events** (medications, photo tasks, information notes, etc.).
+* Swipe **left-to-right** on an event to mark it **completed / un-completed**.
+* **Animated progress ring** around today's date using a custom `SkiaProgressRing` control (SkiaSharp).
+* **Confetti** celebration when 100 % of the day's tasks are completed.
+* Light / Dark theme support via `ResourceDictionary` + `AppThemeBinding`.
+* Runs completely **offline-first**; data is cached locally and synchronised on demand.
+
+> ❗ No ReactiveUI is used in runtime. The page relies on classic MVVM (`INotifyPropertyChanged` + CommunityToolkit commands).
 
 ## UI Structure
-### Header
-- Large date label (`FormattedTodayDate`)
-- Transplant-day counter (`DaysSinceTransplant`)
+| Zone | MAUI controls | Notes |
+|------|---------------|-------|
+| Header | `Border` + `SkiaProgressRing` + `VerticalStackLayout` | Tap on the ring executes `GoToTodayCommand`.
+| Date selector | Horizontal `CollectionView` with `LinearItemsLayout` | `VisualStateManager` switches between *Normal* and *Selected* states.
+| Event list | Vertical `CollectionView` | Each cell is a `SwipeView` containing a styled `Border` card.
+| Confetti overlay | `SKConfettiView` (SkiaSharp.Extended.UI) | Covers whole page; disabled until progress reaches 100 %.
 
-### Horizontal Calendar
-- `CollectionView` (horizontal `LinearItemsLayout`)
-- Items show day-of-week and day-of-month in a circular `Border`
-- Selection managed by VisualStateManager
-
-### Event List
-- Vertical `CollectionView` of event cards
-- Cards use `Border` with icon, time, title, description
-- Completed events styled with shaded background and strikethrough
-- `EmptyView` if no events
-
-## Technical Implementation
-- MVVM Pattern: `TodayPage.xaml` (View) + `TodayViewModel` (ViewModel) with compiled bindings (`x:DataType`)
-- Data Model: `SelectedDate`, `CalendarDays`, `FlattenedEvents`, `EventCountsByDate`, `DaysSinceTransplant`
-- Commands & Queries (via CQRS): `SelectDateCommand`, `ToggleEventCompletionCommand`, `GetEventsForDateQuery`, `GetEventCountsForDatesQuery`, etc.
-
-## Interaction Flow
-1. On appearing, `TodayViewModel` loads days and events via queries.
-2. Date selection dispatches queries; UI updates accordingly.
-3. Swipe/long-press dispatch `ToggleEventCompletionCommand`; handlers update the store and publish `EventUpdatedMessage`.
-4. ViewModel listens for messages and refreshes the UI.
-5. All logic is testable in isolation.
-
-## Accessibility & Performance
-- High-contrast colors for readability
-- Virtualized `CollectionView` for efficient rendering
-- Main-thread UI updates via `Dispatcher`
-- Suppress flicker with `SelectionHighlightColor` and `SelectionChangedAnimationEnabled` when possible
-
-## Platform Considerations
-- `SafeAreaInsets` support on iOS to avoid UI overlap
-- Platform-specific flicker suppression on Android/iOS
-
-## Architecture
-Follows Clean Architecture & CQRS within the Calendar feature:
-```text
-Calendar/
-├── Application/
-│   ├── Commands/ToggleEventCompletionCommand.cs
-│   ├── Queries/GetEventsForDateQuery.cs
-│   └── Messages/EventUpdatedMessage.cs
-├── ViewModels/TodayViewModel.cs
-├── Views/TodayPage.xaml (+ .cs)
-└── doc/todaypage.md
+## View / ViewModel mapping
+```
+Views/TodayPage.xaml          --> View (compiled bindings, x:DataType)
+Views/TodayPage.xaml.cs       --> View-code (platform tweaks, event handlers)
+ViewModels/TodayViewModel.cs  --> ViewModel (CommunityToolkit MVVM)
 ```
 
+## Important Bindings
+| View property | ViewModel property |
+|---------------|-------------------|
+| `ProgressRingRef.Progress` | `CompletionProgress` (double 0-1) |
+| `DateSelectorView.ItemsSource` | `CalendarDays` (ObservableCollection<DateTime>) |
+| `DateSelectorView.SelectedItem` | `SelectedDate` (Two-way) |
+| Event card `SwipeItem.Command` | `ToggleEventCompletionCommand` |
+
+## Interaction Flow
+1. `TodayPage.OnAppearing` → `TodayViewModel.EnsureLoadedAsync()`
+2. ViewModel populates `CalendarDays`, loads events for `SelectedDate`, calculates `CompletionProgress`.
+3. User swipes an event card → `ToggleEventCompletionCommand` (CQRS **Command**) updates DB   → publishes `EventUpdatedMessage`.
+4. ViewModel recalculates progress; property-change animates the ring via `SkiaProgressRing`.
+5. When `CompletionProgress` reaches `1.0`, `SkiaProgressRing.Completed` fires → View displays confetti.
+
+## Technical Highlights
+* **Clean Architecture**: UI → Application (CQRS) → Domain → Infrastructure.
+* **MVVM**: CommunityToolkit.Mvvm (`ObservableObject`, `RelayCommand`).
+* **CQRS**: `ToggleEventCompletionCommand`, `GetEventsForDateQuery` handled via in-memory buses.
+* **Caching**: `ICalendarCacheService` keeps recent queries in memory to minimise DB hits.
+* **SkiaSharp**: Custom control animates progress; uses `Loaded`/`Unloaded` to pause when page is hidden.
+* **Accessibility**: High-contrast colours and semantic icons (`MaterialIcons` font).
+
 ## DI Registration
-Register the TodayPage ViewModel and handlers in `MauiProgram.cs`:
+The Calendar module is wired in `CalendarServiceExtensions.cs`:
 ```csharp
-services.AddCqrs(); // registers command and query buses
-services.AddScoped<TodayViewModel>();
-services.AddScoped<ICommandHandler<ToggleEventCompletionCommand>, ToggleEventCompletionHandler>();
-services.AddScoped<IQueryHandler<GetEventsForDateQuery, IEnumerable<CalendarEvent>>, GetEventsForDateHandler>();
-services.AddScoped<IQueryHandler<GetEventCountsForDatesQuery, Dictionary<DateTime, Dictionary<EventType,int>>>, GetEventCountsForDatesHandler>();
-``` 
+services.AddCalendarServices(); // extension method
+
+// Inside AddCalendarServices():
+services.AddTransient<TodayViewModel>();
+services.AddTransient<TodayPage>();
+// … plus command/query handlers and services
+```
+Shell route:
+```csharp
+Routing.RegisterRoute("today", typeof(TodayPage));
+```
+
+## Removed / Not Implemented
+* **Long-press** gesture (used in early prototype) — replaced by swipe.
+* ReactiveUI (`TodayPageReactive`, `TodayViewModelReactive`) — deleted from codebase.
+* Persistence of last-selected date — currently always defaults to *today* on launch.
+
+---
+© HairCare+ 2025 
