@@ -28,8 +28,20 @@
         <Setter Property="WidthRequest" Value="44" />
     </Style>
 
+    <!-- Base typography override: use OpenSans throughout -->
+    <!-- Apply to every Label by default -->
+    <Style TargetType="Label" ApplyToDerivedTypes="True">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+    </Style>
+
+    <!-- Apply to every Button by default -->
+    <Style TargetType="Button" ApplyToDerivedTypes="True">
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+    </Style>
+
     <!-- Стиль для основного заголовка страницы -->
     <Style x:Key="PageHeaderStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="28" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
@@ -37,6 +49,7 @@
 
     <!-- Стиль для подзаголовков -->
     <Style x:Key="SectionHeaderStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="OpenSansSemibold" />
         <Setter Property="FontSize" Value="15" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
@@ -44,6 +57,7 @@
 
     <!-- Стиль для основного текста -->
     <Style x:Key="BodyTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray400}}" />
         <Setter Property="LineHeight" Value="1.4" />
@@ -51,6 +65,7 @@
 
     <!-- Стиль для вспомогательного текста -->
     <Style x:Key="CaptionTextStyle" TargetType="Label">
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray500}}" />
     </Style>

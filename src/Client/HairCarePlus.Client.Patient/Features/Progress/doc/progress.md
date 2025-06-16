@@ -117,6 +117,9 @@ RestrictionIconType.NoSmoking => "\uf54d" // fa-smoking-ban
 - Достаточный контраст для читабельности
 - Поддержка screen readers
 
+### Навигация
+`ProgressPage` отображается внутри стандартной нижней панели вкладок Shell. Свойство `Shell.TabBarIsVisible` **не** изменяется, поэтому TabBar остаётся видимым; верхний нативный NavigationBar скрыт (`Shell.NavBarIsVisible="False"`).
+
 ## Техническая реализация
 
 ### MVVM и Data Binding

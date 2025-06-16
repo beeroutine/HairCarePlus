@@ -19,6 +19,8 @@ The Today Page is the home-screen of the Patient application. It shows the list 
 
 > ❗ No ReactiveUI is used in runtime. The page relies on classic MVVM (`INotifyPropertyChanged` + CommunityToolkit commands).
 
+Navigation: TodayPage **keeps** the bottom Shell `TabBar` for quick access to other main sections. Only feature-specific full-screen pages like Chat or Camera hide the bar.
+
 ## UI Structure
 | Zone | MAUI controls | Notes |
 |------|---------------|-------|

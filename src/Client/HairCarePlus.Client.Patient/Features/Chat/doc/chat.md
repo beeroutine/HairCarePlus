@@ -1,78 +1,58 @@
-# Chat Module
+# Chat Module (Patient App)
 
-> Version: September 2025 | .NET MAUI 9.0.51 SR
+> Updated: June 2025 | Tested on .NET MAUI 9.0.51 SR
 
-## TL;DR
-Provides real-time messaging between patients and clinicians with text, media, threading, offline caching, and adaptive UI.
-
-## Table of Contents
-1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Functionality](#functionality)
-4. [UI/UX Design](#uiux-design)
-5. [Data Interactions](#data-interactions)
-6. [Technical Implementation](#technical-implementation)
-7. [Accessibility & Performance](#accessibility--performance)
-8. [Security](#security)
+---
 
 ## Overview
-The Chat module enables real-time two-way communication between patients and healthcare providers. It supports text messaging, attachments, replies, and presence indicators.
+Real-time one-to-one messaging between the patient and the clinic. Implementation focuses on text chat with optimistic UI and offline cache; media attachments are partially supported (camera → image message).
 
-## Architecture
-Follows MVVM and Clean Architecture layers:
-- **Models:** Data structures for chat messages
-- **Views:** XAML UI components with styles and behaviors
-- **ViewModels:** Business logic and commands
-- **Converters:** Data transformations for UI bindings
-- **Behaviors:** Custom touch and gesture handling
+## Architecture (Clean Architecture + MVVM + CQRS)
+```
+Chat/
+├── Application/
+│   ├── Commands/   # SendChatMessageCommand, UpdateChatMessageCommand …
+│   ├── Queries/    # GetChatMessagesQuery
+│   └── Messages/   # (domain events)
+├── Domain/
+│   └── Entities/   # ChatMessage, Doctor
+├── Infrastructure/
+│   └── Repositories/  ChatMessageRepository (EF Core / cache)
+├── Services/         # Sync, Notification, etc.
+├── ViewModels/       # ChatViewModel.cs
+└── Views/            # ChatPage.xaml (+ .cs)
+```
+Dependencies: UI → **Application** → Domain → Infrastructure
 
-## Functionality
-### Current Implementation
-- Text messaging with sent/received styling and timestamps
-- Reply functionality with quoted message previews
-- Offline message caching and auto-scroll to newest message
-- Swipe-to-edit and long-press for edit/delete
-- Light/Dark theme support
+## Current Functionality
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Text messages | ✅ | Patient → doctor, optimistic insertion in UI |
+| Reply to message | ✅ | Tap on a bubble to quote doctor's message (cannot reply to own) |
+| Edit / Delete own message | ✅ | Swipe right to reveal **Edit / Delete** actions (only for patient-sent) |
+| Image from camera | ✅ | `OpenCameraCommand` navigates to camera feature; result sent as `MessageType.Image` |
+| Image picker | ⏳ | Menu item exists but shows *Coming Soon* alert |
+| Delivery status (sent/delivered/read) | 🟡 | Enum present; doctor response is simulated and marks `Delivered` |
+| Presence indicator | ✅ | `Doctor.IsOnline` toggles header text 'Online/Offline' (mock) |
+| Threading / search / E2E encryption | ❌ | Not yet implemented |
 
-### Planned Features
-- Media attachments (camera/gallery)
-- Delivery status indicators (sent, delivered, read)
-- Message search, edit, and delete
-- Rich notifications and deep linking
+## UI / UX
+| Zone | Details |
+|------|---------|
+| **Header** | back button, doctor name, presence indicator |
+| **Message list** | `CollectionView`, `DataTemplate` uses `Border` bubble; `SwipeView` for edit/delete; reply preview via coloured frame |
+| **Input panel** | attachment (+) button, `Editor`, send (↑) button; reply or edit bar shows above input |
+| **Theming** | Colours via `ResourceDictionary`, bubbles change for patient / doctor & light/dark |
+| **Typography** | Inherited from global style → `OpenSansRegular` & `OpenSansSemibold` |
 
-## UI/UX Design
-### Color Scheme
-- **Patient messages:** Light blue (#EAF4FC) on light, dark blue (#1E2A35) on dark
-- **Clinician messages:** Green (#A0DAB2) on light, dark green (#4D7B63) on dark
-- **Background:** #F7F7F7 (light) / #121212 (dark)
-- **Text:** High-contrast black/white
+### Gestures
+• **Tap** bubble → start reply (if doctor message)  
+• **Swipe right→left** on own message → Edit / Delete  
+• **Tap** reply × button → cancel  
+• Editor `Send` command hides keyboard and scrolls to newest.
 
-### Layout
-- Header with back button, clinician name, presence indicator
-- `CollectionView` for message list with data templates
-- Input area with attachment button, expanding text field, and send button
-- Reply preview section above the input field
+### Navigation pattern
+`ChatPage` is presented full-screen. It sets `Shell.TabBarIsVisible="False"` and shows a custom Back button in `Shell.TitleView`. This differentiates it from Today/Progress pages where the bottom `TabBar` remains visible.
 
-## Data Interactions
-- **SendMessageCommand** → `ICommandBus`
-- Incoming message events update ViewModel and local cache
-- **GetMessagesQuery** retrieves message history
-- Offline storage with retry logic on connectivity changes
-
-## Technical Implementation
-- **Models:** `ChatMessage`, `UserStatus`, `AppointmentInfo`, enums for message type/status
-- **ViewModel:** `ChatViewModel` with observable collections and commands
-- **Converters:** `MessageBackgroundConverter`, `TimestampConverter`
-- **Behaviors:** `KeyboardBehavior` for keyboard management and scroll adjustment
-- **DI Registration:** register chat services, handlers, and ViewModel in `MauiProgram`
-
-## Accessibility & Performance
-- `AutomationProperties` for screen-reader support
-- Virtualized `CollectionView` with incremental loading
-- UI updates on main thread via `Dispatcher`
-- Resource cleanup in `OnDisappearing`
-
-## Security
-- End-to-end encryption support planned
-- Secure storage of message history
-- No sensitive patient data in notifications or logs 
+## Data Flow
+1. **OnAppearing** `

@@ -55,6 +55,7 @@ PhotoCapture/
 - Horizontal `CollectionView` template selector
 - Shutter button centered at bottom
 - Switch-camera button at top-right
+- **Navigation:** страница отображается полноэкранно (`Shell.TabBarIsVisible="False"`), нижняя TabBar скрыта; возврат к прошлой странице осуществляется кнопкой «←» в `Shell.TitleView`.
 
 ## Technical Implementation
 - **Models:** `CaptureTemplate`, `PhotoCapturedMessage`
