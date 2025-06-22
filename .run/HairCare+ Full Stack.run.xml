@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="HairCare+ Full Stack" type="CompoundRunConfigurationType">
+    <toRun name="HairCarePlus.Server.API: https" type="LaunchSettings" />
+    <toRun name="HairCarePlus.Client.Patient-iPhone15Pro" type="XamarinIOSProject" />
+    <toRun name="HairCarePlus.Client.Clinic-Mac" type="XamarinMacProject" />
+    <method v="2" />
+  </configuration>
+</component>

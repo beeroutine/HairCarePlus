@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:local="clr-namespace:HairCarePlus.Client.Clinic"
+    xmlns:chat="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
     ios:Page.UseSafeArea="False"
@@ -18,9 +19,8 @@
     </Shell.Padding>
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage"
+        ContentTemplate="{DataTemplate chat:ChatPage}"
+        Route="ChatPage"
         Shell.NavBarIsVisible="False" />
 
 </Shell>

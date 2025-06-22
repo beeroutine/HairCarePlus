@@ -16,6 +16,7 @@ using HairCarePlus.Shared.Common.CQRS;
 using MauiApp = Microsoft.Maui.Controls.Application;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Patient.Infrastructure.Network.Chat;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -28,6 +29,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly IQueryBus _queryBus;
     private readonly IMessenger _messenger;
     private readonly Random _random = new Random();
+    private readonly IChatHubConnection _hubConnection;
     private readonly ILogger<ChatViewModel> _logger;
     public CollectionView MessagesCollectionView { get; set; } = default!;
     private readonly string[] _doctorResponses = new[]
@@ -66,7 +68,8 @@ public partial class ChatViewModel : ObservableObject
         ICommandBus commandBus,
         IQueryBus queryBus,
         IMessenger messenger,
-        ILogger<ChatViewModel> logger)
+        ILogger<ChatViewModel> logger,
+        IChatHubConnection hubConnection)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
@@ -75,6 +78,10 @@ public partial class ChatViewModel : ObservableObject
         _queryBus = queryBus;
         _messenger = messenger;
         _logger = logger;
+        _hubConnection = hubConnection;
+        _hubConnection.MessageReceived += OnMessageReceivedFromHub;
+        // Start SignalR connection immediately (fire-and-forget) so we are in the conversation group
+        _ = Task.Run(_hubConnection.ConnectAsync);
         Messages = new ObservableCollection<ChatMessage>();
         
         // Initialize doctor for display
@@ -92,6 +99,14 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadData()
     {
+        try
+        {
+            await _hubConnection.ConnectAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not connect to chat hub, running offline mode");
+        }
         try
         {
             Messages.Clear();
@@ -128,24 +143,29 @@ public partial class ChatViewModel : ObservableObject
             }
             else
             {
+                var replySender = ReplyToMessage?.SenderId;
+                var replyContent = ReplyToMessage?.Content;
                 var replyId = (ReplyToMessage?.LocalId > 0) ? ReplyToMessage!.LocalId : (int?)null;
+
                 await _commandBus.SendAsync(new ChatCommands.SendChatMessageCommand("default_conversation", MessageText, "patient", DateTime.UtcNow, replyId));
-                // optimistic UI message
-                Messages.Add(new ChatMessage
-                {
-                    Content = MessageText,
-                    SenderId = "patient",
-                    ConversationId = "default_conversation",
-                    SentAt = DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow,
-                    Status = MessageStatus.Sent,
-                    Type = MessageType.Text,
-                    ReplyTo = ReplyToMessage,
-                    ReplyToLocalId = replyId
-                });
+
+                var textToSend = MessageText;
                 MessageText = string.Empty;
-                ReplyToMessage = null;
-                await SimulateDoctorResponseAsync();
+
+                // send via SignalR hub
+                try
+                {
+                    await _hubConnection.SendMessageAsync(
+                        "default_conversation",
+                        "patient",
+                        textToSend,
+                        replySender,
+                        replyContent);
+                }
+                finally
+                {
+                    ReplyToMessage = null;
+                }
             }
             
             await ScrollToBottom();
@@ -370,6 +390,37 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending photo message");
+        }
+    }
+
+    private void OnMessageReceivedFromHub(object? sender, ChatMessageReceivedEventArgs e)
+    {
+        if (e.ConversationId != "default_conversation") return;
+
+        var incoming = new ChatMessage
+        {
+            ConversationId = e.ConversationId,
+            SenderId = e.SenderId,
+            Content = e.Content,
+            SentAt = e.SentAt.UtcDateTime,
+            CreatedAt = DateTime.UtcNow,
+            Status = MessageStatus.Delivered,
+            Type = MessageType.Text,
+            ReplyTo = e.ReplyToSenderId is null ? null : new ChatMessage
+            {
+                SenderId = e.ReplyToSenderId,
+                Content = e.ReplyToContent ?? string.Empty,
+                Type = MessageType.Text
+            }
+        };
+
+        if (MauiApp.Current?.Dispatcher.IsDispatchRequired ?? false)
+        {
+            MauiApp.Current.Dispatcher.Dispatch(() => Messages.Add(incoming));
+        }
+        else
+        {
+            Messages.Add(incoming);
         }
     }
 } 

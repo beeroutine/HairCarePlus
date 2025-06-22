@@ -36,6 +36,9 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+
+		<!-- Disable ILLinker to avoid trimming issues during debug builds -->
+		<EnableILLink>false</EnableILLink>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -60,6 +63,14 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-preview.5.*" />
+		<!-- Chat dependencies -->
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.4.24266.19" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="5.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../../Shared/HairCarePlus.Shared.Communication/HairCarePlus.Shared.Communication.csproj" />
 	</ItemGroup>
 
 </Project>

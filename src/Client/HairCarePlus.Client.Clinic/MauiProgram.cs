@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
+using CommunityToolkit.Maui;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -17,8 +18,24 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
 
+		builder.Services.AddSingleton<Infrastructure.Network.Chat.IChatHubConnection, Infrastructure.Network.Chat.SignalRChatHubConnection>();
+		builder.Services.AddTransient<Features.Chat.ViewModels.ChatViewModel>();
+		builder.Services.AddTransient<Features.Chat.Views.ChatPage>();
+
+		builder.UseMauiCommunityToolkit();
+
 #if DEBUG
 		builder.Logging.AddDebug();
+#endif
+
+#if IOS
+		Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping("HideAccessory", (handler, view) =>
+		{
+			if (handler.PlatformView is UIKit.UITextView tv)
+			{
+				tv.InputAccessoryView = null;
+			}
+		});
 #endif
 
 		return builder.Build();

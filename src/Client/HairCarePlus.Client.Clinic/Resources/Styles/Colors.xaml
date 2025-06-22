@@ -1,13 +1,40 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
 <?xaml-comp compile="true" ?>
+<!-- Copied from Patient app for unified chat UI -->
 <ResourceDictionary 
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
 
     <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="PrimaryDark">#ac99ea</Color>
+    <!-- Task Category Colors -->
+    <Color x:Key="MedicationBlueLight">#3797F0</Color>
+    <Color x:Key="AppointmentGreenLight">#4CAF50</Color>
+    <Color x:Key="PhotoPurpleLight">#9C27B0</Color>
+    <Color x:Key="VideoOrangeLight">#FF9800</Color>
+    <Color x:Key="GeneralGrayLight">#757575</Color>
+    <Color x:Key="CriticalRedLight">#F14336</Color>
+
+    <!-- Dark Theme -->
+    <Color x:Key="MedicationBlueDark">#2B7BD9</Color>
+    <Color x:Key="AppointmentGreenDark">#357A38</Color>
+    <Color x:Key="PhotoPurpleDark">#6D1B7B</Color>
+    <Color x:Key="VideoOrangeDark">#B26A00</Color>
+    <Color x:Key="GeneralGrayDark">#9E9E9E</Color>
+    <Color x:Key="CriticalRedDark">#A92E24</Color>
+
+    <!-- Theme-aware -->
+    <toolkit:AppThemeColor x:Key="MedicationBlue" Light="{StaticResource MedicationBlueLight}" Dark="{StaticResource MedicationBlueDark}" />
+    <toolkit:AppThemeColor x:Key="AppointmentGreen" Light="{StaticResource AppointmentGreenLight}" Dark="{StaticResource AppointmentGreenDark}" />
+    <toolkit:AppThemeColor x:Key="PhotoPurple" Light="{StaticResource PhotoPurpleLight}" Dark="{StaticResource PhotoPurpleDark}" />
+    <toolkit:AppThemeColor x:Key="VideoOrange" Light="{StaticResource VideoOrangeLight}" Dark="{StaticResource VideoOrangeDark}" />
+    <toolkit:AppThemeColor x:Key="GeneralGray" Light="{StaticResource GeneralGrayLight}" Dark="{StaticResource GeneralGrayDark}" />
+    <toolkit:AppThemeColor x:Key="CriticalRed" Light="{StaticResource CriticalRedLight}" Dark="{StaticResource CriticalRedDark}" />
+
+    <!-- Base colors -->
+    <Color x:Key="Primary">#3478F6</Color>
+    <Color x:Key="PrimaryDark">#1976D2</Color>
     <Color x:Key="PrimaryDarkText">#242424</Color>
     <Color x:Key="Secondary">#DFD8F7</Color>
     <Color x:Key="SecondaryDarkText">#9880e5</Color>
@@ -19,14 +46,20 @@
     <Color x:Key="MidnightBlue">#190649</Color>
     <Color x:Key="OffBlack">#1f1f1f</Color>
 
+    <!-- Gray scale -->
     <Color x:Key="Gray100">#E1E1E1</Color>
     <Color x:Key="Gray200">#C8C8C8</Color>
     <Color x:Key="Gray300">#ACACAC</Color>
     <Color x:Key="Gray400">#919191</Color>
     <Color x:Key="Gray500">#6E6E6E</Color>
     <Color x:Key="Gray600">#404040</Color>
+    <Color x:Key="Gray700">#9A9A9A</Color>
     <Color x:Key="Gray900">#212121</Color>
     <Color x:Key="Gray950">#141414</Color>
+
+    <!-- Task card backgrounds -->
+    <Color x:Key="TaskCardBackgroundLight">#EAF4FC</Color>
+    <Color x:Key="TaskCardBackgroundDark">#1E2A35</Color>
 
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>

@@ -99,6 +99,7 @@ public static class MauiProgram
 
 		// Register Chat feature (repositories & sync) + presentation layer
 		builder.Services.AddChatFeature();             // domain & infrastructure (extension)
+		builder.Services.AddSingleton<Infrastructure.Network.Chat.IChatHubConnection, Infrastructure.Network.Chat.SignalRChatHubConnection>();
 		builder.Services.AddTransient<ChatPage>();     // UI
 		builder.Services.AddTransient<ChatViewModel>();
 

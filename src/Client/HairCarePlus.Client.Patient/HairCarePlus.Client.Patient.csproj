@@ -108,6 +108,8 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="DynamicData" Version="8.3.27" />
+		<!-- Chat dependencies -->
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.4.24266.19" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -141,6 +143,10 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
 	  <ProjectReference Include="..\..\..\src\Shared\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

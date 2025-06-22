@@ -24,5 +24,10 @@ public partial class MainPage : ContentPage
 
 		SemanticScreenReader.Announce(CounterBtn.Text);
 	}
+
+	private async void OnOpenChatClicked(object sender, EventArgs e)
+	{
+		await Shell.Current.GoToAsync($"///{nameof(Features.Chat.Views.ChatPage)}");
+	}
 }
 
