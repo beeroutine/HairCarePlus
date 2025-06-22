@@ -108,5 +108,45 @@ Client/Common/             # Reusable UI components
 - [Photo Capture Module](src/Client/HairCarePlus.Client.Patient/Features/PhotoCapture/doc/photo_capture.md)
 - [Progress Module](src/Client/HairCarePlus.Client.Patient/Features/Progress/doc/progress.md)
 
+## Local Full-Stack Setup (2025-06)
+
+### Prerequisites
+1. .NET SDK 9.0.200 + MAUI workload (`dotnet workload install maui`).
+2. Xcode 15 or newer with iOS 16+ simulators.
+3. Physical iPhone (for Patient-app) OR iOS simulator.
+4. macOS 13+.
+
+### Launch all three entry points
+Use the cross-platform launcher script:
+```bash
+chmod +x dev/run-haircare+.sh      # one-time
+export CLINIC_SIM_UDID=<sim-udid>  # optional – run Clinic in simulator
+./dev/run-haircare+.sh
+```
+Script details:
+* Starts API Server on `0.0.0.0:5281` (HTTP) and exports `CHAT_BASE_URL` env var.
+* Launches **Clinic** client:
+  * macOS → Mac Catalyst by default.
+  * `CLINIC_SIM_UDID` set → iOS simulator (`net9.0-ios`).
+* Launches **Patient** client on attached iPhone (`RuntimeIdentifier=ios-arm64`).
+* Gracefully terminates on `Ctrl + C`, cleaning all subprocesses.
+
+## Current Feature Matrix
+| Module | Patient App | Clinic App |
+|--------|-------------|------------|
+| Calendar / Today page | ✅ | ⭕ (analytics only) |
+| Real-time Chat (SignalR) | ✅ send / reply / edit / delete | ✅ send / reply / delete |
+| Notifications | ✅ local / push | ✅ incoming |
+| Photo Capture & Preview | ✅ | 🔜 |
+| Progress Tracking | ✅ | 🔜 |
+
 ---
+
+# Clinic Application – Feature Docs
+Docs for each Clinic feature live under `src/Client/HairCarePlus.Client.Clinic/Features/*/doc`.
+
+* [Chat](src/Client/HairCarePlus.Client.Clinic/Features/Chat/doc/chat.md)
+* Notifications – _TBD_
+* Calendar / Tasks – _TBD_
+
 👍  Follow the rules above, keep the codebase clean, and happy shipping!
