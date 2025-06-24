@@ -1,6 +1,6 @@
 # HairCare+ — Core Development Guidelines
 
-> Version: 2.0   |  Last update: Sept 2025
+> Version: 2.1   |  Last update: July 2025
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -11,6 +11,7 @@
 6. [MAUI UI Guidelines](#maui-ui-guidelines)
 7. [Cross-cutting Policies](#cross-cutting-policies)
 8. [Key References](#key-references)
+9. [Data Synchronization Strategy](#data-synchronization-strategy)
 
 ## Overview
 - **Mission:** Reduce post-surgery anxiety by empowering patients via gamified daily tasks, real-time chat, notifications, and rich media tracking.
@@ -107,6 +108,55 @@ Client/Common/             # Reusable UI components
 - [Notifications Module](src/Client/HairCarePlus.Client.Patient/Features/Notifications/doc/notifications.md)
 - [Photo Capture Module](src/Client/HairCarePlus.Client.Patient/Features/PhotoCapture/doc/photo_capture.md)
 - [Progress Module](src/Client/HairCarePlus.Client.Patient/Features/Progress/doc/progress.md)
+
+## Data Synchronization Strategy
+
+HairCare+ использует **«локальный кэш + короткие сетевые транзакции»** для надёжной работы в офлайне.
+
+### Категории данных
+| Тип | Где хранится | TTL на сервере |
+|-----|--------------|----------------|
+| ChatMessage | SQLite на устройствах; транзит через SignalR | 0 – не сохраняется |
+| TaskReport (done/skip + note) | SQLite + **Server DB** | постоянно |
+| PhotoReport (image + comment) | FileSystem + SQLite + **Server DB** | постоянно |
+| CalendarTask (doctor-side edits) | SQLite + **Server DB** | постоянно |
+
+### Транспортные каналы
+1. **REST Batch-Sync API** (`/sync/batch`) – JSON с изменениями всех сущностей, используется по таймеру и при появлении сети.
+2. **SignalR Hub** (`/events`) – push-события в группах `patient-{id}` для мгновенного обновления (Chat, TaskUpdated, ReportAdded, CalendarChanged).
+
+### Алгоритм клиента
+```mermaid
+sequenceDiagram
+participant UI
+participant Outbox as "OutboxService"
+participant Net as "SyncHttpClient"
+participant Hub as "SignalRClient"
+UI->>Outbox: create entity (localId, Pending)
+loop every 60s or ConnectivityChanged
+    Outbox->>Net: POST /sync/batch (pending, lastSync)
+    Net-->>Outbox: 200 OK + serverChanges
+    Outbox->>UI: apply serverChanges
+end
+Hub-->>UI: real-time Event (e.g., TaskUpdated)
+```
+* Все локальные объекты имеют `SyncStatus` (`Pending|Sent|Acked`).
+* Сервер подтверждает успех, после чего записи помечаются `Acked`.
+* Конфликты решаются правилом «новее по ModifiedAtUtc», при споре UI показывает баннер «требует подтверждения».
+
+### Чат без хранения
+* `SendChatMessageCommand` кладёт объект в Outbox и одновременно вызывает `Hub.SendAsync`.
+* Получатель шлёт `Ack` назад → сообщение помечается `Delivered`.
+* Если ACK не пришёл 30 сек – Polly retry.
+
+### Роль сервера
+* Долговечное хранилище только для **TaskReport / PhotoReport / CalendarTask**.
+* В памяти Redis-cache (TTL 30 мин) для временного буфера входящих Chat-сообщений, если одна сторона offline.
+
+### Push-будилка (опц.)
+* При новой записи сервер шлёт silent push через APNs/FCM – гарантирует, что офлайн-клиент проснётся и выполнит sync.
+
+Эта модель минимальна, масштабируется и остаётся в рамках требования **«чат не хранить на сервере»**.
 
 ## Local Full-Stack Setup (2025-06)
 
