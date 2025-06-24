@@ -49,5 +49,12 @@ dotnet test src/Client/HairCarePlus.Client.Clinic/Features/Chat/Tests
 ```
 (unit tests to be added – skeleton project in place)
 
+## UI / UX
+| Zone | Details |
+|------|---------|
+| **Header** | back button, **patient name**, presence indicator (restored by using `Shell.TitleView`; no `NavigationPage.HasNavigationBar`) |
+| **Message list** | `CollectionView` + `AutoScrollToBottomBehavior` keeps newest message visible; colour swap (blue = doctor, green = patient); `SwipeView` for edit/delete |
+| **Input panel** | attachment (+), `Editor`, send (↑); reply bar shows when `ReplyToMessage` set |
+
 ---
 Last updated: 2025-06-22 

@@ -40,7 +40,7 @@ Dependencies: UI → **Application** → Domain → Infrastructure
 | Zone | Details |
 |------|---------|
 | **Header** | back button, doctor name, presence indicator |
-| **Message list** | `CollectionView`, `DataTemplate` uses `Border` bubble; `SwipeView` for edit/delete; reply preview via coloured frame |
+| **Message list** | `CollectionView` + new `AutoScrollToBottomBehavior` → всегда прокручивает к последнему сообщению (Telegram-style); `SwipeView` for edit/delete; reply preview via coloured frame |
 | **Input panel** | attachment (+) button, `Editor`, send (↑) button; reply or edit bar shows above input |
 | **Theming** | Colours via `ResourceDictionary`, bubbles change for patient / doctor & light/dark |
 | **Typography** | Inherited from global style → `OpenSansRegular` & `OpenSansSemibold` |
