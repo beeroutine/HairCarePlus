@@ -397,12 +397,15 @@ public partial class ChatViewModel : ObservableObject
     {
         if (e.ConversationId != "default_conversation") return;
 
+        var messageTime = e.SentAt.ToLocalTime().DateTime;
+
         var incoming = new ChatMessage
         {
             ConversationId = e.ConversationId,
             SenderId = e.SenderId,
             Content = e.Content,
-            SentAt = e.SentAt.UtcDateTime,
+            SentAt = messageTime,
+            Timestamp = messageTime,
             CreatedAt = DateTime.UtcNow,
             Status = MessageStatus.Delivered,
             Type = MessageType.Text,

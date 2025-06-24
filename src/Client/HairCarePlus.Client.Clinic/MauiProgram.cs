@@ -16,6 +16,8 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+				// Material Icons — used for various glyphs (e.g., reply arrow)
+				fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
 			});
 
 		builder.Services.AddSingleton<Infrastructure.Network.Chat.IChatHubConnection, Infrastructure.Network.Chat.SignalRChatHubConnection>();

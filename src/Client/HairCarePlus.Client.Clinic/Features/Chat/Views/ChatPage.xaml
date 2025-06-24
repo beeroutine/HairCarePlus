@@ -7,7 +7,7 @@
              x:Class="HairCarePlus.Client.Clinic.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
-             NavigationPage.HasNavigationBar="True"
+             Shell.NavBarIsVisible="True"
              Shell.BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
 
     <ContentPage.Resources>
@@ -208,6 +208,9 @@
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
+            <CollectionView.Behaviors>
+                <behaviors:AutoScrollToBottomBehavior />
+            </CollectionView.Behaviors>
         </CollectionView>
 
         <!-- Input Panel -->

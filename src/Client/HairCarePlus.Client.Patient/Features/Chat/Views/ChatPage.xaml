@@ -220,6 +220,9 @@
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
+            <CollectionView.Behaviors>
+                <behaviors:AutoScrollToBottomBehavior />
+            </CollectionView.Behaviors>
         </CollectionView>
 
         <!-- Input Panel -->
