@@ -8,3 +8,11 @@ public enum MessageType
     File,
     System
 }
+
+public enum SyncStatus
+{
+    NotSynced,
+    Syncing,
+    Synced,
+    Failed
+}

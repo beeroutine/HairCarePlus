@@ -17,6 +17,7 @@ using MauiApp = Microsoft.Maui.Controls.Application;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Infrastructure.Network.Chat;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -31,6 +32,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly Random _random = new Random();
     private readonly IChatHubConnection _hubConnection;
     private readonly ILogger<ChatViewModel> _logger;
+    private readonly IChatRepository _repo;
     public CollectionView MessagesCollectionView { get; set; } = default!;
     private readonly string[] _doctorResponses = new[]
     {
@@ -69,7 +71,8 @@ public partial class ChatViewModel : ObservableObject
         IQueryBus queryBus,
         IMessenger messenger,
         ILogger<ChatViewModel> logger,
-        IChatHubConnection hubConnection)
+        IChatHubConnection hubConnection,
+        IChatRepository repo)
     {
         _navigationService = navigationService;
         _localStorageService = localStorageService;
@@ -94,6 +97,8 @@ public partial class ChatViewModel : ObservableObject
             IsOnline = true,
             LastSeen = DateTime.Now
         };
+
+        _repo = repo;
     }
 
     [RelayCommand]
@@ -424,6 +429,11 @@ public partial class ChatViewModel : ObservableObject
         else
         {
             Messages.Add(incoming);
+        }
+
+        if (!string.IsNullOrEmpty(incoming.SenderId) && incoming.SenderId != "patient")
+        {
+            _ = Task.Run(() => _repo.SaveMessageAsync(incoming));
         }
     }
 } 

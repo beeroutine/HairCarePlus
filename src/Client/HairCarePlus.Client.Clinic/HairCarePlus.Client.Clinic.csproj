@@ -67,6 +67,8 @@
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.4.24266.19" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="5.3.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0-preview.4.24266.2" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0-preview.4.24266.2" />
 	</ItemGroup>
 
 	<ItemGroup>

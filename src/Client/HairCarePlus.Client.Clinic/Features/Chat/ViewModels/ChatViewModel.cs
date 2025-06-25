@@ -7,12 +7,14 @@ using HairCarePlus.Client.Clinic.Infrastructure.Network.Chat;
 using System.Threading.Tasks;
 using System;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Clinic.Features.Chat.Domain;
 
 namespace HairCarePlus.Client.Clinic.Features.Chat.ViewModels;
 
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatHubConnection _hubConnection;
+    private readonly IChatMessageRepository _repo;
     private const string ConversationId = "default_conversation";
     private const string CurrentUserId = "doctor";
     private readonly ILogger<ChatViewModel> _logger;
@@ -44,9 +46,12 @@ public partial class ChatViewModel : ObservableObject
     public IRelayCommand<ChatMessage> HandleReplyToMessageCommand { get; }
     public IRelayCommand CancelReplyCommand { get; }
 
-    public ChatViewModel(IChatHubConnection hubConnection, ILogger<ChatViewModel> logger)
+    public ChatViewModel(IChatHubConnection hubConnection,
+        IChatMessageRepository repo,
+        ILogger<ChatViewModel> logger)
     {
         _hubConnection = hubConnection;
+        _repo = repo;
         if (!_subscribed)
         {
             _hubConnection.MessageReceived += OnMessageReceived;
@@ -72,16 +77,30 @@ public partial class ChatViewModel : ObservableObject
         var replySender = ReplyToMessage?.SenderId;
         var replyContent = ReplyToMessage?.Content;
 
+        var localMsg = new ChatMessage
+        {
+            ConversationId = ConversationId,
+            SenderId = CurrentUserId,
+            Content = text,
+            SentAt = DateTimeOffset.UtcNow,
+            ReplyTo = ReplyToMessage,
+            SyncStatus = SyncStatus.NotSynced
+        };
+        await _repo.AddAsync(localMsg);
+        Messages.Add(localMsg);
+
         MessageText = string.Empty;
         SendCommand.NotifyCanExecuteChanged();
+
         try
         {
             await _hubConnection.SendMessageAsync(ConversationId, CurrentUserId, text, replySender, replyContent);
+            localMsg.SyncStatus = SyncStatus.Synced;
+            await _repo.UpdateAsync(localMsg);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to send via hub – offline mode");
-            // message already added locally, so just ignore
         }
 
         ReplyToMessage = null;
@@ -90,6 +109,7 @@ public partial class ChatViewModel : ObservableObject
     private void OnMessageReceived(object? sender, ChatMessageReceivedEventArgs e)
     {
         if (e.ConversationId != ConversationId) return;
+        if (e.SenderId == CurrentUserId) return; // skip echo of own message
         var msg = new ChatMessage
         {
             SenderId = e.SenderId,
@@ -101,12 +121,20 @@ public partial class ChatViewModel : ObservableObject
                 Content = e.ReplyToContent ?? string.Empty
             }
         };
-        App.Current?.Dispatcher.Dispatch(() => Messages.Add(msg));
+        App.Current?.Dispatcher.Dispatch(async () =>
+        {
+            await _repo.AddAsync(msg);
+            Messages.Add(msg);
+        });
     }
 
     public async Task InitializeAsync()
     {
         if (IsConnected) return;
+        // load history
+        var history = await _repo.GetLastMessagesAsync();
+        foreach (var m in history.Reverse())
+            Messages.Add(m);
         try
         {
             await _hubConnection.ConnectAsync();
