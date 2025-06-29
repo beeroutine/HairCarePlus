@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="HairCarePlus.Client.Clinic.Features.Patient.Views.PatientPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
+             xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
+             x:DataType="viewmodels:PatientPageViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
+             x:Name="thisPage">
+    <ScrollView>
+        <VerticalStackLayout Spacing="24" Padding="20">
+            <!-- Navigation Header -->
+            <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                <Button Text="‹" FontSize="24" Padding="4" Clicked="OnBackClicked" />
+                <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            
+            <!-- Spacer -->
+            <BoxView HeightRequest="8" />
+
+            <!-- Header -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                <Grid WidthRequest="100" HeightRequest="100">
+                    <commonViews:SkiaProgressRing Progress="{Binding DayProgress}" Thickness="5" />
+                    <Image Source="{Binding AvatarUrl}" WidthRequest="88" HeightRequest="88" Aspect="AspectFill">
+                        <Image.Clip>
+                            <EllipseGeometry Center="44,44" RadiusX="44" RadiusY="44" />
+                        </Image.Clip>
+                    </Image>
+                </Grid>
+                <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                    <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" />
+                    <Button Text="Chat" Command="{Binding OpenChatCommand}" HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Restrictions -->
+            <CollectionView ItemsSource="{Binding Restrictions}" SelectionMode="None" HeightRequest="90">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center">
+                            <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                            <Label Text="{Binding Icon}" FontSize="18" HorizontalOptions="Center" />
+                            <Label Text="{Binding DaysRemaining, StringFormat='{0}дн'}" FontSize="12" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Photo feed -->
+            <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <VerticalStackLayout Spacing="6">
+                            <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="300" />
+                            <Label Text="{Binding Comment}" FontSize="14" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage> 

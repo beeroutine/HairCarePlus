@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Dashboard.Models"
+                    xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
+                    xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters">
+    <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+    <!-- DataTemplate for patient card with swipe actions -->
+    <DataTemplate x:Key="PatientCardTemplate" x:DataType="models:PatientSummary">
+        <SwipeView>
+            <SwipeView.RightItems>
+                <SwipeItems Mode="Execute">
+                    <SwipeItem Text="Chat" BackgroundColor="#2D8CFF"
+                               Command="{Binding Path=BindingContext.OpenChatCommand, Source={x:Reference rootCard}}"
+                               CommandParameter="{Binding .}"/>
+                    <SwipeItem Text="Call" BackgroundColor="#34C759"
+                               Command="{Binding Path=BindingContext.CallCommand, Source={x:Reference rootCard}}"
+                               CommandParameter="{Binding .}"/>
+                </SwipeItems>
+            </SwipeView.RightItems>
+            <Border x:Name="rootCard" Style="{StaticResource CardBorderStyle}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <!-- Avatar with progress ring -->
+                    <Grid WidthRequest="52" HeightRequest="52">
+                        <commonViews:SkiaProgressRing Progress="{Binding DayProgress}" Thickness="4"/>
+                        <Image Source="{Binding AvatarUrl}" WidthRequest="42" HeightRequest="42" Aspect="AspectFill">
+                            <Image.Clip>
+                                <EllipseGeometry Center="21,21" RadiusX="21" RadiusY="21"/>
+                            </Image.Clip>
+                        </Image>
+                    </Grid>
+                    <!-- Text stack -->
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="{Binding Name}" FontSize="17" FontAttributes="Bold" TextColor="White"/>
+                        <HorizontalStackLayout Spacing="8">
+                            <Label Text="📷" IsVisible="{Binding PhotoMissing}"/>
+                            <Label Text="💬 {Binding UnreadCount}" IsVisible="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}"/>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+        </SwipeView>
+    </DataTemplate>
+</ResourceDictionary> 

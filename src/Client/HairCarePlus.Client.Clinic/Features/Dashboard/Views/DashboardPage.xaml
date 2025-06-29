@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="HairCarePlus.Client.Clinic.Features.Dashboard.Views.DashboardPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Dashboard.ViewModels"
+             xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
+             xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Dashboard.Models"
+             xmlns:sys="clr-namespace:System;assembly=netstandard"
+             x:DataType="vm:DashboardViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <conv:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <!-- Templates are merged globally in App.xaml -->
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ContentPage.Content>
+        <Grid RowDefinitions="Auto,*" RowSpacing="12" Padding="20,24">
+            <!-- Header with progress ring -->
+            <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                <Border WidthRequest="100" HeightRequest="100" StrokeShape="Ellipse" BackgroundColor="Transparent">
+                    <Grid>
+                        <commonViews:SkiaProgressRing Progress="{Binding GlobalProgress}" Thickness="5" WidthRequest="100" HeightRequest="100" />
+                        <VerticalStackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                            <Label Text="{Binding Source={x:Static sys:DateTime.Now}, StringFormat='{}{0:dd}'}" FontSize="42" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center"/>
+                            <Label Text="{Binding Source={x:Static sys:DateTime.Now}, StringFormat='{}{0:ddd}'}" FontSize="16" TextColor="Gray" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="End" HorizontalOptions="EndAndExpand" Spacing="4">
+                    <Label Text="{Binding Source={x:Static sys:DateTime.Now}, StringFormat='{}{0:MMMM}'}" FontSize="26" FontAttributes="Bold" TextColor="White" HorizontalOptions="End"/>
+                    <Label Text="Clinic Dashboard" FontSize="13" TextColor="LightGray" HorizontalOptions="End"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Patients list -->
+            <CollectionView Grid.Row="1" ItemsSource="{Binding Patients}" SelectionMode="Single" x:Name="PatientsCollection" ItemTemplate="{StaticResource PatientCardTemplate}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+            </CollectionView>
+        </Grid>
+    </ContentPage.Content>
+</ContentPage> 

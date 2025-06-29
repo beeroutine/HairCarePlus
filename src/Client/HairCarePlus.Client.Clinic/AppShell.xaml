@@ -6,6 +6,7 @@
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     xmlns:local="clr-namespace:HairCarePlus.Client.Clinic"
     xmlns:chat="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Views"
+    xmlns:dash="clr-namespace:HairCarePlus.Client.Clinic.Features.Dashboard.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
     ios:Page.UseSafeArea="False"
@@ -18,9 +19,10 @@
         </OnPlatform>
     </Shell.Padding>
 
+    <!-- Main dashboard tab -->
     <ShellContent
-        ContentTemplate="{DataTemplate chat:ChatPage}"
-        Route="ChatPage"
+        ContentTemplate="{DataTemplate dash:DashboardPage}"
+        Route="DashboardPage"
         Shell.NavBarIsVisible="False" />
 
 </Shell>

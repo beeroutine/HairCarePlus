@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using Microsoft.Maui.Storage;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -16,6 +17,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseSkiaSharp()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -31,6 +33,11 @@ public static class MauiProgram
 		builder.Services.AddDbContext<Infrastructure.Storage.AppDbContext>(options =>
 		    options.UseSqlite($"Data Source={dbPath}"));
 		builder.Services.AddScoped<Features.Chat.Domain.IChatMessageRepository, Infrastructure.Features.Chat.Repositories.ChatMessageRepository>();
+
+		builder.Services.AddTransient<Features.Dashboard.ViewModels.DashboardViewModel>();
+		builder.Services.AddTransient<Features.Dashboard.Views.DashboardPage>();
+
+		builder.Services.AddTransient<Features.Patient.Views.PatientPage>();
 
 		builder.UseMauiCommunityToolkit();
 

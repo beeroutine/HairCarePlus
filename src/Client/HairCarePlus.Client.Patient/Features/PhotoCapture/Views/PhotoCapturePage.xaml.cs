@@ -10,7 +10,6 @@ using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Reflection;
 // TODO: add CommunityToolkit.Maui.Camera integration when API finalized
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
@@ -23,9 +22,10 @@ public partial class PhotoCapturePage : ContentPage
     private readonly IMessenger _messenger;
     private readonly HairCarePlus.Shared.Common.CQRS.ICommandBus _commandBus;
     private bool _previewReady;
+    private bool _isCapturing;
+    // Track cameras enumeration state
     private bool _camerasInitialized;
     private IReadOnlyList<object>? _availableCameras;
-    private bool _isCapturing;
 
     // Placeholder for future camera lifecycle integration
 
@@ -52,53 +52,46 @@ public partial class PhotoCapturePage : ContentPage
         if (e.PropertyName == nameof(PhotoCaptureViewModel.Facing))
         {
             _logger.LogInformation("Facing property changed, applying camera switch.");
-            ApplyFacing();
+            _ = SwitchFacingAsync();
         }
     }
 
     /// <summary>
-    /// Applies the requested camera facing (front/back) by selecting the appropriate
-    /// camera from <see cref="CameraView.AvailableCameras"/> and assigning it to
-    /// <see cref="CameraView.SelectedCamera"/>. Runs a defensive try / catch because the
-    /// underlying API surface is different between versions of CommunityToolkit.Maui.Camera.
+    /// Switches between front and back camera using reflection-based fallback.
     /// </summary>
-    private void ApplyFacing()
+    private async Task SwitchFacingAsync()
     {
         try
         {
-            // Reflection based guard against API changes – we only run if the expected
-            // properties are present to avoid hard compile-time coupling.
-            var cameraViewType = Camera.GetType();
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var selectedCameraProp = cameraViewType.GetProperty("SelectedCamera", flags);
-
-            if (selectedCameraProp is null)
+            // Ensure we have enumerated cameras at least once
+            if (!_camerasInitialized)
             {
-                _logger.LogWarning("CameraView switch API not found – skipping ApplyFacing.");
-                return;
+                try
+                {
+                    var cams = await Camera.GetAvailableCameras(CancellationToken.None);
+                    _availableCameras = cams?.Cast<object>().ToList();
+                    _camerasInitialized = _availableCameras?.Count > 0;
+                    _logger.LogInformation($"Camera enumeration completed. Found {_availableCameras?.Count ?? 0} cameras.");
+                }
+                catch (Exception exEnum)
+                {
+                    _logger.LogError(exEnum, "Failed to enumerate cameras inside SwitchFacingAsync");
+                }
             }
 
-            // Use cached list if we have it, otherwise try to query synchronously via reflection fallback
-            var camerasEnum = _availableCameras;
-            if (camerasEnum is null)
+            var camerasList = _availableCameras;
+            if (camerasList is null || camerasList.Count == 0)
             {
-                var availableProp = cameraViewType.GetProperty("AvailableCameras")?.GetValue(Camera) as System.Collections.IEnumerable;
-                camerasEnum = availableProp?.Cast<object>().ToList();
-            }
-
-            if (camerasEnum is null)
-            {
-                _logger.LogWarning("No camera list available – cannot apply facing yet.");
+                _logger.LogWarning("No cameras available – cannot apply facing");
                 return;
             }
 
             object? targetCamera = null;
 
-            foreach (var cam in camerasEnum)
+            foreach (var cam in camerasList)
             {
                 var positionProp = cam.GetType().GetProperty("Position");
-                if (positionProp == null) continue;
-                var positionVal = positionProp.GetValue(cam)?.ToString()?.ToLower();
+                var positionVal = positionProp?.GetValue(cam)?.ToString()?.ToLowerInvariant();
 
                 if (_viewModel.Facing == PhotoCaptureViewModel.CameraFacing.Front && positionVal?.Contains("front") == true)
                 {
@@ -112,23 +105,29 @@ public partial class PhotoCapturePage : ContentPage
                 }
             }
 
-            if (targetCamera != null)
-            {
-                var current = selectedCameraProp.GetValue(Camera);
-                if (!Equals(current, targetCamera))
-                {
-                    selectedCameraProp.SetValue(Camera, targetCamera);
-                    _logger.LogInformation($"Switched camera to {_viewModel.Facing}.");
-                }
-            }
-            else
+            if (targetCamera is null)
             {
                 _logger.LogWarning("Requested camera facing not available on this device.");
+                return;
+            }
+
+            var selectedCameraProp = Camera.GetType().GetProperty("SelectedCamera");
+            if (selectedCameraProp is null)
+            {
+                _logger.LogWarning("CameraView switch API not found – skipping.");
+                return;
+            }
+
+            var current = selectedCameraProp.GetValue(Camera);
+            if (!Equals(current, targetCamera))
+            {
+                selectedCameraProp.SetValue(Camera, targetCamera);
+                _logger.LogInformation($"Switched camera to {_viewModel.Facing}.");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error while switching camera.");
+            _logger.LogError(ex, "Error switching camera generically via reflection.");
         }
     }
 
@@ -159,23 +158,8 @@ public partial class PhotoCapturePage : ContentPage
         base.OnAppearing();
         Camera.MediaCaptured += OnMediaCaptured;
 
-        if (!_camerasInitialized)
-        {
-            try
-            {
-                var cameras = await Camera.GetAvailableCameras(CancellationToken.None);
-                _availableCameras = cameras?.Cast<object>().ToList();
-                _camerasInitialized = _availableCameras?.Count > 0;
-                _logger.LogInformation($"Camera enumeration completed. Found {_availableCameras?.Count ?? 0} cameras.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to enumerate cameras.");
-            }
-        }
-
-        // Now apply facing (this will select the appropriate camera) and start preview
-        ApplyFacing();
+        // Ensure facing is correct after appearing
+        await SwitchFacingAsync();
 
         // Always attempt to (re)start preview on appearing to avoid frozen frame after navigation.
         _logger.LogInformation("Attempting to start camera preview on appearing.");
