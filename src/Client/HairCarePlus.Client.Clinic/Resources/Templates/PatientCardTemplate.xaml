@@ -34,7 +34,7 @@
                         <Label Text="{Binding Name}" FontSize="17" FontAttributes="Bold" TextColor="White"/>
                         <HorizontalStackLayout Spacing="8">
                             <Label Text="📷" IsVisible="{Binding PhotoMissing}"/>
-                            <Label Text="💬 {Binding UnreadCount}" IsVisible="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}"/>
+                            <Label Text="{Binding UnreadCount, StringFormat='💬 {0}'}" IsVisible="{Binding UnreadCount, Converter={StaticResource CountToBoolConverter}}"/>
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
                 </Grid>

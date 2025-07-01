@@ -6,4 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="11.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HairCarePlus.Server.Infrastructure\HairCarePlus.Server.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj" />
+  </ItemGroup>
+
 </Project>

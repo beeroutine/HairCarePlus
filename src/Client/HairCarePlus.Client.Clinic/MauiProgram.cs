@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using Microsoft.Maui.Storage;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using System.Net.Http;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -38,8 +39,16 @@ public static class MauiProgram
 		builder.Services.AddTransient<Features.Dashboard.Views.DashboardPage>();
 
 		builder.Services.AddTransient<Features.Patient.Views.PatientPage>();
+		builder.Services.AddTransient<Features.Patient.ViewModels.PatientPageViewModel>();
 
 		builder.UseMauiCommunityToolkit();
+
+		// REST client for API
+		var apiBaseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://192.168.1.79:5281/";
+		builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+		builder.Services.AddScoped<Infrastructure.Features.Progress.IPhotoReportService, Infrastructure.Features.Progress.PhotoReportService>();
+		builder.Services.AddScoped<Infrastructure.Features.Patient.IPatientService, Infrastructure.Features.Patient.PatientService>();
+		builder.Services.AddScoped<Infrastructure.Features.Patient.IRestrictionService, Infrastructure.Features.Patient.RestrictionService>();
 
 #if DEBUG
 		builder.Logging.AddDebug();

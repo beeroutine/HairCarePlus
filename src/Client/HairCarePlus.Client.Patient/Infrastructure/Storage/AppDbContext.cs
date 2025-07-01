@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
 {
     public DbSet<CalendarEvent> Events { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<HairCarePlus.Client.Patient.Features.Sync.Domain.Entities.OutboxItem> OutboxItems { get; set; } = null!;
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -70,6 +71,17 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ReplyToLocalId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Outbox configuration – keeps pending entities for sync
+        modelBuilder.Entity<HairCarePlus.Client.Patient.Features.Sync.Domain.Entities.OutboxItem>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.HasIndex(o => o.Status);
+            entity.Property(o => o.EntityType).IsRequired();
+            entity.Property(o => o.PayloadJson).IsRequired();
+            entity.Property(o => o.LocalEntityId).IsRequired();
+            entity.Property(o => o.ModifiedAtUtc).IsRequired();
         });
     }
 } 

@@ -1,3 +1,6 @@
+using HairCarePlus.Server.Infrastructure.RealTime;
+using MediatR;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -5,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.AddControllers();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(HairCarePlus.Server.Application.CreatePhotoReportCommand).Assembly));
 
 builder.Services.AddCors(options =>
 {
@@ -47,6 +52,9 @@ app.MapGet("/weatherforecast", () =>
 .WithOpenApi();
 
 app.MapHub<HairCarePlus.Server.API.Controllers.ChatHub>("/chatHub");
+app.MapHub<EventsHub>("/events");
+
+app.MapControllers();
 
 app.Urls.Add("http://0.0.0.0:5281");
 

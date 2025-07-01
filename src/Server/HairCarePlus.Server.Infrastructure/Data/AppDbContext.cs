@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<Patient> Patients { get; set; } = null!;
     public DbSet<TreatmentSchedule> TreatmentSchedules { get; set; } = null!;
     public DbSet<PhotoReport> PhotoReports { get; set; } = null!;
+    public DbSet<HairCarePlus.Server.Domain.ValueObjects.PhotoComment> PhotoComments { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

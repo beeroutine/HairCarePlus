@@ -16,4 +16,13 @@
     <ProjectReference Include="..\HairCarePlus.Server.Domain\HairCarePlus.Server.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ASP.NET Core shared framework -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

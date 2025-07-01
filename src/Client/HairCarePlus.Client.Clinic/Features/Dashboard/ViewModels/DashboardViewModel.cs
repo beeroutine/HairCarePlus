@@ -5,11 +5,15 @@ using CommunityToolkit.Mvvm.Input;
 using HairCarePlus.Client.Clinic.Features.Dashboard.Models;
 using HairCarePlus.Client.Clinic.Features.Chat.Views;
 using Microsoft.Maui.Controls;
+using System.Linq;
+using HairCarePlus.Client.Clinic.Infrastructure.Features.Patient;
 
 namespace HairCarePlus.Client.Clinic.Features.Dashboard.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject
 {
+    private readonly IPatientService _patientService;
+
     public ObservableCollection<PatientSummary> Patients { get; } = new();
 
     [ObservableProperty]
@@ -19,8 +23,9 @@ public partial class DashboardViewModel : ObservableObject
     public IRelayCommand<PatientSummary> OpenChatCommand { get; }
     public IRelayCommand<PatientSummary> CallCommand { get; }
 
-    public DashboardViewModel()
+    public DashboardViewModel(IPatientService patientService)
     {
+        _patientService = patientService;
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         OpenChatCommand = new RelayCommand<PatientSummary>(async p =>
         {
@@ -40,27 +45,20 @@ public partial class DashboardViewModel : ObservableObject
 
     private async Task LoadAsync()
     {
-        // TODO: fetch from API, now mock
-        await Task.Delay(300);
+        var dtoList = await _patientService.GetPatientsAsync();
         Patients.Clear();
-        Patients.Add(new PatientSummary
+        foreach (var dto in dtoList)
         {
-            Id = "p1",
-            Name = "Анна Петрова",
-            DayProgress = 0.8,
-            PhotoMissing = false,
-            UnreadCount = 2,
-            AvatarUrl = null
-        });
-        Patients.Add(new PatientSummary
-        {
-            Id = "p2",
-            Name = "Иван Иванов",
-            DayProgress = 0.3,
-            PhotoMissing = true,
-            UnreadCount = 0,
-            AvatarUrl = null
-        });
+            Patients.Add(new PatientSummary
+            {
+                Id = dto.Id,
+                Name = dto.Name,
+                DayProgress = dto.DayProgress,
+                PhotoMissing = dto.PhotoMissing,
+                UnreadCount = dto.UnreadCount,
+                AvatarUrl = dto.AvatarUrl
+            });
+        }
         GlobalProgress = Patients.Count == 0 ? 0 : Patients.Average(p => p.DayProgress);
     }
 } 

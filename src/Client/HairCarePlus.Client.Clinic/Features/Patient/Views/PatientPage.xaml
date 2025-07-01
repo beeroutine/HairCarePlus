@@ -4,16 +4,26 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
              xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
+             xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
              x:DataType="viewmodels:PatientPageViewModel"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              x:Name="thisPage">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <conv:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
     <ScrollView>
         <VerticalStackLayout Spacing="24" Padding="20">
             <!-- Navigation Header -->
             <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
                 <Button Text="‹" FontSize="24" Padding="4" Clicked="OnBackClicked" />
-                <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+                <Label Text="{Binding Name}"
+                       FontSize="24" FontAttributes="Bold" VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
             </HorizontalStackLayout>
             
             <!-- Spacer -->
@@ -30,7 +40,9 @@
                     </Image>
                 </Grid>
                 <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                    <Label Text="{Binding Name}" FontSize="24" FontAttributes="Bold" />
+                    <Label Text="{Binding Name}"
+                           FontSize="24" FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
                     <Button Text="Chat" Command="{Binding OpenChatCommand}" HorizontalOptions="Start" />
                 </VerticalStackLayout>
             </Grid>
@@ -41,23 +53,47 @@
                     <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center">
-                            <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
-                            <Label Text="{Binding Icon}" FontSize="18" HorizontalOptions="Center" />
-                            <Label Text="{Binding DaysRemaining, StringFormat='{0}дн'}" FontSize="12" HorizontalOptions="Center" />
+                    <DataTemplate x:DataType="viewmodels:PatientPageViewModel+RestrictionTimer">
+                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
+                            <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
+                                <!-- кольцо прогресса -->
+                                <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                                <!-- иконка ограничения -->
+                                <Label Text="{Binding Icon}"
+                                       FontSize="20"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Grid>
+                            <!-- остаток дней -->
+                            <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
+                                   FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                                   HorizontalOptions="Center" />
                         </VerticalStackLayout>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <!-- Photo feed -->
+            <!-- Photo feed with doctor comment capability -->
             <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
                 <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <VerticalStackLayout Spacing="6">
+                    <DataTemplate x:DataType="viewmodels:PatientPageViewModel+PhotoEntry">
+                        <VerticalStackLayout Spacing="8">
+                            <!-- Photo preview -->
                             <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="300" />
-                            <Label Text="{Binding Comment}" FontSize="14" />
+
+                            <!-- Existing comment (if any) -->
+                            <Label Text="{Binding Comment}" FontSize="14" IsVisible="{Binding Comment, Converter={StaticResource NotNullOrEmptyConverter}}" />
+
+                            <!-- Doctor comment input -->
+                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                                <Entry Placeholder="Комментарий врача"
+                                       Text="{Binding CommentDraft, Mode=TwoWay}"
+                                       HorizontalOptions="FillAndExpand" />
+                                <Button Text="➤"
+                                        FontSize="18"
+                                        Padding="6"
+                                        Command="{Binding SendCommentCommand}" />
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

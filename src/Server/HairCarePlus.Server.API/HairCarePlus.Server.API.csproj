@@ -9,10 +9,15 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0-preview.5.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.*" />
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HairCarePlus.Server.Application\HairCarePlus.Server.Application.csproj" />
   </ItemGroup>
 
 </Project>

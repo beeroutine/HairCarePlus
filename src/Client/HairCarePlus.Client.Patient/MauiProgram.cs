@@ -30,6 +30,7 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture;
 using HairCarePlus.Client.Patient.Features.Progress;
 using Microsoft.Maui.Handlers;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using HairCarePlus.Client.Patient.Features.Sync;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -111,6 +112,9 @@ public static class MauiProgram
 
 		// Register Progress feature
 		builder.Services.AddProgressFeature();
+
+		// Register Sync (Outbox + scheduler)
+		builder.Services.AddSyncFeature();
 
 		// Register startup tasks
 		builder.Services.AddStartupTasks();
