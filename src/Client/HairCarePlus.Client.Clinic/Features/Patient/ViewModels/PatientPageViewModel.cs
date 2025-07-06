@@ -128,7 +128,10 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         Feed.Clear();
         var reports = await _photoReportService.GetReportsAsync(PatientId);
         foreach (var rep in reports)
-            Feed.Add(new PhotoEntry(rep.Id, rep.ImageUrl, rep.DoctorComment, this));
+            Feed.Add(new PhotoEntry(rep.Id.ToString(), rep.ImageUrl, rep.Notes, this));
+
+        // Subscribe to real-time updates
+        await _photoReportService.ConnectAsync(PatientId);
     }
 
     // Submit comment to server (stub for now)

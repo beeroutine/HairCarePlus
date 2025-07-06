@@ -31,6 +31,8 @@ using HairCarePlus.Client.Patient.Features.Progress;
 using Microsoft.Maui.Handlers;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using HairCarePlus.Client.Patient.Features.Sync;
+using HairCarePlus.Client.Patient.Features.Sync.Application;
+using HairCarePlus.Client.Patient.Features.Sync.Infrastructure;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -121,6 +123,16 @@ public static class MauiProgram
 
 		// Register IMessenger singleton using WeakReferenceMessenger.Default
 		builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+
+		// Sync Services
+		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
+		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
+		{
+			var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
+			client.BaseAddress = new Uri(baseUrl);
+		});
+		builder.Services.AddSingleton<ISyncService, SyncService>();
+		builder.Services.AddHostedService<SyncScheduler>();
 
 #if IOS
 		EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>

@@ -37,6 +37,21 @@ namespace HairCarePlus.Server.Domain.ValueObjects
             IsCompleted = false;
         }
 
+        public TreatmentSchedule(
+            Guid id,
+            Guid patientId,
+            string title,
+            DateTime dueDate,
+            bool isDone,
+            bool isSkipped) : this()
+        {
+            Id = id;
+            // PatientId is not a property of TreatmentSchedule, may need to adjust
+            Title = title;
+            StartDate = dueDate;
+            IsCompleted = isDone || isSkipped;
+        }
+
         public void AddTask(TreatmentTask task)
         {
             Tasks.Add(task);

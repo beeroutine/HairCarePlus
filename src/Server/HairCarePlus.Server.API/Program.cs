@@ -1,7 +1,16 @@
+using HairCarePlus.Shared.Communication.Events;
 using HairCarePlus.Server.Infrastructure.RealTime;
+using HairCarePlus.Server.Application.PhotoReports;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Server.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure logging to console and set minimum level for our namespace
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddFilter("HairCarePlus", LogLevel.Information);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -9,7 +18,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(HairCarePlus.Server.Application.CreatePhotoReportCommand).Assembly));
+builder.Services.AddMediatR(typeof(HairCarePlus.Server.Infrastructure.RealTime.EventsHub).Assembly);
+builder.Services.AddMediatR(typeof(HairCarePlus.Server.Application.PhotoReports.CreatePhotoReportCommand).Assembly);
+
+builder.Services.AddSingleton<IEventsClient, EventsClientProxy>();
+
+builder.Services.AddDbContext<HairCarePlus.Server.Infrastructure.Data.AppDbContext>(options =>
+{
+    options.UseSqlite("Data Source=haircareplus.db");
+});
 
 builder.Services.AddCors(options =>
 {
@@ -57,6 +74,26 @@ app.MapHub<EventsHub>("/events");
 app.MapControllers();
 
 app.Urls.Add("http://0.0.0.0:5281");
+
+// Apply pending EF Core migrations to ensure schema up-to-date
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+    }
+    catch (InvalidOperationException ex) when (app.Environment.IsDevelopment() && ex.Message.Contains("PendingModelChangesWarning"))
+    {
+        // Dev convenience: if schema drift detected, recreate SQLite DB
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+        logger.LogWarning("Pending model changes detected – recreating local SQLite database. {Message}", ex.Message);
+
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+    }
+}
 
 app.Run();
 

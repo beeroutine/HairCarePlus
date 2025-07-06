@@ -17,10 +17,11 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
 using HairCarePlus.Client.Patient.Features.Progress.Application.Messages;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Sync.Messages;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
-public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>
+public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>, IRecipient<PhotoReportSyncedMessage>
 {
     private readonly IQueryBus _queryBus;
     private readonly ILogger<ProgressViewModel> _logger;
@@ -49,6 +50,8 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         WeakReferenceMessenger.Default.Register<PhotoCapturedMessage>(this);
         // подписка на изменение ограничений
         WeakReferenceMessenger.Default.Register<RestrictionsChangedMessage>(this);
+        // подписка на синхронизированный с сервера фото-отчёт
+        WeakReferenceMessenger.Default.Register<PhotoReportSyncedMessage>(this);
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
@@ -241,5 +244,12 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         {
             _logger.LogError(ex, "Error reloading restrictions");
         }
+    }
+
+    // При приходе нового/обновлённого PhotoReport с сервера перезагружаем ленту
+    public void Receive(PhotoReportSyncedMessage message)
+    {
+        // не блокируем UI, просто запустим фоновое обновление
+        _ = LoadAsync();
     }
 } 

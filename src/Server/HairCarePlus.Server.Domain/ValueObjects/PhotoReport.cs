@@ -8,7 +8,8 @@ namespace HairCarePlus.Server.Domain.ValueObjects
     {
         public string ImageUrl { get; private set; }
         public string ThumbnailUrl { get; private set; }
-        public string PatientId { get; private set; }
+        public Guid PatientId { get; private set; }
+        public Patient Patient { get; private set; }
         public DateTime CaptureDate { get; private set; }
         public string Notes { get; private set; }
         public PhotoType Type { get; private set; }
@@ -18,9 +19,21 @@ namespace HairCarePlus.Server.Domain.ValueObjects
         private PhotoReport() : base() { }
 
         public PhotoReport(
+            Guid id,
+            Guid patientId,
             string imageUrl,
             string thumbnailUrl,
-            string patientId,
+            DateTime captureDate,
+            string notes,
+            PhotoType type) : this(imageUrl, thumbnailUrl, patientId, captureDate, notes, type)
+        {
+            Id = id;
+        }
+
+        public PhotoReport(
+            string imageUrl,
+            string thumbnailUrl,
+            Guid patientId,
             DateTime captureDate,
             string notes,
             PhotoType type)

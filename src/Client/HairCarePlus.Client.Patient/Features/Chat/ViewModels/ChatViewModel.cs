@@ -154,23 +154,44 @@ public partial class ChatViewModel : ObservableObject
 
                 await _commandBus.SendAsync(new ChatCommands.SendChatMessageCommand("default_conversation", MessageText, "patient", DateTime.UtcNow, replyId));
 
+                // Add the message to the local collection immediately for optimistic UI feedback
+                var localChatMessage = new ChatMessage
+                {
+                    ConversationId = "default_conversation",
+                    Content = MessageText,
+                    SenderId = "patient",
+                    SentAt = DateTime.UtcNow,
+                    Timestamp = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = MessageStatus.Sent,
+                    Type = MessageType.Text,
+                    ReplyTo = ReplyToMessage
+                };
+
+                Messages.Add(localChatMessage);
+
                 var textToSend = MessageText;
                 MessageText = string.Empty;
 
-                // send via SignalR hub
-                try
+                // Fire-and-forget to avoid blocking the UI in case the network is slow or offline
+                _ = Task.Run(async () =>
                 {
-                    await _hubConnection.SendMessageAsync(
-                        "default_conversation",
-                        "patient",
-                        textToSend,
-                        replySender,
-                        replyContent);
-                }
-                finally
-                {
-                    ReplyToMessage = null;
-                }
+                    try
+                    {
+                        await _hubConnection.SendMessageAsync(
+                            "default_conversation",
+                            "patient",
+                            textToSend,
+                            replySender,
+                            replyContent);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send message via SignalR hub – will retry on next sync");
+                    }
+                });
+
+                ReplyToMessage = null;
             }
             
             await ScrollToBottom();
@@ -402,6 +423,10 @@ public partial class ChatViewModel : ObservableObject
     {
         if (e.ConversationId != "default_conversation") return;
 
+        // Ignore echo for own messages (already optimistically added)
+        if (e.SenderId == "patient")
+            return;
+
         var messageTime = e.SentAt.ToLocalTime().DateTime;
 
         var incoming = new ChatMessage
@@ -431,9 +456,6 @@ public partial class ChatViewModel : ObservableObject
             Messages.Add(incoming);
         }
 
-        if (!string.IsNullOrEmpty(incoming.SenderId) && incoming.SenderId != "patient")
-        {
-            _ = Task.Run(() => _repo.SaveMessageAsync(incoming));
-        }
+        _ = Task.Run(() => _repo.SaveMessageAsync(incoming));
     }
 } 

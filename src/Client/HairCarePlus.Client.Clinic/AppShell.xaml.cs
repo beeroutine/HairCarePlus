@@ -10,7 +10,7 @@ public partial class AppShell : Shell
 	public AppShell()
 	{
 		InitializeComponent();
-		Routing.RegisterRoute("DashboardPage", typeof(Features.Dashboard.Views.DashboardPage));
+		// 'DashboardPage' already provided via ShellContent in XAML, registering it again causes duplicates
 		Routing.RegisterRoute(nameof(Features.Patient.Views.PatientPage), typeof(Features.Patient.Views.PatientPage));
 		Routing.RegisterRoute(nameof(ChatPage), typeof(ChatPage));
 	}

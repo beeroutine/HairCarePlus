@@ -24,6 +24,25 @@ namespace HairCarePlus.Server.Domain.ValueObjects
         }
 
         public ChatMessage(
+            Guid id,
+            string content,
+            MessageType type,
+            MessageStatus status,
+            Guid senderId,
+            Guid receiverId,
+            DateTime createdAt)
+        {
+            Id = id;
+            Content = content;
+            Type = type;
+            Status = status;
+            SenderId = senderId;
+            ReceiverId = receiverId;
+            CreatedAt = createdAt;
+            Attachments = new List<ChatAttachment>();
+        }
+
+        public ChatMessage(
             string content,
             string sourceLanguage,
             string targetLanguage,

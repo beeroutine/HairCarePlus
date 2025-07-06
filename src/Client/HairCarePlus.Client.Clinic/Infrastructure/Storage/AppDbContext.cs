@@ -3,30 +3,19 @@ using Microsoft.EntityFrameworkCore;
 using System.IO;
 using Microsoft.Maui.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities;
 
 namespace HairCarePlus.Client.Clinic.Infrastructure.Storage
 {
     public class AppDbContext : DbContext
     {
-        private readonly string _dbPath;
-
         public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoReportEntity> PhotoReports => Set<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoReportEntity>();
+        public DbSet<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity> PhotoComments => Set<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity>();
+        public DbSet<OutboxItem> OutboxItems { get; set; }
 
-        public AppDbContext()
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-            // default ctor for design-time
-            _dbPath = Path.Combine(FileSystem.AppDataDirectory, "clinic.db");
-        }
-
-        public AppDbContext(string dbPath)
-        {
-            _dbPath = dbPath;
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlite($"Data Source={_dbPath}")
-                          .EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,6 +28,22 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Storage
                     .HasConversion(new DateTimeOffsetToBinaryConverter());
                 entity.ToTable("ChatMessages");
             });
+
+            modelBuilder.Entity<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoReportEntity>(entity =>
+            {
+                entity.HasMany(p => p.Comments)
+                      .WithOne()
+                      .HasForeignKey(c => c.PhotoReportId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity>(entity =>
+            {
+                entity.HasIndex(c => c.PhotoReportId);
+            });
+
+            modelBuilder.Entity<OutboxItem>()
+                .HasIndex(o => new { o.Status, o.CreatedAtUtc });
         }
     }
 } 

@@ -8,6 +8,8 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Queries;
 using System.Linq;
 using Microsoft.Maui.Controls;
+using HairCarePlus.Client.Patient.Features.Sync.Infrastructure;
+using System.Text.Json;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
 
@@ -16,14 +18,17 @@ public partial class PhotoCaptureViewModel : ObservableObject
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly ILogger<PhotoCaptureViewModel> _logger;
+    private readonly IOutboxRepository _outbox;
 
     public PhotoCaptureViewModel(ICommandBus commandBus,
                                  IQueryBus queryBus,
-                                 ILogger<PhotoCaptureViewModel> logger)
+                                 ILogger<PhotoCaptureViewModel> logger,
+                                 IOutboxRepository outbox)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
         _logger = logger;
+        _outbox = outbox;
 
         _ = LoadTemplatesAsync();
     }
@@ -75,6 +80,23 @@ public partial class PhotoCaptureViewModel : ObservableObject
         {
             IsBusy = true;
             await _commandBus.SendAsync(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands.CapturePhotoCommand());
+
+            // enqueue to outbox
+            var dto = new HairCarePlus.Shared.Communication.PhotoReportCreateDto
+            {
+                PatientId = "8f8c7e0b-1234-4e78-a8cc-ff0011223344",
+                LocalFilePath = _lastPhotoPath,
+                CaptureDate = DateTime.UtcNow
+            };
+
+            var item = new Features.Sync.Domain.Entities.OutboxItem
+            {
+                EntityType = "PhotoReport",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                LocalEntityId = Guid.NewGuid().ToString(),
+                ModifiedAtUtc = DateTime.UtcNow
+            };
+            await _outbox.AddAsync(item);
         }
         catch (System.Exception ex)
         {

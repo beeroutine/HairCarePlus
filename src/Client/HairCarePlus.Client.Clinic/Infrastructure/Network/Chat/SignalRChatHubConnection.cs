@@ -17,7 +17,7 @@ public sealed class SignalRChatHubConnection : IChatHubConnection, IAsyncDisposa
     {
         _logger = logger;
         const string conversationId = "default_conversation";
-        var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://192.168.1.79:5281";
+        var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281";
         _connection = new HubConnectionBuilder()
             .WithUrl($"{baseUrl}/chatHub?conversationId=" + conversationId)
             .WithAutomaticReconnect()
