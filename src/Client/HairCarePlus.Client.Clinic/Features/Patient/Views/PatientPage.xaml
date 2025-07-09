@@ -53,34 +53,43 @@
             </Grid>
 
             <!-- Restrictions -->
-            <CollectionView ItemsSource="{Binding Restrictions}" SelectionMode="None" HeightRequest="90">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="viewmodels:PatientPageViewModel+RestrictionTimer">
-                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
-                            <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
-                                <!-- кольцо прогресса -->
-                                <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
-                                <!-- иконка ограничения -->
-                                <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
-                                       WidthRequest="24" HeightRequest="24"
-                                       HorizontalOptions="Center" VerticalOptions="Center">
-                                    <Image.Behaviors>
-                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                    </Image.Behaviors>
-                                </Image>
-                            </Grid>
-                            <!-- остаток дней -->
-                            <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
-                                   FontSize="11"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                                   HorizontalOptions="Center" />
-                        </VerticalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <ScrollView Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Never"
+                        Padding="20,0"
+                        HeightRequest="90">
+                <CollectionView x:Name="RestrictionCollectionView"
+                                ItemsSource="{Binding Restrictions}"
+                                SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="viewmodels:PatientPageViewModel+RestrictionTimer">
+                            <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
+                                <!-- Gesture removed: details command not yet implemented -->
+
+                                <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <!-- кольцо прогресса -->
+                                    <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                                    <!-- иконка ограничения -->
+                                    <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                                           WidthRequest="24" HeightRequest="24"
+                                           HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Image.Behaviors>
+                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                        </Image.Behaviors>
+                                    </Image>
+                                </Grid>
+                                <!-- остаток дней -->
+                                <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
+                                       FontSize="11"
+                                       TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                                       HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </ScrollView>
 
             <!-- Photo feed with doctor comment capability -->
             <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
