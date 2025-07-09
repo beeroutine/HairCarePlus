@@ -50,13 +50,19 @@ public sealed class RestrictionService : IRestrictionService
         return list;
     }
 
+    /// <summary>
+    /// Returns normalized progress (0-1) using the **same integer, inclusive** algorithm
+    /// as the Patient application so that visual rings are identical.
+    /// </summary>
     private static double CalculateProgress(DateTime start, DateTime end)
     {
-        var total = (end - start).TotalDays;
-        if (total <= 0) return 1.0;
+        // Treat both dates as whole days (ignore time-of-day) and include start & end dates.
+        int totalDays = Math.Max(1, (end.Date - start.Date).Days + 1);
 
-        var elapsed = (DateTime.UtcNow - start).TotalDays;
-        return Math.Clamp(elapsed / total, 0.0, 1.0);
+        int daysRemaining = Math.Max(0, (end.Date - DateTime.UtcNow.Date).Days + 1);
+        int elapsedDays = Math.Clamp(totalDays - daysRemaining, 0, totalDays);
+
+        return (double)elapsedDays / totalDays;
     }
 
     private static RestrictionIconType MapToIconType(int type) => (RestrictionIconType)type;
