@@ -3,6 +3,8 @@ namespace HairCarePlus.Client.Patient.Common.Startup;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Features.Sync.Application;
+using System.Threading;
 
 /// <summary>
 /// Contract for tasks that must execute during application startup before main UI is shown.
@@ -45,11 +47,42 @@ public sealed class DatabaseAndCalendarStartupTask : IStartupTask
     }
 }
 
+/// <summary>
+/// Performs an initial data synchronization with the server to ensure local cache is populated
+/// before the user starts interacting with the UI. This runs only once on app launch.
+/// </summary>
+public sealed class SyncStartupTask : IStartupTask
+{
+    private readonly ISyncService _syncService;
+    private readonly ILogger<SyncStartupTask> _logger;
+
+    public SyncStartupTask(ISyncService syncService, ILogger<SyncStartupTask> logger)
+    {
+        _syncService = syncService;
+        _logger = logger;
+    }
+
+    public async Task ExecuteAsync()
+    {
+        _logger.LogInformation("[Startup] Performing initial data sync");
+        try
+        {
+            await _syncService.SynchronizeAsync(CancellationToken.None);
+            _logger.LogInformation("[Startup] Initial data sync completed successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Startup] Initial data sync failed – will retry later via scheduler");
+        }
+    }
+}
+
 public static class StartupTaskExtensions
 {
     public static IServiceCollection AddStartupTasks(this IServiceCollection services)
     {
         services.AddSingleton<IStartupTask, DatabaseAndCalendarStartupTask>();
+        services.AddSingleton<IStartupTask, SyncStartupTask>();
         return services;
     }
 } 

@@ -176,22 +176,22 @@ public partial class ChatViewModel : ObservableObject
                 // Fire-and-forget to avoid blocking the UI in case the network is slow or offline
                 _ = Task.Run(async () =>
                 {
-                    try
-                    {
-                        await _hubConnection.SendMessageAsync(
-                            "default_conversation",
-                            "patient",
-                            textToSend,
-                            replySender,
-                            replyContent);
-                    }
+                try
+                {
+                    await _hubConnection.SendMessageAsync(
+                        "default_conversation",
+                        "patient",
+                        textToSend,
+                        replySender,
+                        replyContent);
+                }
                     catch (Exception ex)
-                    {
+                {
                         _logger.LogWarning(ex, "Failed to send message via SignalR hub – will retry on next sync");
                     }
                 });
 
-                ReplyToMessage = null;
+                    ReplyToMessage = null;
             }
             
             await ScrollToBottom();
@@ -456,6 +456,6 @@ public partial class ChatViewModel : ObservableObject
             Messages.Add(incoming);
         }
 
-        _ = Task.Run(() => _repo.SaveMessageAsync(incoming));
+            _ = Task.Run(() => _repo.SaveMessageAsync(incoming));
     }
 } 

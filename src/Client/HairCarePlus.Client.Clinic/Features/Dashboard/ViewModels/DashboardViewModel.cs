@@ -56,7 +56,9 @@ public partial class DashboardViewModel : ObservableObject
                 DayProgress = dto.DayProgress,
                 PhotoMissing = dto.PhotoMissing,
                 UnreadCount = dto.UnreadCount,
-                AvatarUrl = dto.AvatarUrl
+                AvatarUrl = dto.AvatarUrl,
+                OpenChatCommand = OpenChatCommand,
+                CallCommand = CallCommand
             });
         }
         GlobalProgress = Patients.Count == 0 ? 0 : Patients.Average(p => p.DayProgress);

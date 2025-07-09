@@ -76,11 +76,19 @@
 
 	<ItemGroup>
 		<ProjectReference Include="../../Shared/HairCarePlus.Shared.Communication/HairCarePlus.Shared.Communication.csproj" />
+		<ProjectReference Include="../../Shared/HairCarePlus.Shared.Domain/HairCarePlus.Shared.Domain.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
 		<PackageReference Include="CommunityToolkit.Maui.Core" Version="5.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Restriction icons shared with Patient app -->
+		<MauiImage Include="../HairCarePlus.Client.Patient/Resources/AppIcon/svg/*.svg">
+			<LogicalName>%(Filename).png</LogicalName>
+		</MauiImage>
 	</ItemGroup>
 
 </Project>

@@ -17,6 +17,11 @@ public sealed class BatchSyncResponseDto
     public IReadOnlyList<ProgressEntryDto>? ProgressEntries { get; init; }
     public IReadOnlyList<RestrictionDto>? Restrictions { get; init; }
 
+    /// <summary>
+    ///   Унифицированные пакеты DeliveryQueue, которые должен обработать клиент.
+    /// </summary>
+    public IReadOnlyList<DeliveryPacketDto>? Packets { get; init; }
+
     // Ids of reports server wants from client (client must send full DTOs in next batch)
     public IReadOnlyList<Guid>? NeedPhotoReports { get; init; }
 } 

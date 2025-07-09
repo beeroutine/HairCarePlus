@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
     public DbSet<ProgressEntry> ProgressEntries { get; set; } = null!;
     public DbSet<Restriction> Restrictions { get; set; } = null!;
+    public DbSet<DeliveryQueue> DeliveryQueue { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

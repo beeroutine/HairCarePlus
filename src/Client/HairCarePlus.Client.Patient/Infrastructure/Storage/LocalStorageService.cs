@@ -48,23 +48,35 @@ public class LocalStorageService : ILocalStorageService
         try
         {
             using var context = GetDbContext();
-            // Ensure the EF Core model is applied; this creates missing tables based on the model metadata.
+
+            // Ensure base schema exists (creates DB if missing)
             await context.Database.EnsureCreatedAsync();
-            if (!await DoesDatabaseExistAsync())
+
+            _logger?.LogDebug("Database exists, verifying mandatory tables");
+
+            // DEV-time safety: verify critical tables; if any probe fails we recreate DB (no irreversible data yet)
+            bool rebuildRequired = false;
+            string[] probes = { "OutboxItems", "PhotoReports" };
+
+            foreach (var tbl in probes)
             {
-                _logger?.LogDebug("Database does not exist, creating...");
-                await context.Database.EnsureCreatedAsync();
-                _logger?.LogDebug("Database created successfully via EF EnsureCreated");
+                try
+                {
+                    context.Database.ExecuteSqlRaw($"SELECT 1 FROM {tbl} LIMIT 1");
+                }
+                catch (Microsoft.Data.Sqlite.SqliteException)
+                {
+                    _logger?.LogWarning("Table {Table} missing – will rebuild SQLite file", tbl);
+                    rebuildRequired = true;
+                    break;
+                }
             }
-            else
+
+            if (rebuildRequired)
             {
-                _logger?.LogDebug("Database exists, verifying schema via EF model...");
-                // EnsureCreated will create missing tables without dropping existing data.
-                var created = await context.Database.EnsureCreatedAsync();
-                if (created)
-                    _logger?.LogDebug("Database schema was missing and is now created");
-                else
-                    _logger?.LogDebug("Database schema verified, skipping manual recreation");
+                await context.Database.EnsureDeletedAsync();
+                await context.Database.EnsureCreatedAsync();
+                _logger?.LogInformation("Local SQLite database recreated with latest schema");
             }
         }
         finally

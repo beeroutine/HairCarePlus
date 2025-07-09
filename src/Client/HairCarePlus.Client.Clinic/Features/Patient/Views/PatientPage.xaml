@@ -13,6 +13,7 @@
     <ContentPage.Resources>
         <ResourceDictionary>
             <conv:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
+            <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -43,7 +44,10 @@
                     <Label Text="{Binding Name}"
                            FontSize="24" FontAttributes="Bold"
                            TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
-                    <Button Text="Chat" Command="{Binding OpenChatCommand}" HorizontalOptions="Start" />
+                    <HorizontalStackLayout Spacing="8">
+                        <Button Text="Chat" Command="{Binding OpenChatCommand}" />
+                        <Button Text="Progress" Command="{Binding OpenProgressCommand}" />
+                    </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Grid>
 
@@ -59,8 +63,8 @@
                                 <!-- кольцо прогресса -->
                                 <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
                                 <!-- иконка ограничения -->
-                                <Label Text="{Binding Icon}"
-                                       FontSize="20"
+                                <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                                       WidthRequest="24" HeightRequest="24"
                                        HorizontalOptions="Center" VerticalOptions="Center" />
                             </Grid>
                             <!-- остаток дней -->

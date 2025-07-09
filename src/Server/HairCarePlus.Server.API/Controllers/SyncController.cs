@@ -8,12 +8,12 @@ using HairCarePlus.Server.Infrastructure.Data;
 using System.Linq;
 using System;
 using HairCarePlus.Server.Application.Sync;
+using System.Threading.Tasks;
 
 namespace HairCarePlus.Server.API.Controllers;
 
-[ApiController]
-[Route("sync")] 
-public sealed class SyncController : ControllerBase
+[Route("sync")]
+public class SyncController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly AppDbContext _db;
@@ -25,7 +25,7 @@ public sealed class SyncController : ControllerBase
     }
 
     [HttpPost("batch")]
-    public async Task<IActionResult> Batch([FromBody] BatchSyncRequestDto dto)
+    public async Task<ActionResult<BatchSyncResponseDto>> Batch([FromBody] BatchSyncRequestDto dto)
         {
         var resp = await _mediator.Send(new BatchSyncCommand(dto));
         return Ok(resp);

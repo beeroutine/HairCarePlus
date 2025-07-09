@@ -13,6 +13,7 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Storage
         public DbSet<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoReportEntity> PhotoReports => Set<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoReportEntity>();
         public DbSet<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity> PhotoComments => Set<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity>();
         public DbSet<OutboxItem> OutboxItems { get; set; }
+        public DbSet<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.RestrictionEntity> Restrictions => Set<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.RestrictionEntity>();
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -44,6 +45,12 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Storage
 
             modelBuilder.Entity<OutboxItem>()
                 .HasIndex(o => new { o.Status, o.CreatedAtUtc });
+
+            modelBuilder.Entity<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.RestrictionEntity>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.HasIndex(r => new { r.PatientId, r.IsActive });
+            });
         }
     }
 } 

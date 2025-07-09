@@ -147,6 +147,8 @@ public static class MauiProgram
 #endif
 
 #if DEBUG
+		builder.Logging.ClearProviders();
+		builder.Logging.AddConsole();
 		builder.Logging.AddDebug()
 			// Reduce verbosity of EF Core to minimise log overhead during development
 			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning)

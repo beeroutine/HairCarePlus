@@ -10,6 +10,9 @@ using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Net.Http;
 using HairCarePlus.Client.Clinic.Features.Sync.Application;
 using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
+using System;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -44,6 +47,7 @@ public static class MauiProgram
 
 		builder.Services.AddTransient<Features.Patient.Views.PatientPage>();
 		builder.Services.AddTransient<Features.Patient.ViewModels.PatientPageViewModel>();
+		builder.Services.AddTransient<Features.Patient.Views.PatientProgressPage>();
 
 		builder.UseMauiCommunityToolkit();
 
@@ -63,10 +67,16 @@ public static class MauiProgram
 			var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
 			client.BaseAddress = new Uri(baseUrl);
 		});
+
+		builder.Services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
+		builder.Services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
+
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
 
 #if DEBUG
+		builder.Logging.ClearProviders();
+		builder.Logging.AddConsole();
 		builder.Logging.AddDebug();
 #endif
 
@@ -91,11 +101,13 @@ public static class MauiProgram
 		        // probe for new table; if missing => reset DB (dev-only)
 		        try
 		        {
+		            // simple probe queries to verify that expected tables are present; if any fail we recreate DB (dev-only flow)
 		            ctx.Database.ExecuteSqlRaw("SELECT 1 FROM PhotoReports LIMIT 1");
+		            ctx.Database.ExecuteSqlRaw("SELECT 1 FROM Restrictions LIMIT 1");
 		        }
 		        catch (Microsoft.Data.Sqlite.SqliteException)
 		        {
-		            // table absent ⇒ drop and recreate (no user data yet)
+		            // One of the new tables is missing — start fresh (no critical user data stored on clinic device yet)
 		            ctx.Database.EnsureDeleted();
 		            ctx.Database.EnsureCreated();
 		        }
@@ -106,6 +118,30 @@ public static class MauiProgram
 		    }
 		}
 
-		return builder.Build();
+		var app = builder.Build();
+		// Fire-and-forget initial sync to populate local cache ASAP (runs in background, non-blocking UI)
+		Task.Run(async () =>
+		{
+		    using var scope = app.Services.CreateScope();
+		    var syncSvc = scope.ServiceProvider.GetRequiredService<ISyncService>();
+		    try
+		    {
+		        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+		                                       .CreateLogger("StartupSync");
+		        logger.LogInformation("[Startup] Clinic initial sync started");
+		        await syncSvc.SynchronizeAsync(CancellationToken.None);
+		        logger.LogInformation("[Startup] Clinic initial sync completed");
+		    }
+		    catch (Exception ex)
+		    {
+		        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+		                                       .CreateLogger("StartupSync");
+		        logger.LogError(ex, "[Startup] Clinic initial sync failed");
+		    }
+		});
+
+		// Gracefully handle absence of camera on simulators (CommunityToolkit.Maui.Camera throws)
+
+		return app;
 	}
 }

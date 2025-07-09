@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HairCarePlus.Client.Clinic.Features.Patient.Views.PatientProgressPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Entities"
+    xmlns:selectors="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Selectors"
+    xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+    xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Converters"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
+    x:DataType="vm:PatientPageViewModel"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <converters:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <!-- Simplified: reuse patient ProgressPage layout but bind to ViewModel we already have -->
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="20" >
+            <!-- Restriction timers -->
+            <CollectionView ItemsSource="{Binding Restrictions}" HeightRequest="90" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PatientPageViewModel+RestrictionTimer">
+                        <VerticalStackLayout WidthRequest="70" Spacing="6" HorizontalOptions="Center">
+                            <Grid WidthRequest="50" HeightRequest="50">
+                                <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                                <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                                       WidthRequest="24" HeightRequest="24"
+                                       HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Grid>
+                            <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}" FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                                   HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <!-- Progress feed copied from patient page -->
+            <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PatientPageViewModel+PhotoEntry">
+                        <VerticalStackLayout Spacing="8">
+                            <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="300" />
+                            <Label Text="{Binding Comment}" FontSize="14" IsVisible="{Binding Comment, Converter={StaticResource NotNullOrEmptyConverter}}" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Entry Placeholder="Комментарий врача" Text="{Binding CommentDraft, Mode=TwoWay}" HorizontalOptions="FillAndExpand" />
+                                <Button Text="➤" FontSize="18" Padding="6" Command="{Binding SendCommentCommand}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage> 

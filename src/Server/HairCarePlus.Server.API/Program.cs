@@ -28,6 +28,10 @@ builder.Services.AddDbContext<HairCarePlus.Server.Infrastructure.Data.AppDbConte
     options.UseSqlite("Data Source=haircareplus.db");
 });
 
+builder.Services.AddScoped<HairCarePlus.Server.Infrastructure.Data.Repositories.IDeliveryQueueRepository,
+                       HairCarePlus.Server.Infrastructure.Data.Repositories.DeliveryQueueRepository>();
+builder.Services.AddHostedService<HairCarePlus.Server.Infrastructure.Data.DeliveryQueueCleaner>();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

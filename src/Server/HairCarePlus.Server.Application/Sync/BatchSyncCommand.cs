@@ -4,6 +4,10 @@ using HairCarePlus.Server.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Shared.Communication;
 using HairCarePlus.Server.Domain.ValueObjects;
+using HairCarePlus.Server.Infrastructure.Data.Repositories;
+using System.Text.Json;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Server.Application.Sync;
 
@@ -12,15 +16,30 @@ public record BatchSyncCommand(BatchSyncRequestDto Request) : IRequest<BatchSync
 public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSyncResponseDto>
 {
     private readonly AppDbContext _db;
+    private readonly IDeliveryQueueRepository _dq;
+    private readonly ILogger<BatchSyncCommandHandler> _logger;
 
-    public BatchSyncCommandHandler(AppDbContext db)
+    public BatchSyncCommandHandler(AppDbContext db, IDeliveryQueueRepository dq, ILogger<BatchSyncCommandHandler> logger)
     {
         _db = db;
+        _dq = dq;
+        _logger = logger;
     }
 
     public async Task<BatchSyncResponseDto> Handle(BatchSyncCommand command, CancellationToken cancellationToken)
     {
         var req = command.Request;
+
+        // Determine receiver & other side masks once
+        byte receiverMask = req.ClientId.StartsWith("clinic", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)2;
+        byte otherMask = receiverMask == 1 ? (byte)2 : (byte)1;
+
+        // 0. Apply ACKs ------------------------------------------------
+        if (req.AckIds != null && req.AckIds.Count > 0)
+        {
+            await _dq.AckAsync(req.AckIds, receiverMask);
+        }
+
         // 1. APPLY INCOMING -----------------------
         var sinceUtc = DateTimeOffset.FromUnixTimeMilliseconds(req.LastSyncVersion).UtcDateTime;
 
@@ -85,12 +104,41 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
 
         if (req.Restrictions?.Count > 0)
         {
+            _logger.LogInformation("BatchSync: received {Count} restrictions from {Client}", req.Restrictions.Count, req.ClientId);
             foreach (var dto in req.Restrictions)
             {
-                var existing = await _db.Restrictions.FirstOrDefaultAsync(r => r.Id == dto.Id, cancellationToken);
+                // Натуральный ключ: Patient + Type + Start/End → один row
+                var existing = await _db.Restrictions.FirstOrDefaultAsync(r =>
+                        r.PatientId == dto.PatientId &&
+                        r.Type == (HairCarePlus.Server.Domain.ValueObjects.RestrictionType)dto.Type &&
+                        r.StartUtc == dto.StartUtc &&
+                        r.EndUtc == dto.EndUtc,
+                        cancellationToken);
+
                 if (existing == null)
+                {
                     await _db.Restrictions.AddAsync(dto.ToEntity(), cancellationToken);
+                }
+                else
+                {
+                    // Уже существует – ничего не меняем (могут быть только дубликаты)
+                }
             }
+
+            // enqueue restrictions for opposite side
+            var restrictionPackets = req.Restrictions.Select(dto => new Domain.Entities.DeliveryQueue
+            {
+                EntityType = "Restriction",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                PatientId = dto.PatientId,
+                ReceiversMask = otherMask,
+                DeliveredMask = 0,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            }).ToList();
+
+            if (restrictionPackets.Count > 0)
+                await _dq.AddRangeAsync(restrictionPackets);
+            _logger.LogInformation("BatchSync: enqueued {Count} restriction packets for mask {Mask}", restrictionPackets.Count, otherMask);
         }
 
         // Handle incoming PhotoReports (patient -> server)
@@ -122,6 +170,20 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
                     await _db.PhotoReports.AddAsync(entity, cancellationToken);
                 }
             }
+
+            // enqueue for other side
+            var packetsToEnqueue = req.PhotoReports.Select(dto => new Domain.Entities.DeliveryQueue
+            {
+                EntityType = "PhotoReport",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                PatientId = dto.PatientId,
+                ReceiversMask = otherMask,
+                DeliveredMask = 0,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            }).ToList();
+
+            if (packetsToEnqueue.Count > 0)
+                await _dq.AddRangeAsync(packetsToEnqueue);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -132,8 +194,9 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             .Select(c => c.ToDto())
             .ToListAsync(cancellationToken);
 
+        // Use base CreatedAt (DateTime) to avoid DateTimeOffset translation issues and rely on global soft-delete filter
         var deltaComments = await _db.PhotoComments
-            .Where(c => c.CreatedAtUtc > sinceUtc)
+            .Where(c => c.CreatedAt > sinceUtc)
             .Select(c => c.ToDto())
             .ToListAsync(cancellationToken);
 
@@ -151,6 +214,7 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             .Where(r => r.CreatedAt > sinceUtc)
             .Select(r => r.ToDto())
             .ToListAsync(cancellationToken);
+        _logger.LogInformation("BatchSync: returning delta. Restrictions={Count}", deltaRestrictions.Count);
 
         // ---- PhotoReport differential sync -----------------------------
         List<PhotoReportDto> reportsToSend = new();
@@ -184,6 +248,17 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             }
         }
 
+        // fetch packets for this receiver
+        var pending = await _dq.GetPendingForReceiverAsync(Guid.Empty, receiverMask);
+
+        var packetsDto = pending.Select(p => new DeliveryPacketDto
+        {
+            Id = p.Id,
+            EntityType = p.EntityType,
+            PayloadJson = p.PayloadJson,
+            BlobUrl = p.BlobUrl
+        }).ToList();
+
         var resp = new BatchSyncResponseDto
         {
             NewSyncVersion = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
@@ -193,7 +268,8 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             PhotoReports = reportsToSend,
             NeedPhotoReports = needFromClient,
             ProgressEntries = deltaProgress,
-            Restrictions = deltaRestrictions
+            Restrictions = deltaRestrictions,
+            Packets = packetsDto
         };
 
         return resp;

@@ -18,7 +18,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     private readonly HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IRestrictionService _restrictionService;
 
     // Simple DTOs
-    public record RestrictionTimer(string Icon, int DaysRemaining, double Progress);
+    public record RestrictionTimer(HairCarePlus.Shared.Domain.Restrictions.RestrictionIconType IconType, int DaysRemaining, double Progress);
     public partial class PhotoEntry : ObservableObject
     {
         // Unique identifier of a photo report (could be guid from server)
@@ -79,6 +79,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
 
     public AsyncRelayCommand LoadCommand { get; }
     public IRelayCommand OpenChatCommand { get; }
+    public IRelayCommand OpenProgressCommand { get; }
 
     public PatientPageViewModel(IPhotoReportService photoReportService,
         HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IPatientService patientService,
@@ -93,6 +94,15 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         {
             if (string.IsNullOrEmpty(PatientId)) return;
             await Shell.Current.GoToAsync(nameof(HairCarePlus.Client.Clinic.Features.Chat.Views.ChatPage), true, new Dictionary<string, object>
+            {
+                { "patientId", PatientId }
+            });
+        });
+
+        OpenProgressCommand = new RelayCommand(async () =>
+        {
+            if (string.IsNullOrEmpty(PatientId)) return;
+            await Shell.Current.GoToAsync("patient-progress", true, new Dictionary<string, object>
             {
                 { "patientId", PatientId }
             });
@@ -122,7 +132,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         Restrictions.Clear();
         var restrictionDtos = await _restrictionService.GetRestrictionsAsync(PatientId);
         foreach (var r in restrictionDtos)
-            Restrictions.Add(new RestrictionTimer(r.Icon, r.DaysRemaining, r.Progress));
+            Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
 
         // Load photo reports
         Feed.Clear();

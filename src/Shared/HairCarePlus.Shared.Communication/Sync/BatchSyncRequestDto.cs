@@ -18,4 +18,9 @@ public sealed class BatchSyncRequestDto
 
     // Lightweight diff for photo reports
     public IReadOnlyList<EntityHeaderDto>? PhotoReportHeaders { get; init; }
+
+    /// <summary>
+    ///   Идентификаторы DeliveryQueue записей, которые клиент подтвердил (ACK)
+    /// </summary>
+    public IReadOnlyList<Guid>? AckIds { get; init; }
 } 

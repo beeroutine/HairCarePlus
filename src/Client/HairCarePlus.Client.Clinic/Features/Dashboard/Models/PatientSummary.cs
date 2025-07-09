@@ -8,4 +8,8 @@ public class PatientSummary
     public double DayProgress { get; set; } // 0..1
     public bool PhotoMissing { get; set; }
     public int UnreadCount { get; set; }
+
+    // Commands delegated from DashboardViewModel for swipe actions
+    public System.Windows.Input.ICommand? OpenChatCommand { get; init; }
+    public System.Windows.Input.ICommand? CallCommand { get; init; }
 } 

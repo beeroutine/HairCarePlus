@@ -114,12 +114,12 @@ Client/Common/             # Reusable UI components
 HairCare+ использует **«локальный кэш + короткие сетевые транзакции»** для надёжной работы в офлайне.
 
 ### Категории данных
-| Тип | Где хранится | TTL на сервере |
-|-----|--------------|----------------|
-| ChatMessage | SQLite на устройствах; транзит через SignalR | 0 – не сохраняется |
-| TaskReport (done/skip + note) | SQLite + **Server DB** | постоянно |
-| PhotoReport (image + comment) | FileSystem + SQLite + **Server DB** | постоянно |
-| CalendarTask (doctor-side edits) | SQLite + **Server DB** | постоянно |
+| Тип | Где «главная» копия | TTL на сервере |
+|-----|---------------------|----------------|
+| ChatMessage | SQLite на устройствах; транзит через SignalR | 0 — не хранится |
+| TaskReport (done/skip + note) | SQLite на устройствах | ≤ 14 дней (до ACK от получателей) |
+| PhotoReport (image + comment) | Файл + SQLite на устройствах | ≤ 14 дней (до ACK) |
+| CalendarTask (doctor-side edits) | SQLite на устройствах | ≤ 14 дней (до ACK) |
 
 ### Транспортные каналы
 1. **REST Batch-Sync API** (`/sync/batch`) – JSON с изменениями всех сущностей, используется по таймеру и при появлении сети.
@@ -150,8 +150,8 @@ Hub-->>UI: real-time Event (e.g., TaskUpdated)
 * Если ACK не пришёл 30 сек – Polly retry.
 
 ### Роль сервера
-* Долговечное хранилище только для **TaskReport / PhotoReport / CalendarTask**.
-* В памяти Redis-cache (TTL 30 мин) для временного буфера входящих Chat-сообщений, если одна сторона offline.
+* Не является долговременным хранилищем. Сохраняет изменения в DeliveryQueue до их доставки.
+* Для Chat использует Redis (TTL 30 мин) как буфер, если получатель временно offline.
 
 ### Push-будилка (опц.)
 * При новой записи сервер шлёт silent push через APNs/FCM – гарантирует, что офлайн-клиент проснётся и выполнит sync.

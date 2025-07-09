@@ -1,3 +1,4 @@
+using System;
 using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using HairCarePlus.Client.Clinic.Features.Sync.Application;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,10 @@ public static class SyncServiceExtensions
             var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
             client.BaseAddress = new Uri(baseUrl);
         });
+
+        services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
+        services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
+
         services.AddSingleton<ISyncService, SyncService>();
         services.AddHostedService<SyncScheduler>();
         return services;
