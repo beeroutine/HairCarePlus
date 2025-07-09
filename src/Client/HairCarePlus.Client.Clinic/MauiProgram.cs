@@ -13,6 +13,7 @@ using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
+using HairCarePlus.Shared.Common;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -52,8 +53,8 @@ public static class MauiProgram
 		builder.UseMauiCommunityToolkit();
 
 		// REST client for API
-		var apiBaseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://127.0.0.1:5281/";
-		builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+		var apiBaseUrl = HairCarePlus.Shared.Common.EnvironmentHelper.GetBaseApiUrl();
+		builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri($"{apiBaseUrl}/") });
 		builder.Services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
 		builder.Services.AddSingleton<Infrastructure.Network.Events.IEventsSubscription, Infrastructure.Network.Events.SignalREventsSubscription>();
 		builder.Services.AddScoped<Infrastructure.Features.Progress.IPhotoReportService, Infrastructure.Features.Progress.PhotoReportService>();
@@ -64,8 +65,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
 		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
 		{
-			var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
-			client.BaseAddress = new Uri(baseUrl);
+			client.BaseAddress = new Uri($"{HairCarePlus.Shared.Common.EnvironmentHelper.GetBaseApiUrl()}/");
 		});
 
 		builder.Services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();

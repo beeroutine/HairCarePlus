@@ -79,13 +79,15 @@ if [[ -n "${CLINIC_SIM_UDID:-}" ]]; then
     "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
     -f net9.0-ios \
     -p:RuntimeIdentifier=$SIM_RID \
-    -p:_DeviceName=:v2:udid=$CLINIC_SIM_UDID 2>&1 | tee "$LOG_DIR/clinic.log" &
+    -p:_DeviceName=:v2:udid=$CLINIC_SIM_UDID \
+    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
   CLINIC_PID=$!
 else
   echo "▶ Launching Clinic (Mac Catalyst) ..."
   dotnet build -t:Run \
     "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
-    -f net9.0-maccatalyst &
+    -f net9.0-maccatalyst \
+    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
   CLINIC_PID=$!
 fi
 
@@ -99,7 +101,8 @@ dotnet build -t:Run \
   "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" \
   -f net9.0-ios \
   -p:RuntimeIdentifier=ios-arm64 \
-  -p:_DeviceName=$IPHONE_UDID 2>&1 | tee "$LOG_DIR/patient.log" &
+  -p:_DeviceName=$IPHONE_UDID \
+  -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/patient.log" &
 PATIENT_PID=$!
 
 echo "🎉 All processes started. Press Ctrl+C to stop."

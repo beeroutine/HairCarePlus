@@ -128,8 +128,8 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
 		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
 		{
-			var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
-			client.BaseAddress = new Uri(baseUrl);
+			var apiBaseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://192.168.1.6:5281";
+			client.BaseAddress = new Uri($"{apiBaseUrl}/");
 		});
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();

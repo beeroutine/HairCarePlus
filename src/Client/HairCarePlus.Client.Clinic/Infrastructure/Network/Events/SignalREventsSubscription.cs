@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using HairCarePlus.Shared.Communication;
+using HairCarePlus.Shared.Common;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +25,7 @@ public sealed class SignalREventsSubscription : IEventsSubscription
         if (_connection != null && _connection.State != HubConnectionState.Disconnected)
             return;
 
-        var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281";
+        var baseUrl = HairCarePlus.Shared.Common.EnvironmentHelper.GetBaseApiUrl();
         _connection = new HubConnectionBuilder()
             .WithUrl($"{baseUrl}/events?patientId={patientId}")
             .WithAutomaticReconnect()
