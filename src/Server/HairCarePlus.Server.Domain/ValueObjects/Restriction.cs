@@ -25,8 +25,16 @@ public class Restriction : BaseEntity
 
 public enum RestrictionType
 {
-    Food,
-    Alcohol,
-    Sport,
-    Sauna
+    NoSmoking = 0,
+    NoAlcohol = 1,
+    NoSex = 2,
+    NoHairCutting = 3,
+    NoHatWearing = 4,
+    NoStyling = 5,
+    NoLaying = 6,
+    NoSun = 7,
+    NoSweating = 8,
+    NoSwimming = 9,
+    NoSporting = 10,
+    NoTilting = 11
 } 

@@ -7,16 +7,19 @@ using HairCarePlus.Client.Clinic.Infrastructure.Storage;
 using HairCarePlus.Shared.Communication;
 using HairCarePlus.Shared.Domain.Restrictions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Patient;
 
 public sealed class RestrictionService : IRestrictionService
 {
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
+    private readonly ILogger<RestrictionService> _logger;
 
-    public RestrictionService(IDbContextFactory<AppDbContext> dbFactory)
+    public RestrictionService(IDbContextFactory<AppDbContext> dbFactory, ILogger<RestrictionService> logger)
     {
         _dbFactory = dbFactory;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<Models.RestrictionDto>> GetRestrictionsAsync(string patientId)
@@ -37,6 +40,13 @@ public sealed class RestrictionService : IRestrictionService
             .OrderBy(r => r.DaysRemaining)
             .ToList();
 
+        // Verbose logging for diagnostics
+        _logger.LogInformation("Fetched {Count} active restrictions for patient {PatientId}", list.Count, patientId);
+        foreach (var r in list)
+        {
+            _logger.LogInformation("Restriction mapped: IconType={IconType}, DaysRemaining={Days}, Progress={Progress:p1}", r.IconType, r.DaysRemaining, r.Progress);
+        }
+
         return list;
     }
 
@@ -49,15 +59,5 @@ public sealed class RestrictionService : IRestrictionService
         return Math.Clamp(elapsed / total, 0.0, 1.0);
     }
 
-    private static RestrictionIconType MapToIconType(int type)
-    {
-        // сервер присылает HairCarePlus.Server.Domain.ValueObjects.RestrictionType
-        return ((HairCarePlus.Shared.Communication.RestrictionType)type) switch
-        {
-            HairCarePlus.Shared.Communication.RestrictionType.Alcohol => RestrictionIconType.NoAlcohol,
-            HairCarePlus.Shared.Communication.RestrictionType.Sport   => RestrictionIconType.NoSporting,
-            HairCarePlus.Shared.Communication.RestrictionType.Sauna   => RestrictionIconType.NoSun,
-            _                                                       => RestrictionIconType.NoSmoking
-        };
-    }
+    private static RestrictionIconType MapToIconType(int type) => (RestrictionIconType)type;
 } 

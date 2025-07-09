@@ -8,6 +8,7 @@ using System.Linq;
 using HairCarePlus.Client.Clinic.Infrastructure.Features.Patient;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Shared.Communication;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Clinic.Features.Patient.ViewModels;
 
@@ -16,6 +17,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     private readonly IPhotoReportService _photoReportService;
     private readonly HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IPatientService _patientService;
     private readonly HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IRestrictionService _restrictionService;
+    private readonly ILogger<PatientPageViewModel> _logger;
 
     // Simple DTOs
     public record RestrictionTimer(HairCarePlus.Shared.Domain.Restrictions.RestrictionIconType IconType, int DaysRemaining, double Progress);
@@ -83,11 +85,13 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
 
     public PatientPageViewModel(IPhotoReportService photoReportService,
         HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IPatientService patientService,
-        HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IRestrictionService restrictionService)
+        HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IRestrictionService restrictionService,
+        ILogger<PatientPageViewModel> logger)
     {
         _photoReportService = photoReportService;
         _patientService = patientService;
         _restrictionService = restrictionService;
+        _logger = logger;
         LoadCommand = new AsyncRelayCommand(LoadAsync);
 
         OpenChatCommand = new RelayCommand(async () =>
@@ -131,8 +135,12 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         // Load restrictions
         Restrictions.Clear();
         var restrictionDtos = await _restrictionService.GetRestrictionsAsync(PatientId);
+        _logger.LogInformation("PatientPageViewModel loaded {Count} restrictions", restrictionDtos.Count);
         foreach (var r in restrictionDtos)
+        {
+            _logger.LogInformation("Adding timer: IconType={IconType}, DaysRemaining={Days}, Progress={Progress:p1}", r.IconType, r.DaysRemaining, r.Progress);
             Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
+        }
 
         // Load photo reports
         Feed.Clear();

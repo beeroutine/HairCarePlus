@@ -141,7 +141,7 @@ public class SyncService : ISyncService
                                     {
                                         Id = id,
                                         PatientId = dto.PatientId.ToString(),
-                                        Type = (int)dto.Type,
+                                        Type = (int)dto.IconType,
                                         StartUtc = dto.StartUtc,
                                         EndUtc = dto.EndUtc,
                                         IsActive = dto.IsActive
@@ -150,7 +150,7 @@ public class SyncService : ISyncService
                                 }
                                 else
                                 {
-                                    entity.Type = (int)dto.Type;
+                                    entity.Type = (int)dto.IconType;
                                     entity.StartUtc = dto.StartUtc;
                                     entity.EndUtc = dto.EndUtc;
                                     entity.IsActive = dto.IsActive;

@@ -141,7 +141,7 @@ public static class SyncMappers
         return new Restriction(
             dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
             dto.PatientId,
-            (HairCarePlus.Server.Domain.ValueObjects.RestrictionType)dto.Type,
+            (HairCarePlus.Server.Domain.ValueObjects.RestrictionType)dto.IconType,
             dto.StartUtc,
             dto.EndUtc,
             dto.IsActive
@@ -154,10 +154,13 @@ public static class SyncMappers
         {
             Id = entity.Id,
             PatientId = entity.PatientId,
-            Type = (HairCarePlus.Shared.Communication.RestrictionType)entity.Type,
+            IconType = (HairCarePlus.Shared.Domain.Restrictions.RestrictionIconType)entity.Type,
+            Type = 0, // obsolete, kept for backward compatibility
             StartUtc = entity.StartUtc,
             EndUtc = entity.EndUtc,
             IsActive = entity.IsActive
         };
     }
+
+    // legacy Type property is unused by new clients
 } 
