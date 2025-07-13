@@ -7,9 +7,9 @@ namespace HairCarePlus.Server.Domain.ValueObjects
     public class ChatMessage : BaseEntity
     {
         public string Content { get; private set; }
-        public string TranslatedContent { get; private set; }
-        public string SourceLanguage { get; private set; }
-        public string TargetLanguage { get; private set; }
+        public string? TranslatedContent { get; private set; }
+        public string? SourceLanguage { get; private set; }
+        public string? TargetLanguage { get; private set; }
         public MessageType Type { get; private set; }
         public MessageStatus Status { get; private set; }
         public Guid SenderId { get; private set; }
@@ -44,8 +44,8 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 
         public ChatMessage(
             string content,
-            string sourceLanguage,
-            string targetLanguage,
+            string? sourceLanguage,
+            string? targetLanguage,
             MessageType type,
             Guid senderId,
             Guid receiverId) : this()

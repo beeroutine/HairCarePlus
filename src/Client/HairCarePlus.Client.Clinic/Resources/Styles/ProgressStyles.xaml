@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <!-- Card background matches TaskCardBackground colors already defined -->
+    <Style x:Key="InstagramCardStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#20000000" Offset="0,2" Radius="8" Opacity="0.2" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="InstagramDateStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+    </Style>
+
+    <Style x:Key="CommentTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineHeight" Value="1.4" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
+    </Style>
+</ResourceDictionary> 

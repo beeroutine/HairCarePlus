@@ -5,6 +5,7 @@ using HairCarePlus.Server.Domain.ValueObjects;
 using HairCarePlus.Shared.Communication;
 using MediatR;
 using HairCarePlus.Server.Infrastructure.Data;
+using HairCarePlus.Server.Infrastructure.Data.Repositories;
 using HairCarePlus.Shared.Communication.Events;
 using Microsoft.Extensions.Logging;
 using DomainPhotoType = HairCarePlus.Server.Domain.ValueObjects.PhotoType;
@@ -17,12 +18,14 @@ public sealed class CreatePhotoReportCommandHandler : IRequestHandler<CreatePhot
 {
     private readonly AppDbContext _db;
     private readonly IEventsClient _events;
+    private readonly IDeliveryQueueRepository _deliveryQueue;
     private readonly ILogger<CreatePhotoReportCommandHandler> _logger;
 
-    public CreatePhotoReportCommandHandler(AppDbContext db, IEventsClient events, ILogger<CreatePhotoReportCommandHandler> logger)
+    public CreatePhotoReportCommandHandler(AppDbContext db, IEventsClient events, IDeliveryQueueRepository deliveryQueue, ILogger<CreatePhotoReportCommandHandler> logger)
     {
         _db = db;
         _events = events;
+        _deliveryQueue = deliveryQueue;
         _logger = logger;
     }
 
@@ -55,7 +58,18 @@ public sealed class CreatePhotoReportCommandHandler : IRequestHandler<CreatePhot
             Comments = new()
         };
 
-        // notify
+        // enqueue for clinic side (receiver mask 1)
+        var packet = new HairCarePlus.Server.Domain.Entities.DeliveryQueue
+        {
+            EntityType = "PhotoReport",
+            PayloadJson = System.Text.Json.JsonSerializer.Serialize(dto),
+            PatientId = dto.PatientId,
+            ReceiversMask = 1, // Clinic
+            DeliveredMask = 0,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+        };
+        await _deliveryQueue.AddRangeAsync(new[] { packet });
+
         await _events.PhotoReportAdded(request.PatientId.ToString(), dto);
 
         return dto;

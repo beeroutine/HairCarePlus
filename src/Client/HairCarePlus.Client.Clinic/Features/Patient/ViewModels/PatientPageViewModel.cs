@@ -9,6 +9,7 @@ using HairCarePlus.Client.Clinic.Infrastructure.Features.Patient;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Shared.Communication;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Clinic.Features.Patient.Models;
 
 namespace HairCarePlus.Client.Clinic.Features.Patient.ViewModels;
 
@@ -21,55 +22,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
 
     // Simple DTOs
     public record RestrictionTimer(HairCarePlus.Shared.Domain.Restrictions.RestrictionIconType IconType, int DaysRemaining, double Progress);
-    public partial class PhotoEntry : ObservableObject
-    {
-        // Unique identifier of a photo report (could be guid from server)
-        public string Id { get; }
-
-        public string ImageUrl { get; }
-
-        [ObservableProperty]
-        private string? _comment;
-
-        // Draft text that doctor types before sending.
-        [ObservableProperty]
-        private string _commentDraft = string.Empty;
-
-        public IAsyncRelayCommand SendCommentCommand { get; }
-
-        private readonly PatientPageViewModel _parent;
-
-        public PhotoEntry(string id, string imageUrl, string? comment, PatientPageViewModel parent)
-        {
-            Id = id;
-            ImageUrl = imageUrl;
-            _comment = comment;
-            _parent = parent;
-
-            SendCommentCommand = new AsyncRelayCommand(SendAsync);
-        }
-
-        private async Task SendAsync()
-        {
-            if (string.IsNullOrWhiteSpace(CommentDraft))
-                return;
-
-            var text = CommentDraft.Trim();
-
-            // Optimistically update UI
-            Comment = text;
-            CommentDraft = string.Empty;
-
-            try
-            {
-                await _parent.SubmitCommentAsync(Id, text);
-            }
-            catch
-            {
-                // TODO: Add error handling / revert on failure
-            }
-        }
-    }
+    // Progress feed item models live in separate namespace for reuse
 
     [ObservableProperty] private string _patientId = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
@@ -77,7 +30,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     [ObservableProperty] private double _dayProgress;
 
     public ObservableCollection<RestrictionTimer> Restrictions { get; } = new();
-    public ObservableCollection<PhotoEntry> Feed { get; } = new();
+    public ObservableCollection<ProgressFeedItem> Feed { get; } = new();
 
     public AsyncRelayCommand LoadCommand { get; }
     public IRelayCommand OpenChatCommand { get; }
@@ -142,21 +95,39 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
         }
 
-        // Load photo reports
+        // Load photo reports and convert to feed items
         Feed.Clear();
         var reports = await _photoReportService.GetReportsAsync(PatientId);
-        foreach (var rep in reports)
-            Feed.Add(new PhotoEntry(rep.Id.ToString(), rep.ImageUrl, rep.Notes, this));
+
+        foreach (var rep in reports.OrderByDescending(r => r.Date))
+        {
+            var item = new ProgressFeedItem(
+                Date: DateOnly.FromDateTime(rep.Date),
+                Title: rep.Date.ToString("d MMM"),
+                Description: null,
+                Photos: new List<ProgressPhoto>
+                {
+                    new ProgressPhoto
+                    {
+                        ImageUrl = rep.ImageUrl,
+                        CapturedAt = rep.Date,
+                        Zone = PhotoZone.Front
+                    }
+                },
+                ActiveRestrictions: new List<string>(),
+                DoctorReportSummary: string.IsNullOrWhiteSpace(rep.Notes) ? null : rep.Notes
+            );
+            Feed.Add(item);
+        }
 
         // Subscribe to real-time updates
         await _photoReportService.ConnectAsync(PatientId);
     }
 
-    // Submit comment to server (stub for now)
     public async Task SubmitCommentAsync(string photoReportId, string comment)
     {
-        const string demoDoctorId = "doctor-1"; // TODO: pull from auth context
-        var result = await _photoReportService.AddCommentAsync(PatientId, photoReportId, demoDoctorId, comment);
-        // nothing else: optimistic UI already updated; server will push to patient app
+        // no inline editing in new feed; left for future extension
+        const string demoDoctorId = "doctor-1";
+        await _photoReportService.AddCommentAsync(PatientId, photoReportId, demoDoctorId, comment);
     }
 } 

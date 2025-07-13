@@ -112,6 +112,54 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                     b.ToTable("ClinicStaff");
                 });
 
+            modelBuilder.Entity("HairCarePlus.Server.Domain.Entities.DeliveryQueue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BlobUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte>("DeliveredMask")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte>("ReceiversMask")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAtUtc");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("DeliveryQueue");
+                });
+
             modelBuilder.Entity("HairCarePlus.Server.Domain.Entities.Doctor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -304,18 +352,15 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SourceLanguage")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("TargetLanguage")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TranslatedContent")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Type")
@@ -326,9 +371,15 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("DoctorId");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
 
                     b.ToTable("ChatMessages");
                 });
@@ -393,13 +444,16 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("PhotoReportId")
-                        .HasColumnType("TEXT");
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("PhotoReportId2")
+                    b.Property<Guid>("PhotoReportId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")
@@ -407,11 +461,12 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PhotoReportId");
-
-                    b.HasIndex("PhotoReportId2");
 
                     b.ToTable("PhotoComments", (string)null);
                 });
@@ -778,15 +833,9 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("HairCarePlus.Server.Domain.ValueObjects.PhotoComment", b =>
                 {
-                    b.HasOne("HairCarePlus.Server.Domain.ValueObjects.PhotoReport", null)
+                    b.HasOne("HairCarePlus.Server.Domain.ValueObjects.PhotoReport", "PhotoReport")
                         .WithMany("Comments")
                         .HasForeignKey("PhotoReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HairCarePlus.Server.Domain.ValueObjects.PhotoReport", "PhotoReport")
-                        .WithMany()
-                        .HasForeignKey("PhotoReportId2")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -15,6 +15,9 @@
         <ResourceDictionary>
             <conv:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
             <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../../../Resources/Styles/ProgressStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </ContentPage.Resources>
 
@@ -94,25 +97,8 @@
             <!-- Photo feed with doctor comment capability -->
             <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="viewmodels:PatientPageViewModel+PhotoEntry">
-                        <VerticalStackLayout Spacing="8">
-                            <!-- Photo preview -->
-                            <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="300" />
-
-                            <!-- Existing comment (if any) -->
-                            <Label Text="{Binding Comment}" FontSize="14" IsVisible="{Binding Comment, Converter={StaticResource NotNullOrEmptyConverter}}" />
-
-                            <!-- Doctor comment input -->
-                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                                <Entry Placeholder="Комментарий врача"
-                                       Text="{Binding CommentDraft, Mode=TwoWay}"
-                                       HorizontalOptions="FillAndExpand" />
-                                <Button Text="➤"
-                                        FontSize="18"
-                                        Padding="6"
-                                        Command="{Binding SendCommentCommand}" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
+                    <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
+                        <commonViews:ProgressCardView />
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

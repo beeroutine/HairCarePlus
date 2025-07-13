@@ -19,7 +19,7 @@ public static class SyncServiceExtensions
         services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
         services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
 
-        services.AddSingleton<ISyncService, SyncService>();
+        services.AddScoped<ISyncService, SyncService>();
         services.AddHostedService<SyncScheduler>();
         return services;
     }

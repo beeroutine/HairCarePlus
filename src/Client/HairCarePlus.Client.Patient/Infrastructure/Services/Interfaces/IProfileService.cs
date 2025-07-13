@@ -1,3 +1,4 @@
+using System;
 namespace HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 
 public interface IProfileService
@@ -7,4 +8,11 @@ public interface IProfileService
     /// Immutable for current device until user updates profile.
     /// </summary>
     DateTime SurgeryDate { get; }
+
+    /// <summary>
+    /// Globally unique identifier of current patient profile on this device.
+    /// Until real authentication is introduced it is persisted locally and reused
+    /// by sync & reporting features.
+    /// </summary>
+    Guid PatientId { get; }
 } 

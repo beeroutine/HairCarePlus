@@ -12,8 +12,14 @@ public sealed record SendChatMessageCommand(string ConversationId, string Conten
 public sealed class SendChatMessageHandler : ICommandHandler<SendChatMessageCommand>
 {
     private readonly IChatRepository _repo;
+    private readonly HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext _db;
 
-    public SendChatMessageHandler(IChatRepository repo) => _repo = repo;
+    public SendChatMessageHandler(IChatRepository repo,
+        HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext db)
+    {
+        _repo = repo;
+        _db = db;
+    }
 
     public async Task HandleAsync(SendChatMessageCommand command, CancellationToken cancellationToken = default)
     {
@@ -39,6 +45,28 @@ public sealed class SendChatMessageHandler : ICommandHandler<SendChatMessageComm
         };
 
         await _repo.SaveMessageAsync(message, cancellationToken);
+
+        // Add to Outbox for sync
+        var dto = new HairCarePlus.Shared.Communication.ChatMessageDto
+        {
+            Id = Guid.NewGuid(),
+            ConversationId = command.ConversationId,
+            SenderId = command.SenderId,
+            Content = command.Content,
+            SentAt = command.Timestamp,
+            Status = HairCarePlus.Shared.Communication.MessageStatus.Sent
+        };
+
+        await _db.OutboxItems.AddAsync(new Features.Sync.Domain.Entities.OutboxItem
+        {
+            EntityType = "ChatMessage",
+            Payload = System.Text.Json.JsonSerializer.Serialize(dto),
+            CreatedAtUtc = DateTime.UtcNow,
+            Status = Features.Sync.Domain.Entities.SyncStatus.Pending,
+            LocalEntityId = message.LocalId.ToString()
+        }, cancellationToken);
+
+        await _db.SaveChangesAsync(cancellationToken);
 
         // Optionally update status to Sent immediately (optimistic UI)
         message.Status = MessageStatus.Sent;

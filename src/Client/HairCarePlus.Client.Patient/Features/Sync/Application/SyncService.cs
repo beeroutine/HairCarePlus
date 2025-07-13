@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 
 namespace HairCarePlus.Client.Patient.Features.Sync.Application;
 
@@ -28,6 +29,7 @@ public class SyncService : ISyncService
     private readonly ILogger<SyncService> _logger;
     private readonly HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces.IRestrictionService _restrictionService;
     private readonly List<Guid> _pendingAckIds = new();
+    private readonly IChatRepository _chatRepository;
     // TODO: replace with profile-backed patient identifier when real auth implemented
     private static readonly Guid _patientId = Guid.Parse("8f8c7e0b-1234-4e78-a8cc-ff0011223344");
 
@@ -37,7 +39,8 @@ public class SyncService : ISyncService
                        ILastSyncVersionStore versionStore,
                        ISyncChangeApplier applier,
                        HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces.IRestrictionService restrictionService,
-                       ILogger<SyncService> logger)
+                       ILogger<SyncService> logger,
+                       IChatRepository chatRepository)
     {
         _outbox = outbox;
         _syncClient = syncClient;
@@ -46,6 +49,7 @@ public class SyncService : ISyncService
         _applier = applier;
         _restrictionService = restrictionService;
         _logger = logger;
+        _chatRepository = chatRepository;
     }
 
     public async Task SynchronizeAsync(CancellationToken cancellationToken)
@@ -58,6 +62,7 @@ public class SyncService : ISyncService
         // Build pending lists BEFORE creating request
         var photoReportsToSend = new List<HairCarePlus.Shared.Communication.PhotoReportDto>();
         var photoCommentsToSend = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>();
+        var chatMessagesToSend = new List<HairCarePlus.Shared.Communication.ChatMessageDto>();
 
         foreach (var item in pendingItems)
         {
@@ -66,9 +71,37 @@ public class SyncService : ISyncService
                 case "PhotoReport":
                     try
                     {
+                        // First try to deserialize as full DTO
                         var reportDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(item.PayloadJson);
                         if (reportDto != null)
+                        {
                             photoReportsToSend.Add(reportDto);
+                            break;
+                        }
+
+                        // Fallback: older payload may be PhotoReportCreateDto (contains local file path)
+                        var createDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportCreateDto>(item.PayloadJson);
+                        if (createDto != null && System.IO.File.Exists(createDto.LocalFilePath))
+                        {
+                            try
+                            {
+                                var bytes = await System.IO.File.ReadAllBytesAsync(createDto.LocalFilePath, cancellationToken);
+                                var dataUri = $"data:image/jpeg;base64,{Convert.ToBase64String(bytes)}";
+
+                                var newDto = new HairCarePlus.Shared.Communication.PhotoReportDto
+                                {
+                                    Id = Guid.NewGuid(),
+                                    PatientId = Guid.Parse(createDto.PatientId),
+                                    ImageUrl = dataUri,
+                                    Date = createDto.CaptureDate,
+                                    Notes = string.Empty,
+                                    Comments = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>()
+                                };
+
+                                photoReportsToSend.Add(newDto);
+                            }
+                            catch { /* reading file failed – ignore for now */ }
+                        }
                     }
                     catch { /* ignore */ }
                     break;
@@ -78,6 +111,15 @@ public class SyncService : ISyncService
                         var commentDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(item.PayloadJson);
                         if (commentDto != null)
                             photoCommentsToSend.Add(commentDto);
+                    }
+                    catch { }
+                    break;
+                case "ChatMessage":
+                    try
+                    {
+                        var chatDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(item.PayloadJson);
+                        if (chatDto != null)
+                            chatMessagesToSend.Add(chatDto);
                     }
                     catch { }
                     break;
@@ -119,13 +161,14 @@ public class SyncService : ISyncService
             PhotoReportHeaders = headers,
             PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
             PhotoComments = photoCommentsToSend.Count > 0 ? photoCommentsToSend : null,
+            ChatMessages = chatMessagesToSend.Count > 0 ? chatMessagesToSend : null,
             AckIds = _pendingAckIds.Count > 0 ? _pendingAckIds : null,
             Restrictions = restrictionDtos.Count > 0 ? restrictionDtos : null
         };
 
         _logger.LogInformation(
-            "Patient Sync: sending request. Reports={Reports}, Comments={Comments}, Restrictions={Restrictions}, AckIds={Ack}",
-            photoReportsToSend.Count, photoCommentsToSend.Count, restrictionDtos.Count, _pendingAckIds.Count);
+            "Patient Sync: sending request. Reports={Reports}, Comments={Comments}, Chat={Chat}, Restrictions={Restrictions}, AckIds={Ack}",
+            photoReportsToSend.Count, photoCommentsToSend.Count, chatMessagesToSend.Count, restrictionDtos.Count, _pendingAckIds.Count);
 
         // 3. Call API ----------------------------------------------------
         var response = await _syncClient.PushAsync(req, cancellationToken);
@@ -137,9 +180,10 @@ public class SyncService : ISyncService
         }
 
         _logger.LogInformation(
-            "Patient Sync: received response. PhotoReports={Reports}, Comments={Comments}, Restrictions={Restrictions}, Packets={Packets}",
+            "Patient Sync: received response. PhotoReports={Reports}, Comments={Comments}, Chat={Chat}, Restrictions={Restrictions}, Packets={Packets}",
             response.PhotoReports?.Count ?? 0,
             response.PhotoComments?.Count ?? 0,
+            response.ChatMessages?.Count ?? 0,
             response.Restrictions?.Count ?? 0,
             response.Packets?.Count ?? 0);
 
@@ -181,6 +225,15 @@ public class SyncService : ISyncService
         // 5. Update Outbox status ---------------------------------------
         if (pendingItems.Count > 0)
             await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), SyncStatus.Acked);
+
+        // Update ChatMessage sync statuses for messages we just sent
+        foreach (var item in pendingItems.Where(i => i.EntityType == "ChatMessage"))
+        {
+            if (int.TryParse(item.LocalEntityId, out var localId))
+            {
+                await _chatRepository.UpdateSyncStatusAsync(localId, Client.Patient.Features.Chat.Domain.Entities.SyncStatus.Synced, cancellationToken: cancellationToken);
+            }
+        }
 
         // 6. Save new sync version --------------------------------------
         await _versionStore.SetAsync(response.NewSyncVersion);

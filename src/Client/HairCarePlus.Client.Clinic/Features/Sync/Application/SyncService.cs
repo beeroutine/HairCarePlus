@@ -9,6 +9,8 @@ using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using HairCarePlus.Client.Clinic.Infrastructure.Storage;
 using HairCarePlus.Shared.Communication.Sync;
 using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Client.Clinic.Features.Chat.Domain;
+using HairCarePlus.Client.Clinic.Infrastructure.Features.Chat.Repositories;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Application;
 
@@ -24,6 +26,7 @@ public class SyncService : ISyncService
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly ILastSyncVersionStore _versionStore;
     private readonly ISyncChangeApplier _applier;
+    private readonly IChatMessageRepository _chatRepo;
 
     private readonly List<Guid> _pendingAckIds = new();
 
@@ -31,13 +34,15 @@ public class SyncService : ISyncService
                        ISyncHttpClient syncClient,
                        IDbContextFactory<AppDbContext> dbFactory,
                        ILastSyncVersionStore versionStore,
-                       ISyncChangeApplier applier)
+                       ISyncChangeApplier applier,
+                       IChatMessageRepository chatRepo)
     {
         _outbox = outbox;
         _syncClient = syncClient;
         _dbFactory = dbFactory;
         _versionStore = versionStore;
         _applier = applier;
+        _chatRepo = chatRepo;
     }
 
     public async Task SynchronizeAsync(CancellationToken cancellationToken)
@@ -49,6 +54,7 @@ public class SyncService : ISyncService
 
         var photoReportsToSend = new List<HairCarePlus.Shared.Communication.PhotoReportDto>();
         var photoCommentsToSend = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>();
+        var chatMessagesToSend = new List<HairCarePlus.Shared.Communication.ChatMessageDto>();
 
         foreach (var item in pendingItems)
         {
@@ -72,6 +78,15 @@ public class SyncService : ISyncService
                     }
                     catch { /* ignore */ }
                     break;
+                case "ChatMessage":
+                    try
+                    {
+                        var chatDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(item.PayloadJson);
+                        if (chatDto != null)
+                            chatMessagesToSend.Add(chatDto);
+                    }
+                    catch { }
+                    break;
             }
         }
 
@@ -93,6 +108,7 @@ public class SyncService : ISyncService
             PhotoReportHeaders = reportHeaders,
             PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
             PhotoComments = photoCommentsToSend.Count > 0 ? photoCommentsToSend : null,
+            ChatMessages = chatMessagesToSend.Count > 0 ? chatMessagesToSend : null,
             AckIds = _pendingAckIds.Count > 0 ? _pendingAckIds : null
         };
 
@@ -155,6 +171,26 @@ public class SyncService : ISyncService
                                     entity.EndUtc = dto.EndUtc;
                                     entity.IsActive = dto.IsActive;
                                 }
+                                _pendingAckIds.Add(packet.Id);
+                            }
+                        }
+                        catch { /* ignore */ }
+                        break;
+                    case "ChatMessage":
+                        try
+                        {
+                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(packet.PayloadJson);
+                            if (dto != null)
+                            {
+                                var entity = new HairCarePlus.Client.Clinic.Features.Chat.Models.ChatMessage
+                                {
+                                    ConversationId = dto.ConversationId,
+                                    SenderId = dto.SenderId,
+                                    Content = dto.Content,
+                                    SentAt = dto.SentAt.UtcDateTime,
+                                    SyncStatus = HairCarePlus.Client.Clinic.Features.Chat.Models.SyncStatus.Synced
+                                };
+                                await _chatRepo.AddAsync(entity);
                                 _pendingAckIds.Add(packet.Id);
                             }
                         }

@@ -134,6 +134,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
 
+
 #if IOS
 		EditorHandler.Mapper.AppendToMapping("NoKeyboardAccessory", (handler, view) =>
 		{

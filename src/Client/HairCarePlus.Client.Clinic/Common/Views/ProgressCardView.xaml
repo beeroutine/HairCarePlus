@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentView x:Class="HairCarePlus.Client.Clinic.Common.Views.ProgressCardView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
+             xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             x:DataType="models:ProgressFeedItem">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <converters:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBoolConverter" />
+            <converters:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Simplified card: one image and doctor comment -->
+    <Border Style="{StaticResource InstagramCardStyle}" Margin="16,8" Padding="0">
+        <VerticalStackLayout>
+            <!-- Image area -->
+            <Image Source="{Binding Photos[0].ImageUrl, Converter={StaticResource FilePathToImageSourceConverter}}" Aspect="AspectFill" HeightRequest="300" />
+
+            <!-- Date -->
+            <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
+                   Style="{StaticResource InstagramDateStyle}" Margin="16,8,0,0" />
+
+            <!-- Doctor comment if exists -->
+            <Label Text="{Binding DoctorReportSummary}"
+                   IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}"
+                   Style="{StaticResource CommentTextStyle}" Margin="16,0,16,16" />
+        </VerticalStackLayout>
+    </Border>
+</ContentView> 

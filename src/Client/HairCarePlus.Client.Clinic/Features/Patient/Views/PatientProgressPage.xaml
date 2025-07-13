@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
-    xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Entities"
+    xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
     xmlns:selectors="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Selectors"
     xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
     xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Converters"
@@ -46,18 +46,11 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <!-- Progress feed copied from patient page -->
+            <!-- Progress feed -->
             <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="vm:PatientPageViewModel+PhotoEntry">
-                        <VerticalStackLayout Spacing="8">
-                            <Image Source="{Binding ImageUrl}" Aspect="AspectFill" HeightRequest="300" />
-                            <Label Text="{Binding Comment}" FontSize="14" IsVisible="{Binding Comment, Converter={StaticResource NotNullOrEmptyConverter}}" />
-                            <HorizontalStackLayout Spacing="8">
-                                <Entry Placeholder="Комментарий врача" Text="{Binding CommentDraft, Mode=TwoWay}" HorizontalOptions="FillAndExpand" />
-                                <Button Text="➤" FontSize="18" Padding="6" Command="{Binding SendCommentCommand}" />
-                            </HorizontalStackLayout>
-                        </VerticalStackLayout>
+                    <DataTemplate x:DataType="models:ProgressFeedItem">
+                        <commonViews:ProgressCardView />
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

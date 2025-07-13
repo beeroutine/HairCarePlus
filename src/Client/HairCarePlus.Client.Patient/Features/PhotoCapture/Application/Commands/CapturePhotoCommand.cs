@@ -7,6 +7,9 @@ using HairCarePlus.Client.Patient.Infrastructure.Media;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using Microsoft.Extensions.Logging;
+using System.IO;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands;
 
@@ -21,16 +24,22 @@ public sealed class CapturePhotoHandler : ICommandHandler<CapturePhotoCommand>
     private readonly IMediaFileSystemService _fileSystem;
     private readonly IMessenger _messenger;
     private readonly ILogger<CapturePhotoHandler> _logger;
+    private readonly ICommandBus _commandBus;
+    private readonly IProfileService _profileService;
 
     public CapturePhotoHandler(ICameraArService cameraService,
                                IMediaFileSystemService fileSystem,
                                IMessenger messenger,
-                               ILogger<CapturePhotoHandler> logger)
+                               ILogger<CapturePhotoHandler> logger,
+                               ICommandBus commandBus,
+                               IProfileService profileService)
     {
         _cameraService = cameraService;
         _fileSystem = fileSystem;
         _messenger = messenger;
         _logger = logger;
+        _commandBus = commandBus;
+        _profileService = profileService;
     }
 
     public async Task HandleAsync(CapturePhotoCommand command, CancellationToken cancellationToken = default)
@@ -50,6 +59,9 @@ public sealed class CapturePhotoHandler : ICommandHandler<CapturePhotoCommand>
 
             _messenger.Send(new PhotoCapturedMessage(path));
             _logger.LogInformation("Photo captured and saved to {Path}", path);
+
+            // Upload to server as data URI so Clinic can display immediately
+            await _commandBus.SendAsync(new CreatePhotoReportCommand(bytes, _profileService.PatientId, DateTime.UtcNow), cancellationToken);
         }
         catch (Exception ex)
         {

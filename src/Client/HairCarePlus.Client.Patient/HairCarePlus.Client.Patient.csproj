@@ -151,6 +151,8 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Communication\HairCarePlus.Shared.Communication.csproj" />
+	  <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj" />
+	  <ProjectReference Include="..\..\Shared\HairCarePlus.Shared.Common\HairCarePlus.Shared.Common.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

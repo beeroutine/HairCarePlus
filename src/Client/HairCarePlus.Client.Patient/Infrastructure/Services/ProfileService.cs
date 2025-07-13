@@ -12,12 +12,22 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services;
 public sealed class ProfileService : IProfileService
 {
     private const string SurgeryDateKey = "surgery_date";
+    private const string PatientIdKey = "patient_id";
+
+    /// <summary>
+    /// Default hard-coded patient identifier used across the app until user authentication
+    /// is implemented and a backend-generated id is provided.
+    /// Must stay in sync with SyncService._patientId constant.
+    /// </summary>
+    private static readonly Guid DefaultPatientId = Guid.Parse("8f8c7e0b-1234-4e78-a8cc-ff0011223344");
 
     public DateTime SurgeryDate { get; }
 
+    public Guid PatientId { get; }
+
     public ProfileService()
     {
-        // Try load stored value; if not present, use today and persist.
+        // Load persisted surgery date
         if (Preferences.ContainsKey(SurgeryDateKey))
         {
             var ticks = Preferences.Get(SurgeryDateKey, DateTime.Today.Ticks);
@@ -27,6 +37,20 @@ public sealed class ProfileService : IProfileService
         {
             SurgeryDate = DateTime.Today;
             Preferences.Set(SurgeryDateKey, SurgeryDate.Ticks);
+        }
+
+        // Load persisted patient id or fallback to default constant
+        if (Preferences.ContainsKey(PatientIdKey))
+        {
+            var raw = Preferences.Get(PatientIdKey, DefaultPatientId.ToString());
+            if (!Guid.TryParse(raw, out var parsed))
+                parsed = DefaultPatientId;
+            PatientId = parsed;
+        }
+        else
+        {
+            PatientId = DefaultPatientId;
+            Preferences.Set(PatientIdKey, PatientId.ToString());
         }
     }
 } 

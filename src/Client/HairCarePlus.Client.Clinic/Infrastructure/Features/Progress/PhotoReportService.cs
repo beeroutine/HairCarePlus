@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using HairCarePlus.Shared.Communication;
 using System.Linq;
@@ -15,16 +13,14 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 
 public sealed class PhotoReportService : IPhotoReportService
 {
-    private readonly HttpClient _http;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IMessenger _messenger;
     private readonly IEventsSubscription _events;
     private bool _handlersAttached = false;
     private string _patientId = string.Empty;
 
-    public PhotoReportService(HttpClient http, IDbContextFactory<AppDbContext> dbFactory, IMessenger messenger, IEventsSubscription eventsSub)
+    public PhotoReportService(IDbContextFactory<AppDbContext> dbFactory, IMessenger messenger, IEventsSubscription eventsSub)
     {
-        _http = http;
         _dbFactory = dbFactory;
         _messenger = messenger;
         _events = eventsSub;
@@ -33,53 +29,13 @@ public sealed class PhotoReportService : IPhotoReportService
     public async Task<IReadOnlyList<PhotoReportDto>> GetReportsAsync(string patientId)
     {
         await using var db = _dbFactory.CreateDbContext();
-        var cachedEntities = await db.PhotoReports.Include(p => p.Comments).Where(p => p.PatientId == patientId).ToListAsync();
-        if (cachedEntities.Count > 0)
-        {
-            return cachedEntities.Select(Map).ToList();
-        }
+        var cached = await db.PhotoReports
+                             .Include(p => p.Comments)
+                             .Where(p => p.PatientId == patientId)
+                             .ToListAsync();
 
-        try
-        {
-            var list = await _http.GetFromJsonAsync<IReadOnlyList<PhotoReportDto>>($"PhotoReports/{patientId}");
-            if (list != null)
-            {
-                // upsert into local cache
-                await using var ctx = _dbFactory.CreateDbContext();
-                foreach (var dto in list)
-                {
-                    var entity = await ctx.PhotoReports.Include(p=>p.Comments).FirstOrDefaultAsync(p=>p.Id==dto.Id.ToString());
-                    if(entity==null)
-                    {
-                        entity = new PhotoReportEntity{Id=dto.Id.ToString(),PatientId=patientId};
-                        ctx.PhotoReports.Add(entity);
-                    }
-                    entity.ImageUrl=dto.ImageUrl;
-                    entity.Date=dto.Date;
-                    entity.DoctorComment=dto.Notes;
-                    // sync comments (simple replace)
-                    entity.Comments.Clear();
-                    foreach(var c in dto.Comments)
-                    {
-                        entity.Comments.Add(new PhotoCommentEntity
-                        {
-                            PhotoReportId=c.PhotoReportId.ToString(),
-                            AuthorId=c.AuthorId.ToString(),
-                            Text=c.Text,
-                            CreatedAtUtc=c.CreatedAtUtc
-                        });
-                    }
-                }
-                await ctx.SaveChangesAsync();
-                return list;
-            }
-        }
-        catch
-        {
-            // ignore and return demo
-        }
-        // fallback to cache again (could be empty)
-        return cachedEntities.Select(Map).ToList();
+        // возвращаем кэшированные данные; они будут обновляться через BatchSync/SignalR
+        return cached.Select(Map).ToList();
     }
 
     public async Task<PhotoCommentDto> AddCommentAsync(string patientId, string photoReportId, string authorId, string text)
@@ -93,8 +49,16 @@ public sealed class PhotoReportService : IPhotoReportService
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
 
-        var result = await _http.PostAsJsonAsync($"PhotoReports/{patientId}/{photoReportId}/comments", dto);
-        result.EnsureSuccessStatusCode();
+        // TODO: вместо прямого POST создаём OutboxItem; пока просто сохраняем локально
+        await using var db = _dbFactory.CreateDbContext();
+        db.PhotoComments.Add(new PhotoCommentEntity
+        {
+            PhotoReportId = photoReportId,
+            AuthorId = authorId,
+            Text = text,
+            CreatedAtUtc = dto.CreatedAtUtc
+        });
+        await db.SaveChangesAsync();
         return dto;
     }
 

@@ -71,7 +71,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
 		builder.Services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
 
-		builder.Services.AddSingleton<ISyncService, SyncService>();
+		builder.Services.AddScoped<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
 
 #if DEBUG

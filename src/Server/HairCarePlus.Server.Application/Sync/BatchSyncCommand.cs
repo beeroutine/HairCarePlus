@@ -57,6 +57,20 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
                     existing.UpdateStatus((Domain.ValueObjects.MessageStatus)dto.Status);
                 }
             }
+
+            // enqueue packets for opposite side
+            var chatPackets = req.ChatMessages.Select(dto => new HairCarePlus.Server.Domain.Entities.DeliveryQueue
+            {
+                EntityType = "ChatMessage",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                PatientId = Guid.Empty, // Chat not bound to patient strictly; adjust if needed
+                ReceiversMask = otherMask,
+                DeliveredMask = 0,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            }).ToList();
+
+            if (chatPackets.Count > 0)
+                await _dq.AddRangeAsync(chatPackets);
         }
 
         if (req.PhotoComments?.Count > 0)
