@@ -10,6 +10,8 @@
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/CommonStyles.xaml" />
                 <ResourceDictionary Source="Resources/Styles/ChatStyles.xaml" />
+                <!-- Progress card visuals -->
+                <ResourceDictionary Source="Resources/Styles/ProgressStyles.xaml" />
                 <ResourceDictionary Source="Resources/Templates/PatientCardTemplate.xaml" />
                 <ResourceDictionary Source="Resources/Styles/ClinicStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>

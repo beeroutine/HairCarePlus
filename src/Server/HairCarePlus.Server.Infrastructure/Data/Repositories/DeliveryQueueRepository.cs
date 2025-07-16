@@ -29,11 +29,16 @@ public class DeliveryQueueRepository : IDeliveryQueueRepository
 
     public async Task<List<DeliveryQueue>> GetPendingForReceiverAsync(Guid patientId, byte receiverMask)
     {
-        return await _db.DeliveryQueue
-                        .Where(d => d.PatientId == patientId &&
-                                    (d.ReceiversMask & receiverMask) != 0 &&
-                                    (d.DeliveredMask & receiverMask) == 0)
-                        .ToListAsync();
+        var query = _db.DeliveryQueue.AsQueryable();
+
+        if (patientId != Guid.Empty)
+        {
+            query = query.Where(d => d.PatientId == patientId);
+        }
+
+        return await query.Where(d => (d.ReceiversMask & receiverMask) != 0 &&
+                                       (d.DeliveredMask & receiverMask) == 0)
+                          .ToListAsync();
     }
 
     public async Task AckAsync(IEnumerable<Guid> ids, byte receiverMask)

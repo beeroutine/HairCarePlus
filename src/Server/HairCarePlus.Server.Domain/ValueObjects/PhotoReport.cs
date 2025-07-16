@@ -6,7 +6,8 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 {
     public class PhotoReport : BaseEntity
     {
-        public string ImageUrl { get; private set; }
+        public string? ImageUrl { get; private set; }
+        public string? ImageUploadUrl { get; private set; }
         public string ThumbnailUrl { get; private set; }
         public Guid PatientId { get; private set; }
         public Patient Patient { get; private set; }
@@ -21,17 +22,19 @@ namespace HairCarePlus.Server.Domain.ValueObjects
         public PhotoReport(
             Guid id,
             Guid patientId,
-            string imageUrl,
+            string? imageUrl,
+            string? imageUploadUrl,
             string thumbnailUrl,
             DateTime captureDate,
             string notes,
-            PhotoType type) : this(imageUrl, thumbnailUrl, patientId, captureDate, notes, type)
+            PhotoType type) : this(imageUrl, imageUploadUrl, thumbnailUrl, patientId, captureDate, notes, type)
         {
             Id = id;
         }
 
         public PhotoReport(
-            string imageUrl,
+            string? imageUrl,
+            string? imageUploadUrl,
             string thumbnailUrl,
             Guid patientId,
             DateTime captureDate,
@@ -39,6 +42,7 @@ namespace HairCarePlus.Server.Domain.ValueObjects
             PhotoType type)
         {
             ImageUrl = imageUrl;
+            ImageUploadUrl = imageUploadUrl;
             ThumbnailUrl = thumbnailUrl;
             PatientId = patientId;
             CaptureDate = captureDate;
@@ -71,9 +75,9 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 
     public class AnalysisResult
     {
-        public double GrowthPercentage { get; private set; }
-        public string AIAnalysis { get; private set; }
-        public DateTime AnalysisDate { get; private set; }
+        public double? GrowthPercentage { get; private set; }
+        public string? AIAnalysis { get; private set; }
+        public DateTime? AnalysisDate { get; private set; }
 
         private AnalysisResult() { }
 

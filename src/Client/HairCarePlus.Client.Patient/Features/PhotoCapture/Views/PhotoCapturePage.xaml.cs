@@ -247,6 +247,8 @@ public partial class PhotoCapturePage : ContentPage
                 _logger.LogInformation($"Photo saved to {localPath}");
                 _messenger.Send(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages.PhotoCapturedMessage(localPath));
                 _viewModel.LastPhotoPath = localPath;
+                // Immediately upload & enqueue to outbox
+                await _viewModel.HandleCapturedPhotoAsync(localPath);
                 if (_viewModel.SelectedTemplate is not null)
                 {
                     _viewModel.SelectedTemplate.IsCaptured = true;

@@ -163,10 +163,31 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
                 var existing = await _db.PhotoReports.FirstOrDefaultAsync(r => r.Id == dto.Id, cancellationToken);
                 if (existing == null)
                 {
+                    // Ensure parent Patient exists to satisfy FK
+                    var patientTracked = _db.ChangeTracker.Entries<Server.Domain.Entities.Patient>()
+                        .FirstOrDefault(e => e.Entity.Id == dto.PatientId)?.Entity;
+                    var patient = patientTracked ?? await _db.Patients.FirstOrDefaultAsync(p => p.Id == dto.PatientId, cancellationToken);
+                    if (patient == null)
+                    {
+                        // Create minimal stub patient
+                        patient = new Server.Domain.Entities.Patient(
+                            firstName: "Unknown",
+                            lastName: "Unknown",
+                            email: "placeholder@unknown",
+                            phoneNumber: "n/a",
+                            dateOfBirth: DateTime.UtcNow.Date,
+                            surgeryDate: DateTime.UtcNow.Date,
+                            preferredLanguage: "en",
+                            timeZone: TimeZoneInfo.Utc);
+                        typeof(Server.Domain.Entities.BaseEntity).GetProperty("Id")!.SetValue(patient, dto.PatientId);
+                        await _db.Patients.AddAsync(patient, cancellationToken);
+                    }
+
                     var entity = new PhotoReport(
                         dto.Id,
                         dto.PatientId,
                         dto.ImageUrl,
+                        null,
                         dto.ThumbnailUrl,
                         dto.Date,
                         dto.Notes,

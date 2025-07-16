@@ -70,7 +70,20 @@ public class AppDbContext : DbContext
         // Configure value object inside PhotoReport
         modelBuilder.Entity<PhotoReport>(reportBuilder =>
         {
-            reportBuilder.OwnsOne(r => r.AnalysisResult);
+            reportBuilder.OwnsOne(r => r.AnalysisResult, a =>
+            {
+                a.Property(p => p.GrowthPercentage)
+                    .HasColumnName("AnalysisResult_GrowthPercentage")
+                    .IsRequired(false);
+
+                a.Property(p => p.AIAnalysis)
+                    .HasColumnName("AnalysisResult_AIAnalysis")
+                    .IsRequired(false);
+
+                a.Property(p => p.AnalysisDate)
+                    .HasColumnName("AnalysisResult_AnalysisDate")
+                    .IsRequired(false);
+            });
         });
 
         // Configure value objects inside TreatmentSchedule

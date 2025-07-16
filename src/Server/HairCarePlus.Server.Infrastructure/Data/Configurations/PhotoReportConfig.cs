@@ -12,7 +12,8 @@ public class PhotoReportConfig : IEntityTypeConfiguration<PhotoReport>
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.CaptureDate).IsRequired();
-        builder.Property(r => r.ImageUrl).IsRequired();
+        builder.Property(r => r.ImageUrl).IsRequired(false);
+        builder.Property(r => r.ImageUploadUrl).IsRequired(false);
         builder.Property(r => r.ThumbnailUrl).IsRequired(false);
         builder.Property(r => r.Notes).HasMaxLength(1024);
 

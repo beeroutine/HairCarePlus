@@ -18,7 +18,7 @@
     <Border Style="{StaticResource InstagramCardStyle}" Margin="16,8" Padding="0">
         <VerticalStackLayout>
             <!-- Image area -->
-            <Image Source="{Binding Photos[0].ImageUrl, Converter={StaticResource FilePathToImageSourceConverter}}" Aspect="AspectFill" HeightRequest="300" />
+            <Image Source="{Binding Photos[0].LocalPath, Converter={StaticResource FilePathToImageSourceConverter}, FallbackValue={Binding Photos[0].ImageUrl}}" Aspect="AspectFill" HeightRequest="300" />
 
             <!-- Date -->
             <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"

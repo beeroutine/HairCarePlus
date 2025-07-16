@@ -14,4 +14,5 @@ public sealed class ProgressPhoto
     public required string ImageUrl { get; init; }
     public required DateTime CapturedAt { get; init; }
     public required PhotoZone Zone { get; init; }
+    public string? LocalPath { get; init; }
 } 

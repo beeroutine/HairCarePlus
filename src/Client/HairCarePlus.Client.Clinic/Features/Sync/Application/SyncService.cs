@@ -11,6 +11,7 @@ using HairCarePlus.Shared.Communication.Sync;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Clinic.Features.Chat.Domain;
 using HairCarePlus.Client.Clinic.Infrastructure.Features.Chat.Repositories;
+using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Application;
 
@@ -27,6 +28,7 @@ public class SyncService : ISyncService
     private readonly ILastSyncVersionStore _versionStore;
     private readonly ISyncChangeApplier _applier;
     private readonly IChatMessageRepository _chatRepo;
+    private readonly IFileCacheService _fileCache;
 
     private readonly List<Guid> _pendingAckIds = new();
 
@@ -35,7 +37,8 @@ public class SyncService : ISyncService
                        IDbContextFactory<AppDbContext> dbFactory,
                        ILastSyncVersionStore versionStore,
                        ISyncChangeApplier applier,
-                       IChatMessageRepository chatRepo)
+                       IChatMessageRepository chatRepo,
+                       IFileCacheService fileCache)
     {
         _outbox = outbox;
         _syncClient = syncClient;
@@ -43,6 +46,7 @@ public class SyncService : ISyncService
         _versionStore = versionStore;
         _applier = applier;
         _chatRepo = chatRepo;
+        _fileCache = fileCache;
     }
 
     public async Task SynchronizeAsync(CancellationToken cancellationToken)
@@ -119,6 +123,7 @@ public class SyncService : ISyncService
         if (response.Packets != null)
         {
             await using var db2 = _dbFactory.CreateDbContext();
+            var handledRestrictionIds = new HashSet<string>();
             foreach (var packet in response.Packets)
             {
                 switch (packet.EntityType)
@@ -137,6 +142,12 @@ public class SyncService : ISyncService
                                     Date = dto.Date,
                                     DoctorComment = dto.Notes
                                 };
+                                try
+                                {
+                                    var path = await _fileCache.GetLocalPathAsync(dto.ImageUrl, cancellationToken);
+                                    entity.LocalPath = path;
+                                }
+                                catch { /* download failure is non-fatal */ }
                                 await db2.PhotoReports.AddAsync(entity, cancellationToken);
                                 _pendingAckIds.Add(packet.Id);
                             }
@@ -150,7 +161,15 @@ public class SyncService : ISyncService
                             if (dto != null)
                             {
                                 var id = dto.Id.ToString();
-                                var entity = await db2.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
+                                // skip duplicate within same batch
+                                if (!handledRestrictionIds.Add(id))
+                                    break;
+
+                                // Check ChangeTracker first
+                                var tracked = db2.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
+                                                         .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
+
+                                var entity = tracked ?? await db2.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
                                 if (entity == null)
                                 {
                                     entity = new Domain.Entities.RestrictionEntity

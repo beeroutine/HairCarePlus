@@ -35,6 +35,7 @@ public sealed class CreatePhotoReportCommandHandler : IRequestHandler<CreatePhot
 
         var entity = new PhotoReport(
             request.ImageUrl,
+            imageUploadUrl: null,
             thumbnailUrl: string.Empty,
             patientId: request.PatientId,
             captureDate: request.CaptureDate,
@@ -50,7 +51,7 @@ public sealed class CreatePhotoReportCommandHandler : IRequestHandler<CreatePhot
         {
             Id = entity.Id,
             PatientId = entity.PatientId,
-            ImageUrl = entity.ImageUrl,
+            ImageUrl = entity.ImageUrl ?? string.Empty,
             ThumbnailUrl = entity.ThumbnailUrl,
             Date = entity.CaptureDate,
             Notes = entity.Notes,

@@ -52,6 +52,20 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 app.UseCors();
 
+app.UseStaticFiles(); // For wwwroot
+
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -85,17 +99,12 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
+        db.Database.Migrate();
     }
-    catch (InvalidOperationException ex) when (app.Environment.IsDevelopment() && ex.Message.Contains("PendingModelChangesWarning"))
+    catch (Exception ex)
     {
-        // Dev convenience: if schema drift detected, recreate SQLite DB
-        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
-        logger.LogWarning("Pending model changes detected – recreating local SQLite database. {Message}", ex.Message);
-
-        db.Database.EnsureDeleted();
-        db.Database.EnsureCreated();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
     }
 }
 

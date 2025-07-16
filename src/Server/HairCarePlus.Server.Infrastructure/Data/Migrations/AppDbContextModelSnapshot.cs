@@ -483,8 +483,10 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ImageUploadUrl")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
@@ -856,14 +858,16 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                                 .HasColumnType("TEXT");
 
                             b1.Property<string>("AIAnalysis")
-                                .IsRequired()
-                                .HasColumnType("TEXT");
+                                .HasColumnType("TEXT")
+                                .HasColumnName("AnalysisResult_AIAnalysis");
 
-                            b1.Property<DateTime>("AnalysisDate")
-                                .HasColumnType("TEXT");
+                            b1.Property<DateTime?>("AnalysisDate")
+                                .HasColumnType("TEXT")
+                                .HasColumnName("AnalysisResult_AnalysisDate");
 
-                            b1.Property<double>("GrowthPercentage")
-                                .HasColumnType("REAL");
+                            b1.Property<double?>("GrowthPercentage")
+                                .HasColumnType("REAL")
+                                .HasColumnName("AnalysisResult_GrowthPercentage");
 
                             b1.HasKey("PhotoReportId");
 

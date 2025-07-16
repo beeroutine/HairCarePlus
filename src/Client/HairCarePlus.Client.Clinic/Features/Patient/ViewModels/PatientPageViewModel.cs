@@ -110,6 +110,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                     new ProgressPhoto
                     {
                         ImageUrl = rep.ImageUrl,
+                        LocalPath = rep.LocalPath,
                         CapturedAt = rep.Date,
                         Zone = PhotoZone.Front
                     }

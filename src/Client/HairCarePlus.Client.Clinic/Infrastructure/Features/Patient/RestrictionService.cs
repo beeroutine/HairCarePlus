@@ -30,13 +30,14 @@ public sealed class RestrictionService : IRestrictionService
             .ToListAsync();
 
         var list = entities
+            .GroupBy(e => e.Type) // collapse by type, keep the one with nearest deadline
+            .Select(g => g.OrderBy(e => (e.EndUtc.Date - DateTime.UtcNow.Date).Days).First())
             .Select(e => new Models.RestrictionDto
             {
                 IconType = MapToIconType(e.Type),
                 DaysRemaining = Math.Max(0, (e.EndUtc.Date - DateTime.UtcNow.Date).Days + 1),
                 Progress = CalculateProgress(e.StartUtc, e.EndUtc)
             })
-            // Preserve same ordering as patient (nearest deadline first)
             .OrderBy(r => r.DaysRemaining)
             .ToList();
 

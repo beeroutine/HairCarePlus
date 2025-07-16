@@ -69,6 +69,7 @@ public sealed class PhotoReportService : IPhotoReportService
             Id = Guid.Parse(e.Id),
             PatientId = Guid.Parse(e.PatientId),
             ImageUrl = e.ImageUrl,
+            LocalPath = e.LocalPath,
             Date = e.Date,
             Notes = e.DoctorComment ?? string.Empty,
             Comments = e.Comments.Select(c => new PhotoCommentDto

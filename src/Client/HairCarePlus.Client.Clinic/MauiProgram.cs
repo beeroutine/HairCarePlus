@@ -14,6 +14,7 @@ using System;
 using System.Threading.Tasks;
 using System.Threading;
 using HairCarePlus.Shared.Common;
+using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -73,6 +74,8 @@ public static class MauiProgram
 
 		builder.Services.AddScoped<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
+		builder.Services.AddHttpClient<IFileCacheService, FileCacheService>();
+		builder.Services.AddHostedService<PhotoPrefetchWorker>();
 
 #if DEBUG
 		builder.Logging.ClearProviders();
@@ -96,21 +99,38 @@ public static class MauiProgram
 		    var ctx = scope.ServiceProvider.GetRequiredService<Infrastructure.Storage.AppDbContext>();
 		    try
 		    {
+		        // Attempt to upgrade or create schema via migrations only
+		        ctx.Database.Migrate();
+
+		        // ---- Post-migration sanity probes ----
+		        var probeCommands = new[]
+		        {
+		            "SELECT 1 FROM PhotoReports LIMIT 1",
+		            "SELECT LocalPath FROM PhotoReports LIMIT 1", // will fail if column missing
+		            "SELECT 1 FROM OutboxItems LIMIT 1",
+		            "SELECT 1 FROM Restrictions LIMIT 1"
+		        };
+
+		        foreach (var sql in probeCommands)
+		        {
+		            ctx.Database.ExecuteSqlRaw(sql);
+		        }
+		    }
+		    catch (Microsoft.Data.Sqlite.SqliteException)
+		    {
+		        // Fallback: hard reset + manual schema patch (DB is only a cache on Clinic device)
+		        ctx.Database.EnsureDeleted();
 		        ctx.Database.EnsureCreated();
 
-		        // probe for new table; if missing => reset DB (dev-only)
-		        try
-		        {
-		            // simple probe queries to verify that expected tables are present; if any fail we recreate DB (dev-only flow)
-		            ctx.Database.ExecuteSqlRaw("SELECT 1 FROM PhotoReports LIMIT 1");
-		            ctx.Database.ExecuteSqlRaw("SELECT 1 FROM Restrictions LIMIT 1");
-		        }
-		        catch (Microsoft.Data.Sqlite.SqliteException)
-		        {
-		            // One of the new tables is missing — start fresh (no critical user data stored on clinic device yet)
-		            ctx.Database.EnsureDeleted();
-		            ctx.Database.EnsureCreated();
-		        }
+		        // Add missing column LocalPath if not present
+		        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE PhotoReports ADD COLUMN LocalPath TEXT;"); } catch { }
+
+		        // (re)create tables that might be absent in EnsureCreated model
+		        var createOutboxSql = "CREATE TABLE IF NOT EXISTS OutboxItems (Id INTEGER PRIMARY KEY AUTOINCREMENT, EntityType TEXT NOT NULL, Payload TEXT NOT NULL, CreatedAtUtc TEXT NOT NULL, Status INTEGER NOT NULL, RetryCount INTEGER NOT NULL, LocalEntityId TEXT NOT NULL, ModifiedAtUtc TEXT NOT NULL)";
+		        var createRestrictionsSql = "CREATE TABLE IF NOT EXISTS Restrictions (Id TEXT PRIMARY KEY, PatientId TEXT NOT NULL, Type INTEGER NOT NULL, StartUtc TEXT NOT NULL, EndUtc TEXT NOT NULL, IsActive INTEGER NOT NULL)";
+
+		        ctx.Database.ExecuteSqlRaw(createOutboxSql);
+		        ctx.Database.ExecuteSqlRaw(createRestrictionsSql);
 		    }
 		    catch (Exception ex)
 		    {

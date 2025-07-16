@@ -10,6 +10,9 @@ using System.Linq;
 using Microsoft.Maui.Controls;
 using HairCarePlus.Client.Patient.Features.Sync.Infrastructure;
 using System.Text.Json;
+using HairCarePlus.Client.Patient.Infrastructure.Media;
+using System;
+using System.IO;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
 
@@ -19,16 +22,19 @@ public partial class PhotoCaptureViewModel : ObservableObject
     private readonly IQueryBus _queryBus;
     private readonly ILogger<PhotoCaptureViewModel> _logger;
     private readonly IOutboxRepository _outbox;
+    private readonly IUploadService _uploadService;
 
     public PhotoCaptureViewModel(ICommandBus commandBus,
                                  IQueryBus queryBus,
                                  ILogger<PhotoCaptureViewModel> logger,
-                                 IOutboxRepository outbox)
+                                 IOutboxRepository outbox,
+                                 IUploadService uploadService)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
         _logger = logger;
         _outbox = outbox;
+        _uploadService = uploadService;
 
         _ = LoadTemplatesAsync();
     }
@@ -81,22 +87,10 @@ public partial class PhotoCaptureViewModel : ObservableObject
             IsBusy = true;
             await _commandBus.SendAsync(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands.CapturePhotoCommand());
 
-            // enqueue to outbox
-            var dto = new HairCarePlus.Shared.Communication.PhotoReportCreateDto
+            if (!string.IsNullOrEmpty(_lastPhotoPath))
             {
-                PatientId = "8f8c7e0b-1234-4e78-a8cc-ff0011223344",
-                LocalFilePath = _lastPhotoPath,
-                CaptureDate = DateTime.UtcNow
-            };
-
-            var item = new Features.Sync.Domain.Entities.OutboxItem
-            {
-                EntityType = "PhotoReport",
-                PayloadJson = JsonSerializer.Serialize(dto),
-                LocalEntityId = Guid.NewGuid().ToString(),
-                ModifiedAtUtc = DateTime.UtcNow
-            };
-            await _outbox.AddAsync(item);
+                await HandleCapturedPhotoAsync(_lastPhotoPath);
+            }
         }
         catch (System.Exception ex)
         {
@@ -105,6 +99,59 @@ public partial class PhotoCaptureViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Called by the view once a photo was physically saved to <paramref name="localPath"/>.
+    /// Uploads the file, replaces ImageUrl with absolute URL and enqueues an Outbox item so that
+    /// the next /sync/batch will deliver the report to the clinic.
+    /// </summary>
+    public async Task HandleCapturedPhotoAsync(string localPath)
+    {
+        if (string.IsNullOrEmpty(localPath) || !File.Exists(localPath))
+        {
+            _logger.LogWarning("HandleCapturedPhotoAsync called with invalid path {Path}", localPath);
+            return;
+        }
+
+        try
+        {
+            var fileName = Path.GetFileName(localPath);
+            var imageUrl = await _uploadService.UploadFileAsync(localPath, fileName);
+
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                _logger.LogError("UploadService returned empty url for {Path}", localPath);
+                return;
+            }
+
+            var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
+            {
+                Id = Guid.NewGuid(),
+                PatientId = Guid.Parse("8f8c7e0b-1234-4e78-a8cc-ff0011223344"), // TODO: inject actual patient context
+                ImageUrl = imageUrl,
+                Date = DateTime.UtcNow,
+                Notes = string.Empty,
+                Type = HairCarePlus.Shared.Communication.PhotoType.Custom,
+                Comments = new()
+            };
+
+            var item = new Features.Sync.Domain.Entities.OutboxItem
+            {
+                EntityType = "PhotoReport",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                LocalEntityId = dto.Id.ToString(),
+                ModifiedAtUtc = DateTime.UtcNow
+            };
+
+            await _outbox.AddAsync(item);
+
+            _logger.LogInformation("PhotoReport enqueued. Id={Id} url={Url}", dto.Id, dto.ImageUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to handle captured photo {Path}", localPath);
         }
     }
 

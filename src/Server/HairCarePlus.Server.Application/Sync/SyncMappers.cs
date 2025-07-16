@@ -91,6 +91,7 @@ public static class SyncMappers
             dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
             dto.PatientId,
             dto.ImageUrl,
+            null, // No upload URL when coming from DTO
             dto.ThumbnailUrl,
             dto.Date,
             dto.Notes,
@@ -104,7 +105,7 @@ public static class SyncMappers
         {
             Id = entity.Id,
             PatientId = entity.PatientId,
-            ImageUrl = entity.ImageUrl,
+            ImageUrl = entity.ImageUploadUrl ?? entity.ImageUrl ?? string.Empty, // Prefer uploaded URL
             ThumbnailUrl = entity.ThumbnailUrl,
             Date = entity.CaptureDate,
             Notes = entity.Notes,

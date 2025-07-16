@@ -14,6 +14,7 @@ public sealed class PhotoReportDto
     public string Notes { get; set; } = string.Empty;
     public PhotoType Type { get; set; }
     public List<PhotoCommentDto> Comments { get; set; } = new();
+    public string? LocalPath { get; set; }
 }
 
 public enum PhotoType

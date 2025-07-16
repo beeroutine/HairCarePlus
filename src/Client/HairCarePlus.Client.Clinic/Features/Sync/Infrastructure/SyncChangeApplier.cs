@@ -7,6 +7,7 @@ using HairCarePlus.Shared.Communication.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using CommunityToolkit.Mvvm.Messaging;
+using System.Linq;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 
@@ -66,14 +67,28 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
         if ((response.Restrictions?.Count ?? 0) > 0)
         {
             _logger.LogInformation("Clinic SyncApplier: applying {Count} restrictions", response.Restrictions!.Count);
+
+            // Track ids that were already handled during this ApplyAsync run to avoid duplicates coming
+            // in a single response payload (server bug). Otherwise we may attempt to insert the same key
+            // multiple times before SaveChanges and hit UNIQUE constraint violations.
+            var handledRestrictionIds = new HashSet<string>();
+
             foreach (var dto in response.Restrictions!)
             {
                 var id = dto.Id.ToString();
 
-                // Try by Id first
-                var entity = await db.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
+                // Skip duplicates contained in the same response
+                if (!handledRestrictionIds.Add(id))
+                    continue;
 
-                // Fallback: try to find an existing restriction with same patient, type and exact dates (handles client-side regenerated Guid)
+                // First look inside the current DbContext change tracker – the entity may have been
+                // added earlier in this loop but not yet persisted.
+                var tracked = db.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
+                                    .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
+
+                var entity = tracked ?? await db.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
+
+                // Fallback: try to find by patient/type/dates (handles client-generated duplicate IDs)
                 if (entity == null)
                 {
                     entity = await db.Restrictions.FirstOrDefaultAsync(r =>

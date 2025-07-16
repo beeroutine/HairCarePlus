@@ -12,6 +12,7 @@ public sealed class PhotoReportEntity
     public string ImageUrl { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public string? DoctorComment { get; set; }
+    public string? LocalPath { get; set; } // Absolute path of cached file, null until downloaded
 
     public List<PhotoCommentEntity> Comments { get; set; } = new();
 } 

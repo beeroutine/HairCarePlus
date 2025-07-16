@@ -6,7 +6,6 @@
              xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
              xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:DataType="viewmodels:PatientPageViewModel"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              x:Name="thisPage">
@@ -67,7 +66,7 @@
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="viewmodels:PatientPageViewModel+RestrictionTimer">
+                        <DataTemplate>
                             <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
                                 <!-- Gesture removed: details command not yet implemented -->
 
@@ -94,14 +93,48 @@
                 </CollectionView>
             </ScrollView>
 
-            <!-- Photo feed with doctor comment capability -->
-            <CollectionView ItemsSource="{Binding Feed}" SelectionMode="None">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
-                        <commonViews:ProgressCardView />
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <!-- Photo feed (Instagram-style) -->
+            <RefreshView
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
+                     Margin="0">
+                <CollectionView ItemsSource="{Binding Feed}"
+                                SelectionMode="None"
+                                HorizontalScrollBarVisibility="Never"
+                                VerticalScrollBarVisibility="Never"
+                                Margin="0">
+                    <CollectionView.EmptyView>
+                        <StackLayout HorizontalOptions="Center"
+                                     VerticalOptions="CenterAndExpand"
+                                     Padding="32"
+                                     Spacing="16">
+                            <Label Text="📸"
+                                   FontSize="48"
+                                   HorizontalOptions="Center" />
+                            <Label Text="Нет записей прогресса"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   HorizontalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                            <Label Text="Сделайте фотографии пациента,\nчтобы отслеживать восстановление"
+                                   FontSize="14"
+                                   HorizontalOptions="Center"
+                                   HorizontalTextAlignment="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                        </StackLayout>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
+                            <commonViews:ProgressCardView />
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage> 
