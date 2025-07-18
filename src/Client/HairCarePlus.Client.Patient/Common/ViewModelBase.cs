@@ -31,9 +31,6 @@ namespace HairCarePlus.Client.Patient.Common
             catch (Exception ex)
             {
                 ErrorMessage = ex.Message;
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"Error: {ex}");
-#endif
             }
             finally
             {
@@ -52,9 +49,6 @@ namespace HairCarePlus.Client.Patient.Common
             catch (Exception ex)
             {
                 ErrorMessage = ex.Message;
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"Error: {ex}");
-#endif
                 return default;
             }
             finally

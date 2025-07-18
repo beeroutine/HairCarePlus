@@ -34,12 +34,8 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
 
                 return await apiCall();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-#if DEBUG
-                // Log the error
-                System.Diagnostics.Debug.WriteLine($"API Error: {ex.Message}");
-#endif
                 throw;
             }
         }
@@ -70,15 +66,12 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Services
 
                 return result;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // If offline and we have cached data, return it regardless of expiration
                 var cachedData = await LocalStorageService.GetItemAsync<CacheEntry<T>>(cacheKey);
                 if (cachedData != null)
                 {
-#if DEBUG
-                    System.Diagnostics.Debug.WriteLine($"Using expired cache due to error: {ex.Message}");
-#endif
                     return cachedData.Data;
                 }
 

@@ -55,10 +55,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     Priority = EventPriority.Normal
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // В реальном приложении здесь был бы код логирования ошибки
-                Console.WriteLine($"Error loading event: {ex.Message}");
                 await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to load event details.", "OK");
             }
             finally
@@ -92,10 +90,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Notify UI of the change
                 OnPropertyChanged(nameof(Event));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Event.IsCompleted = !Event.IsCompleted; // Revert the change
-                System.Diagnostics.Debug.WriteLine($"Error toggling completion: {ex.Message}");
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     await Shell.Current.DisplayAlert("Error", "Failed to update event status.", "OK");
@@ -149,10 +146,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 // Возвращаемся на предыдущую страницу
                 await Shell.Current.GoToAsync("..");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // В реальном приложении здесь был бы код логирования ошибки
-                Console.WriteLine($"Error postponing event: {ex.Message}");
                 await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to postpone event.", "OK");
             }
         }

@@ -1,7 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
-    <!-- Card background matches TaskCardBackground colors already defined -->
+    <!-- ===================== COLORS & GRADIENTS ===================== -->
+    <LinearGradientBrush x:Key="PhotoOverlayGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#40000000" Offset="0" />
+        <GradientStop Color="Transparent" Offset="1" />
+    </LinearGradientBrush>
+
+    <Color x:Key="DoctorIndicatorColor">#4CAF50</Color>
+    <Color x:Key="AIIndicatorColor">#3478F6</Color>
+
+    <!-- Restriction status colors -->
+    <Color x:Key="CriticalRestrictionColor">#DC4545</Color>
+    <Color x:Key="CriticalRestrictionBackground">#FFF5F5</Color>
+    <Color x:Key="SoonRestrictionColor">#F59E0B</Color>
+    <Color x:Key="SoonRestrictionBackground">#FFFBEB</Color>
+    <Color x:Key="CompletedRestrictionColor">#10B981</Color>
+    <Color x:Key="CompletedRestrictionBackground">#F0FDF4</Color>
+
+    <!-- ===================== CARD & BADGES ===================== -->
     <Style x:Key="InstagramCardStyle" TargetType="Border">
         <Setter Property="StrokeShape" Value="RoundRectangle 16" />
         <Setter Property="StrokeThickness" Value="0" />
@@ -9,15 +26,94 @@
                 Value="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}" />
         <Setter Property="Shadow">
             <Setter.Value>
-                <Shadow Brush="#20000000" Offset="0,2" Radius="8" Opacity="0.2" />
+                <Shadow Brush="{AppThemeBinding Light=#20000000, Dark=#40000000}"
+                        Offset="0,2"
+                        Radius="8"
+                        Opacity="0.2" />
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="FloatingDayBadgeStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 16" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light=#F0F0F0F0, Dark=#2E2E2EF0}" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#40000000"
+                        Offset="0,2"
+                        Radius="4"
+                        Opacity="0.3" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AIScoreBadgeStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#40000000"
+                        Offset="0,2"
+                        Radius="4"
+                        Opacity="0.3" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===================== COMMENT BLOCKS ===================== -->
+    <Style x:Key="DoctorCommentStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{StaticResource DoctorIndicatorColor}" />
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light=#F8FFF8, Dark=#1A2E1A}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <Style x:Key="AICommentStyle" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{StaticResource AIIndicatorColor}" />
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light=#F8FBFF, Dark=#1A1E2E}" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+
+    <!-- ===================== INDICATORS ===================== -->
+    <Style x:Key="InstagramPhotoIndicatorStyle" TargetType="IndicatorView">
+        <Setter Property="IndicatorColor"
+                Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+        <Setter Property="SelectedIndicatorColor"
+                Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+        <Setter Property="IndicatorSize" Value="6" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+
+    <!-- ===================== TYPOGRAPHY ===================== -->
+    <Style x:Key="DayBadgeTextStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark=White}" />
     </Style>
 
     <Style x:Key="InstagramDateStyle" TargetType="Label">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="TextColor"
                 Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+    </Style>
+
+    <Style x:Key="CommentHeaderStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
     <Style x:Key="CommentTextStyle" TargetType="Label">

@@ -33,11 +33,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                 
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"Error in DateHasEventTypeConverter: {ex.Message}");
-#endif
                 return false;
             }
         }

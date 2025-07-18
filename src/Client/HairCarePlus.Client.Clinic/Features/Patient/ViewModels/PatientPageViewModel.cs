@@ -28,6 +28,8 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string? _avatarUrl;
     [ObservableProperty] private double _dayProgress;
+    [ObservableProperty]
+    private bool _isRefreshing;
 
     public ObservableCollection<RestrictionTimer> Restrictions { get; } = new();
     public ObservableCollection<ProgressFeedItem> Feed { get; } = new();
@@ -77,6 +79,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
 
     private async Task LoadAsync()
     {
+        IsRefreshing = true;
         // Fetch summary from API for demo
         var summaries = await _patientService.GetPatientsAsync();
         var summary = summaries.FirstOrDefault(p => p.Id == PatientId);
@@ -95,34 +98,58 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
         }
 
-        // Load photo reports and convert to feed items
+        // Load photo reports and convert to grouped feed items (one item per day with up to 3 photos)
         Feed.Clear();
         var reports = await _photoReportService.GetReportsAsync(PatientId);
 
-        foreach (var rep in reports.OrderByDescending(r => r.Date))
+        var earliestDate = reports.Any() ? DateOnly.FromDateTime(reports.Min(r => r.Date)) : (DateOnly?)null;
+
+        var groupedByDate = reports
+            .GroupBy(r => DateOnly.FromDateTime(r.Date))
+            .OrderByDescending(g => g.Key);
+
+        foreach (var group in groupedByDate)
         {
-            var item = new ProgressFeedItem(
-                Date: DateOnly.FromDateTime(rep.Date),
-                Title: rep.Date.ToString("d MMM"),
-                Description: null,
-                Photos: new List<ProgressPhoto>
+            var photos = group.Select(r => new ProgressPhoto
+            {
+                ImageUrl = r.ImageUrl,
+                LocalPath = r.LocalPath,
+                CapturedAt = r.Date,
+                Zone = r.Type switch
                 {
-                    new ProgressPhoto
-                    {
-                        ImageUrl = rep.ImageUrl,
-                        LocalPath = rep.LocalPath,
-                        CapturedAt = rep.Date,
-                        Zone = PhotoZone.Front
-                    }
-                },
+                    PhotoType.FrontView => PhotoZone.Front,
+                    PhotoType.TopView => PhotoZone.Top,
+                    PhotoType.BackView => PhotoZone.Back,
+                    _ => PhotoZone.Front
+                }
+            }).ToList();
+
+            // Take first non-empty doctor note
+            var doctorNote = group.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+
+            // Compute relative day index (Day 1 = first captured date)
+            var dayIndex = earliestDate.HasValue ? (group.Key.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
+
+            // Placeholder AI report until backend integration
+            var aiPlaceholder = new AIReport(group.Key, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
+
+            var item = new ProgressFeedItem(
+                Date: group.Key,
+                Title: $"Day {dayIndex}",
+                Description: null,
+                Photos: photos,
                 ActiveRestrictions: new List<string>(),
-                DoctorReportSummary: string.IsNullOrWhiteSpace(rep.Notes) ? null : rep.Notes
+                DoctorReportSummary: doctorNote,
+                AiReport: aiPlaceholder
             );
+
             Feed.Add(item);
         }
 
         // Subscribe to real-time updates
         await _photoReportService.ConnectAsync(PatientId);
+
+        IsRefreshing = false;
     }
 
     public async Task SubmitCommentAsync(string photoReportId, string comment)

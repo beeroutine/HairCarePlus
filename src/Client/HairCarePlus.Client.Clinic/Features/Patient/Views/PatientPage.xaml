@@ -20,8 +20,10 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="24" Padding="20">
+    <!-- Reworked layout: Progress-like structure with independent scrolling feed -->
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16" Padding="20,0,20,0">
+        <!-- Header section (navigation + patient details) -->
+        <VerticalStackLayout Grid.Row="0" Spacing="24">
             <!-- Navigation Header -->
             <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
                 <Button Text="‹" FontSize="24" Padding="4" Clicked="OnBackClicked" />
@@ -29,11 +31,8 @@
                        FontSize="24" FontAttributes="Bold" VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
             </HorizontalStackLayout>
-            
-            <!-- Spacer -->
-            <BoxView HeightRequest="8" />
 
-            <!-- Header -->
+            <!-- Header (avatar, progress ring, action buttons) -->
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
                 <Grid WidthRequest="100" HeightRequest="100">
                     <commonViews:SkiaProgressRing Progress="{Binding DayProgress}" Thickness="5" />
@@ -53,88 +52,73 @@
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Grid>
-
-            <!-- Restrictions -->
-            <ScrollView Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never"
-                        Padding="20,0"
-                        HeightRequest="90">
-                <CollectionView x:Name="RestrictionCollectionView"
-                                ItemsSource="{Binding Restrictions}"
-                                SelectionMode="None">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                    </CollectionView.ItemsLayout>
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
-                                <!-- Gesture removed: details command not yet implemented -->
-
-                                <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
-                                    <!-- кольцо прогресса -->
-                                    <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
-                                    <!-- иконка ограничения -->
-                                    <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
-                                           WidthRequest="24" HeightRequest="24"
-                                           HorizontalOptions="Center" VerticalOptions="Center">
-                                        <Image.Behaviors>
-                                            <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                        </Image.Behaviors>
-                                    </Image>
-                                </Grid>
-                                <!-- остаток дней -->
-                                <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
-                                       FontSize="11"
-                                       TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                                       HorizontalOptions="Center" />
-                            </VerticalStackLayout>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </ScrollView>
-
-            <!-- Photo feed (Instagram-style) -->
-            <RefreshView
-                     Command="{Binding LoadCommand}"
-                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
-                     Margin="0">
-                <CollectionView ItemsSource="{Binding Feed}"
-                                SelectionMode="None"
-                                HorizontalScrollBarVisibility="Never"
-                                VerticalScrollBarVisibility="Never"
-                                Margin="0">
-                    <CollectionView.EmptyView>
-                        <StackLayout HorizontalOptions="Center"
-                                     VerticalOptions="CenterAndExpand"
-                                     Padding="32"
-                                     Spacing="16">
-                            <Label Text="📸"
-                                   FontSize="48"
-                                   HorizontalOptions="Center" />
-                            <Label Text="Нет записей прогресса"
-                                   FontSize="18"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
-                            <Label Text="Сделайте фотографии пациента,\nчтобы отслеживать восстановление"
-                                   FontSize="14"
-                                   HorizontalOptions="Center"
-                                   HorizontalTextAlignment="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
-                        </StackLayout>
-                    </CollectionView.EmptyView>
-
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-                    </CollectionView.ItemsLayout>
-
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
-                            <commonViews:ProgressCardView />
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </RefreshView>
         </VerticalStackLayout>
-    </ScrollView>
+
+        <!-- Restrictions timers -->
+        <ScrollView Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalScrollBarVisibility="Never"
+                    Padding="0"
+                    HeightRequest="90">
+            <CollectionView x:Name="RestrictionCollectionView"
+                            ItemsSource="{Binding Restrictions}"
+                            SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
+                            <!-- Progress ring -->
+                            <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
+                                <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                                <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                                       WidthRequest="24" HeightRequest="24"
+                                       HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Image.Behaviors>
+                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                    </Image.Behaviors>
+                                </Image>
+                            </Grid>
+                            <!-- days remaining -->
+                            <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
+                                   FontSize="11"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                                   HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </ScrollView>
+
+        <!-- Progress feed (independent scroll) -->
+        <RefreshView Grid.Row="2"
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}">
+            <CollectionView ItemsSource="{Binding Feed}"
+                            SelectionMode="None"
+                            HorizontalScrollBarVisibility="Never"
+                            VerticalScrollBarVisibility="Never">
+                <CollectionView.EmptyView>
+                    <StackLayout HorizontalOptions="Center"
+                                 VerticalOptions="CenterAndExpand"
+                                 Padding="32"
+                                 Spacing="16">
+                        <Label Text="📸" FontSize="48" HorizontalOptions="Center" />
+                        <Label Text="Нет записей прогресса" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
+                        <Label Text="Сделайте фотографии пациента,\nчтобы отслеживать восстановление" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                    </StackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
+                        <commonViews:ProgressCardView />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+    <!-- End reworked layout -->
 </ContentPage> 

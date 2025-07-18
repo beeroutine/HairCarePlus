@@ -8,5 +8,6 @@ public sealed record ProgressFeedItem(
     string? Description,
     IReadOnlyList<ProgressPhoto> Photos,
     IReadOnlyList<string> ActiveRestrictions,
-    string? DoctorReportSummary
+    string? DoctorReportSummary,
+    AIReport? AiReport = null
 ); 

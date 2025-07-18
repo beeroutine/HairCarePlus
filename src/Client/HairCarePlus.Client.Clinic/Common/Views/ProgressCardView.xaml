@@ -8,26 +8,125 @@
     <ContentView.Resources>
         <ResourceDictionary>
             <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
+            <converters:ReadMoreVisibilityConverter x:Key="ReadMoreVisibilityConverter" Threshold="120" />
             <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
             <converters:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBoolConverter" />
             <converters:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
         </ResourceDictionary>
     </ContentView.Resources>
 
-    <!-- Simplified card: one image and doctor comment -->
-    <Border Style="{StaticResource InstagramCardStyle}" Margin="16,8" Padding="0">
-        <VerticalStackLayout>
-            <!-- Image area -->
-            <Image Source="{Binding Photos[0].LocalPath, Converter={StaticResource FilePathToImageSourceConverter}, FallbackValue={Binding Photos[0].ImageUrl}}" Aspect="AspectFill" HeightRequest="300" />
+    <!-- Instagram-style full-width card -->
+    <Border Style="{StaticResource InstagramCardStyle}"
+            Margin="16,8"
+            Padding="0">
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="0">
 
-            <!-- Date -->
+            <!-- Photo area with floating day badge -->
+            <Border Grid.Row="0"
+                    StrokeThickness="0"
+                    HeightRequest="300">
+                <Grid>
+                    <!-- Carousel for up to 3 photos -->
+                    <CarouselView ItemsSource="{Binding Photos}"
+                                  IndicatorView="{x:Reference photoIndicators}"
+                                  IsSwipeEnabled="True"
+                                  PeekAreaInsets="0"
+                                  IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
+                        <CarouselView.ItemTemplate>
+                            <DataTemplate x:DataType="models:ProgressPhoto">
+                                <Grid>
+                                    <Image Source="{Binding ImageUrl}"
+                                           Aspect="AspectFill" />
+                                    <!-- gradient overlay for badge contrast -->
+                                    <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
+                                               VerticalOptions="Start"
+                                               HeightRequest="60" />
+                                </Grid>
+                            </DataTemplate>
+                        </CarouselView.ItemTemplate>
+                    </CarouselView>
+
+                    <!-- Day badge -->
+                    <Border Style="{StaticResource FloatingDayBadgeStyle}"
+                            HorizontalOptions="Start"
+                            VerticalOptions="Start"
+                            Margin="16,16">
+                        <Label Text="{Binding Title}"
+                               Style="{StaticResource DayBadgeTextStyle}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Content area -->
+            <VerticalStackLayout Grid.Row="1"
+                                 Padding="16,12"
+                                 Spacing="12">
+
+                <!-- Photo indicators below image -->
+                <IndicatorView x:Name="photoIndicators"
+                               Style="{StaticResource InstagramPhotoIndicatorStyle}"
+                               HorizontalOptions="Center"
+                               IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}, ConverterParameter=1}" />
+
+                <!-- Date label -->
             <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
-                   Style="{StaticResource InstagramDateStyle}" Margin="16,8,0,0" />
+                       Style="{StaticResource InstagramDateStyle}" />
 
-            <!-- Doctor comment if exists -->
+                <!-- Comment blocks -->
+                <VerticalStackLayout Spacing="8">
+                    <!-- Doctor comment -->
+                    <Border Style="{StaticResource DoctorCommentStyle}"
+                            IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="Комментарий врача"
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
             <Label Text="{Binding DoctorReportSummary}"
-                   IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}"
-                   Style="{StaticResource CommentTextStyle}" Margin="16,0,16,16" />
+                                   Style="{StaticResource CommentTextStyle}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- AI analysis (optional) -->
+                    <Border Style="{StaticResource AICommentStyle}"
+                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Ellipse Fill="{StaticResource AIIndicatorColor}"
+                                         WidthRequest="8"
+                                         HeightRequest="8"
+                                         VerticalOptions="Center" />
+                                <Label Text="AI анализ"
+                                       Style="{StaticResource CommentHeaderStyle}" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding AiReport.Summary}"
+                                   Style="{StaticResource CommentTextStyle}"
+                                   MaxLines="3"
+                                   LineBreakMode="TailTruncation" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
         </VerticalStackLayout>
+
+        </Grid>
+
+        <!-- Pressed animation -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Scale" Value="0.98" />
+                            <Setter Property="Opacity" Value="0.9" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </VisualStateManager.VisualStateGroups>
     </Border>
 </ContentView> 

@@ -132,9 +132,8 @@ public static class MauiProgram
 		        ctx.Database.ExecuteSqlRaw(createOutboxSql);
 		        ctx.Database.ExecuteSqlRaw(createRestrictionsSql);
 		    }
-		    catch (Exception ex)
+		    catch (Exception)
 		    {
-		        System.Diagnostics.Debug.WriteLine($"DB init failed: {ex.Message}");
 		    }
 		}
 

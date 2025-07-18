@@ -305,9 +305,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
-#if DEBUG
-                    Debug.WriteLine($"SelectedDate changed to: {value.ToShortDateString()}");
-#endif
                     // Update events for selected date
                     Task.Run(async () => 
                     {
@@ -892,9 +889,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var overdueEvents = await _calendarService.GetOverdueEventsAsync();
                 OverdueEventsCount = overdueEvents.Count();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error checking overdue events: {ex.Message}");
                 OverdueEventsCount = 0;
             }
         }
@@ -1052,11 +1048,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 return;
             }
 
-#if DEBUG
-            Debug.WriteLine($"SelectDateAsync called with date: {date.ToShortDateString()}");
-            Debug.WriteLine($"Current SelectedDate before change: {SelectedDate.ToShortDateString()}");
-#endif
-
             // Сохраняем старую дату для возможного отката
             var previousDate = SelectedDate;
 
@@ -1069,10 +1060,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
 
                 // Сохраняем выбранную дату в настройках
                 SaveSelectedDate(date);
-
-#if DEBUG
-                Debug.WriteLine($"SelectedDate after change: {SelectedDate.ToShortDateString()}");
-#endif
 
                 // Загружаем события для выбранной даты
                 await LoadTodayEventsAsync();
@@ -1146,10 +1133,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 Preferences.Set(SelectedDateKey, date.ToString("o"));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // В реальном приложении здесь был бы код логирования ошибки
-                Console.WriteLine($"Error saving selected date: {ex.Message}");
             }
         }
         
@@ -1164,10 +1150,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     return savedDate;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // В реальном приложении здесь был бы код логирования ошибки
-                Console.WriteLine($"Error loading selected date: {ex.Message}");
             }
             
             return null;
@@ -1244,11 +1229,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 await CheckOverdueEventsAsync();
                 await CheckAndLoadActiveRestrictionsAsync();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-#if DEBUG
-                Debug.WriteLine($"Error loading initial data: {ex.Message}");
-#endif
+                // Initialization errors are logged elsewhere
             }
             finally
             {
