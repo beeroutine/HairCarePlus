@@ -16,6 +16,7 @@ namespace HairCarePlus.Server.Domain.ValueObjects
         public PhotoType Type { get; private set; }
         public AnalysisResult AnalysisResult { get; private set; }
         public ICollection<PhotoComment> Comments { get; private set; } = new List<PhotoComment>();
+        public DateTime ExpiresAtUtc { get; private set; }
 
         private PhotoReport() : base() { }
 
@@ -48,6 +49,7 @@ namespace HairCarePlus.Server.Domain.ValueObjects
             CaptureDate = captureDate;
             Notes = notes;
             Type = type;
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(14); // default TTL, will be overridden via options if needed
         }
 
         public void UpdateAnalysisResult(AnalysisResult result)

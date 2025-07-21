@@ -81,7 +81,16 @@ namespace HairCarePlus.Client.Clinic.Common.Views
 
             bool isDarkTheme = Application.Current.RequestedTheme == AppTheme.Dark;
 
-            SKColor trackColor = ((Color)Application.Current.Resources[isDarkTheme ? "TaskCardBackgroundDark" : "TaskCardBackgroundLight"]).ToSKColor();
+            SKColor trackColor;
+            if (isDarkTheme)
+            {
+                trackColor = (Application.Current.Resources["TaskCardBackgroundDark"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.Gray;
+            }
+            else
+            {
+                trackColor = (Application.Current.Resources["TaskCardBackgroundLight"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.LightGray;
+            }
+
             SKColor progressColor = isDarkTheme ? SKColors.White : SKColors.Black;
 
             using var trackPaint = new SKPaint

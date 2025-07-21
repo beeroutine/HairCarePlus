@@ -159,4 +159,12 @@
 	  <Compile Remove="Features\Calendar\Tests\**\*.cs" />
 	</ItemGroup>
 
+    <!-- iOS build tweaks to prevent mlaunch signal 9 during local testing -->
+    <PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios' and '$(Configuration)'=='Debug'">
+        <RunAOTCompilation>false</RunAOTCompilation>
+        <EnableCodeSign>true</EnableCodeSign>
+        <CodesignKey>Apple Development</CodesignKey>
+        <CodesignProvision>Automatic</CodesignProvision>
+    </PropertyGroup>
+
 </Project>

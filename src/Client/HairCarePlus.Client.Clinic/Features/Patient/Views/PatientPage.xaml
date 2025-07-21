@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="HairCarePlus.Client.Clinic.Features.Patient.Views.PatientPage"
+             x:DataType="viewmodels:PatientPageViewModel"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
              xmlns:commonViews="clr-namespace:HairCarePlus.Client.Clinic.Common.Views"
              xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
+             xmlns:selectors="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Selectors"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
              x:Name="thisPage">
@@ -14,6 +18,46 @@
         <ResourceDictionary>
             <conv:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
             <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
+            <!-- Templates for restriction timers with show more -->
+            <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="{x:Null}">
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
+                    <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
+                        <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
+                        <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
+                               WidthRequest="24" HeightRequest="24"
+                               HorizontalOptions="Center" VerticalOptions="Center">
+                            <Image.Behaviors>
+                                <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                            </Image.Behaviors>
+                        </Image>
+                    </Grid>
+                    <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
+                           FontSize="11"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="{x:Null}">
+                <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
+                    <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
+                        </Grid.GestureRecognizers>
+                        <Border StrokeShape="Ellipse" WidthRequest="50" HeightRequest="50" StrokeThickness="1.5" Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}" />
+                        <Label Text="•••" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" StrokeThickness="0" StrokeShape="Ellipse" WidthRequest="18" HeightRequest="18" HorizontalOptions="End" VerticalOptions="Start" Margin="0,-3,-3,0">
+                            <Label Text="{Binding CountLabel}" FontSize="10" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                    </Grid>
+                    <Label Text="Еще" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </DataTemplate>
+
+            <selectors:RestrictionItemTemplateSelector x:Key="RestrictionItemTemplateSelector"
+                                                      StandardTemplate="{StaticResource StandardRestrictionTimerTemplate}"
+                                                      ShowMoreTemplate="{StaticResource ShowMoreRestrictionsTemplate}" />
+
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="../../../Resources/Styles/ProgressStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
@@ -31,7 +75,7 @@
                        FontSize="24" FontAttributes="Bold" VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
             </HorizontalStackLayout>
-
+            
             <!-- Header (avatar, progress ring, action buttons) -->
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
                 <Grid WidthRequest="100" HeightRequest="100">
@@ -57,68 +101,47 @@
         <!-- Restrictions timers -->
         <ScrollView Grid.Row="1"
                     Orientation="Horizontal"
-                    HorizontalScrollBarVisibility="Never"
+                        HorizontalScrollBarVisibility="Never"
                     Padding="0"
-                    HeightRequest="90">
-            <CollectionView x:Name="RestrictionCollectionView"
-                            ItemsSource="{Binding Restrictions}"
-                            SelectionMode="None">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
-                            <!-- Progress ring -->
-                            <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
-                                <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
-                                <Image Source="{Binding IconType, Converter={StaticResource RestrictionIconConverter}}"
-                                       WidthRequest="24" HeightRequest="24"
-                                       HorizontalOptions="Center" VerticalOptions="Center">
-                                    <Image.Behaviors>
-                                        <toolkit:IconTintColorBehavior TintColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                                    </Image.Behaviors>
-                                </Image>
-                            </Grid>
-                            <!-- days remaining -->
-                            <Label Text="{Binding DaysRemaining, StringFormat='{0} дней'}"
-                                   FontSize="11"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}"
-                                   HorizontalOptions="Center" />
-                        </VerticalStackLayout>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </ScrollView>
+                        HeightRequest="90">
+                <CollectionView x:Name="RestrictionCollectionView"
+                                ItemsSource="{Binding VisibleRestrictionItems}"
+                                ItemTemplate="{StaticResource RestrictionItemTemplateSelector}"
+                                SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+                </CollectionView>
+            </ScrollView>
 
         <!-- Progress feed (independent scroll) -->
         <RefreshView Grid.Row="2"
                      Command="{Binding LoadCommand}"
                      IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}">
-            <CollectionView ItemsSource="{Binding Feed}"
-                            SelectionMode="None"
-                            HorizontalScrollBarVisibility="Never"
+                <CollectionView ItemsSource="{Binding Feed}"
+                                SelectionMode="None"
+                                HorizontalScrollBarVisibility="Never"
                             VerticalScrollBarVisibility="Never">
-                <CollectionView.EmptyView>
-                    <StackLayout HorizontalOptions="Center"
-                                 VerticalOptions="CenterAndExpand"
-                                 Padding="32"
-                                 Spacing="16">
+                    <CollectionView.EmptyView>
+                        <StackLayout HorizontalOptions="Center"
+                                     VerticalOptions="CenterAndExpand"
+                                     Padding="32"
+                                     Spacing="16">
                         <Label Text="📸" FontSize="48" HorizontalOptions="Center" />
                         <Label Text="Нет записей прогресса" FontSize="18" FontAttributes="Bold" HorizontalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
                         <Label Text="Сделайте фотографии пациента,\nчтобы отслеживать восстановление" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
-                    </StackLayout>
-                </CollectionView.EmptyView>
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
-                        <commonViews:ProgressCardView />
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </RefreshView>
+                        </StackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
+                            <commonViews:ProgressCardView />
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
     </Grid>
     <!-- End reworked layout -->
 </ContentPage> 

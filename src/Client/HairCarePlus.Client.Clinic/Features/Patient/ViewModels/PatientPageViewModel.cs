@@ -31,12 +31,19 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     [ObservableProperty]
     private bool _isRefreshing;
 
+    // Items displayed in UI (RestrictionTimer or ShowMore placeholder)
+    public ObservableCollection<object> VisibleRestrictionItems { get; } = new();
+
+    private const int MaxVisibleRestrictions = 8;
+
     public ObservableCollection<RestrictionTimer> Restrictions { get; } = new();
     public ObservableCollection<ProgressFeedItem> Feed { get; } = new();
 
     public AsyncRelayCommand LoadCommand { get; }
     public IRelayCommand OpenChatCommand { get; }
     public IRelayCommand OpenProgressCommand { get; }
+    public AsyncRelayCommand<ProgressFeedItem?> StartCommentCommand { get; }
+    public IRelayCommand ShowAllRestrictionsCommand { get; }
 
     public PatientPageViewModel(IPhotoReportService photoReportService,
         HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IPatientService patientService,
@@ -65,6 +72,15 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             {
                 { "patientId", PatientId }
             });
+        });
+
+        StartCommentCommand = new AsyncRelayCommand<ProgressFeedItem?>(StartCommentAsync);
+
+        ShowAllRestrictionsCommand = new RelayCommand(() =>
+        {
+            VisibleRestrictionItems.Clear();
+            foreach (var item in Restrictions)
+                VisibleRestrictionItems.Add(item);
         });
     }
 
@@ -98,6 +114,8 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
         }
 
+        Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(UpdateVisibleRestrictionItems);
+
         // Load photo reports and convert to grouped feed items (one item per day with up to 3 photos)
         Feed.Clear();
         var reports = await _photoReportService.GetReportsAsync(PatientId);
@@ -112,6 +130,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         {
             var photos = group.Select(r => new ProgressPhoto
             {
+                ReportId = r.Id.ToString(),
                 ImageUrl = r.ImageUrl,
                 LocalPath = r.LocalPath,
                 CapturedAt = r.Date,
@@ -150,6 +169,64 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         await _photoReportService.ConnectAsync(PatientId);
 
         IsRefreshing = false;
+    }
+
+    private void UpdateVisibleRestrictionItems()
+    {
+        VisibleRestrictionItems.Clear();
+
+        if (Restrictions.Count <= MaxVisibleRestrictions)
+        {
+            foreach (var item in Restrictions)
+                VisibleRestrictionItems.Add(item);
+        }
+        else
+        {
+            int take = MaxVisibleRestrictions - 1;
+            foreach (var item in Restrictions.Take(take))
+                VisibleRestrictionItems.Add(item);
+
+            int remaining = Restrictions.Count - take;
+            VisibleRestrictionItems.Add(new ShowMoreRestrictionPlaceholderViewModel { CountLabel = $"+{remaining}" });
+        }
+    }
+
+    private async Task StartCommentAsync(ProgressFeedItem? item)
+    {
+        if (item == null) return;
+        try
+        {
+            var text = await Application.Current.MainPage.DisplayPromptAsync("Комментарий", "Введите комментарий", "Отправить", "Отмена", maxLength: 200, keyboard: Keyboard.Default);
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            var photoWithId = item.Photos.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.ReportId));
+            if (photoWithId == null)
+            {
+                await Application.Current.MainPage.DisplayAlert("Ошибка", "Невозможно определить идентификатор фото-отчёта.", "OK");
+                return;
+            }
+
+            var photoId = photoWithId.ReportId;
+            if(!Guid.TryParse(photoId, out _))
+            {
+                await Application.Current.MainPage.DisplayAlert("Ошибка", "Некорректный идентификатор фото-отчёта.", "OK");
+                return;
+            }
+
+            await SubmitCommentAsync(photoId, text);
+
+            // update local feed
+            var index = Feed.IndexOf(item);
+            if (index >= 0)
+            {
+                var updated = item with { DoctorReportSummary = text };
+                Feed[index] = updated;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add comment");
+        }
     }
 
     public async Task SubmitCommentAsync(string photoReportId, string comment)

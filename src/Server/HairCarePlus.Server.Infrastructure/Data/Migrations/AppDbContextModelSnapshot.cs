@@ -483,6 +483,9 @@ namespace HairCarePlus.Server.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ImageUploadUrl")
                         .HasColumnType("TEXT");
 

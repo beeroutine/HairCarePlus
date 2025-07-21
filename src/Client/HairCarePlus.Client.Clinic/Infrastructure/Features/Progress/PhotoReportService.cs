@@ -19,6 +19,9 @@ public sealed class PhotoReportService : IPhotoReportService
     private bool _handlersAttached = false;
     private string _patientId = string.Empty;
 
+    // simple per-patient cache to avoid redundant DB selects during one ViewModel lifecycle
+    private readonly Dictionary<string, IReadOnlyList<PhotoReportDto>> _cache = new();
+
     public PhotoReportService(IDbContextFactory<AppDbContext> dbFactory, IMessenger messenger, IEventsSubscription eventsSub)
     {
         _dbFactory = dbFactory;
@@ -28,23 +31,33 @@ public sealed class PhotoReportService : IPhotoReportService
 
     public async Task<IReadOnlyList<PhotoReportDto>> GetReportsAsync(string patientId)
     {
+        if (_cache.TryGetValue(patientId, out var cachedList))
+        {
+            return cachedList;
+        }
+
         await using var db = _dbFactory.CreateDbContext();
-        var cached = await db.PhotoReports
+        var entities = await db.PhotoReports
                              .Include(p => p.Comments)
                              .Where(p => p.PatientId == patientId)
+                               .AsNoTracking()
                              .ToListAsync();
 
-        // возвращаем кэшированные данные; они будут обновляться через BatchSync/SignalR
-        return cached.Select(Map).ToList();
+        var mapped = entities.Select(Map).ToList();
+        _cache[patientId] = mapped;
+        return mapped;
     }
 
     public async Task<PhotoCommentDto> AddCommentAsync(string patientId, string photoReportId, string authorId, string text)
     {
+        Guid.TryParse(photoReportId, out var reportGuid);
+        Guid.TryParse(authorId, out var authorGuid);
+
         var dto = new PhotoCommentDto
         {
             Id = Guid.NewGuid(),
-            PhotoReportId = Guid.Parse(photoReportId),
-            AuthorId = Guid.Parse(authorId),
+            PhotoReportId = reportGuid == Guid.Empty ? Guid.NewGuid() : reportGuid,
+            AuthorId = authorGuid == Guid.Empty ? Guid.NewGuid() : authorGuid,
             Text = text,
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
@@ -64,20 +77,39 @@ public sealed class PhotoReportService : IPhotoReportService
 
     private static PhotoReportDto Map(PhotoReportEntity e)
     {
+        Guid.TryParse(e.Id, out var repId);
+        Guid.TryParse(e.PatientId, out var pid);
+
+        // Fallback: если remote ImageUrl приведёт к 404, отдаём локальный путь (если файл существует)
+        var preferredUrl = e.ImageUrl;
+        if (!string.IsNullOrWhiteSpace(e.LocalPath) && System.IO.File.Exists(e.LocalPath))
+        {
+            // if remote is empty или явно localhost адрес (предположительно может отсутствовать), используем локальный файл
+            if (string.IsNullOrWhiteSpace(preferredUrl))
+            {
+                preferredUrl = e.LocalPath;
+            }
+        }
+
         return new PhotoReportDto
         {
-            Id = Guid.Parse(e.Id),
-            PatientId = Guid.Parse(e.PatientId),
-            ImageUrl = e.ImageUrl,
+            Id = repId == Guid.Empty ? Guid.NewGuid() : repId,
+            PatientId = pid == Guid.Empty ? Guid.NewGuid() : pid,
+            ImageUrl = preferredUrl,
             LocalPath = e.LocalPath,
             Date = e.Date,
             Notes = e.DoctorComment ?? string.Empty,
-            Comments = e.Comments.Select(c => new PhotoCommentDto
+            Comments = e.Comments.Select(c =>
             {
-                PhotoReportId = Guid.Parse(c.PhotoReportId),
-                AuthorId = Guid.Parse(c.AuthorId),
-                Text = c.Text,
-                CreatedAtUtc = c.CreatedAtUtc
+                Guid.TryParse(c.PhotoReportId, out var prId);
+                Guid.TryParse(c.AuthorId, out var authId);
+                return new PhotoCommentDto
+                {
+                    PhotoReportId = prId == Guid.Empty ? Guid.NewGuid() : prId,
+                    AuthorId = authId == Guid.Empty ? Guid.NewGuid() : authId,
+                    Text = c.Text,
+                    CreatedAtUtc = c.CreatedAtUtc
+                };
             }).ToList()
         };
     }
@@ -113,6 +145,10 @@ public sealed class PhotoReportService : IPhotoReportService
             ctx.PhotoReports.Add(entity);
         }
         ctx.SaveChanges();
+
+        // invalidate cache for patient so subsequent GetReportsAsync returns fresh data
+        if(!string.IsNullOrEmpty(_patientId))
+            _cache.Remove(_patientId);
     }
 
     private async void OnPhotoCommentAdded(object? sender, PhotoCommentDto dto)

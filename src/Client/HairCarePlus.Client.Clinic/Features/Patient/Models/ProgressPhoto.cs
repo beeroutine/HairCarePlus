@@ -11,6 +11,7 @@ public enum PhotoZone
 
 public sealed class ProgressPhoto
 {
+    public required string ReportId { get; init; }
     public required string ImageUrl { get; init; }
     public required DateTime CapturedAt { get; init; }
     public required PhotoZone Zone { get; init; }

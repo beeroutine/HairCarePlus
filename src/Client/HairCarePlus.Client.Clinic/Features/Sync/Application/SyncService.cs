@@ -49,7 +49,12 @@ public class SyncService : ISyncService
         _fileCache = fileCache;
     }
 
+    // Prevent concurrent syncs to avoid DB race conditions
+    private static readonly System.Threading.SemaphoreSlim _syncLock = new(1, 1);
     public async Task SynchronizeAsync(CancellationToken cancellationToken)
+    {
+        await _syncLock.WaitAsync(cancellationToken);
+        try
     {
         // 1. Gather pending local changes
         var pendingItems = await _outbox.GetPendingItemsAsync();
@@ -267,6 +272,11 @@ public class SyncService : ISyncService
                     ModifiedAtUtc = DateTime.UtcNow
                 });
             }
+            }
+        }
+        finally
+        {
+            _syncLock.Release();
         }
     }
 } 

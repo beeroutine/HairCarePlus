@@ -9,16 +9,9 @@
     xmlns:dash="clr-namespace:HairCarePlus.Client.Clinic.Features.Dashboard.Views"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
-    ios:Page.UseSafeArea="False"
     Title="HairCarePlus.Client.Clinic">
 
-    <Shell.Padding>
-        <OnPlatform x:TypeArguments="Thickness">
-            <On Platform="iOS" Value="0,64,0,34" />
-            <On Platform="Android" Value="0,24,0,0" />
-        </OnPlatform>
-    </Shell.Padding>
-
+    <!-- Safe area handling is done per ContentPage. Removed invalid ios:Page.UseSafeArea and Shell.Padding. -->
     <!-- Main dashboard tab -->
     <ShellContent
         ContentTemplate="{DataTemplate dash:DashboardPage}"

@@ -6,7 +6,7 @@
                     xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters">
     <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
     <!-- DataTemplate for patient card with swipe actions -->
-    <DataTemplate x:Key="PatientCardTemplate" x:DataType="models:PatientSummary">
+    <DataTemplate x:Key="PatientCardTemplate">
         <SwipeView>
             <SwipeView.RightItems>
                 <SwipeItems Mode="Execute">

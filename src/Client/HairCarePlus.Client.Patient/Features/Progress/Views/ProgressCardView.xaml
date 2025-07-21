@@ -77,8 +77,9 @@
                 <!-- Комментарии с приоритетом врачебных -->
                 <VerticalStackLayout Spacing="8">
                     
-                    <!-- Комментарий врача (приоритет) - всегда показываем для демонстрации -->
-                    <Border Style="{StaticResource DoctorCommentStyle}">
+                    <!-- Комментарий врача -->
+                    <Border Style="{StaticResource DoctorCommentStyle}"
+                            IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}">
                         <VerticalStackLayout Spacing="4">
                             <HorizontalStackLayout Spacing="6">
                                 <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
@@ -88,7 +89,7 @@
                                 <Label Text="Комментарий врача" 
                                        Style="{StaticResource CommentHeaderStyle}" />
                             </HorizontalStackLayout>
-                            <Label Text="Прогресс идет отлично! Заживление проходит без осложнений. Продолжайте соблюдать рекомендации."
+                            <Label Text="{Binding DoctorReportSummary}"
                                    Style="{StaticResource CommentTextStyle}" />
                         </VerticalStackLayout>
                     </Border>

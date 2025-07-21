@@ -21,7 +21,7 @@ using HairCarePlus.Client.Patient.Features.Sync.Messages;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
-public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>, IRecipient<PhotoReportSyncedMessage>
+public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>, IRecipient<PhotoReportSyncedMessage>, IRecipient<HairCarePlus.Client.Patient.Features.Sync.Messages.PhotoCommentSyncedMessage>
 {
     private readonly IQueryBus _queryBus;
     private readonly ILogger<ProgressViewModel> _logger;
@@ -52,6 +52,8 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         WeakReferenceMessenger.Default.Register<RestrictionsChangedMessage>(this);
         // подписка на синхронизированный с сервера фото-отчёт
         WeakReferenceMessenger.Default.Register<PhotoReportSyncedMessage>(this);
+        // подписка на синхронизированный комментарий к фото
+        WeakReferenceMessenger.Default.Register<PhotoCommentSyncedMessage>(this);
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
@@ -251,5 +253,22 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
     {
         // не блокируем UI, просто запустим фоновое обновление
         _ = LoadAsync();
+    }
+
+    // При приходе нового комментария от клиники обновляем соответствующий день
+    public void Receive(PhotoCommentSyncedMessage msg)
+    {
+        var dateLocal = DateOnly.FromDateTime(msg.Comment.CreatedAtUtc.LocalDateTime);
+        var item = Feed.FirstOrDefault(f => f.Date == dateLocal);
+        if(item==null) return;
+
+        item.DoctorReportSummary = msg.Comment.Text;
+
+        // Notify collection update
+        var idx = Feed.IndexOf(item);
+        if(idx>=0)
+        {
+            Feed[idx] = item;
+        }
     }
 } 

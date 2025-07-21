@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
-             x:DataType="models:ProgressFeedItem">
+             >
     <ContentView.Resources>
         <ResourceDictionary>
             <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
@@ -33,10 +33,39 @@
                                   PeekAreaInsets="0"
                                   IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
                         <CarouselView.ItemTemplate>
-                            <DataTemplate x:DataType="models:ProgressPhoto">
+                            <DataTemplate>
                                 <Grid>
-                                    <Image Source="{Binding ImageUrl}"
-                                           Aspect="AspectFill" />
+                                    <!-- Image with fallback handling -->
+                                    <Grid>
+                                        <Image x:Name="PhotoImage"
+                                               Source="{Binding ImageUrl}"
+                                               Aspect="AspectFill">
+                                            <Image.Behaviors>
+                                                <converters:ImageLoadFailedBehavior FallbackVisible="{Binding Source={x:Reference FallbackLayout}, Path=IsVisible, Mode=OneWayToSource}" />
+                                            </Image.Behaviors>
+                                        </Image>
+                                        
+                                        <!-- Fallback UI for 404/load errors -->
+                                        <Grid x:Name="FallbackLayout" 
+                                              IsVisible="False" 
+                                              BackgroundColor="{StaticResource Gray100}">
+                                            <VerticalStackLayout Spacing="12" 
+                                                               HorizontalOptions="Center" 
+                                                               VerticalOptions="Center">
+                                                <Label Text="📷" 
+                                                       FontSize="40" 
+                                                       HorizontalOptions="Center"/>
+                                                <Label Text="Изображение недоступно" 
+                                                       Style="{StaticResource CommentTextStyle}"
+                                                       HorizontalOptions="Center"/>
+                                                <Button Text="Запросить повторно" 
+                                                        Style="{StaticResource SecondaryButtonStyle}"
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RequestResendCommand}" 
+                                                        CommandParameter="{Binding .}"/>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Grid>
+                                    
                                     <!-- gradient overlay for badge contrast -->
                                     <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
                                                VerticalOptions="Start"
@@ -74,9 +103,11 @@
 
                 <!-- Comment blocks -->
                 <VerticalStackLayout Spacing="8">
-                    <!-- Doctor comment -->
-                    <Border Style="{StaticResource DoctorCommentStyle}"
-                            IsVisible="{Binding DoctorReportSummary, Converter={StaticResource StringNullOrEmptyBoolConverter}}">
+                    <!-- Doctor comment (tap to add/edit) -->
+                    <Border Style="{StaticResource DoctorCommentStyle}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartCommentCommand}" CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
                             <HorizontalStackLayout Spacing="6">
                                 <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
@@ -86,7 +117,7 @@
                                 <Label Text="Комментарий врача"
                                        Style="{StaticResource CommentHeaderStyle}" />
                             </HorizontalStackLayout>
-            <Label Text="{Binding DoctorReportSummary}"
+                            <Label Text="{Binding DoctorReportSummary, TargetNullValue='Добавить комментарий'}"
                                    Style="{StaticResource CommentTextStyle}" />
                         </VerticalStackLayout>
                     </Border>

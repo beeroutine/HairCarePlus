@@ -39,6 +39,7 @@
 
 		<!-- Disable ILLinker to avoid trimming issues during debug builds -->
 		<EnableILLink>false</EnableILLink>
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 	</PropertyGroup>
 
 	<ItemGroup>

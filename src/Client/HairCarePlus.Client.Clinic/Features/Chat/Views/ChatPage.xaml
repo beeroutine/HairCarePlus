@@ -4,7 +4,9 @@
              xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Clinic.Common.Behaviors"
              xmlns:model="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Models"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.ViewModels"
              x:Class="HairCarePlus.Client.Clinic.Features.Chat.Views.ChatPage"
+             
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
              Shell.NavBarIsVisible="True"
@@ -66,7 +68,7 @@
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="model:ChatMessage">
+                <DataTemplate>
                     <Grid Padding="4,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

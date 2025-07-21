@@ -16,6 +16,7 @@ public class PhotoReportConfig : IEntityTypeConfiguration<PhotoReport>
         builder.Property(r => r.ImageUploadUrl).IsRequired(false);
         builder.Property(r => r.ThumbnailUrl).IsRequired(false);
         builder.Property(r => r.Notes).HasMaxLength(1024);
+        builder.Property(r => r.ExpiresAtUtc);
 
         // Owned type already configured in DbContext (AnalysisResult).
 

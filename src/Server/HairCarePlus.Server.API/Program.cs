@@ -20,6 +20,7 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddMediatR(typeof(HairCarePlus.Server.Infrastructure.RealTime.EventsHub).Assembly);
 builder.Services.AddMediatR(typeof(HairCarePlus.Server.Application.PhotoReports.CreatePhotoReportCommand).Assembly);
+builder.Services.Configure<HairCarePlus.Server.Infrastructure.DeliveryOptions>(builder.Configuration.GetSection("Delivery"));
 
 builder.Services.AddSingleton<IEventsClient, EventsClientProxy>();
 

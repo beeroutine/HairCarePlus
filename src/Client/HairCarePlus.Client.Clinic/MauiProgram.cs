@@ -15,13 +15,17 @@ using System.Threading.Tasks;
 using System.Threading;
 using HairCarePlus.Shared.Common;
 using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
+using SQLitePCL;
 
 namespace HairCarePlus.Client.Clinic;
 
 public static class MauiProgram
 {
+
 	public static MauiApp CreateMauiApp()
 	{
+		// Ensure SQLite engine is initialized for thread-safety
+		Batteries_V2.Init();
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
@@ -73,9 +77,9 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
 
 		builder.Services.AddScoped<ISyncService, SyncService>();
-		builder.Services.AddHostedService<SyncScheduler>();
+		// builder.Services.AddHostedService<SyncScheduler>(); // disabled to prevent concurrent sync crashes
 		builder.Services.AddHttpClient<IFileCacheService, FileCacheService>();
-		builder.Services.AddHostedService<PhotoPrefetchWorker>();
+		// builder.Services.AddHostedService<PhotoPrefetchWorker>(); // disabled to avoid concurrent SQLite access during startup
 
 #if DEBUG
 		builder.Logging.ClearProviders();
@@ -141,22 +145,23 @@ public static class MauiProgram
 		// Fire-and-forget initial sync to populate local cache ASAP (runs in background, non-blocking UI)
 		Task.Run(async () =>
 		{
-		    using var scope = app.Services.CreateScope();
-		    var syncSvc = scope.ServiceProvider.GetRequiredService<ISyncService>();
-		    try
-		    {
-		        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
-		                                       .CreateLogger("StartupSync");
-		        logger.LogInformation("[Startup] Clinic initial sync started");
-		        await syncSvc.SynchronizeAsync(CancellationToken.None);
-		        logger.LogInformation("[Startup] Clinic initial sync completed");
-		    }
-		    catch (Exception ex)
-		    {
-		        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
-		                                       .CreateLogger("StartupSync");
-		        logger.LogError(ex, "[Startup] Clinic initial sync failed");
-		    }
+			await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
+			{
+				using var scope = app.Services.CreateScope();
+				var syncSvc = scope.ServiceProvider.GetRequiredService<ISyncService>();
+				var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+										   .CreateLogger("StartupSync");
+				try
+				{
+					logger.LogInformation("[Startup] Clinic initial sync started");
+					await syncSvc.SynchronizeAsync(CancellationToken.None);
+					logger.LogInformation("[Startup] Clinic initial sync completed");
+				}
+				catch (Exception ex)
+				{
+					logger.LogError(ex, "[Startup] Clinic initial sync failed");
+				}
+			});
 		});
 
 		// Gracefully handle absence of camera on simulators (CommunityToolkit.Maui.Camera throws)

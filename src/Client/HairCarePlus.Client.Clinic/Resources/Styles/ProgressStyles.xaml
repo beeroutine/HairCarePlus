@@ -122,4 +122,22 @@
         <Setter Property="TextColor"
                 Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
     </Style>
+
+    <!-- Dock button uses shared PrimaryButton style -->
+    <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
+
+    <!-- Secondary button: subtle outline variant for less prominent actions -->
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+        <Setter Property="BackgroundColor"
+                Value="{AppThemeBinding Light=Transparent, Dark=Transparent}" />
+        <Setter Property="BorderColor"
+                Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray100}}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontSize" Value="14" />
+        <!-- Pressed/disabled states via VisualStateManager implicit style -->
+    </Style>
 </ResourceDictionary> 

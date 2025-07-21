@@ -18,12 +18,14 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
     private readonly AppDbContext _db;
     private readonly IDeliveryQueueRepository _dq;
     private readonly ILogger<BatchSyncCommandHandler> _logger;
+    private readonly HairCarePlus.Server.Infrastructure.DeliveryOptions _opt;
 
-    public BatchSyncCommandHandler(AppDbContext db, IDeliveryQueueRepository dq, ILogger<BatchSyncCommandHandler> logger)
+    public BatchSyncCommandHandler(AppDbContext db, IDeliveryQueueRepository dq, ILogger<BatchSyncCommandHandler> logger, Microsoft.Extensions.Options.IOptions<HairCarePlus.Server.Infrastructure.DeliveryOptions> opt)
     {
         _db = db;
         _dq = dq;
         _logger = logger;
+        _opt = opt.Value;
     }
 
     public async Task<BatchSyncResponseDto> Handle(BatchSyncCommand command, CancellationToken cancellationToken)
@@ -214,7 +216,7 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
                 PatientId = dto.PatientId,
                 ReceiversMask = otherMask,
                 DeliveredMask = 0,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(_opt.PhotoReportTtlDays)
             }).ToList();
 
             if (packetsToEnqueue.Count > 0)

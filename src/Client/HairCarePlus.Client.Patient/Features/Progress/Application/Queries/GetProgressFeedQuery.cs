@@ -99,22 +99,13 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
             // Derive restriction timers state for this historical date
             var derivedRestrictions = await _restrictionService.GetRestrictionsForDateAsync(date, cancellationToken);
 
-            // Produce artificial AI feedback placeholder when photos exist
-            AIReport? aiReport = null;
+            AIReport? aiReport = null; // will be attached after server-side analysis
+
             // calculate day number since surgery date inclusive
             var surgeryDateOnly = DateOnly.FromDateTime(_profileService.SurgeryDate);
             var dayNumber = (date.DayNumber - surgeryDateOnly.DayNumber) + 1;
             string title = $"Day {dayNumber}";
             string? description = photos.Count > 0 ? "Auto-note: New photos captured." : null;
-
-            if (photos.Count > 0)
-            {
-                // Simple heuristic: newer dates get slightly higher score
-                var daysDelta = (query.To.DayNumber - date.DayNumber);
-                var scoreBase = 60;
-                var score = Math.Clamp(scoreBase - daysDelta, 50, 90);
-                aiReport = new AIReport(date, score, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
-            }
 
             feedItems.Add(new ProgressFeedItem(date, title, description, photos, derivedRestrictions, aiReport));
         }
