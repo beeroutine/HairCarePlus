@@ -33,38 +33,8 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
         await using var db = _dbFactory.CreateDbContext();
         var changesApplied = 0;
 
-        if (response.Changes.TryGetValue("PhotoReport", out var reports))
-        {
-            foreach (var obj in reports)
-            {
-                var elem = (JsonElement)obj;
-                var dto = elem.Deserialize<PhotoReportDto>();
-                if (dto == null) continue;
-
-                var reportId = dto.Id.ToString();
-                var entity = await db.PhotoReports.Include(p => p.Comments)
-                                                  .FirstOrDefaultAsync(p => p.Id == reportId);
-                if (entity == null)
-                {
-                    entity = new Domain.Entities.PhotoReportEntity
-                    {
-                        Id = reportId,
-                        ImageUrl = dto.ImageUrl,
-                        CaptureDate = dto.Date,
-                        DoctorComment = dto.Notes
-                    };
-                    db.PhotoReports.Add(entity);
-                }
-                else
-                {
-                    entity.ImageUrl = dto.ImageUrl;
-                    entity.CaptureDate = dto.Date;
-                    entity.DoctorComment = dto.Notes;
-                }
-                changesApplied++;
-                _messenger.Send(new Messages.PhotoReportSyncedMessage(entity));
-            }
-        }
+        // Patient ignores incoming PhotoReports – only Clinic needs them
+        /* intentionally skipped */
 
         if (response.Changes.TryGetValue("PhotoComment", out var comments))
         {
@@ -110,7 +80,8 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                         Id = reportId,
                         ImageUrl = dto.ImageUrl,
                         CaptureDate = dto.Date,
-                        DoctorComment = dto.Notes
+                        DoctorComment = dto.Notes,
+                        PatientId = dto.PatientId.ToString()
                     };
                     db.PhotoReports.Add(entity);
                 }
@@ -119,6 +90,7 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                     entity.ImageUrl = dto.ImageUrl;
                     entity.CaptureDate = dto.Date;
                     entity.DoctorComment = dto.Notes;
+                    entity.PatientId = dto.PatientId.ToString();
                 }
                 changesApplied++;
                 _messenger.Send(new Messages.PhotoReportSyncedMessage(entity));

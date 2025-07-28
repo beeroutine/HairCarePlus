@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using HairCarePlus.Shared.Communication;
+using HairCarePlus.Shared.Common;
 
 namespace HairCarePlus.Client.Clinic.Infrastructure.Network.Chat;
 
@@ -18,7 +19,7 @@ public sealed class SignalRChatHubConnection : IChatHubConnection, IAsyncDisposa
     {
         _logger = logger;
         const string conversationId = "default_conversation";
-        var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://192.168.1.6:5281";
+        var baseUrl = EnvironmentHelper.GetBaseApiUrl();
         _connection = new HubConnectionBuilder()
             .WithUrl($"{baseUrl}/chatHub?conversationId=" + conversationId)
             .WithAutomaticReconnect()

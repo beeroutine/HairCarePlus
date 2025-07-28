@@ -4,19 +4,17 @@ namespace HairCarePlus.Client.Patient.Common.Converters
 {
     public class BoolToTextConverter : IValueConverter
     {
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public string TrueText { get; set; }
+        public string FalseText { get; set; }
+
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            if (value is not bool boolValue || parameter is not string param)
-                return string.Empty;
-
-            var options = param.Split(',');
-            if (options.Length != 2)
-                return string.Empty;
-
-            return boolValue ? options[0] : options[1];
+            if (value is bool b)
+                return b ? TrueText : FalseText;
+            return FalseText;
         }
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

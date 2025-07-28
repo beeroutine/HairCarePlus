@@ -6,6 +6,8 @@
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
              xmlns:entities="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Domain.Entities"
+             xmlns:viewModels="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.ViewModels"
+             x:DataType="viewModels:ChatViewModel"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
@@ -309,13 +311,13 @@
             </Grid>
             
             <!-- Edit Message Preview -->
-            <Frame Grid.Row="1"
+            <Border Grid.Row="1"
                    IsVisible="{Binding EditingMessage, Converter={StaticResource IsNotNullConverter}}"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="0"
                    BackgroundColor="{AppThemeBinding Light=#FEF9E7, Dark=#4D3C14}"
                    Margin="8,4,8,0"
-                   Padding="12,8"
-                   CornerRadius="12"
-                   BorderColor="Transparent">
+                    Padding="12,8">
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="2">
                         <Label Text="Editing message"
@@ -334,7 +336,7 @@
                             WidthRequest="36"
                             VerticalOptions="Center"/>
                 </Grid>
-            </Frame>
+            </Border>
 
             <!-- Input Controls -->
             <Grid Grid.Row="2"
@@ -357,13 +359,11 @@
                     </Button.Behaviors>
                 </Button>
 
-                <Frame Grid.Column="1"
+                <Border Grid.Column="1"
+                        StrokeShape="RoundRectangle 18"
+                        StrokeThickness="0"
                        BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
                        Padding="8,0"
-                       CornerRadius="18"
-                       HasShadow="True"
-                       Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
-                       BorderColor="Transparent"
                        Margin="4,0,4,0"
                        MinimumHeightRequest="38"
                        MaximumHeightRequest="120"
@@ -379,7 +379,7 @@
                            Keyboard="Chat"
                            VerticalTextAlignment="Center"
                            Margin="0,-2,0,-2"/>
-                </Frame>
+                </Border>
 
                 <Button Grid.Column="2"
                        IsVisible="{Binding MessageText, Converter={StaticResource StringNotEmptyConverter}}"

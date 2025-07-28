@@ -4,16 +4,12 @@ namespace HairCarePlus.Client.Patient.Common.Converters
 {
     public class StringNotEmptyConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is string stringValue)
+        public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
             {
-                return !string.IsNullOrWhiteSpace(stringValue);
-            }
-            return false;
+            return !string.IsNullOrWhiteSpace(value as string);
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

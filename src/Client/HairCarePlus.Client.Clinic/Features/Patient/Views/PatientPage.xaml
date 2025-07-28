@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="HairCarePlus.Client.Clinic.Features.Patient.Views.PatientPage"
              x:DataType="viewmodels:PatientPageViewModel"
+             x:Name="thisPage"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
@@ -11,15 +12,14 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
              xmlns:selectors="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Selectors"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}"
-             x:Name="thisPage">
+             BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#1C1C1E}">
 
     <ContentPage.Resources>
         <ResourceDictionary>
             <conv:StringNotEmptyConverter x:Key="NotNullOrEmptyConverter" />
             <conv:RestrictionIconConverter x:Key="RestrictionIconConverter" />
             <!-- Templates for restriction timers with show more -->
-            <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="{x:Null}">
+            <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="viewmodels:PatientPageViewModel+RestrictionTimer">
                 <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
                     <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
                         <commonViews:SkiaProgressRing Progress="{Binding Progress}" Thickness="4" WidthRequest="50" HeightRequest="50" />
@@ -38,11 +38,12 @@
                 </VerticalStackLayout>
             </DataTemplate>
 
-            <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="{x:Null}">
+            <DataTemplate x:Key="ShowMoreRestrictionsTemplate" x:DataType="viewmodels:ShowMoreRestrictionPlaceholderViewModel">
                 <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
                     <Grid WidthRequest="50" HeightRequest="50" HorizontalOptions="Center" VerticalOptions="Center">
                         <Grid.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
+                            <TapGestureRecognizer x:DataType="viewmodels:PatientPageViewModel"
+                                           Command="{Binding ShowAllRestrictionsCommand, Source={x:Reference thisPage}}" />
                         </Grid.GestureRecognizers>
                         <Border StrokeShape="Ellipse" WidthRequest="50" HeightRequest="50" StrokeThickness="1.5" Stroke="{AppThemeBinding Light={StaticResource Gray300}, Dark={StaticResource Gray700}}" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray800}}" />
                         <Label Text="•••" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" HorizontalOptions="Center" VerticalOptions="Center" />

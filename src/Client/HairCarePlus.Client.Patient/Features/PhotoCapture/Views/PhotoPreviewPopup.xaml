@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <?xaml-comp compile="true" ?>
 <toolkit:Popup
+    xmlns:views="clr-namespace:HairCarePlus.Client.Patient.Features.PhotoCapture.Views"
+    x:DataType="views:PhotoPreviewPopup"
     x:Class="HairCarePlus.Client.Patient.Features.PhotoCapture.Views.PhotoPreviewPopup"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"

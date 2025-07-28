@@ -5,12 +5,13 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using MauiApp = Microsoft.Maui.Controls.Application;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class DateHasAnyEventConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             try
             {
@@ -18,14 +19,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                 {
                     // Получаем ViewModel через BindingContext или другую привязку
                     TodayViewModel viewModel = null;
-                    
-                    if (MauiApp.Current?.MainPage?.BindingContext is TodayViewModel vm1)
+                    var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+                    if (page?.BindingContext is TodayViewModel vm1)
                     {
                         viewModel = vm1;
                     }
-                    else if (MauiApp.Current?.MainPage?.Navigation?.NavigationStack != null && 
-                        MauiApp.Current.MainPage.Navigation.NavigationStack.Count > 0 &&
-                        MauiApp.Current.MainPage.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
+                    else if (page?.Navigation?.NavigationStack != null &&
+                             page.Navigation.NavigationStack.Count > 0 &&
+                             page.Navigation.NavigationStack[0]?.BindingContext is TodayViewModel vm2)
                     {
                         viewModel = vm2;
                     }
@@ -52,7 +53,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
                         if (hasEvents)
                         {
                             // Для дней с событиями возвращаем белый (светлая тема) или черный (темная тема) текст
-                            return MauiApp.Current?.RequestedTheme == AppTheme.Dark
+                            var themeIsDark = MauiApp.Current?.RequestedTheme == AppTheme.Dark;
+                            return themeIsDark
                                 ? Colors.Black   // В темной теме черный текст на белом фоне
                                 : Colors.White;  // В светлой теме белый текст на черном фоне
                         }
@@ -110,7 +112,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return false;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

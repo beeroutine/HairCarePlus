@@ -2,6 +2,7 @@ using System;
 using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using HairCarePlus.Client.Clinic.Features.Sync.Application;
 using Microsoft.Extensions.DependencyInjection;
+using HairCarePlus.Shared.Common;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync;
 
@@ -12,8 +13,8 @@ public static class SyncServiceExtensions
         services.AddSingleton<IOutboxRepository, OutboxRepository>();
         services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
         {
-            var baseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://10.153.34.67:5281/";
-            client.BaseAddress = new Uri(baseUrl);
+            var baseUrl = EnvironmentHelper.GetBaseApiUrl();
+            client.BaseAddress = new Uri($"{baseUrl}/");
         });
 
         services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();

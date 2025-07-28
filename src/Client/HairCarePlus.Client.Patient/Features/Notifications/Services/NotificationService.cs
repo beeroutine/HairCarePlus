@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using Microsoft.Maui.Controls;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Notifications.Services
 {
@@ -11,7 +12,9 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Application.Current!.MainPage!.DisplayAlert("Success", message, "OK");
+                var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                    await page.DisplayAlert("Success", message, "OK");
             });
         }
 
@@ -19,7 +22,9 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Application.Current!.MainPage!.DisplayAlert("Error", message, "OK");
+                var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                    await page.DisplayAlert("Error", message, "OK");
             });
         }
 
@@ -27,7 +32,9 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Application.Current!.MainPage!.DisplayAlert("Warning", message, "OK");
+                var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                    await page.DisplayAlert("Warning", message, "OK");
             });
         }
 
@@ -35,7 +42,9 @@ namespace HairCarePlus.Client.Patient.Features.Notifications.Services
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Application.Current!.MainPage!.DisplayAlert("Info", message, "OK");
+                var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                    await page.DisplayAlert("Info", message, "OK");
             });
         }
 

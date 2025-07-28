@@ -96,7 +96,7 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                     await Task.Delay(DebounceDelayMs, token);
                     if (token.IsCancellationRequested) return;
 
-                    Device.BeginInvokeOnMainThread(() => VisibleDate = candidate);
+                    Dispatcher.Dispatch(() => VisibleDate = candidate);
                 }
                 catch (TaskCanceledException) { }
             }, token);

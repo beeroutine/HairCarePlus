@@ -6,18 +6,18 @@ namespace HairCarePlus.Server.Domain.Entities
 {
     public class Patient : BaseEntity
     {
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
-        public string Email { get; private set; }
-        public string PhoneNumber { get; private set; }
+        public string FirstName { get; private set; } = null!;
+        public string LastName { get; private set; } = null!;
+        public string Email { get; private set; } = null!;
+        public string PhoneNumber { get; private set; } = null!;
         public DateTime DateOfBirth { get; private set; }
         public DateTime SurgeryDate { get; private set; }
-        public string PreferredLanguage { get; private set; }
-        public TimeZoneInfo TimeZone { get; private set; }
-        public List<PhotoReport> PhotoReports { get; private set; }
-        public List<Notification> Notifications { get; private set; }
-        public List<TreatmentSchedule> TreatmentSchedules { get; private set; }
-        public List<ChatMessage> ChatMessages { get; private set; }
+        public string PreferredLanguage { get; private set; } = null!;
+        public TimeZoneInfo TimeZone { get; private set; } = null!;
+        public List<PhotoReport> PhotoReports { get; private set; } = new();
+        public List<Notification> Notifications { get; private set; } = new();
+        public List<TreatmentSchedule> TreatmentSchedules { get; private set; } = new();
+        public List<ChatMessage> ChatMessages { get; private set; } = new();
 
         private Patient() : base() 
         {

@@ -1,5 +1,6 @@
 using Microsoft.Maui.Controls;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Common.Behaviors
 {
@@ -39,7 +40,9 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
         {
             if (_button == null || !MenuItems.Any()) return;
 
-            var result = await Application.Current.MainPage.DisplayActionSheet(
+            var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+            if (page == null) return;
+            var result = await page.DisplayActionSheet(
                 "Choose Action",
                 "Cancel",
                 null,

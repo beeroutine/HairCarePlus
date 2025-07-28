@@ -66,10 +66,9 @@ namespace HairCarePlus.Client.Patient.Common.Behaviors
                 if (lastItem == null) return;
 
                 // Ensure we scroll on UI thread
-                Device.BeginInvokeOnMainThread(() =>
-                {
-                    _collectionView.ScrollTo(lastItem, position: ScrollToPosition.End, animate: true);
-                });
+                _collectionView.Dispatcher.Dispatch(() =>
+                    _collectionView.ScrollTo(lastItem, position: ScrollToPosition.End, animate: true)
+                );
             }
         }
     }

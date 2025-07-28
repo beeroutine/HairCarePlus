@@ -22,31 +22,30 @@
     <ScrollView>
         <StackLayout Padding="20">
             <!-- Верхняя секция с цветом и иконкой типа события -->
-            <Frame HeightRequest="200" 
+            <Border HeightRequest="200"
                    Padding="0" 
-                   CornerRadius="10" 
-                   HasShadow="False" 
+                    StrokeShape="RoundRectangle 10"
                    BackgroundColor="Transparent">
-                <Frame.Triggers>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="MedicationTreatment">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="MedicationTreatment">
                         <Setter Property="BackgroundColor" Value="{StaticResource MedicationBlue}" />
                     </DataTrigger>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="MedicalVisit">
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="MedicalVisit">
                         <Setter Property="BackgroundColor" Value="{StaticResource AppointmentGreen}" />
                     </DataTrigger>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="Photo">
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="Photo">
                         <Setter Property="BackgroundColor" Value="{StaticResource PhotoPurple}" />
                     </DataTrigger>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="Video">
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="Video">
                         <Setter Property="BackgroundColor" Value="{StaticResource VideoOrange}" />
                     </DataTrigger>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="GeneralRecommendation">
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="GeneralRecommendation">
                         <Setter Property="BackgroundColor" Value="{StaticResource GeneralGray}" />
                     </DataTrigger>
-                    <DataTrigger TargetType="Frame" Binding="{Binding Event.EventType}" Value="CriticalWarning">
+                    <DataTrigger TargetType="Border" Binding="{Binding Event.EventType}" Value="CriticalWarning">
                         <Setter Property="BackgroundColor" Value="{StaticResource CriticalRed}" />
                     </DataTrigger>
-                </Frame.Triggers>
+                </Border.Triggers>
                 <Grid RowDefinitions="Auto,*,Auto" Padding="20">
                     <!-- Статус завершения -->
                     <Label Grid.Row="0" 
@@ -73,12 +72,12 @@
                            FontAttributes="Bold" 
                            HorizontalOptions="Center" />
                 </Grid>
-            </Frame>
+            </Border>
 
             <!-- Основная информация -->
             <StackLayout Spacing="20" Margin="0,20,0,0">
                 <!-- Дата и время -->
-                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="10">
                         <Label Grid.Row="0" Grid.Column="0" 
                                Text="&#xE8DF;" 
@@ -106,10 +105,10 @@
                                FontSize="18" 
                                TextColor="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
                     </Grid>
-                </Frame>
+                </Border>
 
                 <!-- Приоритет -->
-                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
                         <Label Grid.Column="0" 
                                Text="&#xE8B0;" 
@@ -119,9 +118,9 @@
                                VerticalOptions="Center" />
                         
                         <Grid Grid.Column="1" ColumnDefinitions="Auto,*">
-                            <Frame Grid.Column="0"
+                            <Border Grid.Column="0"
                                    Padding="8,4"
-                                   CornerRadius="4"
+                                   StrokeShape="RoundRectangle 4"
                                    BackgroundColor="{Binding Event.Priority, Converter={StaticResource EventPriorityToColorConverter}}"
                                    VerticalOptions="Center">
                                 <HorizontalStackLayout Spacing="8">
@@ -136,13 +135,13 @@
                                            TextColor="White"
                                            VerticalOptions="Center" />
                                 </HorizontalStackLayout>
-                            </Frame>
+                            </Border>
                         </Grid>
                     </Grid>
-                </Frame>
+                </Border>
 
                 <!-- Описание -->
-                <Frame Padding="15" CornerRadius="8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
+                <Border Padding="15" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray900}}">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" RowDefinitions="Auto,Auto" RowSpacing="10">
                         <Label Grid.Row="0" Grid.Column="0" 
                                Text="&#xE8F0;" 
@@ -161,7 +160,7 @@
                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                         </StackLayout>
                     </Grid>
-                </Frame>
+                </Border>
 
                 <!-- Кнопки действий -->
                 <StackLayout Spacing="15" Margin="0,20,0,0">

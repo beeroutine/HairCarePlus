@@ -561,7 +561,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                     LoadingProgress = (int)((double)processedDays / totalDaysToLoad * 100);
 
                     // Add new dates to collection on the main thread
-                    await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                    await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(() =>
                     {
                         foreach (var date in batchDates)
                         {
@@ -765,9 +765,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         // Показываем сообщение об ошибке только если нет кэша
                         if (cachedEvents == null || !cachedEvents.Any())
                         {
-                            await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                            await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(async () =>
                             {
-                                await MauiApp.Current.MainPage.DisplayAlert(
+                                await MauiApp.Current.Windows[0].Page.DisplayAlert(
                                     "Error",
                                     "Failed to refresh events. Using cached data if available.",
                                     "OK"
@@ -810,7 +810,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         {
             if (cancellationToken.IsCancellationRequested) return;
 
-            await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+            await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(() =>
             {
                 var eventsList = events?.ToList() ?? new List<CalendarEvent>();
 
@@ -849,7 +849,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 return;
                 
             // Пример отображения полных деталей события
-            await MauiApp.Current.MainPage.DisplayAlert(
+            await MauiApp.Current.Windows[0].Page.DisplayAlert(
                 calendarEvent.Title,
                 calendarEvent.Description,
                 "OK");
@@ -868,7 +868,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 var counts = await _queryBus.SendAsync<Dictionary<DateTime, Dictionary<EventType, int>>>(
                     new GetEventCountsForDatesQuery(CalendarDays.ToList()));
 
-                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(() =>
                 {
                     EventCountsByDate = counts;
                     OnPropertyChanged(nameof(EventCountsByDate));
@@ -939,7 +939,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger?.LogWarning("Attempt to complete an event that is not in today's list – operation aborted");
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await MauiApp.Current.MainPage.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                    await MauiApp.Current.Windows[0].Page.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
                 });
                 return;
             }
@@ -1023,9 +1023,9 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         _logger.LogError(ex, "Error toggling event completion");
                         calendarEvent.IsCompleted = originalState;
                         
-                        await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(async () =>
+                        await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(async () =>
                         {
-                            await MauiApp.Current.MainPage.DisplayAlert(
+                            await MauiApp.Current.Windows[0].Page.DisplayAlert(
                                 "Error",
                                 "Failed to update event status. Please try again.",
                                 "OK"
@@ -1084,7 +1084,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             SelectedDate = date;
             
             // Вместо навигации к несуществующей странице покажем сообщение
-            await MauiApp.Current.MainPage.DisplayAlert(
+            await MauiApp.Current.Windows[0].Page.DisplayAlert(
                 "Календарь", 
                 $"Полный календарь для даты {date:dd.MM.yyyy} находится в разработке",
                 "OK");
@@ -1113,7 +1113,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             // и сохранения измененного события
             
             // Пример отложения события на день (заглушка для демонстрации):
-            await MauiApp.Current.MainPage.DisplayActionSheet(
+            await MauiApp.Current.Windows[0].Page.DisplayActionSheet(
                 "Postpone Event", 
                 "Cancel", 
                 null,
@@ -1248,7 +1248,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger.LogInformation("Fetched {Count} potential restrictions.", fetchedRestrictions?.Count ?? 0);
 
                 // Use Dispatcher for UI collection modification safety
-                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(() =>
                 {
                     ActiveRestrictions.Clear();
                     var today = DateTime.Today;
@@ -1319,7 +1319,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             catch (Exception ex)
             {
                  _logger.LogError(ex, "Error checking active restrictions");
-                 await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() => 
+                 await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(() => 
                  {
                      ActiveRestrictions.Clear();
                      HasActiveRestriction = false;

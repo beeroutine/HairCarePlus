@@ -6,13 +6,13 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 {
     public class TreatmentSchedule : BaseEntity
     {
-        public string Title { get; private set; }
-        public string Description { get; private set; }
+        public string Title { get; private set; } = null!;
+        public string Description { get; private set; } = null!;
         public DateTime StartDate { get; private set; }
         public DateTime? EndDate { get; private set; }
         public TreatmentType Type { get; private set; }
-        public RecurrencePattern RecurrencePattern { get; private set; }
-        public List<TreatmentTask> Tasks { get; private set; }
+        public RecurrencePattern RecurrencePattern { get; private set; } = null!;
+        public List<TreatmentTask> Tasks { get; private set; } = new();
         public bool IsCompleted { get; private set; }
 
         private TreatmentSchedule() : base()
@@ -78,8 +78,8 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 
     public class TreatmentTask : BaseEntity
     {
-        public string Title { get; private set; }
-        public string Instructions { get; private set; }
+        public string Title { get; private set; } = null!;
+        public string Instructions { get; private set; } = null!;
         public DateTime DueDate { get; private set; }
         public bool IsCompleted { get; private set; }
         public DateTime? CompletedDate { get; private set; }

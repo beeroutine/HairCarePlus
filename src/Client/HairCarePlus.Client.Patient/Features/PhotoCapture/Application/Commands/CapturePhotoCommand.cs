@@ -61,7 +61,7 @@ public sealed class CapturePhotoHandler : ICommandHandler<CapturePhotoCommand>
             _logger.LogInformation("Photo captured and saved to {Path}", path);
 
             // Upload to server as data URI so Clinic can display immediately
-            await _commandBus.SendAsync(new CreatePhotoReportCommand(bytes, _profileService.PatientId, DateTime.UtcNow), cancellationToken);
+            // await _commandBus.SendAsync(new CreatePhotoReportCommand(bytes, _profileService.PatientId, DateTime.UtcNow), cancellationToken);
         }
         catch (Exception ex)
         {

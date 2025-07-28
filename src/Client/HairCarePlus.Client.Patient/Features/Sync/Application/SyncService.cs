@@ -14,6 +14,7 @@ using HairCarePlus.Shared.Communication;
 using HairCarePlus.Shared.Communication.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 
 namespace HairCarePlus.Client.Patient.Features.Sync.Application
 {
@@ -34,7 +35,8 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
         private readonly HairCarePlus.Client.Patient.Infrastructure.Media.IUploadService _uploadService;
         private readonly List<Guid> _pendingAckIds = new();
         private readonly IChatRepository _chatRepository;
-        private static readonly Guid _patientId = Guid.Parse("8f8c7e0b-1234-4e78-a8cc-ff0011223344");
+        private static readonly Guid _deviceId = Guid.NewGuid();
+        private static readonly Guid _patientId = Guid.Parse("35883846-63ee-4cf8-b930-25e61ec1f540");
 
         public SyncService(IOutboxRepository outbox,
                            ISyncHttpClient syncClient,
@@ -80,45 +82,51 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                             bool isHttp = !string.IsNullOrEmpty(reportDto.ImageUrl) &&
                                           reportDto.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase);
 
+                            // 1) Если уже HTTP-ссылка – просто берём как есть
                             if (isHttp)
                             {
                                 photoReportsToSend.Add(reportDto);
                             }
-                            else if (!string.IsNullOrEmpty(reportDto.ImageUrl)) // It's a local path
+                            else if (!string.IsNullOrEmpty(reportDto.ImageUrl) && File.Exists(reportDto.ImageUrl))
                             {
-                                if (File.Exists(reportDto.ImageUrl))
+                                // 2) Локальный путь существует – загружаем и меняем на URL
+                                await TryUploadAndQueueAsync(reportDto, item);
+                            }
+                            else if (!string.IsNullOrEmpty(reportDto.LocalPath) && File.Exists(reportDto.LocalPath))
+                            {
+                                // 3) ImageUrl устарел, но LocalPath содержит актуальный путь – используем его
+                                _logger.LogInformation("Using LocalPath fallback for PhotoReport {Id}", reportDto.Id);
+                                reportDto.ImageUrl = reportDto.LocalPath;
+                                await TryUploadAndQueueAsync(reportDto, item);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("PhotoReport file not found. Id={Id} ImageUrl={Url} LocalPath={Local}", reportDto.Id, reportDto.ImageUrl, reportDto.LocalPath);
+                            }
+
+                            async Task TryUploadAndQueueAsync(PhotoReportDto dto, OutboxItem outboxItem)
+                            {
+                                try
                                 {
-                                    try
+                                    var fileName = Path.GetFileName(dto.ImageUrl);
+                                    var newUrl = await _uploadService.UploadFileAsync(dto.ImageUrl, fileName);
+                                    if (!string.IsNullOrEmpty(newUrl))
                                     {
-                                        var fileName = Path.GetFileName(reportDto.ImageUrl);
-                                        var newUrl = await _uploadService.UploadFileAsync(reportDto.ImageUrl, fileName);
-                                        if (!string.IsNullOrEmpty(newUrl))
-                                        {
-                                            reportDto.ImageUrl = newUrl;
-                                            item.PayloadJson = JsonSerializer.Serialize(reportDto);
-                                            item.ModifiedAtUtc = DateTime.UtcNow;
-                                            await using (var ctx = _dbFactory.CreateDbContext())
-                                            {
-                                                ctx.OutboxItems.Attach(item);
-                                                ctx.Entry(item).Property(o => o.PayloadJson).IsModified = true;
-                                                ctx.Entry(item).Property(o => o.ModifiedAtUtc).IsModified = true;
-                                                await ctx.SaveChangesAsync();
-                                            }
-                                            photoReportsToSend.Add(reportDto);
-                                        }
-                                        else
-                                        {
-                                            _logger.LogWarning("Upload of legacy photo {Path} returned empty URL, skipping.", reportDto.ImageUrl);
-                                        }
+                                        dto.ImageUrl = newUrl;
+                                        outboxItem.PayloadJson = JsonSerializer.Serialize(dto);
+                                        outboxItem.ModifiedAtUtc = DateTime.UtcNow;
+                                        await using var ctx = _dbFactory.CreateDbContext();
+                                        ctx.OutboxItems.Attach(outboxItem);
+                                        ctx.Entry(outboxItem).Property(o => o.PayloadJson).IsModified = true;
+                                        ctx.Entry(outboxItem).Property(o => o.ModifiedAtUtc).IsModified = true;
+                                        await ctx.SaveChangesAsync();
                                     }
-                                    catch (Exception ex)
-                                    {
-                                        _logger.LogError(ex, "Failed to upload legacy photo path {Path}", reportDto.ImageUrl);
-                                    }
+
+                                    photoReportsToSend.Add(dto);
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    _logger.LogWarning("Legacy photo path not found, skipping: {Path}", reportDto.ImageUrl);
+                                    _logger.LogError(ex, "Failed to upload photo for PhotoReport {Id}", dto.Id);
                                 }
                             }
                         }
@@ -174,6 +182,8 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
 
             var req = new BatchSyncRequestDto
             {
+                DeviceId = _deviceId,
+                PatientId = _patientId,
                 ClientId = $"patient-{_patientId}",
                 LastSyncVersion = lastVersion,
                 PhotoReportHeaders = headers,
@@ -204,7 +214,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 response.Restrictions?.Count ?? 0,
                 response.Packets?.Count ?? 0);
 
-            if (response.Packets != null)
+            if (response.Packets != null && response.Packets.Count > 0)
             {
                 await using var db2 = _dbFactory.CreateDbContext();
                 foreach (var p in response.Packets)
@@ -212,23 +222,8 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                     switch (p.EntityType)
                     {
                         case "PhotoReport":
-                            try
-                            {
-                                var dto = JsonSerializer.Deserialize<PhotoReportDto>(p.PayloadJson);
-                                if (dto != null && await db2.PhotoReports.FirstOrDefaultAsync(r => r.Id == dto.Id.ToString(), cancellationToken) == null)
-                                {
-                                    var entity = new PhotoReportEntity
-                                    {
-                                        Id = dto.Id.ToString(),
-                                        ImageUrl = dto.ImageUrl,
-                                        CaptureDate = dto.Date,
-                                        DoctorComment = dto.Notes
-                                    };
-                                    await db2.PhotoReports.AddAsync(entity, cancellationToken);
-                                    _pendingAckIds.Add(p.Id);
-                                }
-                            }
-                            catch { /* ignore */ }
+                            // Patient app ignores incoming PhotoReports – they are produced locally only
+                            _logger.LogDebug("Skipping PhotoReport packet {PacketId} – patient stores only local captures", p.Id);
                             break;
                     }
                 }

@@ -59,6 +59,22 @@ printf " done.\n"
 
 echo "✔ Server is up (PID $SERVER_PID)."
 
+# ---------------------------------------------------------------
+# Force clean builds of MAUI clients to ensure updated BaseApiUrl
+# ---------------------------------------------------------------
+# Purge previous artifacts to guarantee fresh BuildConfig generation with new IP
+echo "🧹 Cleaning previous client build outputs (bin/obj/tmp) to propagate CHAT_BASE_URL=$CHAT_BASE_URL ..."
+
+# Remove custom tmp outputs
+rm -rf "$ROOT_DIR/tmp/clinic_build" "$ROOT_DIR/tmp/patient_build"
+
+# Remove default bin/obj folders for both projects to avoid incremental reuse
+find "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+find "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
+# Clean via dotnet as safety net
+dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" >/dev/null 2>&1 || true
+dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" >/dev/null 2>&1 || true
+
 ###############################################################################
 # 2) Clinic app
 ###############################################################################
@@ -77,6 +93,7 @@ if [[ -n "${CLINIC_SIM_UDID:-}" ]]; then
   echo "▶ Launching Clinic on iOS simulator (UDID $CLINIC_SIM_UDID, RID $SIM_RID) ..."
   dotnet build -t:Run \
     "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
+    -p:BaseOutputPath=$ROOT_DIR/tmp/clinic_build/ \
     -f net9.0-ios \
     -p:RuntimeIdentifier=$SIM_RID \
     -p:_DeviceName=:v2:udid=$CLINIC_SIM_UDID \
@@ -86,6 +103,7 @@ else
   echo "▶ Launching Clinic (Mac Catalyst) ..."
   dotnet build -t:Run \
     "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
+    -p:BaseOutputPath=$ROOT_DIR/tmp/clinic_build/ \
     -f net9.0-maccatalyst \
     -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
   CLINIC_PID=$!
@@ -99,6 +117,7 @@ IPHONE_UDID="00008130-000444D83891401C"
 echo "▶ Deploying Patient app to iPhone ($IPHONE_UDID) ..."
 dotnet build -t:Run \
   "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" \
+  -p:BaseOutputPath=$ROOT_DIR/tmp/patient_build/ \
   -f net9.0-ios \
   -p:RuntimeIdentifier=ios-arm64 \
   -p:_DeviceName=$IPHONE_UDID \

@@ -61,7 +61,7 @@ public partial class ChatViewModel : ObservableObject
         BackCommand = new RelayCommand(() => { /* TODO: navigate back */ });
         HideKeyboardCommand = new RelayCommand(() => { /* TODO: hide keyboard */ });
         EditMessageCommand = new RelayCommand<ChatMessage>(_ => { /* edit stub */ });
-        DeleteMessageCommand = new RelayCommand<ChatMessage>(msg => Messages.Remove(msg));
+        DeleteMessageCommand = new RelayCommand<ChatMessage>(msg => { if (msg != null) Messages.Remove(msg); });
         HandleReplyToMessageCommand = new RelayCommand<ChatMessage>(HandleReplyToMessage);
         CancelReplyCommand = new RelayCommand(() => ReplyToMessage = null);
         _logger = logger;

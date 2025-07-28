@@ -9,7 +9,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
 {
     public class DateHasEventTypeConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

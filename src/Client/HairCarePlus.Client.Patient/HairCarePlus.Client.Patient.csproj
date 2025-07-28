@@ -21,6 +21,7 @@
 		<SingleProject>true</SingleProject>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 		<SelfContained>false</SelfContained>
 
 		<!-- Display name -->
@@ -166,5 +167,28 @@
         <CodesignKey>Apple Development</CodesignKey>
         <CodesignProvision>Automatic</CodesignProvision>
     </PropertyGroup>
+
+	<!-- Auto-generate BuildConfig partial with BaseApiUrl if CHAT_BASE_URL property is supplied -->
+  <PropertyGroup>
+    <_ChatBaseUrl>$(CHAT_BASE_URL)</_ChatBaseUrl>
+  </PropertyGroup>
+
+  <Target Name="GenerateBuildConfig" BeforeTargets="BeforeBuild" Condition=" '$(_ChatBaseUrl)' != '' ">
+    <Message Importance="High" Text="Generating BuildConfig.g.cs with BaseApiUrl=$(_ChatBaseUrl)" />
+    <MakeDir Directories="$(IntermediateOutputPath)Generated" />
+    <PropertyGroup>
+      <_BuildConfigFile>$(IntermediateOutputPath)Generated\BuildConfig.g.cs</_BuildConfigFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_BuildConfigLines Include="namespace HairCarePlus.Shared.Common%3B" />
+      <_BuildConfigLines Include="public static partial class BuildConfig {" />
+      <_BuildConfigLines Include="    public static string? BaseApiUrl { get%3B } = &quot;$(_ChatBaseUrl)&quot;%3B" />
+      <_BuildConfigLines Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_BuildConfigFile)" Lines="@(_BuildConfigLines)" Overwrite="true" />
+    <ItemGroup>
+      <Compile Include="$(_BuildConfigFile)" Link="Generated/BuildConfig.g.cs" />
+    </ItemGroup>
+  </Target>
 
 </Project>

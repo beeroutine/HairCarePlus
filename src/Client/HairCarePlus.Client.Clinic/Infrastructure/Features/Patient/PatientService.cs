@@ -13,7 +13,7 @@ public sealed class PatientService : IPatientService
         {
             new()
             {
-                Id = "8f8c7e0b-1234-4e78-a8cc-ff0011223344",
+                Id = "35883846-63ee-4cf8-b930-25e61ec1f540",
                 Name = "Анна Петрова",
                 DayProgress = 0.75,
                 PhotoMissing = false,

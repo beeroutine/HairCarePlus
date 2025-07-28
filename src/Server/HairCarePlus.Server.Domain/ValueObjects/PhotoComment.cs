@@ -14,7 +14,7 @@ public class PhotoComment : BaseEntity
 
     // EF navigation
     public Guid PhotoReportId { get; private set; }
-    public PhotoReport PhotoReport { get; private set; }
+    public PhotoReport PhotoReport { get; private set; } = null!;
 
     private PhotoComment() { }
 

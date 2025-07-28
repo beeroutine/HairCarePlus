@@ -1,195 +1,265 @@
-using Microsoft.Maui.Controls;
-using HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
-using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using HairCarePlus.Client.Patient.Infrastructure.Media;
-using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Maui.Views;
-using System.IO;
-using System.Threading;
-using System.Linq;
+using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
+using HairCarePlus.Client.Patient.Infrastructure.Media;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-// TODO: add CommunityToolkit.Maui.Camera integration when API finalized
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
-
+namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views
+{
 public partial class PhotoCapturePage : ContentPage
 {
     private readonly PhotoCaptureViewModel _viewModel;
     private readonly ILogger<PhotoCapturePage> _logger;
     private readonly IMediaFileSystemService _fileSystem;
     private readonly IMessenger _messenger;
-    private readonly HairCarePlus.Shared.Common.CQRS.ICommandBus _commandBus;
-    private bool _previewReady;
+        
+        private readonly SemaphoreSlim _cameraLock = new(1, 1);
+        private bool _isPreviewing;
     private bool _isCapturing;
-    // Track cameras enumeration state
-    private bool _camerasInitialized;
     private IReadOnlyList<object>? _availableCameras;
 
-    // Placeholder for future camera lifecycle integration
-
-    public PhotoCapturePage(PhotoCaptureViewModel viewModel,
+        public PhotoCapturePage(
+            PhotoCaptureViewModel viewModel,
                             ILogger<PhotoCapturePage> logger,
                             IMediaFileSystemService fileSystem,
-                            IMessenger messenger,
-                            HairCarePlus.Shared.Common.CQRS.ICommandBus commandBus)
+            IMessenger messenger)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _logger = logger;
         _fileSystem = fileSystem;
         _messenger = messenger;
-        _commandBus = commandBus;
         BindingContext = _viewModel;
+        }
 
-        // Observe ViewModel changes so we can switch cameras when user toggles the command
-        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(PhotoCaptureViewModel.Facing))
+        protected override void OnAppearing()
         {
-            _logger.LogInformation("Facing property changed, applying camera switch.");
-            _ = SwitchFacingAsync();
+            base.OnAppearing();
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            Camera.MediaCaptured += OnMediaCaptured;
+            
+            if (DeviceInfo.DeviceType == DeviceType.Virtual)
+            {
+                _logger.LogInformation("Virtual device detected, skipping camera setup.");
+                return;
+            }
+            // Dispatch the async camera start to avoid blocking the UI thread and handle potential exceptions gracefully.
+            Dispatcher.Dispatch(() => StartPreviewWithLockAsync());
+        }
+
+        protected override async void OnDisappearing()
+        {
+            base.OnDisappearing();
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            Camera.MediaCaptured -= OnMediaCaptured;
+            
+            await StopPreviewWithLockAsync();
+        }
+
+        private async Task StartPreviewWithLockAsync()
+        {
+            await _cameraLock.WaitAsync();
+            try
+            {
+                if (_isPreviewing) return;
+
+                await InitializeCamerasIfNeeded();
+                
+                var preferredCamera = FindCameraByFacing(_viewModel.Facing);
+                if (preferredCamera != null)
+                {
+                    var selectedCameraProp = Camera.GetType().GetProperty("SelectedCamera");
+                    selectedCameraProp?.SetValue(Camera, preferredCamera);
+                }
+
+                _logger.LogInformation("Starting camera preview...");
+                await Camera.StartCameraPreview(CancellationToken.None);
+                _isPreviewing = true;
+                _logger.LogInformation("Camera preview started successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start camera preview.");
+            }
+            finally
+            {
+                _cameraLock.Release();
+            }
+        }
+
+        private async Task StopPreviewWithLockAsync()
+        {
+            await _cameraLock.WaitAsync();
+            try
+            {
+                if (!_isPreviewing) return;
+                
+                _logger.LogInformation("Stopping camera preview.");
+                Camera.StopCameraPreview();
+                _isPreviewing = false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to stop camera preview.");
+            }
+            finally
+            {
+                _cameraLock.Release();
+            }
+        }
+        
+        private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PhotoCaptureViewModel.Facing))
+            {
+                _logger.LogInformation("Facing property changed, restarting preview with new camera.");
+                await StopPreviewWithLockAsync();
+                await StartPreviewWithLockAsync();
+            }
+        }
+
+        private async void OnShutterTapped(object? sender, TappedEventArgs e)
+        {
+            if (_isCapturing || !_isPreviewing)
+            {
+                _logger.LogWarning($"Shutter tapped but ignored. IsCapturing: {_isCapturing}, IsPreviewing: {_isPreviewing}");
+            return;
+        }
+
+            await _cameraLock.WaitAsync();
+            try
+            {
+                _isCapturing = true;
+                await Camera.CaptureImage(CancellationToken.None);
+                _logger.LogInformation("CaptureImage called. Waiting for MediaCaptured event.");
+        }
+        catch (Exception ex)
+        {
+                _logger.LogError(ex, "CaptureImage failed.");
+                _isCapturing = false; // Release lock on error
+            }
+            finally
+            {
+                _cameraLock.Release();
         }
     }
 
-    /// <summary>
-    /// Switches between front and back camera using reflection-based fallback.
-    /// </summary>
-    private async Task SwitchFacingAsync()
-    {
-        try
+    private async void OnMediaCaptured(object? sender, MediaCapturedEventArgs e)
         {
-            // Ensure we have enumerated cameras at least once
-            if (!_camerasInitialized)
-            {
-                try
+            try
+    {
+        if (e?.Media == null)
+        {
+                    _logger.LogWarning("MediaCaptured event received without media stream.");
+            return;
+        }
+
+        byte[] bytes;
+                using (var ms = new MemoryStream())
+        {
+            await e.Media.CopyToAsync(ms);
+            bytes = ms.ToArray();
+        }
+
+        if (bytes.Length == 0)
+        {
+                    _logger.LogWarning("MediaCaptured event with empty data stream.");
+            return;
+        }
+
+        var fileName = $"photo_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
+                var mediaDirectory = await _fileSystem.GetMediaDirectoryAsync();
+                var localPath = await _fileSystem.SaveFileAsync(bytes, fileName, mediaDirectory);
+
+                if (string.IsNullOrEmpty(localPath))
                 {
-                    var cams = await Camera.GetAvailableCameras(CancellationToken.None);
-                    _availableCameras = cams?.Cast<object>().ToList();
-                    _camerasInitialized = _availableCameras?.Count > 0;
-                    _logger.LogInformation($"Camera enumeration completed. Found {_availableCameras?.Count ?? 0} cameras.");
+                    _logger.LogError("Failed to save captured photo.");
+                    return;
                 }
-                catch (Exception exEnum)
+                
+                _logger.LogInformation($"Photo saved to {localPath}");
+                _viewModel.LastPhotoPath = localPath;
+                // Выполняем обработку отчёта асинхронно, не блокируя возможность следующего кадра
+                _ = Task.Run(async () =>
                 {
-                    _logger.LogError(exEnum, "Failed to enumerate cameras inside SwitchFacingAsync");
+                    try
+                    {
+                await _viewModel.HandleCapturedPhotoAsync(localPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "HandleCapturedPhotoAsync failed in background.");
+                    }
+                });
+
+                // Сразу разрешаем делать следующий снимок
+                _isCapturing = false;
+
+                if (_viewModel.SelectedTemplate != null)
+                {
+                    _viewModel.SelectedTemplate.IsCaptured = true;
+                    var nextTemplate = _viewModel.Templates?.FirstOrDefault(t => !t.IsCaptured);
+                    if (nextTemplate != null)
+                    {
+                            _viewModel.SelectedTemplate = nextTemplate;
+                    }
+                    else if (_viewModel.Templates?.All(t => t.IsCaptured) == true)
+                        {
+                            await Shell.Current.GoToAsync("//progress");
+                    }
                 }
             }
-
-            var camerasList = _availableCameras;
-            if (camerasList is null || camerasList.Count == 0)
+            catch (Exception ex)
             {
-                _logger.LogWarning("No cameras available – cannot apply facing");
-                return;
+                _logger.LogError(ex, "Error processing captured media.");
             }
+            // _isCapturing уже сброшен выше
+        }
+        
+        private async Task InitializeCamerasIfNeeded()
+        {
+            if (_availableCameras != null) return;
+            try
+            {
+                var cams = await Camera.GetAvailableCameras(CancellationToken.None);
+                _availableCameras = cams?.Cast<object>().ToList();
+                _logger.LogInformation($"Enumerated {_availableCameras?.Count ?? 0} cameras.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to enumerate available cameras.");
+                _availableCameras = new List<object>();
+            }
+        }
+        
+        private object? FindCameraByFacing(PhotoCaptureViewModel.CameraFacing facing)
+        {
+            if (_availableCameras == null) return null;
 
-            object? targetCamera = null;
-
-            foreach (var cam in camerasList)
+            foreach (var cam in _availableCameras)
             {
                 var positionProp = cam.GetType().GetProperty("Position");
                 var positionVal = positionProp?.GetValue(cam)?.ToString()?.ToLowerInvariant();
 
-                if (_viewModel.Facing == PhotoCaptureViewModel.CameraFacing.Front && positionVal?.Contains("front") == true)
-                {
-                    targetCamera = cam;
-                    break;
-                }
-                if (_viewModel.Facing == PhotoCaptureViewModel.CameraFacing.Back && (positionVal?.Contains("back") == true || positionVal?.Contains("rear") == true))
-                {
-                    targetCamera = cam;
-                    break;
-                }
+                if (facing == PhotoCaptureViewModel.CameraFacing.Front && positionVal?.Contains("front") == true)
+                    return cam;
+                if (facing == PhotoCaptureViewModel.CameraFacing.Back && positionVal?.Contains("back") == true)
+                    return cam;
             }
-
-            if (targetCamera is null)
-            {
-                _logger.LogWarning("Requested camera facing not available on this device.");
-                return;
-            }
-
-            var selectedCameraProp = Camera.GetType().GetProperty("SelectedCamera");
-            if (selectedCameraProp is null)
-            {
-                _logger.LogWarning("CameraView switch API not found – skipping.");
-                return;
-            }
-
-            var current = selectedCameraProp.GetValue(Camera);
-            if (!Equals(current, targetCamera))
-            {
-                selectedCameraProp.SetValue(Camera, targetCamera);
-                _logger.LogInformation($"Switched camera to {_viewModel.Facing}.");
-            }
+            return _availableCameras.FirstOrDefault();
         }
-        catch (Exception ex)
+        
+        private void OnZoneChecked(object? sender, CheckedChangedEventArgs e)
         {
-            _logger.LogError(ex, "Error switching camera generically via reflection.");
-        }
-    }
+            if (!e.Value || sender is not RadioButton rb || rb.Content is not string label) return;
 
-    private async Task<bool> TryStartPreviewAsync(CancellationToken ct)
-    {
-        try
-        {
-            _logger.LogInformation("Starting camera preview...");
-            await Camera.StartCameraPreview(ct);
-            _previewReady = true;
-            _logger.LogInformation("Camera preview started successfully.");
-            return true;
-        }
-        catch (TaskCanceledException)
-        {
-            _logger.LogWarning("StartCameraPreview was cancelled.");
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to start camera preview.");
-            return false;
-        }
-    }
-
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        Camera.MediaCaptured += OnMediaCaptured;
-
-        // Ensure facing is correct after appearing
-        await SwitchFacingAsync();
-
-        // Always attempt to (re)start preview on appearing to avoid frozen frame after navigation.
-        _logger.LogInformation("Attempting to start camera preview on appearing.");
-            await TryStartPreviewAsync(CancellationToken.None);
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        Camera.MediaCaptured -= OnMediaCaptured;
-
-        try
-        {
-            Camera.StopCameraPreview();
-            _previewReady = false; // ensure preview restarts next time
-            _logger.LogInformation("Camera preview stopped on disappearing.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to stop camera preview on disappearing");
-        }
-
-        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-    }
-
-    private void OnZoneChecked(object? sender, CheckedChangedEventArgs e)
-    {
-        if (e.Value != true) return;
-        if (sender is RadioButton rb && rb.Content is string label)
-        {
             var id = label switch
             {
                 "Фронт" => "front",
@@ -200,146 +270,21 @@ public partial class PhotoCapturePage : ContentPage
             if (id != null)
             {
                 _viewModel.SelectTemplateCommand.Execute(id);
-            }
-        }
-    }
-
-    private async void OnMediaCaptured(object? sender, MediaCapturedEventArgs e)
-    {
-        if (e?.Media == null)
-        {
-            _logger.LogWarning("MediaCaptured event without media stream.");
-            return;
-        }
-
-        _isCapturing = false;
-        byte[] bytes;
-        using (var ms = new System.IO.MemoryStream())
-        {
-            await e.Media.CopyToAsync(ms);
-            bytes = ms.ToArray();
-        }
-
-        if (bytes.Length == 0)
-        {
-            _logger.LogWarning("MediaCaptured event with empty data.");
-            return;
-        }
-
-        var fileName = $"photo_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
-
-        try
-        {
-            var cacheDir = await _fileSystem.GetCacheDirectoryAsync();
-            var targetSpecificDirectory = Path.Combine(cacheDir, "captured_photos");
-            
-            // Ensure the specific target directory exists
-            if (!Directory.Exists(targetSpecificDirectory))
-            {
-                Directory.CreateDirectory(targetSpecificDirectory);
-                _logger.LogInformation($"Created directory: {targetSpecificDirectory}");
-            }
-
-            var localPath = await _fileSystem.SaveFileAsync(bytes, fileName, targetSpecificDirectory);
-
-            if (!string.IsNullOrEmpty(localPath))
-            {
-                _logger.LogInformation($"Photo saved to {localPath}");
-                _messenger.Send(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages.PhotoCapturedMessage(localPath));
-                _viewModel.LastPhotoPath = localPath;
-                // Immediately upload & enqueue to outbox
-                await _viewModel.HandleCapturedPhotoAsync(localPath);
-                if (_viewModel.SelectedTemplate is not null)
-                {
-                    _viewModel.SelectedTemplate.IsCaptured = true;
-
-                    // автоматически выбрать следующий шаблон, который ещё не снят
-                    if (_viewModel.Templates is not null)
-                    {
-                        var nextTemplate = _viewModel.Templates.FirstOrDefault(t => !t.IsCaptured);
-                        if (nextTemplate is not null)
-                            _viewModel.SelectedTemplate = nextTemplate;
-                    }
-
-                    // Если все фотографии сделаны, переходим в Progress
-                    if (_viewModel.Templates?.Count > 0 && _viewModel.Templates.All(t => t.IsCaptured))
-                    {
-                        try
-                        {
-                            await Shell.Current.GoToAsync("//progress");
-                        }
-                        catch (Exception navEx)
-                        {
-                            _logger.LogError(navEx, "Navigation to progress after all photos captured failed");
-                        }
-                    }
-                }
-            }
-            else
-            {
-                _logger.LogError("Failed to save photo, SaveFileAsync returned null or empty.");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during photo saving process in OnMediaCaptured.");
-        }
-    }
-
-    private async void OnShutterTapped(object? sender, TappedEventArgs e)
-    {
-        if (_isCapturing)
-        {
-            _logger.LogWarning("Capture in progress – shutter tap ignored.");
-            return;
-        }
-
-        if (!_previewReady)
-        {
-            _logger.LogWarning("Preview not ready – attempting to start preview before capture.");
-            await TryStartPreviewAsync(CancellationToken.None);
-        }
-
-        _logger.LogInformation("Shutter tapped – starting capture.");
-
-        try
-        {
-            if (Camera.GetType().GetProperty("SelectedCamera")?.GetValue(Camera) is null)
-            {
-                _logger.LogWarning("No SelectedCamera set – cannot capture.");
-                return;
-            }
-
-            _isCapturing = true;
-            await Camera.CaptureImage(CancellationToken.None);
-            _logger.LogInformation("Camera.CaptureImage called. Waiting for MediaCaptured event.");
-            _isCapturing = false;
-        }
-        catch (TaskCanceledException)
-        {
-            _logger.LogWarning("CaptureImage was cancelled.");
-            _isCapturing = false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error calling Camera.CaptureImage");
-            _isCapturing = false;
         }
     }
 
     private async void OnPreviewClicked(object? sender, EventArgs e)
     {
-        var path = _viewModel.LastPhotoPath;
-        if (string.IsNullOrEmpty(path)) return;
+            if (string.IsNullOrEmpty(_viewModel.LastPhotoPath)) return;
 
         try
         {
-            var popup = new PhotoPreviewPopup(path);
-            await this.ShowPopupAsync(popup);
+                await this.ShowPopupAsync(new PhotoPreviewPopup(_viewModel.LastPhotoPath));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to show photo preview popup.");
+            }
         }
     }
 } 

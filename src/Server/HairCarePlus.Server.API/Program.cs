@@ -53,14 +53,11 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 app.UseCors();
 
-app.UseStaticFiles(); // For wwwroot
-
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
 if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);
 }
-
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),

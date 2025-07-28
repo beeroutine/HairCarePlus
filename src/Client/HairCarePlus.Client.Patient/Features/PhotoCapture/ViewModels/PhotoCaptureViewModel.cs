@@ -13,6 +13,12 @@ using System.Text.Json;
 using HairCarePlus.Client.Patient.Infrastructure.Media;
 using System;
 using System.IO;
+using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
+using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
+using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
 
@@ -23,18 +29,27 @@ public partial class PhotoCaptureViewModel : ObservableObject
     private readonly ILogger<PhotoCaptureViewModel> _logger;
     private readonly IOutboxRepository _outbox;
     private readonly IUploadService _uploadService;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
+    private readonly IProfileService _profileService;
+    private readonly CommunityToolkit.Mvvm.Messaging.IMessenger _messenger;
 
     public PhotoCaptureViewModel(ICommandBus commandBus,
                                  IQueryBus queryBus,
                                  ILogger<PhotoCaptureViewModel> logger,
                                  IOutboxRepository outbox,
-                                 IUploadService uploadService)
+                                 IUploadService uploadService,
+                                 IDbContextFactory<AppDbContext> dbFactory,
+                                 IProfileService profileService,
+                                 CommunityToolkit.Mvvm.Messaging.IMessenger messenger)
     {
         _commandBus = commandBus;
         _queryBus = queryBus;
         _logger = logger;
         _outbox = outbox;
         _uploadService = uploadService;
+        _dbFactory = dbFactory;
+        _profileService = profileService;
+        _messenger = messenger;
 
         _ = LoadTemplatesAsync();
     }
@@ -118,20 +133,46 @@ public partial class PhotoCaptureViewModel : ObservableObject
         try
         {
             var fileName = Path.GetFileName(localPath);
+
+            // 1. Сохраняем локально и немедленно уведомляем UI
+            Guid reportId = Guid.NewGuid();
+            DateTime capturedUtc = DateTime.UtcNow;
+
+            await using (var db = await _dbFactory.CreateDbContextAsync())
+            {
+                db.PhotoReports.Add(new Features.Sync.Domain.Entities.PhotoReportEntity
+                {
+                    Id = reportId.ToString(),
+                    ImageUrl = localPath,          // временно локальный путь; заменится после успешной загрузки
+                    CaptureDate = capturedUtc,
+                    DoctorComment = string.Empty,
+                    // сохраняем полный путь, чтобы SyncService надёжно находил файл при повторном запуске
+                    LocalPath = localPath,
+                    PatientId = _profileService.PatientId.ToString(),
+                    Zone = PhotoZone.Front
+                });
+                await db.SaveChangesAsync();
+            }
+
+            // мгновенно обновляем ProgressPage
+            _messenger.Send(new PhotoSavedMessage(fileName));
+
+            // 2. Пытаемся загрузить файл (может занять время)
             var imageUrl = await _uploadService.UploadFileAsync(localPath, fileName);
 
             if (string.IsNullOrEmpty(imageUrl))
             {
-                _logger.LogError("UploadService returned empty url for {Path}", localPath);
-                return;
+                _logger.LogWarning("Upload failed or offline. Will defer to next sync. Path={Path}", localPath);
+                imageUrl = localPath; // SyncService позже загрузит файл и обновит запись.
             }
 
+            // 3. Создаём DTO и Outbox (используем upload url или локальный путь)
             var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
             {
-                Id = Guid.NewGuid(),
-                PatientId = Guid.Parse("8f8c7e0b-1234-4e78-a8cc-ff0011223344"), // TODO: inject actual patient context
+                Id = reportId,
+                PatientId = _profileService.PatientId, // предположим Guid
                 ImageUrl = imageUrl,
-                Date = DateTime.UtcNow,
+                Date = capturedUtc,
                 Notes = string.Empty,
                 Type = HairCarePlus.Shared.Communication.PhotoType.Custom,
                 Comments = new()

@@ -5,6 +5,7 @@ using Microsoft.Maui.ApplicationModel;
 using HairCarePlus.Client.Patient.Features.Progress.Views;
 using HairCarePlus.Client.Patient.Common.Behaviors;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.Views;
 
@@ -55,7 +56,7 @@ public sealed class YearTimelineView : GraphicsView, IDrawable, IYearTimelineVie
         // Show popup on UI thread
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            var page = Microsoft.Maui.Controls.Application.Current?.MainPage;
+            var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
             if (page != null)
                 await page.DisplayAlert("Информация", message, "OK");
         });

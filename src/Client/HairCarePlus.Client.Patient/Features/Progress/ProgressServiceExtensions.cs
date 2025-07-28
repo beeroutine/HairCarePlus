@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Hosting;
@@ -39,6 +40,9 @@ public static class ProgressServiceExtensions
         services.AddScoped<IQueryHandler<GetDailyProgressQuery, DailyProgress>, GetDailyProgressHandler>();
         services.AddScoped<IQueryHandler<GetProgressFeedQuery, IReadOnlyList<ProgressFeedItem>>, GetProgressFeedHandler>();
         services.AddScoped<IQueryHandler<GetRestrictionsQuery, IReadOnlyList<RestrictionTimer>>, GetRestrictionsHandler>();
+
+        // New: local photo reports feed
+        services.AddScoped<IQueryHandler<GetLocalPhotoReportsQuery, IEnumerable<ProgressFeedItem>>, GetLocalPhotoReportsQueryHandler>();
 
         return services;
     }

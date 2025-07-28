@@ -18,16 +18,29 @@ using HairCarePlus.Client.Patient.Features.Progress.Application.Messages;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Sync.Messages;
+using System.Threading; // add for SemaphoreSlim
+using System.Collections.Generic;
+using Microsoft.Maui.ApplicationModel; // MainThread
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
-public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCapturedMessage>, IRecipient<RestrictionsChangedMessage>, IRecipient<PhotoReportSyncedMessage>, IRecipient<HairCarePlus.Client.Patient.Features.Sync.Messages.PhotoCommentSyncedMessage>
+public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSavedMessage>, IRecipient<RestrictionsChangedMessage>, IRecipient<PhotoReportSyncedMessage>, IRecipient<HairCarePlus.Client.Patient.Features.Sync.Messages.PhotoCommentSyncedMessage>
 {
     private readonly IQueryBus _queryBus;
     private readonly ILogger<ProgressViewModel> _logger;
     private readonly IServiceProvider _sp;
     private readonly IProfileService _profileService;
     private readonly IProgressNavigationService _nav;
+
+    // Map date -> feed item for quick incremental updates
+    private readonly Dictionary<DateOnly, ProgressFeedItem> _feedByDate = new();
+
+    // Helper for building absolute path
+    private static string BuildMediaPath(string fileName)
+        => System.IO.Path.Combine(FileSystem.AppDataDirectory, "Media", fileName);
+
+    // Prevent parallel executions of LoadAsync which cause CollectionView inconsistency
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
 
     private const int DefaultDaysRange = 7;
     private const int MaxVisibleRestrictionItems = 4;
@@ -41,13 +54,13 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         _nav = nav;
 
         RestrictionTimers = new ObservableCollection<RestrictionTimer>();
-        Feed = new ObservableCollection<ProgressFeedItem>();
+        _feed = new ObservableCollection<ProgressFeedItem>();
         VisibleRestrictionItems = new ObservableCollection<object>();
 
         _ = LoadAsync();
 
         // подписка на сообщение о новом фото
-        WeakReferenceMessenger.Default.Register<PhotoCapturedMessage>(this);
+        WeakReferenceMessenger.Default.Register<PhotoSavedMessage>(this);
         // подписка на изменение ограничений
         WeakReferenceMessenger.Default.Register<RestrictionsChangedMessage>(this);
         // подписка на синхронизированный с сервера фото-отчёт
@@ -57,7 +70,8 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
-    public ObservableCollection<ProgressFeedItem> Feed { get; }
+    [ObservableProperty]
+    private ObservableCollection<ProgressFeedItem> _feed;
     public ObservableCollection<object> VisibleRestrictionItems { get; }
 
     /// <summary>
@@ -101,7 +115,9 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         try 
         {
             var popup = new RestrictionStoriesPopup(timer);
-            await Microsoft.Maui.Controls.Application.Current.MainPage.ShowPopupAsync(popup);
+            var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
+                await page.ShowPopupAsync(popup);
         }
         catch (Exception ex) 
         { 
@@ -150,26 +166,24 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
 
     private async Task LoadAsync()
     {
+        // fast-fail if a load is already running
+        if (!await _loadLock.WaitAsync(0))
+            return;
+
         IsRefreshing = true;
         try
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
-            var from = today.AddDays(-(DefaultDaysRange - 1)); // inclusive
-            var feedItems = await _queryBus.SendAsync(new Application.Queries.GetProgressFeedQuery(from, today));
-            _logger.LogInformation("Fetched {Count} feed items.", feedItems.Count());
+            var feedItems = await _queryBus.SendAsync(new Application.Queries.GetLocalPhotoReportsQuery());
+            _logger.LogInformation("Fetched {Count} feed items from local database.", feedItems.Count());
             
-            Feed.Clear();
-            // Требование: показывать только дни, где есть хотя бы одна фотография
-            var visible = feedItems.Where(f => f.Photos?.Any() == true)
-                                   .OrderByDescending(f => f.Date);
+            // Fill dictionary for incremental updates
+            _feedByDate.Clear();
+            foreach (var fi in feedItems)
+                _feedByDate[fi.Date] = fi;
 
-            foreach (var item in visible)
-            {
-                Feed.Add(item);
-            }
+            // Atomically replace collection to avoid UI inconsistencies
+            Feed = new ObservableCollection<ProgressFeedItem>(feedItems);
 
-            // var todayItem = Feed.FirstOrDefault(); // This line doesn't seem to be used, can be removed if not needed later.
-            
             // Load active restrictions via CQRS
             RestrictionTimers.Clear();
             var restrictions = await _queryBus.SendAsync(new Application.Queries.GetRestrictionsQuery());
@@ -185,6 +199,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
         finally
         {
             IsRefreshing = false;
+            _loadLock.Release();
         }
     }
 
@@ -192,37 +207,49 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
     [RelayCommand]
     private Task Load() => LoadAsync();
 
-    // При получении нового фото освежаем ленту (без блокировки UI)
-    public void Receive(PhotoCapturedMessage message)
+    // При получении нового фото просто полностью перезагружаем ленту из БД
+    public void Receive(PhotoSavedMessage message)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var existing = Feed.OfType<ProgressFeedItem>().FirstOrDefault(f => f.Date == today);
-        if (existing == null)
+        try
         {
-            existing = new ProgressFeedItem(
-                Date: today,
-                Title: $"Day {(_profileService.SurgeryDate == DateTime.Today ? 1 : (DateTime.Today - _profileService.SurgeryDate).Days + 1)}",
-                Description: string.Empty,
-                Photos: new List<ProgressPhoto>(),
-                ActiveRestrictions: new List<RestrictionTimer>(),
-                AiReport: null)
-            {
-                DoctorReportSummary = string.Empty
-            };
-            Feed.Insert(0, existing);
-        }
+            var date = DateOnly.FromDateTime(DateTime.Now);
 
-        var photoList = existing.Photos as List<ProgressPhoto> ?? new List<ProgressPhoto>(existing.Photos);
-        photoList.Add(new ProgressPhoto
+            if (!_feedByDate.TryGetValue(date, out var feedItem))
+            {
+                feedItem = new ProgressFeedItem(
+                    Date: date,
+                    Title: "Фотоотчёт",
+                    Description: string.Empty,
+                    Photos: new List<ProgressPhoto>(),
+                    ActiveRestrictions: new List<RestrictionTimer>());
+
+                _feedByDate[date] = feedItem;
+                MainThread.BeginInvokeOnMainThread(() => Feed.Insert(0, feedItem));
+            }
+
+            var newPhotos = feedItem.Photos
+                .Append(new ProgressPhoto
+                {
+                    LocalPath = BuildMediaPath(message.Value),
+                    CapturedAt = DateTime.Now,
+                    Zone = PhotoZone.Front
+                })
+                .ToList();
+
+            var refreshed = feedItem with { Photos = newPhotos };
+
+            _feedByDate[date] = refreshed;
+
+            var idx = Feed.IndexOf(feedItem);
+            if (idx >= 0)
+            {
+                MainThread.BeginInvokeOnMainThread(() => Feed[idx] = refreshed);
+            }
+        }
+        catch (Exception ex)
         {
-            LocalPath = message.Value,
-            CapturedAt = DateTime.Now,
-            Zone = PhotoZone.Front,
-            AiScore = 0
-        });
-        // recreate item with updated list to notify UI
-        existing = existing with { Photos = photoList };
-        Feed[Feed.IndexOf(Feed.First(f => f.Date == today))] = existing;
+            _logger.LogError(ex, "Failed incremental UI update on PhotoSavedMessage");
+        }
     }
 
     // При изменении ограничений обновляем только верхнюю полосу
@@ -264,11 +291,15 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoCaptu
 
         item.DoctorReportSummary = msg.Comment.Text;
 
-        // Notify collection update
-        var idx = Feed.IndexOf(item);
-        if(idx>=0)
+        // The UI will not update if we just mutate a property of an item.
+        // We need to re-create the collection or replace the item to trigger a UI refresh.
+        var index = Feed.IndexOf(item);
+        if (index != -1)
         {
-            Feed[idx] = item;
+            // To be safe, create a new list and re-assign
+            var newList = new ObservableCollection<ProgressFeedItem>(Feed);
+            newList[index] = item with { DoctorReportSummary = msg.Comment.Text };
+            Feed = newList;
         }
     }
 } 

@@ -196,20 +196,22 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         if (item == null) return;
         try
         {
-            var text = await Application.Current.MainPage.DisplayPromptAsync("Комментарий", "Введите комментарий", "Отправить", "Отмена", maxLength: 200, keyboard: Keyboard.Default);
+            var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+            if (page == null) return;
+            var text = await page.DisplayPromptAsync("Комментарий", "Введите комментарий", "Отправить", "Отмена", maxLength: 200, keyboard: Keyboard.Default);
             if (string.IsNullOrWhiteSpace(text)) return;
 
             var photoWithId = item.Photos.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.ReportId));
             if (photoWithId == null)
             {
-                await Application.Current.MainPage.DisplayAlert("Ошибка", "Невозможно определить идентификатор фото-отчёта.", "OK");
+                await page.DisplayAlert("Ошибка", "Невозможно определить идентификатор фото-отчёта.", "OK");
                 return;
             }
 
             var photoId = photoWithId.ReportId;
             if(!Guid.TryParse(photoId, out _))
             {
-                await Application.Current.MainPage.DisplayAlert("Ошибка", "Некорректный идентификатор фото-отчёта.", "OK");
+                await page.DisplayAlert("Ошибка", "Некорректный идентификатор фото-отчёта.", "OK");
                 return;
             }
 

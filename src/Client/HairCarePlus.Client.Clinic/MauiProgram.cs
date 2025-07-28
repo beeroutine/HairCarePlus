@@ -78,7 +78,11 @@ public static class MauiProgram
 
 		builder.Services.AddScoped<ISyncService, SyncService>();
 		// builder.Services.AddHostedService<SyncScheduler>(); // disabled to prevent concurrent sync crashes
-		builder.Services.AddHttpClient<IFileCacheService, FileCacheService>();
+		// File downloads (images) should fail fast if server not reachable
+		builder.Services.AddHttpClient<IFileCacheService, FileCacheService>(client =>
+		{
+			client.Timeout = TimeSpan.FromSeconds(10);
+		});
 		// builder.Services.AddHostedService<PhotoPrefetchWorker>(); // disabled to avoid concurrent SQLite access during startup
 
 #if DEBUG
@@ -126,8 +130,7 @@ public static class MauiProgram
 		        ctx.Database.EnsureDeleted();
 		        ctx.Database.EnsureCreated();
 
-		        // Add missing column LocalPath if not present
-		        try { ctx.Database.ExecuteSqlRaw("ALTER TABLE PhotoReports ADD COLUMN LocalPath TEXT;"); } catch { }
+		        // Schema should be updated via EF Core migrations; LocalPath column handled by 202507151800_AddLocalPathToPhotoReports
 
 		        // (re)create tables that might be absent in EnsureCreated model
 		        var createOutboxSql = "CREATE TABLE IF NOT EXISTS OutboxItems (Id INTEGER PRIMARY KEY AUTOINCREMENT, EntityType TEXT NOT NULL, Payload TEXT NOT NULL, CreatedAtUtc TEXT NOT NULL, Status INTEGER NOT NULL, RetryCount INTEGER NOT NULL, LocalEntityId TEXT NOT NULL, ModifiedAtUtc TEXT NOT NULL)";

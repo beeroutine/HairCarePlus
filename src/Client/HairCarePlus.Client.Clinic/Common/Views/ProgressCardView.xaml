@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ContentView x:Class="HairCarePlus.Client.Clinic.Common.Views.ProgressCardView"
+             x:Name="thisView"
+             x:DataType="models:ProgressFeedItem"
+             xmlns:viewmodels="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             xmlns:maui="http://schemas.microsoft.com/dotnet/2021/maui"
              >
     <ContentView.Resources>
         <ResourceDictionary>
@@ -30,10 +34,14 @@
                     <CarouselView ItemsSource="{Binding Photos}"
                                   IndicatorView="{x:Reference photoIndicators}"
                                   IsSwipeEnabled="True"
-                                  PeekAreaInsets="0"
-                                  IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}}">
+                                  PeekAreaInsets="0">
+                        <CarouselView.IsVisible>
+                            <Binding Path="Photos.Count"
+                                     Converter="{StaticResource CountToBoolConverter}"
+                                     x:DataTypeArg="models:ProgressFeedItem" />
+                        </CarouselView.IsVisible>
                         <CarouselView.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="models:ProgressPhoto">
                                 <Grid>
                                     <!-- Image with fallback handling -->
                                     <Grid>
@@ -41,7 +49,7 @@
                                                Source="{Binding ImageUrl}"
                                                Aspect="AspectFill">
                                             <Image.Behaviors>
-                                                <converters:ImageLoadFailedBehavior FallbackVisible="{Binding Source={x:Reference FallbackLayout}, Path=IsVisible, Mode=OneWayToSource}" />
+                                                <converters:ImageLoadFailedBehavior />
                                             </Image.Behaviors>
                                         </Image>
                                         
@@ -60,7 +68,7 @@
                                                        HorizontalOptions="Center"/>
                                                 <Button Text="Запросить повторно" 
                                                         Style="{StaticResource SecondaryButtonStyle}"
-                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RequestResendCommand}" 
+                                                        IsVisible="False"
                                                         CommandParameter="{Binding .}"/>
                                             </VerticalStackLayout>
                                         </Grid>
@@ -94,8 +102,14 @@
                 <!-- Photo indicators below image -->
                 <IndicatorView x:Name="photoIndicators"
                                Style="{StaticResource InstagramPhotoIndicatorStyle}"
-                               HorizontalOptions="Center"
-                               IsVisible="{Binding Photos.Count, Converter={StaticResource CountToBoolConverter}, ConverterParameter=1}" />
+                               HorizontalOptions="Center">
+                    <IndicatorView.IsVisible>
+                        <Binding Path="Photos.Count"
+                                 Converter="{StaticResource CountToBoolConverter}"
+                                 ConverterParameter="1"
+                                 x:DataTypeArg="models:ProgressFeedItem" />
+                    </IndicatorView.IsVisible>
+                </IndicatorView>
 
                 <!-- Date label -->
             <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
@@ -106,7 +120,9 @@
                     <!-- Doctor comment (tap to add/edit) -->
                     <Border Style="{StaticResource DoctorCommentStyle}">
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartCommentCommand}" CommandParameter="{Binding .}" />
+                            <TapGestureRecognizer x:DataType="viewmodels:PatientPageViewModel"
+                                          Command="{Binding StartCommentCommand, Source={x:Reference thisView}}"
+                                          CommandParameter="{Binding .}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
                             <HorizontalStackLayout Spacing="6">

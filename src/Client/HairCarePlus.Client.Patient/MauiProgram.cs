@@ -23,6 +23,8 @@ using HairCarePlus.Client.Patient.Features.Notifications.Services.Interfaces;
 using System;
 using System.IO;
 using System.Diagnostics;
+using System.Data.Common;
+using Microsoft.Data.Sqlite;
 using HairCarePlus.Client.Patient.Features.Calendar.Converters;
 using HairCarePlus.Client.Patient.Common.Startup;
 using CommunityToolkit.Mvvm.Messaging;
@@ -33,6 +35,7 @@ using SkiaSharp.Views.Maui.Controls.Hosting;
 using HairCarePlus.Client.Patient.Features.Sync;
 using HairCarePlus.Client.Patient.Features.Sync.Application;
 using HairCarePlus.Client.Patient.Features.Sync.Infrastructure;
+using HairCarePlus.Shared.Common;
 
 #if IOS
 using HairCarePlus.Client.Patient.Platforms.iOS.Effects;
@@ -129,8 +132,10 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
 		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
 		{
-			var apiBaseUrl = Environment.GetEnvironmentVariable("CHAT_BASE_URL") ?? "http://192.168.1.6:5281";
+			var apiBaseUrl = EnvironmentHelper.GetBaseApiUrl();
 			client.BaseAddress = new Uri($"{apiBaseUrl}/");
+			// Limit the first sync attempt to a reasonable timeout to avoid long startup hangs
+			client.Timeout = TimeSpan.FromSeconds(10);
 		});
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
@@ -162,6 +167,14 @@ public static class MauiProgram
 #endif
 
 		var app = builder.Build();
+
+		// Apply pending EF Core migrations automatically
+		using (var scope = app.Services.CreateScope())
+		{
+			var dbCtx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			dbCtx.Database.Migrate();
+		}
+
 		ServiceHelper.Initialize(app.Services);
 
 		// Gracefully handle absence of camera on simulators (CommunityToolkit.Maui.Camera throws)

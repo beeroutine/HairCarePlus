@@ -26,7 +26,9 @@ public class MenuFlyoutBehavior : Behavior<Button>
     private async void OnButtonClicked(object? sender, EventArgs e)
     {
         if (_button == null || !MenuItems.Any()) return;
-        var result = await Application.Current!.MainPage!.DisplayActionSheet("Choose Action", "Cancel", null, MenuItems.Select(i => i.Text).ToArray());
+        var page = Application.Current?.Windows.FirstOrDefault()?.Page;
+        if (page == null) return;
+        var result = await page.DisplayActionSheet("Choose Action", "Cancel", null, MenuItems.Select(i => i.Text).ToArray());
         if (result == null || result == "Cancel") return;
         var selected = MenuItems.FirstOrDefault(i => i.Text == result);
         selected?.Command?.Execute(selected.CommandParameter);

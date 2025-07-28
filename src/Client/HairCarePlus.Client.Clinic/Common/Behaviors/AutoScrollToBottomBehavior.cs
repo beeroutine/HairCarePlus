@@ -64,7 +64,7 @@ namespace HairCarePlus.Client.Clinic.Common.Behaviors
                 if (items == null) return;
                 var lastItem = items.LastOrDefault();
                 if (lastItem == null) return;
-                Device.BeginInvokeOnMainThread(() =>
+                _collectionView.Dispatcher.Dispatch(() =>
                 {
                     _collectionView.ScrollTo(lastItem, position: ScrollToPosition.End, animate: true);
                 });

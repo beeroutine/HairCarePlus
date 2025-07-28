@@ -1,11 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Linq;
 using HairCarePlus.Client.Patient.Features.Calendar.Models;
 using HairCarePlus.Client.Patient.Features.Calendar.ViewModels;
 using Microsoft.Maui.Controls;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 using System.ComponentModel;
 using Microsoft.Maui.Handlers;
 #if IOS
@@ -154,10 +154,14 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Views
                 }
                 
                 // Set VisibleDate immediately via Dispatcher to update header when a date is TAPPED
-                await Microsoft.Maui.Controls.Application.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
+                if (page != null)
+                {
+                    await page.Dispatcher.DispatchAsync(() =>
                 {
                   _viewModel.VisibleDate = _viewModel.SelectedDate; 
                 });
+                }
                 
                 // Scroll to selected date with animation - REMOVED, let CenterOnSelectedBehavior handle it
                 // _ = CenterSelectedDateAsync(); 

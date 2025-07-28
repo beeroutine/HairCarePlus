@@ -121,9 +121,10 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception /*ex*/)
         {
-            if (MauiApp.Current?.MainPage != null)
+            var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
             {
-                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to load chat messages", "OK");
+                await page.DisplayAlert("Error", "Failed to load chat messages", "OK");
             }
         }
     }
@@ -198,9 +199,10 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception /*ex*/)
         {
-            if (MauiApp.Current?.MainPage != null)
+            var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
             {
-                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to send message", "OK");
+                await page.DisplayAlert("Error", "Failed to send message", "OK");
             }
         }
     }
@@ -216,9 +218,10 @@ public partial class ChatViewModel : ObservableObject
         }
         catch (Exception /*ex*/)
         {
-            if (MauiApp.Current?.MainPage != null)
+            var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
             {
-                await MauiApp.Current.MainPage.DisplayAlert("Error", "Failed to delete message", "OK");
+                await page.DisplayAlert("Error", "Failed to delete message", "OK");
             }
         }
     }
@@ -243,9 +246,10 @@ public partial class ChatViewModel : ObservableObject
         if (message.SenderId == "patient")
         {
             _logger.LogDebug("HandleReplyToMessage cancelled: SenderId == patient");
-            if (MauiApp.Current?.MainPage != null)
+            var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
             {
-                await MauiApp.Current.MainPage.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
+                await page.DisplayAlert("Информация", "Нельзя ответить на собственное сообщение", "OK");
             }
             return;
         }
@@ -309,9 +313,10 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task ChoosePhoto()
     {
-        if (MauiApp.Current?.MainPage != null)
+        var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+        if (page != null)
         {
-            await MauiApp.Current.MainPage.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
+            await page.DisplayAlert("Coming Soon", "Photo picker functionality will be available soon", "OK");
         }
     }
 
@@ -343,9 +348,10 @@ public partial class ChatViewModel : ObservableObject
                 ReplyTo = shouldReply ? latestPatientMessage : null
             };
             
-            if (MauiApp.Current?.MainPage != null)
+            var page = MauiApp.Current?.Windows.FirstOrDefault()?.Page;
+            if (page != null)
             {
-                await MauiApp.Current.MainPage.Dispatcher.DispatchAsync(() =>
+                await page.Dispatcher.DispatchAsync(() =>
                 {
                     Messages.Add(doctorResponse);
                 });

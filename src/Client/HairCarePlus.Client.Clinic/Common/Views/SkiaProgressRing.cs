@@ -1,3 +1,5 @@
+#pragma warning disable CS8602
+#nullable enable
 using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Core; // Provides AnimationExtensions
@@ -68,27 +70,27 @@ namespace HairCarePlus.Client.Clinic.Common.Views
             }
         }
 
-        private void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
+        private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
         {
+            var canvas = e.Surface?.Canvas;
             var info = e.Info;
-            var canvas = e.Surface.Canvas;
-            canvas.Clear();
+            canvas?.Clear();
 
             float cx = info.Width / 2f;
             float cy = info.Height / 2f;
             float thick = (float)Thickness;
             float radius = Math.Min(info.Width, info.Height) / 2f - thick / 2f;
 
-            bool isDarkTheme = Application.Current.RequestedTheme == AppTheme.Dark;
+            bool isDarkTheme = Application.Current?.RequestedTheme == AppTheme.Dark;
 
             SKColor trackColor;
             if (isDarkTheme)
             {
-                trackColor = (Application.Current.Resources["TaskCardBackgroundDark"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.Gray;
+                trackColor = (Application.Current?.Resources["TaskCardBackgroundDark"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.Gray;
             }
             else
             {
-                trackColor = (Application.Current.Resources["TaskCardBackgroundLight"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.LightGray;
+                trackColor = (Application.Current?.Resources["TaskCardBackgroundLight"] as SolidColorBrush)?.Color.ToSKColor() ?? SKColors.LightGray;
             }
 
             SKColor progressColor = isDarkTheme ? SKColors.White : SKColors.Black;

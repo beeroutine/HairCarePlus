@@ -56,20 +56,15 @@ public class LocalStorageService : ILocalStorageService
 
             // DEV-time safety: verify critical tables; if any probe fails we recreate DB (no irreversible data yet)
             bool rebuildRequired = false;
-            string[] probes = { "OutboxItems", "PhotoReports" };
-
-            foreach (var tbl in probes)
+            try
             {
-                try
-                {
-                    context.Database.ExecuteSqlRaw($"SELECT 1 FROM {tbl} LIMIT 1");
+                context.Database.ExecuteSqlRaw("SELECT 1 FROM OutboxItems LIMIT 1");
+                context.Database.ExecuteSqlRaw("SELECT 1 FROM PhotoReports LIMIT 1");
                 }
-                catch (Microsoft.Data.Sqlite.SqliteException)
+            catch (Microsoft.Data.Sqlite.SqliteException ex)
                 {
-                    _logger?.LogWarning("Table {Table} missing – will rebuild SQLite file", tbl);
+                _logger?.LogWarning(ex, "Required tables missing – will rebuild SQLite file");
                     rebuildRequired = true;
-                    break;
-                }
             }
 
             if (rebuildRequired)

@@ -10,7 +10,7 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Converters;
 /// </summary>
 public class RestrictionIconBadgeConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string restrictionTitle)
             return "\uf05a"; // Default info icon
@@ -35,7 +35,7 @@ public class RestrictionIconBadgeConverter : IValueConverter
         };
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException("RestrictionIconBadgeConverter does not support ConvertBack");
     }

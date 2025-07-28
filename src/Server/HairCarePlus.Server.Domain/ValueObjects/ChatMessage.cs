@@ -6,7 +6,7 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 {
     public class ChatMessage : BaseEntity
     {
-        public string Content { get; private set; }
+        public string Content { get; private set; } = null!;
         public string? TranslatedContent { get; private set; }
         public string? SourceLanguage { get; private set; }
         public string? TargetLanguage { get; private set; }
@@ -14,7 +14,7 @@ namespace HairCarePlus.Server.Domain.ValueObjects
         public MessageStatus Status { get; private set; }
         public Guid SenderId { get; private set; }
         public Guid ReceiverId { get; private set; }
-        public List<ChatAttachment> Attachments { get; private set; }
+        public List<ChatAttachment> Attachments { get; private set; } = new();
         public bool IsRead { get; private set; }
         public DateTime? ReadAt { get; private set; }
 
@@ -88,9 +88,9 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 
     public class ChatAttachment : BaseEntity
     {
-        public string Url { get; private set; }
-        public string FileName { get; private set; }
-        public string MimeType { get; private set; }
+        public string Url { get; private set; } = null!;
+        public string FileName { get; private set; } = null!;
+        public string MimeType { get; private set; } = null!;
         public long FileSize { get; private set; }
         public AttachmentType Type { get; private set; }
 

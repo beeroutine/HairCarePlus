@@ -35,7 +35,7 @@
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs access to camera to take photos.</string>
+	<string>We need access to the camera to take progress photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photos to select images from your library.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

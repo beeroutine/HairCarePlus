@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using HairCarePlus.Server.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 
 namespace HairCarePlus.Server.Infrastructure.Data.Repositories;
 
@@ -43,14 +44,35 @@ public class DeliveryQueueRepository : IDeliveryQueueRepository
 
     public async Task AckAsync(IEnumerable<Guid> ids, byte receiverMask)
     {
-        var set = ids.ToList();
-        if (set.Count == 0) return;
+        var idList = ids.ToList();
+        if (idList.Count == 0) return;
 
-        var rows = await _db.DeliveryQueue.Where(d => set.Contains(d.Id)).ToListAsync();
+        var rows = await _db.DeliveryQueue.Where(d => idList.Contains(d.Id)).ToListAsync();
         foreach (var row in rows)
         {
+            // mark bit
             row.DeliveredMask = (byte)(row.DeliveredMask | receiverMask);
+
+            // if delivered to all receivers -> mark for removal
+            if ((row.DeliveredMask & row.ReceiversMask) == row.ReceiversMask)
+            {
+                // remove associated blob if any
+                if (!string.IsNullOrWhiteSpace(row.BlobUrl))
+                {
+                    try
+                    {
+                        var root = AppContext.BaseDirectory;
+                        var path = Path.Combine(root, "uploads", Path.GetFileName(row.BlobUrl));
+                        if (File.Exists(path))
+                            File.Delete(path);
+                    }
+                    catch { /* best effort */ }
+                }
+
+                _db.DeliveryQueue.Remove(row);
+            }
         }
+
         await _db.SaveChangesAsync();
     }
 

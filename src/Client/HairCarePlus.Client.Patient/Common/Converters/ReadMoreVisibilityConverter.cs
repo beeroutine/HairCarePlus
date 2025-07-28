@@ -10,22 +10,22 @@ namespace HairCarePlus.Client.Patient.Common.Converters;
 public sealed class ReadMoreVisibilityConverter : IValueConverter
 {
     /// <summary>
-    /// Character threshold after which the Read&nbsp;more link becomes visible.
-    /// Defaults to <c>120</c>.
+    /// Character count after which the Read&nbsp;more link becomes visible.
+    /// Can be set in XAML: <converters:ReadMoreVisibilityConverter Threshold="120" />
+    /// Defaults to 100.
     /// </summary>
-    public int Threshold { get; set; } = 120;
+    public int Threshold { get; set; } = 100;
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is string text)
+        if (value is not string text)
+            return false;
+
             return text.Length > Threshold;
-
-        if (value is int length)
-            return length > Threshold;
-
-        return false;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotImplementedException();
+    {
+        throw new NotImplementedException();
+    }
 } 

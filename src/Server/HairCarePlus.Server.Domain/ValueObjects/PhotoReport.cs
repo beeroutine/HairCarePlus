@@ -8,13 +8,13 @@ namespace HairCarePlus.Server.Domain.ValueObjects
     {
         public string? ImageUrl { get; private set; }
         public string? ImageUploadUrl { get; private set; }
-        public string ThumbnailUrl { get; private set; }
+        public string ThumbnailUrl { get; private set; } = null!;
         public Guid PatientId { get; private set; }
-        public Patient Patient { get; private set; }
+        public Patient Patient { get; private set; } = null!;
         public DateTime CaptureDate { get; private set; }
-        public string Notes { get; private set; }
+        public string Notes { get; private set; } = null!;
         public PhotoType Type { get; private set; }
-        public AnalysisResult AnalysisResult { get; private set; }
+        public AnalysisResult AnalysisResult { get; private set; } = null!;
         public ICollection<PhotoComment> Comments { get; private set; } = new List<PhotoComment>();
         public DateTime ExpiresAtUtc { get; private set; }
 

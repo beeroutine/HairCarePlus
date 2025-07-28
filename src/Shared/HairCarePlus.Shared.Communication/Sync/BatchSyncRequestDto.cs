@@ -19,6 +19,9 @@ public sealed class BatchSyncRequestDto
     // Lightweight diff for photo reports
     public IReadOnlyList<EntityHeaderDto>? PhotoReportHeaders { get; init; }
 
+    public Guid DeviceId { get; init; }
+    public Guid PatientId { get; init; }
+
     /// <summary>
     ///   Идентификаторы DeliveryQueue записей, которые клиент подтвердил (ACK)
     /// </summary>

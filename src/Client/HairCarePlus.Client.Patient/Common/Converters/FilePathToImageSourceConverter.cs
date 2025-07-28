@@ -10,21 +10,16 @@ namespace HairCarePlus.Client.Patient.Common.Converters;
 /// </summary>
 public sealed class FilePathToImageSourceConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not string path || string.IsNullOrWhiteSpace(path))
+        if (value is not string filePath || string.IsNullOrEmpty(filePath))
             return null;
 
-        // Prefer FromFile for local absolute paths – works across iOS/Android without URI scheme.
-        if (System.IO.File.Exists(path))
-            return ImageSource.FromFile(path);
-
-        // Fallback: try URI (useful if path already contains scheme)
-        if (!path.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-            path = $"file://{path}";
-
-        return ImageSource.FromUri(new Uri(path));
+        return ImageSource.FromFile(filePath);
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
 } 

@@ -6,15 +6,15 @@
                     xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters">
     <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
     <!-- DataTemplate for patient card with swipe actions -->
-    <DataTemplate x:Key="PatientCardTemplate">
+    <DataTemplate x:Key="PatientCardTemplate" x:DataType="models:PatientSummary">
         <SwipeView>
             <SwipeView.RightItems>
                 <SwipeItems Mode="Execute">
                     <SwipeItem Text="Chat" BackgroundColor="#2D8CFF"
-                               Command="{Binding Path=BindingContext.OpenChatCommand, Source={x:Reference rootCard}}"
+                               Command="{Binding OpenChatCommand}"
                                CommandParameter="{Binding .}"/>
                     <SwipeItem Text="Call" BackgroundColor="#34C759"
-                               Command="{Binding Path=BindingContext.CallCommand, Source={x:Reference rootCard}}"
+                               Command="{Binding CallCommand}"
                                CommandParameter="{Binding .}"/>
                 </SwipeItems>
             </SwipeView.RightItems>

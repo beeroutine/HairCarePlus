@@ -1,16 +1,16 @@
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Clinic.Infrastructure.Storage;
 using HairCarePlus.Shared.Communication;
 using HairCarePlus.Shared.Communication.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using CommunityToolkit.Mvvm.Messaging;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
-
+namespace HairCarePlus.Client.Clinic.Features.Sync.Infrastructure
+{
 public interface ISyncChangeApplier
 {
     Task ApplyAsync(BatchSyncResponseDto response);
@@ -31,19 +31,94 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
 
     public async Task ApplyAsync(BatchSyncResponseDto response)
     {
-        await using var db = _dbFactory.CreateDbContext();
+            await using var db = await _dbFactory.CreateDbContextAsync();
         var applied = 0;
 
-        // Handle typed lists first (preferred)
-        if ((response.PhotoReports?.Count ?? 0) > 0)
-        {
-            foreach (var dto in response.PhotoReports!)
+            // Step 1: Collect all IDs from both DTO lists and packets
+            var reportIds = response.PhotoReports?.Select(r => r.Id.ToString()).ToList() ?? new List<string>();
+            var restrictionIds = response.Restrictions?.Select(r => r.Id.ToString()).ToList() ?? new List<string>();
+            
+            if (response.Packets != null)
             {
-                var id = dto.Id.ToString();
-                var entity = await db.PhotoReports.Include(p => p.Comments).FirstOrDefaultAsync(p => p.Id == id);
-                if (entity == null)
+                foreach (var packet in response.Packets)
                 {
-                    entity = new Domain.Entities.PhotoReportEntity
+                    if (packet.EntityType == nameof(PhotoReportDto))
+                    {
+                        var dto = JsonSerializer.Deserialize<PhotoReportDto>(packet.PayloadJson);
+                        if (dto != null) reportIds.Add(dto.Id.ToString());
+                    }
+                    else if (packet.EntityType == nameof(RestrictionDto))
+                    {
+                        var dto = JsonSerializer.Deserialize<RestrictionDto>(packet.PayloadJson);
+                        if (dto != null) restrictionIds.Add(dto.Id.ToString());
+                    }
+                }
+            }
+
+            // Step 2: Batch fetch all existing entities from the database
+            var existingReports = await db.PhotoReports
+                .Include(p => p.Comments)
+                .Where(p => reportIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
+            var existingRestrictions = await db.Restrictions
+                .Where(r => restrictionIds.Contains(r.Id))
+                .ToDictionaryAsync(r => r.Id);
+
+            // Step 3: Process DTOs from typed lists
+            if (response.PhotoReports != null)
+            {
+                foreach (var dto in response.PhotoReports)
+                {
+                    applied += ApplyPhotoReport(db, dto, existingReports);
+                }
+            }
+            if (response.Restrictions != null)
+            {
+                 _logger.LogInformation("Clinic SyncApplier: applying {Count} restrictions from typed list", response.Restrictions.Count);
+                foreach (var dto in response.Restrictions)
+                {
+                    applied += ApplyRestriction(db, dto, existingRestrictions);
+                }
+            }
+
+            // Step 4: Process DTOs from packets
+            if (response.Packets != null)
+            {
+                foreach (var packet in response.Packets)
+                {
+                    if (packet.EntityType == nameof(PhotoReportDto))
+                    {
+                        var dto = JsonSerializer.Deserialize<PhotoReportDto>(packet.PayloadJson);
+                        if(dto != null) applied += ApplyPhotoReport(db, dto, existingReports);
+                    }
+                    else if (packet.EntityType == nameof(RestrictionDto))
+                    {
+                        var dto = JsonSerializer.Deserialize<RestrictionDto>(packet.PayloadJson);
+                        if(dto != null) applied += ApplyRestriction(db, dto, existingRestrictions);
+                    }
+                }
+            }
+            
+            if (applied > 0)
+            {
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Clinic SyncApplier applied {Count} changes", applied);
+            }
+        }
+
+        private int ApplyPhotoReport(AppDbContext db, PhotoReportDto dto, Dictionary<string, Domain.Entities.PhotoReportEntity> existingReports)
+        {
+            var id = dto.Id.ToString();
+            if (existingReports.TryGetValue(id, out var entity))
+            {
+                entity.ImageUrl = dto.ImageUrl;
+                entity.Date = dto.Date;
+                entity.DoctorComment = dto.Notes;
+            }
+            else
+            {
+                entity = new Domain.Entities.PhotoReportEntity
                     {
                         Id = id,
                         PatientId = dto.PatientId.ToString(),
@@ -52,53 +127,23 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                         DoctorComment = dto.Notes
                     };
                     db.PhotoReports.Add(entity);
-                }
-                else
-                {
-                    entity.ImageUrl = dto.ImageUrl;
-                    entity.Date = dto.Date;
-                    entity.DoctorComment = dto.Notes;
-                }
-                applied++;
-                _messenger.Send(dto); // broadcast as needed (placeholder)
+                existingReports.Add(id, entity); // Add to dictionary to avoid re-adding
             }
+            _messenger.Send(dto);
+            return 1;
         }
 
-        if ((response.Restrictions?.Count ?? 0) > 0)
+        private int ApplyRestriction(AppDbContext db, RestrictionDto dto, Dictionary<string, Domain.Entities.RestrictionEntity> existingRestrictions)
         {
-            _logger.LogInformation("Clinic SyncApplier: applying {Count} restrictions", response.Restrictions!.Count);
-
-            // Track ids that were already handled during this ApplyAsync run to avoid duplicates coming
-            // in a single response payload (server bug). Otherwise we may attempt to insert the same key
-            // multiple times before SaveChanges and hit UNIQUE constraint violations.
-            var handledRestrictionIds = new HashSet<string>();
-
-            foreach (var dto in response.Restrictions!)
+            var id = dto.Id.ToString();
+            if (existingRestrictions.TryGetValue(id, out var entity))
             {
-                var id = dto.Id.ToString();
-
-                // Skip duplicates contained in the same response
-                if (!handledRestrictionIds.Add(id))
-                    continue;
-
-                // First look inside the current DbContext change tracker – the entity may have been
-                // added earlier in this loop but not yet persisted.
-                var tracked = db.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
-                                    .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
-
-                var entity = tracked ?? await db.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
-
-                // Fallback: try to find by patient/type/dates (handles client-generated duplicate IDs)
-                if (entity == null)
-                {
-                    entity = await db.Restrictions.FirstOrDefaultAsync(r =>
-                        r.PatientId == dto.PatientId.ToString() &&
-                        r.Type == (int)dto.IconType &&
-                        r.StartUtc == dto.StartUtc &&
-                        r.EndUtc == dto.EndUtc);
-                }
-
-                if (entity == null)
+                entity.Type = (int)dto.IconType;
+                entity.StartUtc = dto.StartUtc;
+                entity.EndUtc = dto.EndUtc;
+                entity.IsActive = dto.IsActive;
+            }
+            else
                 {
                     entity = new Domain.Entities.RestrictionEntity
                     {
@@ -110,47 +155,10 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                         IsActive = dto.IsActive
                     };
                     db.Restrictions.Add(entity);
-                }
-                else
-                {
-                    // Update existing record in case any fields changed
-                    entity.Type = (int)dto.IconType;
-                    entity.StartUtc = dto.StartUtc;
-                    entity.EndUtc = dto.EndUtc;
-                    entity.IsActive = dto.IsActive;
-                }
-                applied++;
-                _messenger.Send(dto); // broadcast for UI update
+                existingRestrictions.Add(id, entity); // Add to dictionary to avoid re-adding
             }
-        }
-
-        if ((response.PhotoComments?.Count ?? 0) > 0)
-        {
-            foreach (var dto in response.PhotoComments!)
-            {
-                var prId = dto.PhotoReportId.ToString();
-                if (!await db.PhotoReports.AnyAsync(p => p.Id == prId)) continue;
-
-                var exists = await db.PhotoComments.AnyAsync(c => c.PhotoReportId == prId && c.AuthorId == dto.AuthorId.ToString() && c.Text == dto.Text && c.CreatedAtUtc == dto.CreatedAtUtc);
-                if (exists) continue;
-
-                var comment = new Domain.Entities.PhotoCommentEntity
-                {
-                    PhotoReportId = prId,
-                    AuthorId = dto.AuthorId.ToString(),
-                    Text = dto.Text,
-                    CreatedAtUtc = dto.CreatedAtUtc
-                };
-                db.PhotoComments.Add(comment);
-                applied++;
                 _messenger.Send(dto);
-            }
-        }
-
-        if (applied > 0)
-        {
-            await db.SaveChangesAsync();
-            _logger.LogInformation("Clinic SyncApplier applied {Count} changes", applied);
+            return 1;
         }
     }
 } 

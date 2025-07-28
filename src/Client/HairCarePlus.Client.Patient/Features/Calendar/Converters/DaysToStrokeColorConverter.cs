@@ -14,7 +14,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
     {
         private static readonly Color WarningRed = Color.FromArgb("#F14336");
 
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is int days)
             {
@@ -29,6 +29,6 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Converters
             return Colors.Transparent;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 } 

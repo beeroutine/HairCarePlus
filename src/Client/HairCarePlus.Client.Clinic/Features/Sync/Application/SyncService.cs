@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Clinic.Features.Chat.Domain;
 using HairCarePlus.Client.Clinic.Infrastructure.Features.Chat.Repositories;
 using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
+using Microsoft.Extensions.Logging;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Application;
 
@@ -29,8 +30,10 @@ public class SyncService : ISyncService
     private readonly ISyncChangeApplier _applier;
     private readonly IChatMessageRepository _chatRepo;
     private readonly IFileCacheService _fileCache;
+    private readonly ILogger<SyncService> _logger;
 
     private readonly List<Guid> _pendingAckIds = new();
+    private static readonly Guid _deviceId = Guid.NewGuid();
 
     public SyncService(IOutboxRepository outbox,
                        ISyncHttpClient syncClient,
@@ -38,7 +41,8 @@ public class SyncService : ISyncService
                        ILastSyncVersionStore versionStore,
                        ISyncChangeApplier applier,
                        IChatMessageRepository chatRepo,
-                       IFileCacheService fileCache)
+                       IFileCacheService fileCache,
+                       ILogger<SyncService> logger)
     {
         _outbox = outbox;
         _syncClient = syncClient;
@@ -47,6 +51,7 @@ public class SyncService : ISyncService
         _applier = applier;
         _chatRepo = chatRepo;
         _fileCache = fileCache;
+        _logger = logger;
     }
 
     // Prevent concurrent syncs to avoid DB race conditions
@@ -55,223 +60,247 @@ public class SyncService : ISyncService
     {
         await _syncLock.WaitAsync(cancellationToken);
         try
-    {
-        // 1. Gather pending local changes
-        var pendingItems = await _outbox.GetPendingItemsAsync();
-
-        await using var db = _dbFactory.CreateDbContext();
-
-        var photoReportsToSend = new List<HairCarePlus.Shared.Communication.PhotoReportDto>();
-        var photoCommentsToSend = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>();
-        var chatMessagesToSend = new List<HairCarePlus.Shared.Communication.ChatMessageDto>();
-
-        foreach (var item in pendingItems)
         {
-            switch (item.EntityType)
+            // 1. Gather pending local changes
+            var pendingItems = await _outbox.GetPendingItemsAsync();
+
+            await using var db = _dbFactory.CreateDbContext();
+
+            var photoReportsToSend = new List<HairCarePlus.Shared.Communication.PhotoReportDto>();
+            var photoCommentsToSend = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>();
+            var chatMessagesToSend = new List<HairCarePlus.Shared.Communication.ChatMessageDto>();
+
+            foreach (var item in pendingItems)
             {
-                case "PhotoReport":
-                    try
-                    {
-                        var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(item.PayloadJson);
-                        if (dto != null)
-                            photoReportsToSend.Add(dto);
-                    }
-                    catch { /* ignore */ }
-                    break;
-                case "PhotoComment":
-                    try
-                    {
-                        var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(item.PayloadJson);
-                        if (dto != null)
-                            photoCommentsToSend.Add(dto);
-                    }
-                    catch { /* ignore */ }
-                    break;
-                case "ChatMessage":
-                    try
-                    {
-                        var chatDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(item.PayloadJson);
-                        if (chatDto != null)
-                            chatMessagesToSend.Add(chatDto);
-                    }
-                    catch { }
-                    break;
-            }
-        }
-
-        // prepare headers (clinic cares about patient-side reports, but still send its own)
-        var reportHeaders = await db.PhotoReports
-                                     .Select(r => new HairCarePlus.Shared.Communication.EntityHeaderDto
-                                     {
-                                         Id = Guid.Parse(r.Id),
-                                         ModifiedAtUtc = r.Date.ToUniversalTime()
-                                     })
-                                     .ToListAsync(cancellationToken);
-
-        var lastVersion = await _versionStore.GetAsync();
-
-        var request = new BatchSyncRequestDto
-        {
-            ClientId = "clinic-app", // TODO: unique device id
-            LastSyncVersion = lastVersion,
-            PhotoReportHeaders = reportHeaders,
-            PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
-            PhotoComments = photoCommentsToSend.Count > 0 ? photoCommentsToSend : null,
-            ChatMessages = chatMessagesToSend.Count > 0 ? chatMessagesToSend : null,
-            AckIds = _pendingAckIds.Count > 0 ? _pendingAckIds : null
-        };
-
-        var response = await _syncClient.PushAsync(request, cancellationToken);
-        if (response == null) return; // network error
-
-        // 2. Process incoming packets
-        if (response.Packets != null)
-        {
-            await using var db2 = _dbFactory.CreateDbContext();
-            var handledRestrictionIds = new HashSet<string>();
-            foreach (var packet in response.Packets)
-            {
-                switch (packet.EntityType)
+                switch (item.EntityType)
                 {
                     case "PhotoReport":
                         try
                         {
-                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(packet.PayloadJson);
-                            if (dto != null && await db2.PhotoReports.FirstOrDefaultAsync(r => r.Id == dto.Id.ToString()) == null)
-                            {
-                                var entity = new Domain.Entities.PhotoReportEntity
-                                {
-                                    Id = dto.Id.ToString(),
-                                    PatientId = dto.PatientId.ToString(),
-                                    ImageUrl = dto.ImageUrl,
-                                    Date = dto.Date,
-                                    DoctorComment = dto.Notes
-                                };
-                                try
-                                {
-                                    var path = await _fileCache.GetLocalPathAsync(dto.ImageUrl, cancellationToken);
-                                    entity.LocalPath = path;
-                                }
-                                catch { /* download failure is non-fatal */ }
-                                await db2.PhotoReports.AddAsync(entity, cancellationToken);
-                                _pendingAckIds.Add(packet.Id);
-                            }
+                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(item.PayloadJson);
+                            if (dto != null)
+                                photoReportsToSend.Add(dto);
                         }
                         catch { /* ignore */ }
                         break;
-                    case "Restriction":
+                    case "PhotoComment":
                         try
                         {
-                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.RestrictionDto>(packet.PayloadJson);
+                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(item.PayloadJson);
                             if (dto != null)
-                            {
-                                var id = dto.Id.ToString();
-                                // skip duplicate within same batch
-                                if (!handledRestrictionIds.Add(id))
-                                    break;
-
-                                // Check ChangeTracker first
-                                var tracked = db2.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
-                                                         .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
-
-                                var entity = tracked ?? await db2.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
-                                if (entity == null)
-                                {
-                                    entity = new Domain.Entities.RestrictionEntity
-                                    {
-                                        Id = id,
-                                        PatientId = dto.PatientId.ToString(),
-                                        Type = (int)dto.IconType,
-                                        StartUtc = dto.StartUtc,
-                                        EndUtc = dto.EndUtc,
-                                        IsActive = dto.IsActive
-                                    };
-                                    await db2.Restrictions.AddAsync(entity, cancellationToken);
-                                }
-                                else
-                                {
-                                    entity.Type = (int)dto.IconType;
-                                    entity.StartUtc = dto.StartUtc;
-                                    entity.EndUtc = dto.EndUtc;
-                                    entity.IsActive = dto.IsActive;
-                                }
-                                _pendingAckIds.Add(packet.Id);
-                            }
+                                photoCommentsToSend.Add(dto);
                         }
                         catch { /* ignore */ }
                         break;
                     case "ChatMessage":
                         try
                         {
-                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(packet.PayloadJson);
-                            if (dto != null)
-                            {
-                                var entity = new HairCarePlus.Client.Clinic.Features.Chat.Models.ChatMessage
-                                {
-                                    ConversationId = dto.ConversationId,
-                                    SenderId = dto.SenderId,
-                                    Content = dto.Content,
-                                    SentAt = dto.SentAt.UtcDateTime,
-                                    SyncStatus = HairCarePlus.Client.Clinic.Features.Chat.Models.SyncStatus.Synced
-                                };
-                                await _chatRepo.AddAsync(entity);
-                                _pendingAckIds.Add(packet.Id);
-                            }
+                            var chatDto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(item.PayloadJson);
+                            if (chatDto != null)
+                                chatMessagesToSend.Add(chatDto);
                         }
-                        catch { /* ignore */ }
+                        catch { }
                         break;
                 }
             }
-            await db2.SaveChangesAsync(cancellationToken);
-        }
 
-        // 3. Apply server changes via applier
-        await _applier.ApplyAsync(response);
+            // prepare headers (clinic cares about patient-side reports, but still send its own)
+            var reportHeaders = await db.PhotoReports
+                                         .Select(r => new HairCarePlus.Shared.Communication.EntityHeaderDto
+                                         {
+                                             Id = Guid.Parse(r.Id),
+                                             ModifiedAtUtc = r.Date.ToUniversalTime()
+                                         })
+                                         .ToListAsync(cancellationToken);
 
-        // 4. Update outbox statuses
-        if (pendingItems.Count > 0)
-            await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), SyncStatus.Acked);
+            var lastVersion = await _versionStore.GetAsync();
 
-        // 5. Save new version
-        await _versionStore.SetAsync(response.NewSyncVersion);
-
-        // 6. clear ack list
-        _pendingAckIds.Clear();
-
-        // 7. Handle NeedPhotoReports -> enqueue missing ones
-        if (response.NeedPhotoReports != null && response.NeedPhotoReports.Count > 0)
-        {
-            var neededIds = response.NeedPhotoReports.Select(g => g.ToString()).ToHashSet();
-            var neededReports = await db.PhotoReports.Include(p => p.Comments)
-                                                     .Where(p => neededIds.Contains(p.Id))
-                                                     .ToListAsync(cancellationToken);
-
-            foreach (var rep in neededReports)
+            var request = new BatchSyncRequestDto
             {
-                var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
-                {
-                    Id = Guid.Parse(rep.Id),
-                    PatientId = Guid.Parse(rep.PatientId),
-                    ImageUrl = rep.ImageUrl,
-                    Date = rep.Date,
-                    Notes = rep.DoctorComment ?? string.Empty,
-                    Comments = rep.Comments.Select(c => new HairCarePlus.Shared.Communication.PhotoCommentDto
-                    {
-                        PhotoReportId = Guid.Parse(c.PhotoReportId),
-                        AuthorId = Guid.Parse(c.AuthorId),
-                        Text = c.Text,
-                        CreatedAtUtc = c.CreatedAtUtc
-                    }).ToList()
-                };
+                DeviceId = _deviceId,
+                ClientId = "clinic-app", // TODO: unique device id
+                LastSyncVersion = lastVersion,
+                PhotoReportHeaders = reportHeaders,
+                PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
+                PhotoComments = photoCommentsToSend,
+                ChatMessages = chatMessagesToSend,
+                AckIds = _pendingAckIds.Count > 0 ? _pendingAckIds : null
+            };
 
-                await _outbox.AddAsync(new OutboxItem
+            var response = await _syncClient.PushAsync(request, cancellationToken);
+            if (response == null) return; // network error
+
+            // 2. Process incoming packets
+            if (response.Packets != null)
+            {
+                await using var db2 = _dbFactory.CreateDbContext();
+                var handledRestrictionIds = new HashSet<string>();
+                var handledPhotoIds = new HashSet<string>();
+                foreach (var packet in response.Packets)
                 {
-                    EntityType = "PhotoReport",
-                    PayloadJson = JsonSerializer.Serialize(dto),
-                    LocalEntityId = rep.Id,
-                    ModifiedAtUtc = DateTime.UtcNow
-                });
+                    switch (packet.EntityType)
+                    {
+                        case "PhotoReport":
+                            try
+                            {
+                                var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(packet.PayloadJson);
+                                if (dto != null)
+                                {
+                                    var id = dto.Id.ToString();
+                                    // skip duplicates within the same batch
+                                    if (!handledPhotoIds.Add(id))
+                                        break;
+
+                                    // check ChangeTracker first to avoid double AddAsync in this context
+                                    var tracked = db2.ChangeTracker.Entries<Domain.Entities.PhotoReportEntity>()
+                                                     .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
+
+                                    var entity = tracked ?? await db2.PhotoReports.FirstOrDefaultAsync(r => r.Id == id);
+
+                                    if (entity == null)
+                                    {
+                                        entity = new Domain.Entities.PhotoReportEntity
+                                        {
+                                            Id = id,
+                                            PatientId = dto.PatientId.ToString(),
+                                            ImageUrl = dto.ImageUrl,
+                                            Date = dto.Date,
+                                            DoctorComment = dto.Notes ?? string.Empty
+                                        };
+                                        try
+                                        {
+                                            var path = await _fileCache.GetLocalPathAsync(dto.ImageUrl, cancellationToken);
+                                            if (path != null)
+                                                entity.LocalPath = path;
+                                        }
+                                        catch { /* download failure is non-fatal */ }
+                                        await db2.PhotoReports.AddAsync(entity, cancellationToken);
+                                    }
+
+                                    _pendingAckIds.Add(dto.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process PhotoReport packet {PacketId}", packet.Id);
+                            }
+                            break;
+                        case "Restriction":
+                            try
+                            {
+                                var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.RestrictionDto>(packet.PayloadJson);
+                                if (dto != null)
+                                {
+                                    var id = dto.Id.ToString();
+                                    // skip duplicate within same batch
+                                    if (!handledRestrictionIds.Add(id))
+                                        break;
+
+                                    // Check ChangeTracker first
+                                    var tracked = db2.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
+                                                             .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
+
+                                    var entity = tracked ?? await db2.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
+                                    if (entity == null)
+                                    {
+                                        entity = new Domain.Entities.RestrictionEntity
+                                        {
+                                            Id = id,
+                                            PatientId = dto.PatientId.ToString(),
+                                            Type = (int)dto.IconType,
+                                            StartUtc = dto.StartUtc,
+                                            EndUtc = dto.EndUtc,
+                                            IsActive = dto.IsActive
+                                        };
+                                        await db2.Restrictions.AddAsync(entity, cancellationToken);
+                                    }
+                                    else
+                                    {
+                                        entity.IsActive = dto.IsActive;
+                                    }
+                                    _pendingAckIds.Add(dto.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process Restriction packet {PacketId}", packet.Id);
+                            }
+                            break;
+                        case "ChatMessage":
+                            try
+                            {
+                                var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.ChatMessageDto>(packet.PayloadJson);
+                                if (dto != null)
+                                {
+                                    var entity = new HairCarePlus.Client.Clinic.Features.Chat.Models.ChatMessage
+                                    {
+                                        ConversationId = dto.ConversationId,
+                                        SenderId = dto.SenderId,
+                                        Content = dto.Content,
+                                        SentAt = dto.SentAt.UtcDateTime,
+                                        SyncStatus = HairCarePlus.Client.Clinic.Features.Chat.Models.SyncStatus.Synced
+                                    };
+                                    await _chatRepo.AddAsync(entity);
+                                    _pendingAckIds.Add(dto.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process ChatMessage packet {PacketId}", packet.Id);
+                            }
+                            break;
+                    }
+                }
+                await db2.SaveChangesAsync(cancellationToken);
             }
+
+            // 3. Apply server changes via applier
+            await _applier.ApplyAsync(response);
+
+            // 4. Update outbox statuses
+            if (pendingItems.Count > 0)
+                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), SyncStatus.Acked);
+
+            // 5. Save new version
+            await _versionStore.SetAsync(response.NewSyncVersion);
+
+            // 6. clear ack list
+            _pendingAckIds.Clear();
+
+            // 7. Handle NeedPhotoReports -> enqueue missing ones
+            if (response.NeedPhotoReports != null && response.NeedPhotoReports.Count > 0)
+            {
+                var neededIds = response.NeedPhotoReports.Select(g => g.ToString()).ToHashSet();
+                var neededReports = await db.PhotoReports.Include(p => p.Comments)
+                                                         .Where(p => neededIds.Contains(p.Id))
+                                                         .ToListAsync(cancellationToken);
+
+                foreach (var rep in neededReports)
+                {
+                    var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
+                    {
+                        Id = Guid.Parse(rep.Id),
+                        PatientId = Guid.Parse(rep.PatientId),
+                        ImageUrl = rep.ImageUrl,
+                        Date = rep.Date,
+                        Notes = rep.DoctorComment ?? string.Empty,
+                        Comments = rep.Comments.Select(c => new HairCarePlus.Shared.Communication.PhotoCommentDto
+                        {
+                            PhotoReportId = Guid.Parse(c.PhotoReportId),
+                            AuthorId = Guid.Parse(c.AuthorId),
+                            Text = c.Text,
+                            CreatedAtUtc = c.CreatedAtUtc
+                        }).ToList()
+                    };
+
+                    await _outbox.AddAsync(new OutboxItem
+                    {
+                        EntityType = "PhotoReport",
+                        PayloadJson = JsonSerializer.Serialize(dto),
+                        LocalEntityId = rep.Id,
+                        ModifiedAtUtc = DateTime.UtcNow
+                    });
+                }
             }
         }
         finally

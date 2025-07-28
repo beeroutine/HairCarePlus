@@ -5,8 +5,8 @@ namespace HairCarePlus.Server.Domain.ValueObjects
 {
     public class Notification : BaseEntity
     {
-        public string Title { get; private set; }
-        public string Message { get; private set; }
+        public string Title { get; private set; } = null!;
+        public string Message { get; private set; } = null!;
         public NotificationType Type { get; private set; }
         public DateTime ScheduledTime { get; private set; }
         public bool IsRead { get; private set; }

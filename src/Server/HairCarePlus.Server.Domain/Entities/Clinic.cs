@@ -6,17 +6,17 @@ namespace HairCarePlus.Server.Domain.Entities
 {
     public class Clinic : BaseEntity
     {
-        public string Name { get; private set; }
-        public string Description { get; private set; }
-        public string Address { get; private set; }
-        public string PhoneNumber { get; private set; }
-        public string Email { get; private set; }
-        public string Website { get; private set; }
-        public TimeZoneInfo TimeZone { get; private set; }
-        public List<ClinicStaff> Staff { get; private set; }
-        public List<Patient> Patients { get; private set; }
-        public List<WorkingHours> WorkingHours { get; private set; }
-        public ClinicSettings Settings { get; private set; }
+        public string Name { get; private set; } = null!;
+        public string Description { get; private set; } = null!;
+        public string Address { get; private set; } = null!;
+        public string PhoneNumber { get; private set; } = null!;
+        public string Email { get; private set; } = null!;
+        public string Website { get; private set; } = null!;
+        public TimeZoneInfo TimeZone { get; private set; } = null!;
+        public List<ClinicStaff> Staff { get; private set; } = new();
+        public List<Patient> Patients { get; private set; } = new();
+        public List<WorkingHours> WorkingHours { get; private set; } = new();
+        public ClinicSettings Settings { get; private set; } = null!;
 
         private Clinic() : base()
         {
@@ -91,12 +91,12 @@ namespace HairCarePlus.Server.Domain.Entities
 
     public class ClinicStaff : BaseEntity
     {
-        public string FirstName { get; private set; }
-        public string LastName { get; private set; }
-        public string Email { get; private set; }
-        public string PhoneNumber { get; private set; }
+        public string FirstName { get; private set; } = null!;
+        public string LastName { get; private set; } = null!;
+        public string Email { get; private set; } = null!;
+        public string PhoneNumber { get; private set; } = null!;
         public StaffRole Role { get; private set; }
-        public List<string> Specializations { get; private set; }
+        public List<string> Specializations { get; private set; } = new();
         public bool IsActive { get; private set; }
 
         private ClinicStaff() : base()
@@ -175,10 +175,10 @@ namespace HairCarePlus.Server.Domain.Entities
 
     public class ClinicSettings
     {
-        public List<string> SupportedLanguages { get; private set; }
-        public string DefaultLanguage { get; private set; }
-        public NotificationSettings NotificationSettings { get; private set; }
-        public AISettings AISettings { get; private set; }
+        public List<string> SupportedLanguages { get; private set; } = new();
+        public string DefaultLanguage { get; private set; } = null!;
+        public NotificationSettings NotificationSettings { get; private set; } = null!;
+        public AISettings AISettings { get; private set; } = null!;
 
         private ClinicSettings()
         {
@@ -222,7 +222,7 @@ namespace HairCarePlus.Server.Domain.Entities
     {
         public bool EnableAutoTranslation { get; private set; }
         public bool EnablePhotoAnalysis { get; private set; }
-        public List<string> PreferredAIServices { get; private set; }
+        public List<string> PreferredAIServices { get; private set; } = new();
 
         private AISettings()
         {
