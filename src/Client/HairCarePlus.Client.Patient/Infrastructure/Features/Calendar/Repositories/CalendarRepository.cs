@@ -23,12 +23,12 @@ using StorageEventPriority = HairCarePlus.Client.Patient.Features.Calendar.Model
 /// </summary>
 public sealed class CalendarRepository : IHairTransplantEventRepository
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private const string LAST_SYNC_PREFS_KEY = "Calendar_LastSyncUtc";
 
-    public CalendarRepository(AppDbContext dbContext)
+    public CalendarRepository(IDbContextFactory<AppDbContext> dbFactory)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
     #region Query helpers
@@ -111,7 +111,8 @@ public sealed class CalendarRepository : IHairTransplantEventRepository
         var dayStart = date.Date;
         var dayEnd = date.Date.AddDays(1).AddTicks(-1);
 
-        var events = await _dbContext.Events
+        await using var db = _dbFactory.CreateDbContext();
+        var events = await db.Events
             .Where(e => e.StartDate <= dayEnd && (e.EndDate ?? e.StartDate) >= dayStart)
             .OrderBy(e => e.StartDate)
             .AsNoTracking()
@@ -125,7 +126,8 @@ public sealed class CalendarRepository : IHairTransplantEventRepository
         var rangeStart = startDate.Date;
         var rangeEnd = endDate.Date.AddDays(1).AddTicks(-1);
 
-        var events = await _dbContext.Events
+        await using var db = _dbFactory.CreateDbContext();
+        var events = await db.Events
             .Where(e => e.StartDate <= rangeEnd && (e.EndDate ?? e.StartDate) >= rangeStart)
             .OrderBy(e => e.StartDate)
             .AsNoTracking()
@@ -136,21 +138,24 @@ public sealed class CalendarRepository : IHairTransplantEventRepository
 
     public async Task<HairTransplantEvent> GetEventByIdAsync(Guid id)
     {
-        var entity = await _dbContext.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
+        await using var db = _dbFactory.CreateDbContext();
+        var entity = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
         return entity == null ? null! : ToDomain(entity);
     }
 
     public async Task<HairTransplantEvent> AddEventAsync(HairTransplantEvent @event)
     {
+        await using var db = _dbFactory.CreateDbContext();
         var storageEntity = ToStorage(@event);
-        await _dbContext.Events.AddAsync(storageEntity);
-        await _dbContext.SaveChangesAsync();
+        await db.Events.AddAsync(storageEntity);
+        await db.SaveChangesAsync();
         return ToDomain(storageEntity);
     }
 
     public async Task<HairTransplantEvent> UpdateEventAsync(HairTransplantEvent @event)
     {
-        var existing = await _dbContext.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
+        await using var db = _dbFactory.CreateDbContext();
+        var existing = await db.Events.FirstOrDefaultAsync(e => e.Id == @event.Id);
         if (existing == null)
             throw new InvalidOperationException($"Event {@event.Id} not found");
 
@@ -163,24 +168,26 @@ public sealed class CalendarRepository : IHairTransplantEventRepository
         existing.EventType = ToStorage(@event).EventType;
         existing.Priority = ToStorage(@event).Priority;
 
-        await _dbContext.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return ToDomain(existing);
     }
 
     public async Task<bool> DeleteEventAsync(Guid id)
     {
-        var entity = await _dbContext.Events.FirstOrDefaultAsync(e => e.Id == id);
+        await using var db = _dbFactory.CreateDbContext();
+        var entity = await db.Events.FirstOrDefaultAsync(e => e.Id == id);
         if (entity == null) return false;
 
-        _dbContext.Events.Remove(entity);
-        await _dbContext.SaveChangesAsync();
+        db.Events.Remove(entity);
+        await db.SaveChangesAsync();
         return true;
     }
 
     public async Task<IEnumerable<HairTransplantEvent>> GetPendingEventsAsync()
     {
         var today = DateTime.UtcNow.Date;
-        var events = await _dbContext.Events
+        await using var db = _dbFactory.CreateDbContext();
+        var events = await db.Events
             .Where(e => !e.IsCompleted && e.EndDate >= today)
             .OrderBy(e => e.StartDate)
             .AsNoTracking()
@@ -191,12 +198,13 @@ public sealed class CalendarRepository : IHairTransplantEventRepository
 
     public async Task<bool> MarkEventAsCompletedAsync(Guid id)
     {
-        var entity = await _dbContext.Events.FirstOrDefaultAsync(e => e.Id == id);
+        await using var db = _dbFactory.CreateDbContext();
+        var entity = await db.Events.FirstOrDefaultAsync(e => e.Id == id);
         if (entity == null) return false;
 
         entity.IsCompleted = true;
         entity.ModifiedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await db.SaveChangesAsync();
         return true;
     }
 

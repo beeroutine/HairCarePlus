@@ -2,8 +2,24 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Disable implicit usings to prevent platform (UIKit/Foundation/CoreGraphics) usings from leaking in -->
+    <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Ensure no auto-generated GlobalUsings (including iOS-specific) are produced when referenced by iOS builds -->
+    <GenerateGlobalUsings>false</GenerateGlobalUsings>
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
   </PropertyGroup>
+
+  <!-- Ensure SDK auto-generated GlobalUsings are not compiled even if created for platform TFMs -->
+  <ItemGroup>
+    <Compile Remove="obj/**/*.GlobalUsings.g.cs" />
+  </ItemGroup>
+
+  <!-- Remove platform-specific implicit framework usings when this project is built under a platform TFM -->
+  <ItemGroup Condition="'$(TargetFramework)' != '' And ('$(TargetFramework)' == 'net9.0-ios' Or '$(TargetFramework)' == 'net9.0-maccatalyst' Or '$(TargetFramework)' == 'net9.0-android' Or '$(TargetFramework)' == 'net9.0-iossimulator' Or '$(TargetFramework)' == 'net9.0-android32')">
+    <Using Remove="UIKit" />
+    <Using Remove="Foundation" />
+    <Using Remove="CoreGraphics" />
+  </ItemGroup>
 
 </Project>

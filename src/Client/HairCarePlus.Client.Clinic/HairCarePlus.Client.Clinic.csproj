@@ -37,14 +37,35 @@
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 
-		<!-- Disable ILLinker to avoid trimming issues during debug builds -->
-		<EnableILLink>false</EnableILLink>
-		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+        <!-- ILLinker is controlled by platform defaults; keep enabled and rely on MtouchLink=None to avoid trimming during Debug -->
+        <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+        <PublishTrimmed>true</PublishTrimmed>
+        <MtouchLink>None</MtouchLink>
 	</PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(TargetFramework)'=='net9.0-android'">
+            <PublishTrimmed>false</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' and $(TargetFramework.Contains('-ios'))">
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <MtouchLink>None</MtouchLink>
+        <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' and $(TargetFramework.Contains('-maccatalyst'))">
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishAot>false</PublishAot>
+        <MtouchLink>None</MtouchLink>
+        <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    </PropertyGroup>
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#512BD4" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -65,9 +86,9 @@
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-preview.5.*" />
 		<!-- Chat dependencies -->
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.4.24267.6" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
-		<PackageReference Include="CommunityToolkit.Maui" Version="5.3.0" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="12.1.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0-preview.4.24267.1" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0-preview.4.24267.1" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
@@ -83,7 +104,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="SkiaSharp.Extended.UI.Maui" Version="2.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.Core" Version="5.3.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Core" Version="12.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -115,5 +136,41 @@
       <Compile Include="$(_BuildConfigFile)" Link="Generated/BuildConfig.g.cs" />
     </ItemGroup>
   </Target>
+
+  <!-- Exclude non-target TFM obj sources from default Compile globs to avoid duplicates (e.g., nfloat.g.cs) -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-android'">
+    <Compile Remove="obj/**/net9.0-ios/**" />
+    <Compile Remove="obj/**/net9.0-maccatalyst/**" />
+  </ItemGroup>
+
+  <!-- When building iOS, exclude MacCatalyst and Android obj sources -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+    <Compile Remove="obj/**/net9.0-maccatalyst/**" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/net9.0-maccatalyst/**" Condition="'$(OBJ_BASE_DIR)' != ''" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/net9.0-android/**" Condition="'$(OBJ_BASE_DIR)' != ''" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/__Microsoft.Android.Resource.Designer.cs" Condition="'$(OBJ_BASE_DIR)' != ''" />
+  </ItemGroup>
+
+  <!-- When building MacCatalyst, exclude iOS and Android obj sources -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-maccatalyst'">
+    <Compile Remove="obj/**/net9.0-ios/**" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/net9.0-ios/**" Condition="'$(OBJ_BASE_DIR)' != ''" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/net9.0-android/**" Condition="'$(OBJ_BASE_DIR)' != ''" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/__Microsoft.Android.Resource.Designer.cs" Condition="'$(OBJ_BASE_DIR)' != ''" />
+  </ItemGroup>
+
+  <!-- Symmetric exclusion: when building non-Android TFMs, exclude Android-generated designer files and android obj -->
+  <ItemGroup Condition="'$(TargetFramework)'!='net9.0-android'">
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/__Microsoft.Android.Resource.Designer.cs" Condition="'$(OBJ_BASE_DIR)' != ''" />
+    <Compile Remove="$(OBJ_BASE_DIR)/**/net9.0-android/**" Condition="'$(OBJ_BASE_DIR)' != ''" />
+  </ItemGroup>
+
+
 
 </Project>

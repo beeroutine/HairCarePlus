@@ -2,9 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Keep cross-platform; do not bring platform usings implicitly to avoid leaking Apple namespaces -->
+    <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Do not emit SDK-generated GlobalUsings (prevents UIKit/Foundation/CoreGraphics in iOS builds) -->
+    <GenerateGlobalUsings>false</GenerateGlobalUsings>
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="obj/**/*.GlobalUsings.g.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HairCarePlus.Shared.Domain\HairCarePlus.Shared.Domain.csproj" />

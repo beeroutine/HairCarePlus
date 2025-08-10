@@ -43,7 +43,10 @@ public sealed class PhotoReportService : IPhotoReportService
                                .AsNoTracking()
                              .ToListAsync();
 
-        var mapped = entities.Select(Map).ToList();
+        var mapped = entities
+            .Select(Map)
+            .OrderByDescending(r => r.Date)
+            .ToList();
         _cache[patientId] = mapped;
         return mapped;
     }
@@ -88,6 +91,10 @@ public sealed class PhotoReportService : IPhotoReportService
             if (string.IsNullOrWhiteSpace(preferredUrl))
             {
                 preferredUrl = e.LocalPath;
+            }
+            else if (preferredUrl.Contains("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                // prefer server file if it looks like an uploaded asset; otherwise keep as is
             }
         }
 

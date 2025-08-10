@@ -1,15 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <!--  Изолируем obj для каждого проекта/TFM/RID ещё до расчётов MSBuild  -->
   <PropertyGroup>
-    <!-- Единая версия NuGet‑пакетов Microsoft.Maui.* для всех проектов -->
-    <MauiVersion>9.0.51</MauiVersion>
+    <!-- Общая версия MAUI -->
+    <MauiVersion>9.0.90</MauiVersion>
 
-    <!-- Opt-in to preview workloads so that dotnet workload restore succeeds on CI -->
-    <EnablePreviewWorkloads>true</EnablePreviewWorkloads>
+    <!-- Дополнительно, чтобы не генерировать AssemblyInfo дважды -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <!-- Отключаем генерацию EditorConfig SourceGenerator, т.к. файл не нужен и ломает сборку на iOS -->
+    <EmitCompilerGeneratedEditorConfigFile>false</EmitCompilerGeneratedEditorConfigFile>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.0-preview.5.24277.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0-preview.5.24277.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.5.24277.8" />
-  </ItemGroup>
-</Project> 
+  <!-- Optional: allow launcher to relocate per-project obj/bin into tmp dirs safely -->
+  <PropertyGroup>
+    <OBJ_BASE_DIR Condition="'$(OBJ_BASE_DIR)' == ''"></OBJ_BASE_DIR>
+    <BIN_BASE_DIR Condition="'$(BIN_BASE_DIR)' == ''"></BIN_BASE_DIR>
+  </PropertyGroup>
+
+  <!-- When OBJ_BASE_DIR is set, isolate intermediates per project under that root -->
+  <PropertyGroup Condition="'$(OBJ_BASE_DIR)' != ''">
+    <!-- e.g., $(Repo)/tmp/clinic_obj/HairCarePlus.Client.Clinic/obj/ -->
+    <MSBuildProjectExtensionsPath>$([System.IO.Path]::Combine('$(OBJ_BASE_DIR)', '$(MSBuildProjectName)', 'obj'))/</MSBuildProjectExtensionsPath>
+    <BaseIntermediateOutputPath>$(MSBuildProjectExtensionsPath)</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <!-- When BIN_BASE_DIR is set, isolate outputs per project under that root -->
+  <PropertyGroup Condition="'$(BIN_BASE_DIR)' != ''">
+    <!-- e.g., $(Repo)/tmp/clinic_build/HairCarePlus.Client.Clinic/bin/ -->
+    <BaseOutputPath>$([System.IO.Path]::Combine('$(BIN_BASE_DIR)', '$(MSBuildProjectName)', 'bin'))/</BaseOutputPath>
+  </PropertyGroup>
+</Project>

@@ -27,35 +27,8 @@ public sealed class GetPhotoReportsQueryHandler : IRequestHandler<GetPhotoReport
     {
         _logger.LogInformation("[PhotoReports] Fetching reports for patient {PatientId}", request.PatientId);
 
-        // EF Core + SQLite не умеет сортировать по DateTimeOffset → загружаем в память и сортируем там
-        var entities = await _db.PhotoReports
-                                .Include(r => r.Comments)
-                                .Where(r => r.PatientId == request.PatientId)
-                                .OrderByDescending(r => r.CaptureDate)
-                                .ToListAsync(cancellationToken);
-
-        var dtos = entities.Select(r => new PhotoReportDto
-        {
-            Id = r.Id,
-            PatientId = r.PatientId,
-            ImageUrl = r.ImageUrl,
-            ThumbnailUrl = r.ThumbnailUrl,
-            Date = r.CaptureDate,
-            Notes = r.Notes,
-            Type = (HairCarePlus.Shared.Communication.PhotoType)r.Type,
-            Comments = r.Comments
-                        .OrderByDescending(c => c.CreatedAtUtc)
-                        .Select(c => new PhotoCommentDto
-                        {
-                            Id = c.Id,
-                            PhotoReportId = c.PhotoReportId,
-                            AuthorId = c.AuthorId,
-                            Text = c.Text,
-                            CreatedAtUtc = c.CreatedAtUtc
-                        })
-                        .ToList()
-        }).ToList();
-
-        return dtos;
+        // Ephemeral policy: server must not return historical PhotoReports.
+        // Always return an empty list to force clients to rely on transient DeliveryQueue packets only.
+        return Array.Empty<PhotoReportDto>();
     }
 } 

@@ -2,16 +2,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities;
-
-public enum SyncStatus
-{
-    Pending,
-    Sent,
-    Acked,
-    Failed
-}
 
 [Table("OutboxItems")]
 public class OutboxItem
@@ -29,7 +22,7 @@ public class OutboxItem
     [Required]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-    public SyncStatus Status { get; set; } = SyncStatus.Pending;
+    public OutboxStatus Status { get; set; } = OutboxStatus.Pending;
 
     public int RetryCount { get; set; }
 
@@ -45,4 +38,4 @@ public class OutboxItem
     public DateTime ModifiedAtUtc { get; set; } = DateTime.UtcNow;
 
     public T? GetPayload<T>() => JsonSerializer.Deserialize<T>(Payload);
-} 
+}

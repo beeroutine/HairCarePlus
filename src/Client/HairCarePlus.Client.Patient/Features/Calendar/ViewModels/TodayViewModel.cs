@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+
+#pragma warning disable CA1416
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -305,13 +307,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             {
                 if (SetProperty(ref _selectedDate, value))
                 {
-                    // Update events for selected date
-                    Task.Run(async () => 
-                    {
-                        await LoadTodayEventsAsync();
-                        // Save selected date between sessions
-                        SaveSelectedDate(value);
-                    });
+                    // Save selected date between sessions
+                    SaveSelectedDate(value);
 
                     // Update VisibleDate month/year if month or year differs from current
                     if (value.Month != VisibleDate.Month || value.Year != VisibleDate.Year)
@@ -939,7 +936,10 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                 _logger?.LogWarning("Attempt to complete an event that is not in today's list – operation aborted");
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await MauiApp.Current.Windows[0].Page.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                    if (MauiApp.Current?.MainPage is Page page)
+                    {
+                        await page.DisplayAlert("Недоступно", "Завершать задачи можно только в текущий день", "OK");
+                    }
                 });
                 return;
             }
@@ -1023,13 +1023,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
                         _logger.LogError(ex, "Error toggling event completion");
                         calendarEvent.IsCompleted = originalState;
                         
-                        await MauiApp.Current.Windows[0].Page.Dispatcher.DispatchAsync(async () =>
+                        await MainThread.InvokeOnMainThreadAsync(async () =>
                         {
-                            await MauiApp.Current.Windows[0].Page.DisplayAlert(
-                                "Error",
-                                "Failed to update event status. Please try again.",
-                                "OK"
-                            );
+                            if (MauiApp.Current?.MainPage is Page page)
+                            {
+                                await page.DisplayAlert(
+                                    "Error",
+                                    "Failed to update event status. Please try again.",
+                                    "OK");
+                            }
                         });
                     }
                 }
@@ -1084,10 +1086,16 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
             SelectedDate = date;
             
             // Вместо навигации к несуществующей странице покажем сообщение
-            await MauiApp.Current.Windows[0].Page.DisplayAlert(
-                "Календарь", 
-                $"Полный календарь для даты {date:dd.MM.yyyy} находится в разработке",
-                "OK");
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            if (MauiApp.Current?.MainPage is Page page)
+            {
+                await page.DisplayAlert(
+                    "Календарь",
+                    $"Полный календарь для даты {date:dd.MM.yyyy} находится в разработке",
+                    "OK");
+            }
+        });
         }
         
         // Переход к детальной странице события

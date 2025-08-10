@@ -25,8 +25,10 @@ public class PhotoReportsController : ControllerBase
         if(!Guid.TryParse(patientId, out var pid))
             return BadRequest("Invalid patientId");
 
-        var list = await _mediator.Send(new GetPhotoReportsQuery(pid));
-        return Ok(list);
+        // Ephemeral policy: do not expose historical photo reports via GET.
+        // Return empty to prevent clients from building history from the server.
+        await Task.CompletedTask;
+        return Ok(System.Array.Empty<PhotoReportDto>());
     }
 
     [HttpPost]

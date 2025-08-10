@@ -6,7 +6,7 @@ namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
 public interface ILocalStorageService
 {
     Task InitializeDatabaseAsync();
-    AppDbContext GetDbContext();
+    Task<AppDbContext> GetDbContextAsync();
     Task ClearDatabaseAsync();
     string GetDatabasePath();
     Task<T> GetItemAsync<T>(string key) where T : class;

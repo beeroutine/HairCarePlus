@@ -28,7 +28,10 @@ namespace HairCarePlus.Shared.Common.CQRS
             var method = handlerType.GetMethod("HandleAsync", new[] { command.GetType(), typeof(CancellationToken) });
             if (method == null)
                 throw new InvalidOperationException($"HandleAsync not found for {handlerType.FullName}");
-            return (Task)method.Invoke(handler, new object[] { command, token });
+            var result = method.Invoke(handler, new object[] { command, token });
+            if (result is not Task task)
+                throw new InvalidOperationException($"HandleAsync returned unexpected result for {handlerType.FullName}");
+            return task;
         }
 
         public Task<TResult> SendAsync<TResult>(ICommand<TResult> command, CancellationToken token = default)
@@ -38,7 +41,10 @@ namespace HairCarePlus.Shared.Common.CQRS
             var method = handlerType.GetMethod("HandleAsync", new[] { command.GetType(), typeof(CancellationToken) });
             if (method == null)
                 throw new InvalidOperationException($"HandleAsync not found for {handlerType.FullName}");
-            return (Task<TResult>)method.Invoke(handler, new object[] { command, token });
+            var result = method.Invoke(handler, new object[] { command, token });
+            if (result is not Task<TResult> task)
+                throw new InvalidOperationException($"HandleAsync returned unexpected result for {handlerType.FullName}");
+            return task;
         }
     }
 
@@ -54,7 +60,10 @@ namespace HairCarePlus.Shared.Common.CQRS
             var method = handlerType.GetMethod("HandleAsync", new[] { query.GetType(), typeof(CancellationToken) });
             if (method == null)
                 throw new InvalidOperationException($"HandleAsync not found for {handlerType.FullName}");
-            return (Task<TResult>)method.Invoke(handler, new object[] { query, token });
+            var result = method.Invoke(handler, new object[] { query, token });
+            if (result is not Task<TResult> task)
+                throw new InvalidOperationException($"HandleAsync returned unexpected result for {handlerType.FullName}");
+            return task;
         }
     }
 

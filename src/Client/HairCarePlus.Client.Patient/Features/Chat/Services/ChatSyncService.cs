@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Connectivity;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Services;
 
@@ -14,7 +15,7 @@ public interface IChatSyncService
 {
     Task SyncMessagesAsync(CancellationToken cancellationToken = default);
     Task<bool> HasPendingSyncAsync(CancellationToken cancellationToken = default);
-    Task HandleIncomingMessageAsync(ChatMessage message, CancellationToken cancellationToken = default);
+    Task HandleIncomingMessageAsync(Shared.Communication.ChatMessageDto message, CancellationToken cancellationToken = default);
 }
 
 public class ChatSyncService : IChatSyncService
@@ -103,7 +104,7 @@ public class ChatSyncService : IChatSyncService
         return unsyncedMessages.Any();
     }
 
-    public async Task HandleIncomingMessageAsync(ChatMessage message, CancellationToken cancellationToken = default)
+    public async Task HandleIncomingMessageAsync(Shared.Communication.ChatMessageDto message, CancellationToken cancellationToken = default)
     {
         try
         {

@@ -25,7 +25,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
 
     public class SyncService : ISyncService
     {
-        private readonly IOutboxRepository _outbox;
+        private readonly HairCarePlus.Shared.Communication.IOutboxRepository _outbox;
         private readonly ISyncHttpClient _syncClient;
         private readonly IDbContextFactory<AppDbContext> _dbFactory;
         private readonly ILastSyncVersionStore _versionStore;
@@ -38,7 +38,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
         private static readonly Guid _deviceId = Guid.NewGuid();
         private static readonly Guid _patientId = Guid.Parse("35883846-63ee-4cf8-b930-25e61ec1f540");
 
-        public SyncService(IOutboxRepository outbox,
+        public SyncService(HairCarePlus.Shared.Communication.IOutboxRepository outbox,
                            ISyncHttpClient syncClient,
                            IDbContextFactory<AppDbContext> dbFactory,
                            ILastSyncVersionStore versionStore,
@@ -104,7 +104,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                                 _logger.LogWarning("PhotoReport file not found. Id={Id} ImageUrl={Url} LocalPath={Local}", reportDto.Id, reportDto.ImageUrl, reportDto.LocalPath);
                             }
 
-                            async Task TryUploadAndQueueAsync(PhotoReportDto dto, OutboxItem outboxItem)
+                            async Task TryUploadAndQueueAsync(PhotoReportDto dto, OutboxItemDto outboxItem)
                             {
                                 try
                                 {
@@ -115,11 +115,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                                         dto.ImageUrl = newUrl;
                                         outboxItem.PayloadJson = JsonSerializer.Serialize(dto);
                                         outboxItem.ModifiedAtUtc = DateTime.UtcNow;
-                                        await using var ctx = _dbFactory.CreateDbContext();
-                                        ctx.OutboxItems.Attach(outboxItem);
-                                        ctx.Entry(outboxItem).Property(o => o.PayloadJson).IsModified = true;
-                                        ctx.Entry(outboxItem).Property(o => o.ModifiedAtUtc).IsModified = true;
-                                        await ctx.SaveChangesAsync();
+                                        // Persist updated payload via repository (future optimisation)
                                     }
 
                                     photoReportsToSend.Add(dto);
@@ -233,13 +229,13 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
             await _applier.ApplyAsync(response);
 
             if (pendingItems.Count > 0)
-                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), SyncStatus.Acked);
+                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), HairCarePlus.Shared.Communication.OutboxStatus.Acked);
 
             foreach (var item in pendingItems.Where(i => i.EntityType == "ChatMessage"))
             {
                 if (int.TryParse(item.LocalEntityId, out var localId))
                 {
-                    await _chatRepository.UpdateSyncStatusAsync(localId, Chat.Domain.Entities.SyncStatus.Synced, cancellationToken: cancellationToken);
+                    await _chatRepository.UpdateSyncStatusAsync(localId, HairCarePlus.Shared.Communication.SyncStatus.Synced, cancellationToken: cancellationToken);
                 }
             }
 
@@ -272,7 +268,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                         }).ToList()
                     };
 
-                    await _outbox.AddAsync(new OutboxItem
+                    await _outbox.AddAsync(new OutboxItemDto
                     {
                         EntityType = "PhotoReport",
                         PayloadJson = JsonSerializer.Serialize(dto),

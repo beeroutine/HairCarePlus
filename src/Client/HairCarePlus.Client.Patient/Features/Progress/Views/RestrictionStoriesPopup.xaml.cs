@@ -11,8 +11,8 @@ public partial class RestrictionStoriesPopup : Popup
         BindingContext = restriction;
     }
 
-    private void OnBackgroundTapped(object sender, EventArgs e)
+    private async void OnBackgroundTapped(object sender, EventArgs e)
     {
-        Close();
+        await CloseAsync();
     }
 } 

@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using HairCarePlus.Shared.Common.CQRS;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
+using HairCarePlus.Shared.Communication;
+using Microsoft.EntityFrameworkCore;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
 
@@ -12,25 +14,25 @@ public sealed record SendChatMessageCommand(string ConversationId, string Conten
 public sealed class SendChatMessageHandler : ICommandHandler<SendChatMessageCommand>
 {
     private readonly IChatRepository _repo;
-    private readonly HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext _db;
+    private readonly IDbContextFactory<HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext> _dbFactory;
 
     public SendChatMessageHandler(IChatRepository repo,
-        HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext db)
+        IDbContextFactory<HairCarePlus.Client.Patient.Infrastructure.Storage.AppDbContext> dbFactory)
     {
         _repo = repo;
-        _db = db;
+        _dbFactory = dbFactory;
     }
 
     public async Task HandleAsync(SendChatMessageCommand command, CancellationToken cancellationToken = default)
     {
-        ChatMessage? replyTo = null;
+        ChatMessageDto? replyTo = null;
         int? validReplyId = command.ReplyToLocalId.HasValue && command.ReplyToLocalId.Value > 0 ? command.ReplyToLocalId : null;
         if (validReplyId.HasValue)
         {
             replyTo = await _repo.GetMessageByLocalIdAsync(validReplyId.Value, cancellationToken);
         }
 
-        var message = new ChatMessage
+        var message = new ChatMessageDto
         {
             ConversationId = command.ConversationId,
             Content = command.Content,
@@ -49,24 +51,24 @@ public sealed class SendChatMessageHandler : ICommandHandler<SendChatMessageComm
         // Add to Outbox for sync
         var dto = new HairCarePlus.Shared.Communication.ChatMessageDto
         {
-            Id = Guid.NewGuid(),
-            ConversationId = command.ConversationId,
+                        ConversationId = command.ConversationId,
             SenderId = command.SenderId,
             Content = command.Content,
             SentAt = command.Timestamp,
             Status = HairCarePlus.Shared.Communication.MessageStatus.Sent
         };
 
-        await _db.OutboxItems.AddAsync(new Features.Sync.Domain.Entities.OutboxItem
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.OutboxItems.AddAsync(new Features.Sync.Domain.Entities.OutboxItem
         {
             EntityType = "ChatMessage",
             Payload = System.Text.Json.JsonSerializer.Serialize(dto),
             CreatedAtUtc = DateTime.UtcNow,
-            Status = Features.Sync.Domain.Entities.SyncStatus.Pending,
+            Status = HairCarePlus.Shared.Communication.OutboxStatus.Pending,
             LocalEntityId = message.LocalId.ToString()
         }, cancellationToken);
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
 
         // Optionally update status to Sent immediately (optimistic UI)
         message.Status = MessageStatus.Sent;

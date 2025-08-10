@@ -5,7 +5,8 @@
              xmlns:effects="clr-namespace:HairCarePlus.Client.Patient.Effects"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Patient.Common.Behaviors"
              xmlns:chatBehaviors="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Behaviors"
-             xmlns:entities="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.Domain.Entities"
+             xmlns:shared="clr-namespace:HairCarePlus.Shared.Communication;assembly=HairCarePlus.Shared.Communication"
+             xmlns:entities="clr-namespace:HairCarePlus.Shared.Communication;assembly=HairCarePlus.Shared.Communication"
              xmlns:viewModels="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.ViewModels"
              x:DataType="viewModels:ChatViewModel"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
@@ -71,7 +72,7 @@
                 <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="entities:ChatMessage">
+                <DataTemplate x:DataType="entities:ChatMessageDto">
                     <Grid Padding="4,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -82,15 +83,7 @@
                         <SwipeView>
                             <SwipeView.RightItems>
                                 <SwipeItems Mode="Execute">
-                                    <SwipeItem BackgroundColor="Transparent"
-                                               Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EditMessageCommand}"
-                                               CommandParameter="{Binding .}"
-                                               Text="Edit" />
-                                    <SwipeItem BackgroundColor="{AppThemeBinding Light=#EF4444, Dark=#B91C1C}"
-                                               Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeleteMessageCommand}"
-                                               CommandParameter="{Binding .}"
-                                               Text="Delete"
-                                               IconImageSource="trash" />
+                                    <!-- Удалить SwipeItem Edit и Delete из SwipeView -->
                                 </SwipeItems>
                             </SwipeView.RightItems>
                             <Border x:Name="bubbleBorder"
@@ -191,7 +184,7 @@
                                                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                                             </DataTrigger>
                                             <!-- hide text if this message is an image -->
-                                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
                                                 <Setter Property="IsVisible" Value="False" />
                                             </DataTrigger>
                                         </Label.Triggers>
@@ -205,7 +198,7 @@
                                            IsVisible="False"
                                            Margin="0,4,0,0">
                                         <Image.Triggers>
-                                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static entities:MessageType.Image}">
+                                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
                                                 <Setter Property="IsVisible" Value="True" />
                                             </DataTrigger>
                                         </Image.Triggers>
@@ -311,32 +304,7 @@
             </Grid>
             
             <!-- Edit Message Preview -->
-            <Border Grid.Row="1"
-                   IsVisible="{Binding EditingMessage, Converter={StaticResource IsNotNullConverter}}"
-                    StrokeShape="RoundRectangle 12"
-                    StrokeThickness="0"
-                   BackgroundColor="{AppThemeBinding Light=#FEF9E7, Dark=#4D3C14}"
-                   Margin="8,4,8,0"
-                    Padding="12,8">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="Editing message"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                               FontSize="12"/>
-                    </VerticalStackLayout>
-                    <Button Grid.Column="1"
-                            Text="×"
-                            Command="{Binding CancelReplyCommand}"
-                            BackgroundColor="Transparent"
-                            TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
-                            FontSize="20"
-                            Padding="0"
-                            Margin="-8,-8,-8,-8"
-                            HeightRequest="36"
-                            WidthRequest="36"
-                            VerticalOptions="Center"/>
-                </Grid>
-            </Border>
+            <!-- Удалить блок Edit Preview (Border с IsVisible={Binding EditingMessage}) -->
 
             <!-- Input Controls -->
             <Grid Grid.Row="2"

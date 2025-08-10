@@ -3,19 +3,23 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
              xmlns:behaviors="clr-namespace:HairCarePlus.Client.Clinic.Common.Behaviors"
+             xmlns:shared="clr-namespace:HairCarePlus.Shared.Communication;assembly=HairCarePlus.Shared.Communication"
              xmlns:model="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Models"
              xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.ViewModels"
              x:Class="HairCarePlus.Client.Clinic.Features.Chat.Views.ChatPage"
-             x:DataType="vm:ChatViewModel"
+            
              x:Name="thisPage"
              
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
+             NavigationPage.HasNavigationBar="False"
              Shell.NavBarIsVisible="True"
+             Shell.BackButtonBehavior="{StaticResource HideBackButtonBehavior}"
              Shell.BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
 
     <ContentPage.Resources>
         <ResourceDictionary>
+            <BackButtonBehavior x:Key="HideBackButtonBehavior" IsEnabled="False" IsVisible="False" />
             <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
             <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
             <commonConverters:BoolToTextConverter x:Key="BoolToTextConverter" />
@@ -27,6 +31,7 @@
     <Shell.TitleView>
         <Grid ColumnDefinitions="80,*,80">
             <Button Text="←"
+                    Command="{Binding BackCommand}"
                     HorizontalOptions="Start"
                     FontSize="24"
                     FontAttributes="Bold"
@@ -36,12 +41,8 @@
                     Margin="0"
                     Padding="0"
                     HeightRequest="44"
-                    WidthRequest="44">
-                <Button.Command>
-                    <Binding Path="BackCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
-                </Button.Command>
-            </Button>
-
+                    WidthRequest="44" />
+            
             <Label Grid.Column="1"
                    Text="{Binding Peer.Name}"
                    HorizontalOptions="Center"
@@ -49,7 +50,7 @@
                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
                    FontSize="18"
                    FontAttributes="Bold" />
-
+            
             <Label Grid.Column="2"
                    Text="{Binding Peer.IsOnline, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Online,Offline'}"
                    TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray300}}"
@@ -70,11 +71,7 @@
                        Margin="8,8,8,0"
                        VerticalScrollBarVisibility="Never">
             <CollectionView.GestureRecognizers>
-                <TapGestureRecognizer>
-                    <TapGestureRecognizer.Command>
-                        <Binding Path="HideKeyboardCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
-                    </TapGestureRecognizer.Command>
-                </TapGestureRecognizer>
+                <TapGestureRecognizer Command="{Binding HideKeyboardCommand}" />
             </CollectionView.GestureRecognizers>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="model:ChatMessage">
@@ -87,27 +84,7 @@
                         <!-- Message -->
                         <SwipeView>
                             <SwipeView.RightItems>
-                                <SwipeItems Mode="Execute">
-                                    <SwipeItem x:DataType="vm:ChatViewModel" BackgroundColor="Transparent">
-                                        <SwipeItem.Command>
-                                            <Binding Path="EditMessageCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
-                                        </SwipeItem.Command>
-                                        <SwipeItem.CommandParameter>
-                                            <Binding />
-                                        </SwipeItem.CommandParameter>
-                                        <SwipeItem.Text>Edit</SwipeItem.Text>
-                                    </SwipeItem>
-                                    <SwipeItem x:DataType="vm:ChatViewModel" BackgroundColor="{AppThemeBinding Light=#EF4444, Dark=#B91C1C}">
-                                        <SwipeItem.Command>
-                                            <Binding Path="DeleteMessageCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
-                                        </SwipeItem.Command>
-                                        <SwipeItem.CommandParameter>
-                                            <Binding />
-                                        </SwipeItem.CommandParameter>
-                                        <SwipeItem.Text>Delete</SwipeItem.Text>
-                                        <SwipeItem.IconImageSource>trash</SwipeItem.IconImageSource>
-                                    </SwipeItem>
-                                </SwipeItems>
+                                <SwipeItems Mode="Execute" />
                             </SwipeView.RightItems>
                             <Border x:Name="bubbleBorder"
                                     Grid.Column="0"
@@ -120,11 +97,7 @@
                                     Padding="12,8">
                                 <Border.Triggers>
                                     <!-- Settings for CURRENT user (doctor) messages -->
-                                    <DataTrigger TargetType="Border">
-                                        <DataTrigger.Binding>
-                                            <Binding Path="SenderId" x:DataTypeArg="model:ChatMessage" />
-                                        </DataTrigger.Binding>
-                                        <DataTrigger.Value>doctor</DataTrigger.Value>
+                                    <DataTrigger TargetType="Border" Binding="{Binding SenderId}" Value="doctor">
                                         <Setter Property="Grid.Column" Value="1" />
                                         <Setter Property="HorizontalOptions" Value="End" />
                                         <Setter Property="Margin" Value="80,6,8,6" />
@@ -136,14 +109,8 @@
                                 </Border.Behaviors>
                                 <Border.GestureRecognizers>
                                     <!-- Tap to reply -->
-                                    <TapGestureRecognizer x:DataType="vm:ChatViewModel">
-                                        <TapGestureRecognizer.Command>
-                                            <Binding Path="HandleReplyToMessageCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
-                                        </TapGestureRecognizer.Command>
-                                        <TapGestureRecognizer.CommandParameter>
-                                            <Binding />
-                                        </TapGestureRecognizer.CommandParameter>
-                                    </TapGestureRecognizer>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HandleReplyToMessageCommand}"
+                                                         CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
                                 <VerticalStackLayout Spacing="2">
                                     <!-- Reply Preview -->
@@ -169,7 +136,7 @@
                                             <Border.Triggers>
                                                 <DataTrigger TargetType="Border">
                                                     <DataTrigger.Binding>
-                                                        <Binding Path="ReplyTo.SenderId" x:DataTypeArg="model:ChatMessage" />
+                                                        <Binding Path="ReplyTo.SenderId" />
                                                     </DataTrigger.Binding>
                                                     <DataTrigger.Value>doctor</DataTrigger.Value>
                                                     <Setter Property="Grid.Column" Value="1" />
@@ -188,13 +155,9 @@
                                                            FontAttributes="Bold"
                                                            VerticalOptions="Center">
                                                         <Label.Triggers>
-                                                            <DataTrigger TargetType="Label">
-                                                                <DataTrigger.Binding>
-                                                                    <Binding Path="ReplyTo.SenderId" x:DataTypeArg="model:ChatMessage" />
-                                                                </DataTrigger.Binding>
-                                                                <DataTrigger.Value>doctor</DataTrigger.Value>
-                                                                <Setter Property="Text" Value="Reply to your message" />
-                                                            </DataTrigger>
+                                                                                                            <DataTrigger TargetType="Label" Binding="{Binding ReplyTo.SenderId}" Value="doctor">
+                                                    <Setter Property="Text" Value="Reply to your message" />
+                                                </DataTrigger>
                                                         </Label.Triggers>
                                                     </Label>
                                                 </StackLayout>
@@ -216,20 +179,10 @@
                                            LineHeight="1.25"
                                            VerticalOptions="Center">
                                         <Label.Triggers>
-                                            <DataTrigger TargetType="Label">
-                                                <DataTrigger.Binding>
-                                                    <Binding Path="SenderId" x:DataTypeArg="model:ChatMessage" />
-                                                </DataTrigger.Binding>
-                                                <DataTrigger.Value>doctor</DataTrigger.Value>
+                                            <DataTrigger TargetType="Label" Binding="{Binding SenderId}" Value="doctor">
                                                 <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
                                             </DataTrigger>
-                                            <DataTrigger TargetType="Label">
-                                                <DataTrigger.Binding>
-                                                    <Binding Path="Type" x:DataTypeArg="model:ChatMessage" />
-                                                </DataTrigger.Binding>
-                                                <DataTrigger.Value>
-                                                    <x:Static Member="model:MessageType.Image" />
-                                                </DataTrigger.Value>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
                                                 <Setter Property="IsVisible" Value="False" />
                                             </DataTrigger>
                                         </Label.Triggers>
@@ -242,13 +195,7 @@
                                            IsVisible="False"
                                            Margin="0,4,0,0">
                                         <Image.Triggers>
-                                            <DataTrigger TargetType="Image">
-                                                <DataTrigger.Binding>
-                                                    <Binding Path="Type" x:DataTypeArg="model:ChatMessage" />
-                                                </DataTrigger.Binding>
-                                                <DataTrigger.Value>
-                                                    <x:Static Member="model:MessageType.Image" />
-                                                </DataTrigger.Value>
+                                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
                                                 <Setter Property="IsVisible" Value="True" />
                                             </DataTrigger>
                                         </Image.Triggers>
@@ -337,7 +284,7 @@
                                 HeightRequest="36"
                                 WidthRequest="36">
                             <Button.Command>
-                                <Binding Path="CancelReplyCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
+                                <Binding Path="CancelReplyCommand"  />
                             </Button.Command>
                         </Button>
                     </Grid>
@@ -373,7 +320,7 @@
                        MinimumHeightRequest="38"
                        MaximumHeightRequest="120"
                        VerticalOptions="Start">
-                    <Editor Text="{Binding MessageText}"
+                    <Editor Text="{Binding MessageText, Mode=TwoWay, UpdateSourceEventName=TextChanged}"
                            Placeholder="Message"
                            PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
                            TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
@@ -399,7 +346,7 @@
                        HeightRequest="38"
                        WidthRequest="38">
                     <Button.Command>
-                        <Binding Path="SendCommand" Source="{x:Reference thisPage}" x:DataTypeArg="vm:ChatViewModel" />
+                        <Binding Path="SendCommand" />
                     </Button.Command>
                 </Button>
             </Grid>

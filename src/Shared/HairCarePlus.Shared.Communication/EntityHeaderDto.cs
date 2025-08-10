@@ -1,3 +1,5 @@
+using System;
+
 namespace HairCarePlus.Shared.Communication;
 
 public sealed class EntityHeaderDto

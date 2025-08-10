@@ -9,23 +9,25 @@ using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Client.Patient.Infrastructure.Media;
 using Microsoft.EntityFrameworkCore;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Patient.Infrastructure.Features.Chat.Repositories;
 
 public class ChatRepository : IChatRepository
 {
-    private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IMediaFileSystemService _fileSystemService;
 
-    public ChatRepository(AppDbContext dbContext, IMediaFileSystemService fileSystemService)
+    public ChatRepository(IDbContextFactory<AppDbContext> dbFactory, IMediaFileSystemService fileSystemService)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         _fileSystemService = fileSystemService ?? throw new ArgumentNullException(nameof(fileSystemService));
     }
 
-    public async Task<IEnumerable<ChatMessage>> GetMessagesAsync(string conversationId, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ChatMessageDto>> GetMessagesAsync(string conversationId, int skip = 0, int take = 50, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .Where(m => m.ConversationId == conversationId)
             .OrderByDescending(m => m.SentAt)
             .Skip(skip)
@@ -35,32 +37,36 @@ public class ChatRepository : IChatRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<ChatMessage?> GetMessageByLocalIdAsync(int localId, CancellationToken cancellationToken = default)
+    public async Task<ChatMessageDto?> GetMessageByLocalIdAsync(int localId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .Include(m => m.ReplyTo)
             .FirstOrDefaultAsync(m => m.LocalId == localId, cancellationToken);
     }
 
-    public async Task<ChatMessage?> GetMessageByServerIdAsync(string serverId, CancellationToken cancellationToken = default)
+    public async Task<ChatMessageDto?> GetMessageByServerIdAsync(string serverId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .Include(m => m.ReplyTo)
             .FirstOrDefaultAsync(m => m.ServerMessageId == serverId, cancellationToken);
     }
 
-    public async Task<IEnumerable<ChatMessage>> GetUnreadMessagesAsync(string conversationId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ChatMessageDto>> GetUnreadMessagesAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .Where(m => m.ConversationId == conversationId && !m.IsRead)
             .OrderBy(m => m.SentAt)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<ChatMessage>> GetUnsyncedMessagesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ChatMessageDto>> GetUnsyncedMessagesAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .Where(m => m.SyncStatus == SyncStatus.NotSynced || m.SyncStatus == SyncStatus.Failed)
             .OrderBy(m => m.CreatedAt)
             .AsNoTracking()
@@ -69,22 +75,25 @@ public class ChatRepository : IChatRepository
 
     public async Task<int> GetUnreadCountAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.ChatMessages
             .CountAsync(m => m.ConversationId == conversationId && !m.IsRead, cancellationToken);
     }
 
-    public async Task<int> SaveMessageAsync(ChatMessage message, CancellationToken cancellationToken = default)
+    public async Task<int> SaveMessageAsync(ChatMessageDto message, CancellationToken cancellationToken = default)
     {
-        await _dbContext.ChatMessages.AddAsync(message, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.ChatMessages.AddAsync(message, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         return message.LocalId;
     }
 
-    public async Task UpdateMessageAsync(ChatMessage message, CancellationToken cancellationToken = default)
+    public async Task UpdateMessageAsync(ChatMessageDto message, CancellationToken cancellationToken = default)
     {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
         message.LastModifiedAt = DateTime.UtcNow;
-        _dbContext.ChatMessages.Update(message);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        db.ChatMessages.Update(message);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task DeleteMessageAsync(int localId, CancellationToken cancellationToken = default)
@@ -101,14 +110,16 @@ public class ChatRepository : IChatRepository
                 await _fileSystemService.DeleteFileAsync(message.LocalThumbnailPath);
             }
 
-            _dbContext.ChatMessages.Remove(message);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+            db.ChatMessages.Remove(message);
+            await db.SaveChangesAsync(cancellationToken);
         }
     }
 
     public async Task DeleteConversationAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        var messages = await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var messages = await db.ChatMessages
             .Where(m => m.ConversationId == conversationId)
             .ToListAsync(cancellationToken);
 
@@ -124,19 +135,21 @@ public class ChatRepository : IChatRepository
             }
         }
 
-        _dbContext.ChatMessages.RemoveRange(messages);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        db.ChatMessages.RemoveRange(messages);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task SaveMessagesAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
+    public async Task SaveMessagesAsync(IEnumerable<ChatMessageDto> messages, CancellationToken cancellationToken = default)
     {
-        await _dbContext.ChatMessages.AddRangeAsync(messages, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.ChatMessages.AddRangeAsync(messages, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task MarkAsReadAsync(string conversationId, DateTime upToTimestamp, CancellationToken cancellationToken = default)
     {
-        var messages = await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var messages = await db.ChatMessages
             .Where(m => m.ConversationId == conversationId && !m.IsRead && m.SentAt <= upToTimestamp)
             .ToListAsync(cancellationToken);
 
@@ -147,12 +160,14 @@ public class ChatRepository : IChatRepository
             message.LastModifiedAt = DateTime.UtcNow;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateSyncStatusAsync(int localId, SyncStatus status, string? serverId = null, CancellationToken cancellationToken = default)
     {
-        var message = await GetMessageByLocalIdAsync(localId, cancellationToken);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var message = await db.ChatMessages
+            .FirstOrDefaultAsync(m => m.LocalId == localId, cancellationToken);
         if (message != null)
         {
             message.SyncStatus = status;
@@ -161,13 +176,14 @@ public class ChatRepository : IChatRepository
                 message.ServerMessageId = serverId;
             }
             message.LastModifiedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
         }
     }
 
     public async Task DeleteOldMessagesAsync(DateTime before, CancellationToken cancellationToken = default)
     {
-        var oldMessages = await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var oldMessages = await db.ChatMessages
             .Where(m => m.SentAt < before && m.SyncStatus == SyncStatus.Synced)
             .ToListAsync(cancellationToken);
 
@@ -183,13 +199,14 @@ public class ChatRepository : IChatRepository
             }
         }
 
-        _dbContext.ChatMessages.RemoveRange(oldMessages);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        db.ChatMessages.RemoveRange(oldMessages);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task CleanupLocalAttachmentsAsync(CancellationToken cancellationToken = default)
     {
-        var messages = await _dbContext.ChatMessages
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var messages = await db.ChatMessages
             .Where(m => m.LocalAttachmentPath != null || m.LocalThumbnailPath != null)
             .ToListAsync(cancellationToken);
 
@@ -205,6 +222,6 @@ public class ChatRepository : IChatRepository
             }
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 } 

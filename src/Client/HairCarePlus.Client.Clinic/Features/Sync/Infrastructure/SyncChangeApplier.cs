@@ -66,13 +66,8 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                 .ToDictionaryAsync(r => r.Id);
 
             // Step 3: Process DTOs from typed lists
-            if (response.PhotoReports != null)
-            {
-                foreach (var dto in response.PhotoReports)
-                {
-                    applied += ApplyPhotoReport(db, dto, existingReports);
-                }
-            }
+            // Ephemeral policy: ignore typed PhotoReports list to prevent history reconstruction
+            // if (response.PhotoReports != null) { ... }
             if (response.Restrictions != null)
             {
                  _logger.LogInformation("Clinic SyncApplier: applying {Count} restrictions from typed list", response.Restrictions.Count);

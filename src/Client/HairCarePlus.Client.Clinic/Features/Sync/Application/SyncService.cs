@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities;
+using HairCarePlus.Shared.Communication;
 using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using HairCarePlus.Client.Clinic.Infrastructure.Storage;
 using HairCarePlus.Shared.Communication.Sync;
@@ -23,7 +24,7 @@ public interface ISyncService
 
 public class SyncService : ISyncService
 {
-    private readonly IOutboxRepository _outbox;
+    private readonly HairCarePlus.Shared.Communication.IOutboxRepository _outbox;
     private readonly ISyncHttpClient _syncClient;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly ILastSyncVersionStore _versionStore;
@@ -35,7 +36,7 @@ public class SyncService : ISyncService
     private readonly List<Guid> _pendingAckIds = new();
     private static readonly Guid _deviceId = Guid.NewGuid();
 
-    public SyncService(IOutboxRepository outbox,
+    public SyncService(HairCarePlus.Shared.Communication.IOutboxRepository outbox,
                        ISyncHttpClient syncClient,
                        IDbContextFactory<AppDbContext> dbFactory,
                        ILastSyncVersionStore versionStore,
@@ -104,14 +105,8 @@ public class SyncService : ISyncService
                 }
             }
 
-            // prepare headers (clinic cares about patient-side reports, but still send its own)
-            var reportHeaders = await db.PhotoReports
-                                         .Select(r => new HairCarePlus.Shared.Communication.EntityHeaderDto
-                                         {
-                                             Id = Guid.Parse(r.Id),
-                                             ModifiedAtUtc = r.Date.ToUniversalTime()
-                                         })
-                                         .ToListAsync(cancellationToken);
+            // prepare headers (clinic should not reconstruct history from server; headers are optional)
+            var reportHeaders = new List<HairCarePlus.Shared.Communication.EntityHeaderDto>();
 
             var lastVersion = await _versionStore.GetAsync();
 
@@ -120,7 +115,7 @@ public class SyncService : ISyncService
                 DeviceId = _deviceId,
                 ClientId = "clinic-app", // TODO: unique device id
                 LastSyncVersion = lastVersion,
-                PhotoReportHeaders = reportHeaders,
+                 PhotoReportHeaders = reportHeaders,
                 PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
                 PhotoComments = photoCommentsToSend,
                 ChatMessages = chatMessagesToSend,
@@ -237,11 +232,12 @@ public class SyncService : ISyncService
                                         ConversationId = dto.ConversationId,
                                         SenderId = dto.SenderId,
                                         Content = dto.Content,
-                                        SentAt = dto.SentAt.UtcDateTime,
+                                        SentAt = dto.SentAt,
                                         SyncStatus = HairCarePlus.Client.Clinic.Features.Chat.Models.SyncStatus.Synced
                                     };
                                     await _chatRepo.AddAsync(entity);
-                                    _pendingAckIds.Add(dto.Id);
+                                    if(Guid.TryParse(dto.ServerMessageId ?? string.Empty, out var chatMsgGuid))
+                                        _pendingAckIds.Add(chatMsgGuid);
                                 }
                             }
                             catch (Exception ex)
@@ -259,7 +255,7 @@ public class SyncService : ISyncService
 
             // 4. Update outbox statuses
             if (pendingItems.Count > 0)
-                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), SyncStatus.Acked);
+                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), OutboxStatus.Acked);
 
             // 5. Save new version
             await _versionStore.SetAsync(response.NewSyncVersion);
@@ -293,7 +289,7 @@ public class SyncService : ISyncService
                         }).ToList()
                     };
 
-                    await _outbox.AddAsync(new OutboxItem
+                    await _outbox.AddAsync(new OutboxItemDto
                     {
                         EntityType = "PhotoReport",
                         PayloadJson = JsonSerializer.Serialize(dto),

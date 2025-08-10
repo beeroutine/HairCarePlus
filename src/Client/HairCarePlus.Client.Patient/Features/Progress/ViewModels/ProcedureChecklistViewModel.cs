@@ -24,9 +24,9 @@ public partial class ProcedureChecklistViewModel : ObservableObject
     public ObservableCollection<ProcedureCheck> Procedures { get; }
 
     [RelayCommand]
-    private void Close(object? popup)
+    private async Task Close(object? popup)
     {
         if (popup is CommunityToolkit.Maui.Views.Popup p)
-            p.Close();
+            await p.CloseAsync();
     }
 } 

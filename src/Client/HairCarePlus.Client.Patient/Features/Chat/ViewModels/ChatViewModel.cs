@@ -18,6 +18,7 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Infrastructure.Network.Chat;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.ViewModels;
 
@@ -49,16 +50,16 @@ public partial class ChatViewModel : ObservableObject
     };
 
     [ObservableProperty]
-    private ObservableCollection<ChatMessage> _messages;
+    private ObservableCollection<ChatMessageDto> _messages;
 
     [ObservableProperty]
     private string _messageText = string.Empty;
 
     [ObservableProperty]
-    private ChatMessage? _replyToMessage = null;
+    private ChatMessageDto? _replyToMessage = null;
 
     [ObservableProperty]
-    private ChatMessage? _editingMessage = null;
+    private ChatMessageDto? _editingMessage = null;
 
     [ObservableProperty]
     private Doctor _doctor;
@@ -85,7 +86,7 @@ public partial class ChatViewModel : ObservableObject
         _hubConnection.MessageReceived += OnMessageReceivedFromHub;
         // Start SignalR connection immediately (fire-and-forget) so we are in the conversation group
         _ = Task.Run(_hubConnection.ConnectAsync);
-        Messages = new ObservableCollection<ChatMessage>();
+        Messages = new ObservableCollection<ChatMessageDto>();
         
         // Initialize doctor for display
         Doctor = new Doctor
@@ -115,7 +116,7 @@ public partial class ChatViewModel : ObservableObject
         try
         {
             Messages.Clear();
-            var messages = await _queryBus.SendAsync<IReadOnlyList<ChatMessage>>(new ChatQueries.GetChatMessagesQuery("default_conversation"));
+            var messages = await _queryBus.SendAsync<IReadOnlyList<ChatMessageDto>>(new ChatQueries.GetChatMessagesQuery("default_conversation"));
             foreach (var msg in messages.OrderBy(m => m.SentAt))
                 Messages.Add(msg);
         }
@@ -156,7 +157,7 @@ public partial class ChatViewModel : ObservableObject
                 await _commandBus.SendAsync(new ChatCommands.SendChatMessageCommand("default_conversation", MessageText, "patient", DateTime.UtcNow, replyId));
 
                 // Add the message to the local collection immediately for optimistic UI feedback
-                var localChatMessage = new ChatMessage
+                var localChatMessage = new ChatMessageDto
                 {
                     ConversationId = "default_conversation",
                     Content = MessageText,
@@ -208,7 +209,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task DeleteMessage(ChatMessage message)
+    private async Task DeleteMessage(ChatMessageDto message)
     {
         if (message == null) return;
         try
@@ -227,7 +228,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task HandleReplyToMessage(ChatMessage message)
+    private async Task HandleReplyToMessage(ChatMessageDto message)
     {
         _logger.LogDebug("HandleReplyToMessage invoked. Content={Content}, SenderId={SenderId}", message?.Content, message?.SenderId);
         
@@ -274,7 +275,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditMessage(ChatMessage message)
+    private void EditMessage(ChatMessageDto message)
     {
         if (message == null || message.SenderId != "patient") return;
         
@@ -337,7 +338,7 @@ public partial class ChatViewModel : ObservableObject
             var latestPatientMessage = Messages.LastOrDefault(m => m.SenderId == "patient");
             bool shouldReply = _random.NextDouble() < 0.3 && latestPatientMessage != null;
             
-            var doctorResponse = new ChatMessage
+            var doctorResponse = new ChatMessageDto
             {
                 Content = responseContent,
                 SenderId = "doctor",
@@ -386,7 +387,7 @@ public partial class ChatViewModel : ObservableObject
             var now = DateTime.UtcNow;
             _logger.LogInformation("Preparing ChatMessage for image. LocalPath={Path}", localPath);
 
-            var chatMessage = new ChatMessage
+            var chatMessage = new ChatMessageDto
             {
                 Content = string.Empty,
                 SenderId = "patient",
@@ -435,7 +436,7 @@ public partial class ChatViewModel : ObservableObject
 
         var messageTime = e.SentAt.ToLocalTime().DateTime;
 
-        var incoming = new ChatMessage
+        var incoming = new ChatMessageDto
         {
             ConversationId = e.ConversationId,
             SenderId = e.SenderId,
@@ -445,7 +446,7 @@ public partial class ChatViewModel : ObservableObject
             CreatedAt = DateTime.UtcNow,
             Status = MessageStatus.Delivered,
             Type = MessageType.Text,
-            ReplyTo = e.ReplyToSenderId is null ? null : new ChatMessage
+            ReplyTo = e.ReplyToSenderId is null ? null : new ChatMessageDto
             {
                 SenderId = e.ReplyToSenderId,
                 Content = e.ReplyToContent ?? string.Empty,

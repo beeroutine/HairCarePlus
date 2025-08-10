@@ -4,13 +4,14 @@ using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
 using System;
 using System.IO;
 using HairCarePlus.Client.Patient.Features.Sync.Domain.Entities;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Patient.Infrastructure.Storage;
 
 public class AppDbContext : DbContext
 {
     public DbSet<CalendarEvent> Events { get; set; }
-    public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<ChatMessageDto> ChatMessages { get; set; } = null!;
     public DbSet<OutboxItem> OutboxItems { get; set; }
     public DbSet<HairCarePlus.Client.Patient.Features.Sync.Domain.Entities.PhotoReportEntity> PhotoReports { get; set; } = null!;
     public DbSet<HairCarePlus.Client.Patient.Features.Sync.Domain.Entities.PhotoCommentEntity> PhotoComments { get; set; } = null!;
@@ -39,7 +40,7 @@ public class AppDbContext : DbContext
         });
 
         // Message configuration
-        modelBuilder.Entity<ChatMessage>(entity =>
+        modelBuilder.Entity<ChatMessageDto>(entity =>
         {
             entity.ToTable("ChatMessages");
             

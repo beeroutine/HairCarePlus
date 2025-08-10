@@ -63,13 +63,25 @@ public class DeliveryQueueCleaner : BackgroundService
                     }
                 }
 
-                // Now use repository to remove expired/delivered items
+                // Now use repository to remove expired/delivered items.
+                // Additionally, enforce ephemeral policy: hard-delete any stale PhotoReports from main DB older than TTL.
                 var repo = scope.ServiceProvider.GetRequiredService<IDeliveryQueueRepository>();
                 await repo.RemoveExpiredAsync();
 
                 if (itemsToRemove.Count > 0)
                 {
                     _logger.LogInformation("[DeliveryQueueCleaner] Cleaned up {Count} expired/delivered items", itemsToRemove.Count);
+                }
+
+                // Hard-delete historical PhotoReports beyond TTL to avoid server-side history buildup
+                var ttlDays = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DeliveryOptions>>().Value.PhotoReportTtlDays;
+                var threshold = DateTime.UtcNow.AddDays(-ttlDays);
+                var staleReports = await db.PhotoReports.Where(r => (r.UpdatedAt ?? r.CreatedAt) < threshold).ToListAsync();
+                if (staleReports.Count > 0)
+                {
+                    db.PhotoReports.RemoveRange(staleReports);
+                    await db.SaveChangesAsync();
+                    _logger.LogInformation("[DeliveryQueueCleaner] Hard-deleted {Count} stale PhotoReports older than {Days} days", staleReports.Count, ttlDays);
                 }
             }
             catch (Exception ex)

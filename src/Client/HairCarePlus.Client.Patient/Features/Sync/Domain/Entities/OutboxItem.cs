@@ -5,14 +5,6 @@ using System.Text.Json;
 
 namespace HairCarePlus.Client.Patient.Features.Sync.Domain.Entities;
 
-public enum SyncStatus
-{
-    Pending,
-    Sent,
-    Acked,
-    Failed
-}
-
 [Table("OutboxItems")]
 public class OutboxItem
 {
@@ -29,7 +21,7 @@ public class OutboxItem
     [Required]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-    public SyncStatus Status { get; set; } = SyncStatus.Pending;
+    public HairCarePlus.Shared.Communication.OutboxStatus Status { get; set; } = HairCarePlus.Shared.Communication.OutboxStatus.Pending;
 
     public int RetryCount { get; set; }
 

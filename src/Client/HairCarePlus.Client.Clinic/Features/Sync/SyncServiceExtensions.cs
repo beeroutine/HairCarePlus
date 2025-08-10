@@ -3,6 +3,7 @@ using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 using HairCarePlus.Client.Clinic.Features.Sync.Application;
 using Microsoft.Extensions.DependencyInjection;
 using HairCarePlus.Shared.Common;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync;
 
@@ -10,7 +11,7 @@ public static class SyncServiceExtensions
 {
     public static IServiceCollection AddSyncFeature(this IServiceCollection services)
     {
-        services.AddSingleton<IOutboxRepository, OutboxRepository>();
+        services.AddSingleton<HairCarePlus.Shared.Communication.IOutboxRepository, OutboxRepository>();
         services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
         {
             var baseUrl = EnvironmentHelper.GetBaseApiUrl();

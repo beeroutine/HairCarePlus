@@ -20,6 +20,9 @@
 | `MSB4064: "Text" parameter is not supported by "WriteLinesToFile"` | Attempted to use the `Text` parameter which isn’t implemented in `Xamarin.MacDev.Tasks`. | Reverted to `Lines` + escaped semicolons. |
 | `XARDF7024: Directory not empty` (Android) | Stale obj/bin folders during incremental build. | Run `dotnet clean` or simply rebuild; the script now auto-cleans before fresh launch. |
 | `MSB4018: GenerateDepsFile … IOException: file is being used by another process` | Simultaneous `dotnet build -t:Run` for Clinic & Patient touch the shared **Shared.Domain** DLL in parallel. | Introduced sequential build (Clinic then Patient) **or** use `dotnet clean` before parallel builds. The launcher cleans first – if it re-appears, run builds sequentially. |
+| `MT1044: A device must be specified using --devname` (iOS physical) | msbuild/mtouch didn’t receive a device target; wrong property name or missing pairing. Some SDKs expect `_DeviceName` (legacy) rather than `DeviceName`. Also occurs when the device shows state “- Connecting” in Xcode/Device Services. | Pass device by UDID via `-p:_DeviceName=:v2:udid=<UDID>` for `-t:Run`. Ensure iPhone is unlocked, trusted, and visible in `xcrun devicectl list devices` (paired/connected). Open Xcode > Devices and wait until status is Ready. |
+| `Please connect the device ':v2:udid=…'` from mlaunch | Device is detected but not fully connected/paired; dev services not ready yet. | Unlock the phone, confirm Trust, keep Xcode Devices window open until Ready. If needed: reconnect cable, `sudo killall -9 usbmuxd`, restart Xcode, or reboot Mac/iPhone. |
+| `CSC : warning CS2002: Source file ... specified multiple times` | Leftover generated files in `obj` cause duplicate includes after generator changes. | Run `dotnet clean` or delete `obj/bin` for the affected project before rebuild. |
 
 ## 2. Networking & Environment Variables
 
@@ -40,6 +43,12 @@
 |---------|-----------|------------------|
 | MAUI XAML error `XC0009` for `Border` `CornerRadius`  | `Border` doesn’t have `CornerRadius`. | Use `Border.StrokeShape` with `RoundRectangle` as per memory #74783. |
 | `Shell.NavBarBackgroundColor` not recognised | Property invalid in MAUI. | Configure nav bar colour in `AppShell.xaml` globally (memory #74757). |
+
+## 6. Performance & Linking (iOS)
+
+| Symptom | Root Cause | Fix / Prevention |
+|---------|------------|------------------|
+| Debug builds take long time: `Optimizing assemblies for size...` | IL Linker/trimming runs by default for iOS and can slow inner-loop builds. | For local debug runs use `-p:MtouchLink=None -p:PublishTrimmed=false -p:PublishAot=false` to disable linking/AOT. Keep optimizations enabled for Release. |
 
 ## 5. Compile-time & XAML Warnings
 

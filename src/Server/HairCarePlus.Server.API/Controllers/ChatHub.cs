@@ -26,9 +26,15 @@ public sealed class ChatHub : Hub<IChatClient>
             ConversationId = conversationId,
             SenderId = senderId,
             Content = content,
-            SentAt = DateTimeOffset.Parse(isoUtc, null, System.Globalization.DateTimeStyles.RoundtripKind),
-            ReplyToSenderId = replyToSenderId,
-            ReplyToContent = replyToContent
+            SentAt = DateTime.Parse(isoUtc, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            Type = MessageType.Text,
+            Status = MessageStatus.Sent,
+            ReplyTo = (replyToSenderId != null || replyToContent != null) ? new ChatMessageDto
+            {
+                SenderId = replyToSenderId ?? string.Empty,
+                Content = replyToContent ?? string.Empty,
+                Type = MessageType.Text
+            } : null
         };
 
         // 1. Broadcast real0time for online clients

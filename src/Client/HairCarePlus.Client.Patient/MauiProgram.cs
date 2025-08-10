@@ -52,8 +52,11 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkit()
-			.UseMauiCommunityToolkitCamera()
-			.UseSkiaSharp()
+                .ConfigureMauiHandlers(handlers =>
+                {
+                    handlers.AddHandler<CommunityToolkit.Maui.Views.CameraView, CommunityToolkit.Maui.Core.Handlers.CameraViewHandler>();
+                })
+                .UseSkiaSharp()
 			.RegisterCalendarRoutes()
 			.RegisterPhotoCaptureRoutes()
 			.RegisterProgressRoutes()
@@ -79,19 +82,22 @@ public static class MauiProgram
 			// options.LogTo(Console.WriteLine, LogLevel.Warning); // Or log only warnings and above to console
 #endif
 		});
-		builder.Services.AddDbContext<AppDbContext>(options =>
+		builder.Services.AddPooledDbContextFactory<AppDbContext>(options =>
 		{
 			options.UseSqlite($"Data Source={dbPath}");
-			// Only enable sensitive data logging in DEBUG
 #if DEBUG
 			options.EnableSensitiveDataLogging();
-			// Comment out or reduce the LogTo level to avoid excessive logs
-			// options.LogTo(message => Debug.WriteLine(message), LogLevel.Information);
-			// options.LogTo(Console.WriteLine, LogLevel.Warning);
 #endif
-		}, ServiceLifetime.Scoped);
+		});
 
-		// Register infrastructure services
+		// Register toolkit camera provider
+				
+            // Register internal CameraProvider via reflection (required for CameraViewHandler)
+            var providerType = typeof(CommunityToolkit.Maui.Views.CameraView).Assembly.GetType("CommunityToolkit.Maui.Core.CameraProvider");
+            if (providerType is not null)
+                builder.Services.AddSingleton(typeof(CommunityToolkit.Maui.Core.ICameraProvider), providerType);
+
+            // Register infrastructure services
 		builder.Services.AddSingleton<ILocalStorageService, LocalStorageService>();
 		builder.Services.AddSingleton<ISecureStorageService, SecureStorageService>();
 		builder.Services.AddSingleton<IMediaFileSystemService, FileSystemService>();
@@ -129,13 +135,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
 		// Sync Services
-		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
+		builder.Services.AddSingleton<HairCarePlus.Shared.Communication.IOutboxRepository, OutboxRepository>();
 		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
 		{
 			var apiBaseUrl = EnvironmentHelper.GetBaseApiUrl();
 			client.BaseAddress = new Uri($"{apiBaseUrl}/");
 			// Limit the first sync attempt to a reasonable timeout to avoid long startup hangs
-			client.Timeout = TimeSpan.FromSeconds(10);
+			client.Timeout = TimeSpan.FromSeconds(30);
 		});
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddHostedService<SyncScheduler>();
@@ -157,6 +163,8 @@ public static class MauiProgram
 		builder.Logging.ClearProviders();
 		builder.Logging.AddConsole();
 		builder.Logging.AddDebug()
+			// Suppress noisy BindingDiagnostics warnings
+			.AddFilter("Microsoft.Maui.Controls.Xaml.Diagnostics.BindingDiagnostics", LogLevel.None)
 			// Reduce verbosity of EF Core to minimise log overhead during development
 			.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning)
 			.AddFilter("Microsoft.EntityFrameworkCore.ChangeTracking", LogLevel.Warning)
@@ -168,25 +176,9 @@ public static class MauiProgram
 
 		var app = builder.Build();
 
-		// Apply pending EF Core migrations automatically
-		using (var scope = app.Services.CreateScope())
-		{
-			var dbCtx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-			dbCtx.Database.Migrate();
-		}
+		
 
 		ServiceHelper.Initialize(app.Services);
-
-		// Gracefully handle absence of camera on simulators (CommunityToolkit.Maui.Camera throws)
-		AppDomain.CurrentDomain.UnhandledException += (_, args) =>
-		{
-			if (args?.ExceptionObject is CommunityToolkit.Maui.Core.CameraException camEx &&
-				camEx.Message.Contains("No camera available"))
-			{
-				// Ignore – simulators often lack a physical camera. Prevents SIGABRT crash on iOS simulator.
-				return;
-			}
-		};
 
 		return app;
 	}

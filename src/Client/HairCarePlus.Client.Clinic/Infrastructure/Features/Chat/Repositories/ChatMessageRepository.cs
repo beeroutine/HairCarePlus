@@ -24,11 +24,11 @@ public class ChatMessageRepository : BaseRepository<ChatMessage>, IChatMessageRe
         {
             var dto = new HairCarePlus.Shared.Communication.ChatMessageDto
             {
-                Id = Guid.NewGuid(),
+                LocalId = entity.LocalId,
                 ConversationId = entity.ConversationId,
                 SenderId = entity.SenderId,
                 Content = entity.Content,
-                SentAt = entity.SentAt,
+                SentAt = entity.SentAt.UtcDateTime,
                 Status = HairCarePlus.Shared.Communication.MessageStatus.Sent
             };
 
@@ -37,7 +37,7 @@ public class ChatMessageRepository : BaseRepository<ChatMessage>, IChatMessageRe
                 EntityType = "ChatMessage",
                 Payload = System.Text.Json.JsonSerializer.Serialize(dto),
                 CreatedAtUtc = DateTime.UtcNow,
-                Status = HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.SyncStatus.Pending,
+                Status = HairCarePlus.Shared.Communication.OutboxStatus.Pending,
                 LocalEntityId = entity.LocalId.ToString()
             });
             await Context.SaveChangesAsync();

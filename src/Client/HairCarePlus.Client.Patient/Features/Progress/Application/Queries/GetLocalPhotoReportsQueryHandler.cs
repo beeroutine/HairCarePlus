@@ -34,12 +34,16 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
             .OrderByDescending(r => r.CaptureDate)
             .ToListAsync(cancellationToken);
 
-        // filter out rows whose files are missing (legacy bug)
-        allReports = allReports.Where(r =>
+        // Support both absolute and relative LocalPath values (legacy rows stored absolute paths)
+        string ToFullPath(string storedPath)
         {
-            var fullPath = Path.Combine(FileSystem.AppDataDirectory, "Media", r.LocalPath!);
-            return File.Exists(fullPath);
-        }).ToList();
+            if (Path.IsPathRooted(storedPath))
+                return storedPath;
+            return Path.Combine(FileSystem.AppDataDirectory, "Media", storedPath);
+        }
+
+        // filter out rows whose files are missing
+        allReports = allReports.Where(r => File.Exists(ToFullPath(r.LocalPath!))).ToList();
 
         var feedItems = allReports
             .GroupBy(report => DateOnly.FromDateTime(report.CaptureDate))
@@ -48,7 +52,7 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
                 var report = group.First();
                 var photos = group
                     .Select(r => new ProgressPhoto {
-                        LocalPath = Path.Combine(FileSystem.AppDataDirectory, "Media", r.LocalPath ?? string.Empty),
+                        LocalPath = ToFullPath(r.LocalPath ?? string.Empty),
                         CapturedAt = r.CaptureDate,
                         Zone = r.Zone })
                     .ToList();

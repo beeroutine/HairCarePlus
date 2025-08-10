@@ -49,12 +49,13 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         {
             foreach (var dto in req.ChatMessages)
             {
-                var existing = await _db.ChatMessages.FirstOrDefaultAsync(c => c.Id == dto.Id, cancellationToken);
+                Guid.TryParse(dto.ServerMessageId ?? string.Empty, out var messageGuid);
+                var existing = messageGuid == Guid.Empty ? null : await _db.ChatMessages.FirstOrDefaultAsync(c => c.Id == messageGuid, cancellationToken);
                 if (existing == null)
                 {
                     await _db.ChatMessages.AddAsync(dto.ToEntity(), cancellationToken);
                 }
-                else if (dto.SentAt.UtcDateTime > existing.CreatedAt)
+                else if (dto.SentAt > existing.CreatedAt)
                 {
                     existing.UpdateStatus((Domain.ValueObjects.MessageStatus)dto.Status);
                 }
@@ -158,57 +159,9 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         }
 
         // Handle incoming PhotoReports (patient -> server)
+        // Ephemeral policy: do NOT persist PhotoReports in server DB. Only enqueue transient delivery packets.
         if (req.PhotoReports?.Count > 0)
         {
-            foreach (var dto in req.PhotoReports)
-            {
-                var existing = await _db.PhotoReports.FirstOrDefaultAsync(r => r.Id == dto.Id, cancellationToken);
-                if (existing == null)
-                {
-                    // Ensure parent Patient exists to satisfy FK
-                    var patientTracked = _db.ChangeTracker.Entries<Server.Domain.Entities.Patient>()
-                        .FirstOrDefault(e => e.Entity.Id == dto.PatientId)?.Entity;
-                    var patient = patientTracked ?? await _db.Patients.FirstOrDefaultAsync(p => p.Id == dto.PatientId, cancellationToken);
-                    if (patient == null)
-                    {
-                        // Create minimal stub patient
-                        patient = new Server.Domain.Entities.Patient(
-                            firstName: "Unknown",
-                            lastName: "Unknown",
-                            email: "placeholder@unknown",
-                            phoneNumber: "n/a",
-                            dateOfBirth: DateTime.UtcNow.Date,
-                            surgeryDate: DateTime.UtcNow.Date,
-                            preferredLanguage: "en",
-                            timeZone: TimeZoneInfo.Utc);
-                        typeof(Server.Domain.Entities.BaseEntity).GetProperty("Id")!.SetValue(patient, dto.PatientId);
-                        await _db.Patients.AddAsync(patient, cancellationToken);
-                    }
-
-                    var entity = new PhotoReport(
-                        dto.Id,
-                        dto.PatientId,
-                        dto.ImageUrl,
-                        null,
-                        dto.ThumbnailUrl,
-                        dto.Date,
-                        dto.Notes,
-                        (HairCarePlus.Server.Domain.ValueObjects.PhotoType)dto.Type);
-
-                    // add nested comments if any
-                    if (dto.Comments?.Count > 0)
-                    {
-                        foreach (var c in dto.Comments)
-                        {
-                            entity.Comments.Add(new PhotoComment(c.Id!=Guid.Empty?c.Id:Guid.NewGuid(), c.AuthorId, dto.Id, c.Text, c.CreatedAtUtc));
-                        }
-                    }
-
-                    await _db.PhotoReports.AddAsync(entity, cancellationToken);
-                }
-            }
-
-            // enqueue for other side
             var packetsToEnqueue = req.PhotoReports.Select(dto => new Domain.Entities.DeliveryQueue
             {
                 EntityType = "PhotoReport",
@@ -254,36 +207,10 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         _logger.LogInformation("BatchSync: returning delta. Restrictions={Count}", deltaRestrictions.Count);
 
         // ---- PhotoReport differential sync -----------------------------
+        // Ephemeral policy: server does not act as source of truth for PhotoReports.
+        // Do not return any historical PhotoReports via typed list; rely solely on DeliveryQueue packets.
         List<PhotoReportDto> reportsToSend = new();
         List<Guid> needFromClient = new();
-
-        if (req.PhotoReportHeaders != null)
-        {
-            var clientMap = req.PhotoReportHeaders.ToDictionary(h => h.Id, h => h.ModifiedAtUtc);
-
-            var serverAll = await _db.PhotoReports.ToListAsync(cancellationToken);
-            foreach (var srv in serverAll)
-            {
-                clientMap.TryGetValue(srv.Id, out var clientMod);
-                var serverMod = srv.UpdatedAt ?? srv.CreatedAt;
-
-                // if client has no such id OR server newer – send full dto
-                if (!clientMap.ContainsKey(srv.Id) || serverMod > clientMod)
-                {
-                    reportsToSend.Add(srv.ToDto());
-                }
-            }
-
-            // Any client headers newer than server?
-            foreach (var header in req.PhotoReportHeaders)
-            {
-                var srv = serverAll.FirstOrDefault(r => r.Id == header.Id);
-                if (srv == null || (srv.UpdatedAt ?? srv.CreatedAt) < header.ModifiedAtUtc)
-                {
-                    needFromClient.Add(header.Id);
-                }
-            }
-        }
 
         // fetch packets for this receiver
         var pending = await _dq.GetPendingForReceiverAsync(Guid.Empty, receiverMask);

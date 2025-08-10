@@ -5,51 +5,71 @@ using HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Clinic.Infrastructure.Storage;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
 
-public interface IOutboxRepository
-{
-    Task AddAsync(OutboxItem item);
-    Task<IReadOnlyList<OutboxItem>> GetPendingItemsAsync();
-    Task UpdateStatusAsync(IEnumerable<int> ids, SyncStatus status);
-    Task DeleteAsync(IEnumerable<int> ids);
-}
-
 public class OutboxRepository : IOutboxRepository
 {
-    private readonly AppDbContext _db;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
 
-    public OutboxRepository(AppDbContext db)
+    public OutboxRepository(IDbContextFactory<AppDbContext> dbFactory)
     {
-        _db = db;
+        _dbFactory = dbFactory;
     }
 
-    public Task AddAsync(OutboxItem item)
+    public async Task AddAsync(OutboxItemDto item)
     {
-        _db.OutboxItems.Add(item);
-        return _db.SaveChangesAsync();
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var entity = new OutboxItem
+        {
+            EntityType = item.EntityType,
+            Payload = item.Payload,
+            CreatedAtUtc = item.CreatedAtUtc,
+            Status = item.Status,
+            RetryCount = item.RetryCount,
+            LocalEntityId = item.LocalEntityId,
+            ModifiedAtUtc = item.ModifiedAtUtc
+        };
+        
+        db.OutboxItems.Add(entity);
+        await db.SaveChangesAsync();
     }
 
-    public async Task<IReadOnlyList<OutboxItem>> GetPendingItemsAsync()
+    public async Task<IReadOnlyList<OutboxItemDto>> GetPendingItemsAsync()
     {
-        return await _db.OutboxItems
-            .Where(o => o.Status == SyncStatus.Pending)
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var entities = await db.OutboxItems
+            .Where(o => o.Status == OutboxStatus.Pending)
             .OrderBy(o => o.CreatedAtUtc)
             .ToListAsync();
+
+        return entities.Select(e => new OutboxItemDto
+        {
+            Id = e.Id,
+            EntityType = e.EntityType,
+            Payload = e.Payload,
+            CreatedAtUtc = e.CreatedAtUtc,
+            Status = e.Status,
+            RetryCount = e.RetryCount,
+            LocalEntityId = e.LocalEntityId,
+            ModifiedAtUtc = e.ModifiedAtUtc
+        }).ToList();
     }
 
-    public Task UpdateStatusAsync(IEnumerable<int> ids, SyncStatus status)
+    public async Task UpdateStatusAsync(IEnumerable<int> ids, OutboxStatus status)
     {
-        return _db.OutboxItems
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        await db.OutboxItems
             .Where(o => ids.Contains(o.Id))
             .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, status));
     }
 
-    public Task DeleteAsync(IEnumerable<int> ids)
+    public async Task DeleteAsync(IEnumerable<int> ids)
     {
-        return _db.OutboxItems
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        await db.OutboxItems
             .Where(o => ids.Contains(o.Id))
             .ExecuteDeleteAsync();
     }
-} 
+}

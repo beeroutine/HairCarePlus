@@ -72,8 +72,8 @@
         <!-- Camera preview and overlay. Removing the negative ZIndex ensures the preview is actually visible. -->
         <Grid Grid.Row="0" Grid.RowSpan="3">
             <toolkit:CameraView x:Name="Camera"
-                                 HorizontalOptions="Fill"
-                                 VerticalOptions="Fill" />
+                                HorizontalOptions="Fill"
+                                VerticalOptions="Fill" />
             <Image Source="{Binding SelectedTemplate.OverlayAsset}" Aspect="AspectFit" HorizontalOptions="Fill" VerticalOptions="Fill" />
         </Grid>
 

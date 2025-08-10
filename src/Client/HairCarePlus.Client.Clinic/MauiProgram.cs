@@ -10,12 +10,22 @@ using SkiaSharp.Views.Maui.Controls.Hosting;
 using System.Net.Http;
 using HairCarePlus.Client.Clinic.Features.Sync.Application;
 using HairCarePlus.Client.Clinic.Features.Sync.Infrastructure;
+using HairCarePlus.Shared.Communication;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
 using HairCarePlus.Shared.Common;
 using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
 using SQLitePCL;
+using HairCarePlus.Client.Clinic.Infrastructure.Services;
+using HairCarePlus.Client.Clinic.Infrastructure.Navigation;
+#if IOS
+using HairCarePlus.Client.Clinic.Platforms.iOS.Services;
+#elif ANDROID
+using HairCarePlus.Client.Clinic.Platforms.Android.Services;
+#elif MACCATALYST
+using HairCarePlus.Client.Clinic.Platforms.MacCatalyst.Services;
+#endif
 
 namespace HairCarePlus.Client.Clinic;
 
@@ -42,10 +52,12 @@ public static class MauiProgram
 		builder.Services.AddTransient<Features.Chat.ViewModels.ChatViewModel>();
 		builder.Services.AddTransient<Features.Chat.Views.ChatPage>();
 		var dbPath = Path.Combine(FileSystem.AppDataDirectory, "clinic.db");
-		builder.Services.AddDbContextFactory<Infrastructure.Storage.AppDbContext>(options =>
-		    options.UseSqlite($"Data Source={dbPath}"));
+
+		builder.Services.AddPooledDbContextFactory<Infrastructure.Storage.AppDbContext>(options =>
+    options.UseSqlite($"Data Source={dbPath}"));
+		// Register AppDbContext itself so it can be resolved directly from the DI container
 		builder.Services.AddDbContext<Infrastructure.Storage.AppDbContext>(options =>
-		    options.UseSqlite($"Data Source={dbPath}"), ServiceLifetime.Scoped);
+	    options.UseSqlite($"Data Source={dbPath}"));
 		builder.Services.AddScoped<Features.Chat.Domain.IChatMessageRepository, Infrastructure.Features.Chat.Repositories.ChatMessageRepository>();
 
 		builder.Services.AddTransient<Features.Dashboard.ViewModels.DashboardViewModel>();
@@ -62,12 +74,14 @@ public static class MauiProgram
 		builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri($"{apiBaseUrl}/") });
 		builder.Services.AddSingleton<CommunityToolkit.Mvvm.Messaging.IMessenger>(CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default);
 		builder.Services.AddSingleton<Infrastructure.Network.Events.IEventsSubscription, Infrastructure.Network.Events.SignalREventsSubscription>();
+		builder.Services.AddSingleton<IKeyboardService, KeyboardService>();
+		Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<INavigationService, NavigationService>(builder.Services);
 		builder.Services.AddScoped<Infrastructure.Features.Progress.IPhotoReportService, Infrastructure.Features.Progress.PhotoReportService>();
 		builder.Services.AddScoped<Infrastructure.Features.Patient.IPatientService, Infrastructure.Features.Patient.PatientService>();
 		builder.Services.AddScoped<Infrastructure.Features.Patient.IRestrictionService, Infrastructure.Features.Patient.RestrictionService>();
 
 		// Sync Services
-		builder.Services.AddSingleton<IOutboxRepository, OutboxRepository>();
+		builder.Services.AddSingleton<HairCarePlus.Shared.Communication.IOutboxRepository, OutboxRepository>();
 		builder.Services.AddHttpClient<ISyncHttpClient, SyncHttpClient>(client =>
 		{
 			client.BaseAddress = new Uri($"{HairCarePlus.Shared.Common.EnvironmentHelper.GetBaseApiUrl()}/");

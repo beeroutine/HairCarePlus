@@ -48,8 +48,8 @@ public sealed class SignalRChatHubConnection : IChatHubConnection, IAsyncDisposa
                     SenderId = dto.SenderId,
                     Content = dto.Content,
                     SentAt = dto.SentAt,
-                    ReplyToSenderId = dto.ReplyToSenderId,
-                    ReplyToContent = dto.ReplyToContent
+                    ReplyToSenderId = dto.ReplyTo?.SenderId,
+                    ReplyToContent = dto.ReplyTo?.Content
                 });
             });
     }
@@ -74,4 +74,4 @@ public sealed class SignalRChatHubConnection : IChatHubConnection, IAsyncDisposa
     {
         await _connection.DisposeAsync();
     }
-} 
+}

@@ -1,42 +1,78 @@
 #!/usr/bin/env bash
-# HairCare+ full-stack launcher for local QA.
-# Starts Server (ASP.NET Core), Clinic (Mac Catalyst), Patient (physical iOS)
-# Assumes: dotnet SDK 9 is installed and an iPhone 15 Pro with specified UDID is connected.
+# HairCare+ full-stack launcher for local QA/dev.
+# Starts Server (ASP.NET Core), Clinic (Mac Catalyst by default or iOS Simulator), Patient (physical iOS)
+# Assumes: .NET SDK 9 (MAUI workload) + Xcode; physical iPhone connected & trusted for Patient.
 # Usage: ./dev/run-haircare+.sh
 set -euo pipefail
 
-# Resolve repo root even if script is invoked via symlink.
-# In bash, $BASH_SOURCE[0] exists; in zsh it is undefined, so fall back to $0.
-SOURCE_PATH="${BASH_SOURCE[0]:-$0}"
-ROOT_DIR="$(cd "$(dirname "$SOURCE_PATH")/.." && pwd)"
-
-# Your Mac's Wi-Fi IP address (adjust interface if your NIC is different)
-MAC_IP=$(ipconfig getifaddr en0 || true)
-if [[ -z "$MAC_IP" ]]; then
-  echo "❌ Cannot detect IP via 'ipconfig getifaddr en0'. Edit dev/run-haircare+.sh and set MAC_IP manually." >&2
-  exit 1
+# If invoked from a non-bash shell (e.g., zsh), re-exec under bash to ensure bash semantics
+if [[ -z "${BASH_VERSION:-}" ]]; then
+  exec /bin/bash "$0" "$@"
 fi
 
-# Shared chat base URL env var for both MAUI clients
-export CHAT_BASE_URL="http://$MAC_IP:5281"
-
-# after ROOT_DIR set add log dir
+# Resolve repo root even if script is invoked via symlink.
+SOURCE_PATH="${BASH_SOURCE[0]:-$0}"
+ROOT_DIR="$(cd "$(dirname "$SOURCE_PATH")/.." && pwd)"
 LOG_DIR="$ROOT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-# -----------------------------------------------------------------------------
-# Select which build of Clinic to run
-# If caller didn't export CLINIC_SIM_UDID, fall back to default iPhone-16 simulator
-# -----------------------------------------------------------------------------
-DEFAULT_SIM_UDID="A6B34CF4-02AE-4304-8D44-7D0AF1F007DF"
-CLINIC_SIM_UDID="${CLINIC_SIM_UDID:-$DEFAULT_SIM_UDID}"
+PORT="${HC_PORT:-5281}"
 
-# -----------------------------------------------------------------------------
-# Ensure old server instance is not holding port 5281 (macOS uses BSD xargs w/o -r)
-# -----------------------------------------------------------------------------
-OLD_PIDS="$(lsof -ti tcp:5281 || true)"
+detect_mac_ip() {
+  local ip
+  ip=$(ipconfig getifaddr en0 2>/dev/null || true)
+  if [[ -z "$ip" ]]; then
+    ip=$(ipconfig getifaddr en1 2>/dev/null || true)
+  fi
+  echo "$ip"
+}
+
+MAC_IP="${MAC_IP:-}"
+if [[ -z "$MAC_IP" ]]; then
+  MAC_IP=$(detect_mac_ip)
+fi
+if [[ -z "$MAC_IP" ]]; then
+  echo "❌ Cannot detect host IP via 'ipconfig getifaddr en0|en1'. Set MAC_IP env var and rerun." >&2
+  exit 1
+fi
+
+# Shared base URL for both MAUI clients (can be overridden from environment)
+CHAT_BASE_URL="${CHAT_BASE_URL:-http://$MAC_IP:$PORT}"
+export CHAT_BASE_URL
+
+# ----------------------------------------------------------------------------
+# Configuration: Clinic target (always iOS Simulator, iPhone 16 Pro preferred)
+# - Set CLINIC_SIM_UDID to override simulator choice
+# ----------------------------------------------------------------------------
+CLINIC_SIM_UDID="${CLINIC_SIM_UDID:-}"
+
+if [[ -z "$CLINIC_SIM_UDID" ]]; then
+  echo "ℹ️  Selecting default iOS Simulator for Clinic (preferring iPhone 16 Pro → iPhone 16) ..."
+  for MODEL in "iPhone 16 Pro" "iPhone 16"; do
+    CANDIDATE=$(xcrun simctl list devices 2>/dev/null | sed -n "s/.*${MODEL} (\([A-Fa-f0-9-]\{36\}\)).* (available).*/\1/p" | head -n 1 || true)
+    if [[ -n "$CANDIDATE" ]]; then
+      CLINIC_SIM_UDID="$CANDIDATE"
+      break
+    fi
+  done
+  if [[ -z "$CLINIC_SIM_UDID" ]]; then
+    CLINIC_SIM_UDID=$(xcrun simctl list devices 2>/dev/null | sed -n 's/.*iPhone .* (\([A-Fa-f0-9-]\{36\}\)).* (available).*/\1/p' | head -n1 || true)
+  fi
+  # Fallback: use already Booted iPhone simulator if any is open
+  if [[ -z "$CLINIC_SIM_UDID" ]]; then
+    CLINIC_SIM_UDID=$(xcrun simctl list devices 2>/dev/null | sed -n 's/.*iPhone .* (\([A-Fa-f0-9-]\{36\}\)).* (Booted).*/\1/p' | head -n1 || true)
+  fi
+  if [[ -z "$CLINIC_SIM_UDID" ]]; then
+    echo "⚠️  Could not resolve an iPhone simulator UDID. Open any iPhone simulator or pass CLINIC_SIM_UDID explicitly."
+  fi
+fi
+
+# ----------------------------------------------------------------------------
+# Ensure old server instance is not holding the port
+# ----------------------------------------------------------------------------
+OLD_PIDS="$(lsof -ti tcp:$PORT || true)"
 if [[ -n "$OLD_PIDS" ]]; then
-  echo "ℹ️  Killing existing process(es) on port 5281: $OLD_PIDS"
+  echo "ℹ️  Killing existing process(es) on port $PORT: $OLD_PIDS"
   kill -9 $OLD_PIDS || true
 fi
 
@@ -46,87 +82,139 @@ fi
 echo "▶ Starting API server on $CHAT_BASE_URL ..."
 dotnet run \
   --project "$ROOT_DIR/src/Server/HairCarePlus.Server.API" \
-  --urls "http://0.0.0.0:5281" 2>&1 | tee "$LOG_DIR/server.log" &
+  --urls "http://0.0.0.0:$PORT" 2>&1 | tee "$LOG_DIR/server.log" &
 SERVER_PID=$!
 
-# Wait until port 5281 is accepting connections
-echo -n "⏳ Waiting for server to bind port 5281 "
-until nc -z "$MAC_IP" 5281 ; do
+echo -n "⏳ Waiting for server to bind port $PORT "
+until nc -z "$MAC_IP" "$PORT" ; do
   printf '.'
   sleep 0.3
 done
 printf " done.\n"
 
 echo "✔ Server is up (PID $SERVER_PID)."
-
-# ---------------------------------------------------------------
-# Force clean builds of MAUI clients to ensure updated BaseApiUrl
-# ---------------------------------------------------------------
-# Purge previous artifacts to guarantee fresh BuildConfig generation with new IP
-echo "🧹 Cleaning previous client build outputs (bin/obj/tmp) to propagate CHAT_BASE_URL=$CHAT_BASE_URL ..."
-
-# Remove custom tmp outputs
-rm -rf "$ROOT_DIR/tmp/clinic_build" "$ROOT_DIR/tmp/patient_build"
-
-# Remove default bin/obj folders for both projects to avoid incremental reuse
-find "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
-find "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
-# Clean via dotnet as safety net
-dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" >/dev/null 2>&1 || true
-dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" >/dev/null 2>&1 || true
+open -g "http://$MAC_IP:$PORT/swagger/index.html" >/dev/null 2>&1 || true
+echo "🌐 Opened Swagger at http://$MAC_IP:$PORT/swagger/index.html"
 
 ###############################################################################
-# 2) Clinic app
+# 2) (Optional) clean — disabled by default to match Rider fast inner-loop
 ###############################################################################
-if [[ -n "${CLINIC_SIM_UDID:-}" ]]; then
-  echo "▶ Booting simulator $CLINIC_SIM_UDID ..."
-  xcrun simctl boot $CLINIC_SIM_UDID >/dev/null 2>&1 || true
-
-  # Choose correct simulator RID based on host CPU
-  HOST_ARCH="$(uname -m)"
-  if [[ "$HOST_ARCH" == "arm64" ]]; then
-    SIM_RID="iossimulator-arm64"
-  else
-    SIM_RID="iossimulator-x64"
-  fi
-
-  echo "▶ Launching Clinic on iOS simulator (UDID $CLINIC_SIM_UDID, RID $SIM_RID) ..."
-  dotnet build -t:Run \
-    "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
-    -p:BaseOutputPath=$ROOT_DIR/tmp/clinic_build/ \
-    -f net9.0-ios \
-    -p:RuntimeIdentifier=$SIM_RID \
-    -p:_DeviceName=:v2:udid=$CLINIC_SIM_UDID \
-    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
-  CLINIC_PID=$!
-else
-  echo "▶ Launching Clinic (Mac Catalyst) ..."
-  dotnet build -t:Run \
-    "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
-    -p:BaseOutputPath=$ROOT_DIR/tmp/clinic_build/ \
-    -f net9.0-maccatalyst \
-    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
-  CLINIC_PID=$!
+if [[ "${HC_CLEAN:-0}" == "1" ]]; then
+  echo "🧹 Cleaning client build outputs (HC_CLEAN=1) ..."
+  set +e
+  find "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} + 2>/dev/null
+  find "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} + 2>/dev/null
+  dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" >/dev/null 2>&1 || true
+  dotnet clean "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" >/dev/null 2>&1 || true
+  set -e
 fi
 
 ###############################################################################
-# 3) Patient — physical iPhone 15 Pro over USB/Wi-Fi
+# Helpers
 ###############################################################################
-IPHONE_UDID="00008130-000444D83891401C"
+resolve_patient_app_path() {
+  local default_app relocated_app found
+  default_app="$ROOT_DIR/src/Client/HairCarePlus.Client.Patient/bin/Debug/net9.0-ios/ios-arm64/HairCarePlus.Client.Patient.app"
+  relocated_app="$ROOT_DIR/tmp/patient_build/HairCarePlus.Client.Patient/bin/Debug/net9.0-ios/ios-arm64/HairCarePlus.Client.Patient.app"
+  if [[ -d "$relocated_app" ]]; then
+    echo "$relocated_app"
+    return 0
+  fi
+  if [[ -d "$default_app" ]]; then
+    echo "$default_app"
+    return 0
+  fi
+  # Fallback to search (robust to future changes)
+  found=$(find "$ROOT_DIR/tmp/patient_build" -type d -name "HairCarePlus.Client.Patient.app" -print -quit 2>/dev/null || true)
+  if [[ -n "$found" ]]; then
+    echo "$found"
+    return 0
+  fi
+  echo "" # not found
+}
 
-echo "▶ Deploying Patient app to iPhone ($IPHONE_UDID) ..."
-dotnet build -t:Run \
+get_sim_rid() {
+  if [[ "$(sysctl -in hw.optional.arm64 2>/dev/null)" == "1" ]]; then
+    echo "iossimulator-arm64"
+  else
+    echo "iossimulator-x64"
+  fi
+}
+
+###############################################################################
+# 3) Patient — Rider-style run: dotnet build -t:Run (no explicit mlaunch)
+###############################################################################
+IPHONE_UDID="${PATIENT_UDID:-}"
+if [[ -z "$IPHONE_UDID" ]]; then
+  IPHONE_UDID=$(/usr/bin/python3 - <<'PY'
+import json, subprocess
+try:
+    out = subprocess.check_output(["xcrun", "devicectl", "list", "devices", "--json-output", "/dev/stdout"], stderr=subprocess.DEVNULL)
+    data = json.loads(out)
+    for d in data.get("result", {}).get("devices", []):
+        if d.get("deviceType", "").lower() == "physical" and d.get("platform", "").lower() == "ios" and "iphone" in d.get("name", "").lower():
+            udid = d.get("udid")
+            if udid:
+                print(udid)
+                raise SystemExit
+except Exception:
+    pass
+print("")
+PY
+  )
+fi
+if [[ -z "$IPHONE_UDID" ]]; then
+  IPHONE_UDID=$(xcrun xctrace list devices 2>/dev/null \
+    | grep -vi Simulator \
+    | grep -iE "iPhone|iPad" \
+    | sed -n 's/.*(\([A-Fa-f0-9-]\{25,40\}\)).*/\1/p' \
+    | head -n 1 || true)
+fi
+
+if [[ -z "$IPHONE_UDID" ]]; then
+  echo "❌ No physical iPhone detected. Connect your iPhone (trust in Xcode) or set PATIENT_UDID."
+  exit 1
+fi
+
+PATIENT_TARGET="${PATIENT_DEVICENAME:-$IPHONE_UDID}"
+echo "▶ Running Patient (Rider-style) on device=$PATIENT_TARGET ..."
+dotnet build -t:Run -c Debug \
   "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" \
-  -p:BaseOutputPath=$ROOT_DIR/tmp/patient_build/ \
   -f net9.0-ios \
   -p:RuntimeIdentifier=ios-arm64 \
-  -p:_DeviceName=$IPHONE_UDID \
+  -p:_DeviceName=$PATIENT_TARGET \
+  -p:MtouchLink=None -p:PublishAot=false \
   -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/patient.log" &
 PATIENT_PID=$!
 
+###############################################################################
+# 4) Clinic — always run on iOS Simulator (iPhone 16 Pro preferred)
+###############################################################################
+if [[ -n "$CLINIC_SIM_UDID" ]]; then
+  echo "▶ Booting simulator $CLINIC_SIM_UDID ..."
+  xcrun simctl boot "$CLINIC_SIM_UDID" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$CLINIC_SIM_UDID" -b >/dev/null 2>&1 || true
+  open -a Simulator --args -CurrentDeviceUDID "$CLINIC_SIM_UDID" >/dev/null 2>&1 || open -a Simulator >/dev/null 2>&1 || true
+
+  SIM_RID="$(get_sim_rid)"
+  echo "▶ Launching Clinic on iOS simulator (UDID $CLINIC_SIM_UDID, RID $SIM_RID) ..."
+  set +e
+  dotnet restore "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" -f net9.0-ios -p:RuntimeIdentifier=$SIM_RID >/dev/null 2>&1 || true
+  set -e
+  CLINIC_TARGET="${CLINIC_DEVICENAME:-:v2:udid=$CLINIC_SIM_UDID}"
+  dotnet build -t:Run -c Debug -p:MtouchLink=None -p:PublishAot=false \
+    "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
+    -f net9.0-ios \
+    -p:RuntimeIdentifier=$SIM_RID \
+    -p:_DeviceName=$CLINIC_TARGET \
+    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
+  CLINIC_PID=$!
+else
+  echo "⚠️  Clinic launch skipped: no simulator UDID resolved."
+fi
+
 echo "🎉 All processes started. Press Ctrl+C to stop."
 
-# Forward SIGINT/SIGTERM to children and clean up properly
-trap 'echo "\n⏹ Stopping all processes..."; kill $SERVER_PID $CLINIC_PID $PATIENT_PID 2>/dev/null || true; wait' SIGINT SIGTERM
+trap 'echo "\n⏹ Stopping all processes..."; kill $SERVER_PID ${CLINIC_PID:-} ${PATIENT_PID:-} 2>/dev/null || true; wait' SIGINT SIGTERM
 
-wait 
+wait

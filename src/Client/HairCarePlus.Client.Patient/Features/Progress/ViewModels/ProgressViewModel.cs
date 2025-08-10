@@ -10,6 +10,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using HairCarePlus.Client.Patient.Features.Progress.Views;
 using CommunityToolkit.Maui.Views;
+using MauiApp = Microsoft.Maui.Controls.Application;
 using HairCarePlus.Client.Patient.Features.Progress.Selectors;
 using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
@@ -21,6 +22,7 @@ using HairCarePlus.Client.Patient.Features.Sync.Messages;
 using System.Threading; // add for SemaphoreSlim
 using System.Collections.Generic;
 using Microsoft.Maui.ApplicationModel; // MainThread
+using CommunityToolkit.Maui.Extensions;
 
 namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
@@ -112,16 +114,14 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSaved
     {
         if (timer is null) return;
         
-        try 
+        try
         {
             var popup = new RestrictionStoriesPopup(timer);
-            var page = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault()?.Page;
-            if (page != null)
-                await page.ShowPopupAsync(popup);
+            await PopupExtensions.ShowPopupAsync(MauiApp.Current.MainPage, popup);
         }
-        catch (Exception ex) 
-        { 
-            _logger.LogError(ex, "Failed to open restriction details popup"); 
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open restriction details popup");
         }
     }
 

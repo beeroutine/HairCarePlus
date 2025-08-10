@@ -8,7 +8,7 @@ using HairCarePlus.Client.Patient.Features.PhotoCapture.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Queries;
 using System.Linq;
 using Microsoft.Maui.Controls;
-using HairCarePlus.Client.Patient.Features.Sync.Infrastructure;
+using HairCarePlus.Shared.Communication;
 using System.Text.Json;
 using HairCarePlus.Client.Patient.Infrastructure.Media;
 using System;
@@ -19,6 +19,8 @@ using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Maui.Media;
+using Microsoft.Maui.Storage;
 
 namespace HairCarePlus.Client.Patient.Features.PhotoCapture.ViewModels;
 
@@ -27,7 +29,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly ILogger<PhotoCaptureViewModel> _logger;
-    private readonly IOutboxRepository _outbox;
+    private readonly HairCarePlus.Shared.Communication.IOutboxRepository _outboxRepo;
     private readonly IUploadService _uploadService;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IProfileService _profileService;
@@ -36,7 +38,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
     public PhotoCaptureViewModel(ICommandBus commandBus,
                                  IQueryBus queryBus,
                                  ILogger<PhotoCaptureViewModel> logger,
-                                 IOutboxRepository outbox,
+                                 HairCarePlus.Shared.Communication.IOutboxRepository outboxRepo,
                                  IUploadService uploadService,
                                  IDbContextFactory<AppDbContext> dbFactory,
                                  IProfileService profileService,
@@ -45,7 +47,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
         _commandBus = commandBus;
         _queryBus = queryBus;
         _logger = logger;
-        _outbox = outbox;
+        _outboxRepo = outboxRepo;
         _uploadService = uploadService;
         _dbFactory = dbFactory;
         _profileService = profileService;
@@ -96,20 +98,31 @@ public partial class PhotoCaptureViewModel : ObservableObject
     [RelayCommand]
     private async Task Capture()
     {
-        if (IsBusy) return;
+        if (IsBusy)
+            return;
         try
         {
             IsBusy = true;
-            await _commandBus.SendAsync(new HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Commands.CapturePhotoCommand());
 
-            if (!string.IsNullOrEmpty(_lastPhotoPath))
-            {
-                await HandleCapturedPhotoAsync(_lastPhotoPath);
-            }
+            // Open system camera UI
+            var photo = await MediaPicker.CapturePhotoAsync();
+            if (photo == null)
+                return;
+
+            // Save to cache
+            var targetPath = Path.Combine(FileSystem.CacheDirectory, $"{Guid.NewGuid()}.jpg");
+            await using var stream = await photo.OpenReadAsync();
+            await using var fs = File.OpenWrite(targetPath);
+            await stream.CopyToAsync(fs);
+
+            LastPhotoPath = targetPath;
+            // Process captured photo (e.g., send to server)
+            await HandleCapturedPhotoAsync(targetPath);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Capture failed");
+            await Shell.Current.DisplayAlert("Ошибка", "Не удалось сделать снимок", "OK");
         }
         finally
         {
@@ -178,15 +191,15 @@ public partial class PhotoCaptureViewModel : ObservableObject
                 Comments = new()
             };
 
-            var item = new Features.Sync.Domain.Entities.OutboxItem
-            {
-                EntityType = "PhotoReport",
-                PayloadJson = JsonSerializer.Serialize(dto),
-                LocalEntityId = dto.Id.ToString(),
-                ModifiedAtUtc = DateTime.UtcNow
-            };
+            var outboxDto = new OutboxItemDto
+    {
+        EntityType = "PhotoReport",
+        Payload = JsonSerializer.Serialize(dto),
+        LocalEntityId = dto.Id.ToString(),
+        ModifiedAtUtc = DateTime.UtcNow
+    };
 
-            await _outbox.AddAsync(item);
+    await _outboxRepo.AddAsync(outboxDto);
 
             _logger.LogInformation("PhotoReport enqueued. Id={Id} url={Url}", dto.Id, dto.ImageUrl);
         }
@@ -218,6 +231,17 @@ public partial class PhotoCaptureViewModel : ObservableObject
         {
             SelectedTemplate.IsCaptured = true;
             ShowInstruction = false;
+
+            // Если все фото сделаны – переходим на страницу Progress
+            if (Templates.All(t => t.IsCaptured))
+            {
+                global::Microsoft.Maui.Controls.Application.Current?.Dispatcher.Dispatch(async () =>
+                {
+                    await Shell.Current.GoToAsync("//progress");
+                });
+                return;
+            }
+
             // Wait briefly then move to next template and show again
             global::Microsoft.Maui.Controls.Application.Current?.Dispatcher.Dispatch(async () =>
             {

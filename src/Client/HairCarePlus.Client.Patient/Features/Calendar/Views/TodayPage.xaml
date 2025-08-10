@@ -44,7 +44,7 @@
                         <TapGestureRecognizer Command="{Binding GoToTodayCommand}"/>
                     </Border.GestureRecognizers>
                     <Grid>
-                        <commonViews:SkiaProgressRing
+                        <commonViews:SkiaProgressRing InputTransparent="True"
                             x:Name="ProgressRingRef"
                             Progress="{Binding CompletionProgress}"
                             Thickness="5"
@@ -181,19 +181,7 @@
                         </VisualStateGroup>
                     </VisualStateManager.VisualStateGroups>
 
-                    <!-- Add trigger for current date -->
-                    <Grid.Triggers>
-                        <DataTrigger TargetType="Grid" 
-                                   Binding="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectedDate, Converter={StaticResource DateEqualityConverter}}"
-                                   Value="{Binding .}">
-                            <Setter Property="Grid.BackgroundColor" Value="Transparent" />
-                            <Setter TargetName="dayCircleBorder" Property="Border.BackgroundColor" 
-                                    Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
-                            <Setter TargetName="dayNumberLabel" Property="Label.TextColor" 
-                                    Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-                            <Setter Property="Grid.Scale" Value="1.1" />
-                        </DataTrigger>
-                    </Grid.Triggers>
+
 
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -240,9 +228,11 @@
                              IsVisible="{Binding Converter={StaticResource DateHasAnyEventConverter}}" />
                     
                     <Grid.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
+                        <TapGestureRecognizer x:DataType="{x:Null}"
+                                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=SelectDateCommand}"
                                              CommandParameter="{Binding .}" />
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
+                        <TapGestureRecognizer x:DataType="{x:Null}"
+                                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=OpenMonthCalendarCommand}"
                                              CommandParameter="{Binding .}"
                                              NumberOfTapsRequired="2" />
                     </Grid.GestureRecognizers>
@@ -262,7 +252,7 @@
                 <SwipeView>
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Execute">
-                            <SwipeItem
+                            <SwipeItem x:DataType="{x:Null}"
                                     BackgroundColor="Transparent"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:TodayViewModel}}, Path=ToggleEventCompletionCommand}"
                                     CommandParameter="{Binding .}">

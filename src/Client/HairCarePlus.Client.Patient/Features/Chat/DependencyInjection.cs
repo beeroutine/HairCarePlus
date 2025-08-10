@@ -8,7 +8,7 @@ using HairCarePlus.Client.Patient.Infrastructure.Connectivity;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
 using HairCarePlus.Shared.Common.CQRS;
 using System.Collections.Generic;
-using HairCarePlus.Client.Patient.Features.Chat.Domain.Entities;
+
 using Commands = HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
 using QueriesNs = HairCarePlus.Client.Patient.Features.Chat.Application.Queries;
 
@@ -22,7 +22,7 @@ public static class DependencyInjection
         services.AddSingleton<IConnectivityService, ConnectivityService>();
         
         // Database
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddPooledDbContextFactory<AppDbContext>(options =>
         {
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "chat.db");
             options.UseSqlite($"Data Source={dbPath}");
@@ -37,7 +37,7 @@ public static class DependencyInjection
         // CQRS
         services.AddCqrs();
         services.AddScoped<ICommandHandler<Commands.SendChatMessageCommand>, Commands.SendChatMessageHandler>();
-        services.AddScoped<IQueryHandler<QueriesNs.GetChatMessagesQuery, IReadOnlyList<ChatMessage>>, QueriesNs.GetChatMessagesHandler>();
+        services.AddScoped<IQueryHandler<QueriesNs.GetChatMessagesQuery, IReadOnlyList<HairCarePlus.Shared.Communication.ChatMessageDto>>, QueriesNs.GetChatMessagesHandler>();
         services.AddScoped<ICommandHandler<Commands.UpdateChatMessageCommand>, Commands.UpdateChatMessageHandler>();
         services.AddScoped<ICommandHandler<Commands.DeleteChatMessageCommand>, Commands.DeleteChatMessageHandler>();
         services.AddScoped<ICommandHandler<Commands.SendChatImageCommand>, Commands.SendChatImageHandler>();

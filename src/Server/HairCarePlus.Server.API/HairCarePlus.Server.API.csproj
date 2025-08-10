@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0-preview.5.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.*" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.5.24277.8" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.5.24306.3" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

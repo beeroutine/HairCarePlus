@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HairCarePlus.Shared.Common.CQRS;
 using HairCarePlus.Client.Patient.Features.Chat.Domain.Repositories;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Client.Patient.Features.Chat.Application.Commands;
 

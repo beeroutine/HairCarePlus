@@ -8,9 +8,7 @@ public class RestrictionDetailPopup : Popup
 {
     public RestrictionDetailPopup(RestrictionTimer timer)
     {
-        Color = Color.FromArgb("#80000000");
-
-        var layout = new VerticalStackLayout
+                var layout = new VerticalStackLayout
         {
             Spacing = 12,
             WidthRequest = 280,
@@ -21,7 +19,7 @@ public class RestrictionDetailPopup : Popup
                 new Button
                 {
                     Text = "Close",
-                    Command = new Command(() => Close())
+                    Command = new Command(async () => await CloseAsync())
                 }
             }
         };

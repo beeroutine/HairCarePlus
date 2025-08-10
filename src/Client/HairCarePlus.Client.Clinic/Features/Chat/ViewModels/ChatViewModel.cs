@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System;
 using Microsoft.Extensions.Logging;
 using HairCarePlus.Client.Clinic.Features.Chat.Domain;
+using HairCarePlus.Client.Clinic.Infrastructure.Services;
+using HairCarePlus.Client.Clinic.Infrastructure.Navigation;
 
 namespace HairCarePlus.Client.Clinic.Features.Chat.ViewModels;
 
@@ -18,6 +20,8 @@ public partial class ChatViewModel : ObservableObject
     private const string ConversationId = "default_conversation";
     private const string CurrentUserId = "doctor";
     private readonly ILogger<ChatViewModel> _logger;
+    private readonly IKeyboardService _keyboardService;
+    private readonly INavigationService _navigationService;
     private static bool _subscribed;
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
@@ -39,7 +43,7 @@ public partial class ChatViewModel : ObservableObject
     private PeerInfo _peer = new("Пациент Иванов", true);
 
     public IAsyncRelayCommand SendCommand { get; }
-    public IRelayCommand BackCommand { get; }
+    public IAsyncRelayCommand BackCommand { get; }
     public IRelayCommand HideKeyboardCommand { get; }
     public IRelayCommand<ChatMessage> EditMessageCommand { get; }
     public IRelayCommand<ChatMessage> DeleteMessageCommand { get; }
@@ -48,7 +52,9 @@ public partial class ChatViewModel : ObservableObject
 
     public ChatViewModel(IChatHubConnection hubConnection,
         IChatMessageRepository repo,
-        ILogger<ChatViewModel> logger)
+        ILogger<ChatViewModel> logger,
+        IKeyboardService keyboardService,
+        INavigationService navigationService)
     {
         _hubConnection = hubConnection;
         _repo = repo;
@@ -57,14 +63,17 @@ public partial class ChatViewModel : ObservableObject
             _hubConnection.MessageReceived += OnMessageReceived;
             _subscribed = true;
         }
+        _navigationService = navigationService;
         SendCommand = new AsyncRelayCommand(SendAsync, CanSend);
-        BackCommand = new RelayCommand(() => { /* TODO: navigate back */ });
-        HideKeyboardCommand = new RelayCommand(() => { /* TODO: hide keyboard */ });
+        BackCommand = new AsyncRelayCommand(navigationService.GoBackAsync);
+        HideKeyboardCommand = new RelayCommand(() => _keyboardService.HideKeyboard());
         EditMessageCommand = new RelayCommand<ChatMessage>(_ => { /* edit stub */ });
         DeleteMessageCommand = new RelayCommand<ChatMessage>(msg => { if (msg != null) Messages.Remove(msg); });
         HandleReplyToMessageCommand = new RelayCommand<ChatMessage>(HandleReplyToMessage);
         CancelReplyCommand = new RelayCommand(() => ReplyToMessage = null);
         _logger = logger;
+        _keyboardService = keyboardService;
+        _navigationService = navigationService;
     }
 
     private bool CanSend() => !string.IsNullOrWhiteSpace(MessageText);
@@ -72,7 +81,12 @@ public partial class ChatViewModel : ObservableObject
     private async Task SendAsync()
     {
         var text = MessageText?.Trim();
-        if (string.IsNullOrEmpty(text)) return;
+        _logger.LogInformation("SendAsync invoked. MessageText='{MessageText}' | Trimmed='{Trimmed}' | ReplyToLocalId={ReplyToLocalId}", MessageText, text, ReplyToMessage?.LocalId);
+        if (string.IsNullOrEmpty(text))
+        {
+            _logger.LogInformation("Aborting send: text is empty after trim.");
+            return;
+        }
 
         var replySender = ReplyToMessage?.SenderId;
         var replyContent = ReplyToMessage?.Content;
@@ -149,6 +163,7 @@ public partial class ChatViewModel : ObservableObject
 
     partial void OnMessageTextChanged(string? oldValue, string? newValue)
     {
+        _logger.LogDebug("MessageText changed from '{Old}' to '{New}'", oldValue, newValue);
         SendCommand.NotifyCanExecuteChanged();
     }
 

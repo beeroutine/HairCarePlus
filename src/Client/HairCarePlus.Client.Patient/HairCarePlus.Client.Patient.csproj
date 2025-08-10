@@ -51,9 +51,13 @@
 		<AndroidEnableProfiledAot Condition="'$(Configuration)' == 'Release'">true</AndroidEnableProfiledAot>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<NoWarn>$(NoWarn);CA1416</NoWarn>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#512BD4" />
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
@@ -81,14 +85,20 @@
 		<MauiImage Include="Resources\AppIcon\*.png" />
 	</ItemGroup>
 
+	<!-- Exclude 'nfloat' alias shims only for non-Apple TFMs (Android/Windows/etc.).
+	     Keep them for iOS/MacCatalyst where they are required by platform packs. -->
+	<ItemGroup Condition="'$(TargetFramework)'!='net9.0-ios' and '$(TargetFramework)'!='net9.0-maccatalyst'">
+		<Compile Remove="**/nfloat*.g.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		
-		<PackageReference Include="CommunityToolkit.Maui" Version="9.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.Core" Version="9.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.Markup" Version="5.0.0" />
-		<PackageReference Include="CommunityToolkit.Maui.Camera" Version="2.0.3" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="12.1.0" />
+		<PackageReference Include="CommunityToolkit.Maui.Core" Version="12.1.0" />
+        <PackageReference Include="CommunityToolkit.Maui.Camera" Version="3.0.1" />
+		<PackageReference Include="CommunityToolkit.Maui.Markup" Version="6.0.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<!-- Use stable .NET 8 packages compatible with .NET 9 while previews are unavailable -->
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
@@ -110,7 +120,7 @@
 		</PackageReference>
 		<PackageReference Include="DynamicData" Version="8.3.27" />
 		<!-- Chat dependencies -->
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.4.24266.19" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
 		<!-- Needed for AddHttpClient extension -->
@@ -128,6 +138,8 @@
 		<None Include="Platforms\iOS\Info.plist" />
 		<None Include="Platforms\iOS\PrivacyManifest.xcprivacy" />
 	</ItemGroup>
+
+  <!-- Remove manual Designer tweaks; let Android SDK manage designer files to avoid CS0246/_Microsoft issues -->
 
 	<!-- iOS specific -->
 	<PropertyGroup Condition="$(TargetFramework.Contains('-ios'))">
@@ -190,5 +202,57 @@
       <Compile Include="$(_BuildConfigFile)" Link="Generated/BuildConfig.g.cs" />
     </ItemGroup>
   </Target>
+
+  <!-- Exclude non-target TFM obj sources from default Compile globs to avoid duplicates (e.g., nfloat.g.cs) -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-android'">
+    <Compile Remove="obj/**/net9.0-ios/**" />
+    <Compile Remove="obj/**/net9.0-maccatalyst/**" />
+    <Compile Remove="obj/**/net9.0-windows10.0.19041.0/**" />
+		<Compile Remove="obj/**/HairCarePlus.Client.Patient.nfloat.g.cs" />
+  </ItemGroup>
+
+  <!-- When building iOS, exclude MacCatalyst and Android obj sources -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
+    <Compile Remove="obj/**/net9.0-maccatalyst/**" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+  </ItemGroup>
+
+  <!-- When building MacCatalyst, exclude iOS and Android obj sources -->
+  <ItemGroup Condition="'$(TargetFramework)'=='net9.0-maccatalyst'">
+    <Compile Remove="obj/**/net9.0-ios/**" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+  </ItemGroup>
+
+  <!-- Symmetric exclusion: when building non-Android TFMs, exclude Android-generated designer files -->
+  <ItemGroup Condition="'$(TargetFramework)'!='net9.0-android'">
+    <Compile Remove="obj/**/__Microsoft.Android.Resource.Designer.cs" />
+    <Compile Remove="obj/**/net9.0-android/**" />
+  </ItemGroup>
+
+	<!-- Global debug settings (non-iOS) -->
+<PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(TargetFramework)' != 'net9.0-ios'">
+  <PublishTrimmed>false</PublishTrimmed>
+  <PublishAot>false</PublishAot>
+  <EnableAotAnalyzer>false</EnableAotAnalyzer>
+</PropertyGroup>
+
+<!-- iOS debug settings: linker disabled but PublishTrimmed must remain true -->
+<PropertyGroup Condition="'$(Configuration)' == 'Debug' and $(TargetFramework.Contains('-ios'))">
+  <PublishTrimmed>true</PublishTrimmed>
+  <PublishAot>false</PublishAot>
+  <MtouchLink>None</MtouchLink>
+  <EnableAotAnalyzer>false</EnableAotAnalyzer>
+</PropertyGroup>
+
+<!-- MacCatalyst debug settings: linker disabled but PublishTrimmed must remain true -->
+<PropertyGroup Condition="'$(Configuration)' == 'Debug' and $(TargetFramework.Contains('-maccatalyst'))">
+  <PublishTrimmed>true</PublishTrimmed>
+  <PublishAot>false</PublishAot>
+  <MtouchLink>None</MtouchLink>
+  <EnableAotAnalyzer>false</EnableAotAnalyzer>
+</PropertyGroup>
+
 
 </Project>

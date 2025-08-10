@@ -34,16 +34,17 @@ public static class SyncMappers
     public static ChatMessage ToEntity(this ChatMessageDto dto)
     {
         var senderId = Guid.TryParse(dto.SenderId, out var s) ? s : Guid.Empty;
-        var receiverId = Guid.TryParse(dto.ReceiverId ?? string.Empty, out var r) ? r : Guid.Empty;
+        var receiverId = Guid.TryParse(dto.RecipientId ?? string.Empty, out var r) ? r : Guid.Empty;
 
+        var messageId = Guid.TryParse(dto.ServerMessageId ?? string.Empty, out var mid) ? mid : Guid.NewGuid();
         return new ChatMessage(
-            dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
+            messageId,
             dto.Content,
-            MessageType.Text, // Assuming text for now
+            HairCarePlus.Server.Domain.ValueObjects.MessageType.Text,
             (HairCarePlus.Server.Domain.ValueObjects.MessageStatus)dto.Status,
             senderId,
             receiverId,
-            dto.SentAt.UtcDateTime
+            dto.SentAt
         );
     }
 
@@ -51,9 +52,9 @@ public static class SyncMappers
     {
         return new ChatMessageDto
         {
-            Id = entity.Id,
+            ServerMessageId = entity.Id.ToString(),
             SenderId = entity.SenderId.ToString(),
-            ReceiverId = entity.ReceiverId == Guid.Empty ? null : entity.ReceiverId.ToString(),
+            RecipientId = entity.ReceiverId == Guid.Empty ? null : entity.ReceiverId.ToString(),
             Content = entity.Content,
             SentAt = entity.CreatedAt,
             Status = (HairCarePlus.Shared.Communication.MessageStatus)entity.Status

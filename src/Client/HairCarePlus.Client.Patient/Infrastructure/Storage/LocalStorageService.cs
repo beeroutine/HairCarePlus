@@ -33,9 +33,9 @@ public class LocalStorageService : ILocalStorageService
         _databasePath = dbPath;
     }
 
-    public AppDbContext GetDbContext()
+    public async Task<AppDbContext> GetDbContextAsync()
     {
-        return _contextFactory.CreateDbContext();
+        return await _contextFactory.CreateDbContextAsync();
     }
 
     public async Task InitializeDatabaseAsync()
@@ -47,32 +47,17 @@ public class LocalStorageService : ILocalStorageService
 
         try
         {
-            using var context = GetDbContext();
+            await using var context = await GetDbContextAsync();
 
-            // Ensure base schema exists (creates DB if missing)
-            await context.Database.EnsureCreatedAsync();
+            // Ensure database schema exists when first run (creates tables when no migrations)
+            var created = await context.Database.EnsureCreatedAsync();
+            if (created)
+                _logger?.LogInformation("Database created with initial schema.");
 
-            _logger?.LogDebug("Database exists, verifying mandatory tables");
-
-            // DEV-time safety: verify critical tables; if any probe fails we recreate DB (no irreversible data yet)
-            bool rebuildRequired = false;
-            try
-            {
-                context.Database.ExecuteSqlRaw("SELECT 1 FROM OutboxItems LIMIT 1");
-                context.Database.ExecuteSqlRaw("SELECT 1 FROM PhotoReports LIMIT 1");
-                }
-            catch (Microsoft.Data.Sqlite.SqliteException ex)
-                {
-                _logger?.LogWarning(ex, "Required tables missing – will rebuild SQLite file");
-                    rebuildRequired = true;
-            }
-
-            if (rebuildRequired)
-            {
-                await context.Database.EnsureDeletedAsync();
-                await context.Database.EnsureCreatedAsync();
-                _logger?.LogInformation("Local SQLite database recreated with latest schema");
-            }
+            // Apply pending migrations afterwards (no-op on first launch because we have none yet)
+            _logger?.LogInformation("Applying pending database migrations (if any)...");
+            await context.Database.MigrateAsync();
+            _logger?.LogInformation("Database migration complete (or no migrations present).");
         }
         finally
         {
@@ -154,7 +139,7 @@ public class LocalStorageService : ILocalStorageService
 
     public async Task ClearDatabaseAsync()
     {
-        var context = GetDbContext();
+        await using var context = await GetDbContextAsync();
         await context.Database.EnsureDeletedAsync();
         await context.Database.EnsureCreatedAsync();
         _logger?.LogDebug("Database cleared and recreated");

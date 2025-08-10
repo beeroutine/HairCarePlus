@@ -9,9 +9,7 @@ public class AllRestrictionsPopup : Popup
 {
     public AllRestrictionsPopup(IReadOnlyList<RestrictionTimer> restrictions)
     {
-        Color = Color.FromArgb("#80000000");
-
-        var list = new CollectionView
+                var list = new CollectionView
         {
             ItemsSource = restrictions,
             SelectionMode = SelectionMode.None,
@@ -32,7 +30,7 @@ public class AllRestrictionsPopup : Popup
         };
 
         var closeButton = new Button { Text = "Close" };
-        closeButton.Clicked += (_, _) => Close();
+        closeButton.Clicked += async (_, _) => await CloseAsync();
 
         Content = new VerticalStackLayout
         {

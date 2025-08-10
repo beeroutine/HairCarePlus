@@ -1,3 +1,5 @@
+using System;
+
 namespace HairCarePlus.Shared.Common;
 
 public static class EnvironmentHelper
@@ -13,9 +15,9 @@ public static class EnvironmentHelper
     public static string GetBaseApiUrl()
     {
         // 1) Environment variable (desktop / simulator / mobile) – always wins to allow overriding without rebuild
-        var env = Environment.GetEnvironmentVariable("CHAT_BASE_URL");
+        string? env = Environment.GetEnvironmentVariable("CHAT_BASE_URL");
         if (!string.IsNullOrEmpty(env))
-            return env;
+            return env!;
 
         // 2) Same-assembly generated partial (Shared.Common) ─ works for backend/service scenarios
         if (!string.IsNullOrEmpty(BuildConfig.BaseApiUrl))

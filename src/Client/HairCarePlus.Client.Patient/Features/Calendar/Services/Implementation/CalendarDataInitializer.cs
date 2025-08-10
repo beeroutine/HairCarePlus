@@ -15,18 +15,18 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
     {
         private const string DATA_INITIALIZED_KEY = "CalendarDataInitialized";
         
-        private readonly AppDbContext _dbContext;
+        private readonly IDbContextFactory<AppDbContext> _dbFactory;
         private readonly IHairTransplantEventGenerator _eventGenerator;
         private readonly ILocalStorageService _localStorageService;
         private readonly ILogger<CalendarDataInitializer> _logger;
         
         public CalendarDataInitializer(
-            IDbContextFactory<AppDbContext> dbContextFactory,
+            IDbContextFactory<AppDbContext> dbFactory,
             IHairTransplantEventGenerator eventGenerator,
             ILocalStorageService localStorageService,
             ILogger<CalendarDataInitializer> logger)
         {
-            _dbContext = dbContextFactory.CreateDbContext();
+            _dbFactory = dbFactory;
             _eventGenerator = eventGenerator;
             _localStorageService = localStorageService;
             _logger = logger;
@@ -44,7 +44,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
                 // If the flag says we are initialized, validate that data actually exists in DB
                 if (isInitialized)
                 {
-                    var eventsCount = await _dbContext.Events.CountAsync();
+                    await using var db = await _dbFactory.CreateDbContextAsync();
+                    var eventsCount = await db.Events.CountAsync();
                     if (eventsCount > 0)
                     {
                         _logger.LogInformation("Calendar data is already initialized: Preferences flag set and database contains {EventsCount} events.", eventsCount);
@@ -78,13 +79,15 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
             
             try
             {
+                await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+
                 // Always clean existing events to avoid duplicates or stale data
-                var existingEvents = await _dbContext.Events.CountAsync(cancellationToken);
+                var existingEvents = await db.Events.CountAsync(cancellationToken);
                 if (existingEvents > 0)
                 {
                     _logger.LogInformation("Removing {ExistingEvents} existing events before re‑initialization.", existingEvents);
-                    _dbContext.Events.RemoveRange(_dbContext.Events);
-                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    db.Events.RemoveRange(db.Events);
+                    await db.SaveChangesAsync(cancellationToken);
                 }
 
                 // Generate and store calendar events
@@ -101,8 +104,8 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.Services.Implementation
 
                 events.AddRange(restrictionEvents);
 
-                await _dbContext.Events.AddRangeAsync(events, cancellationToken);
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await db.Events.AddRangeAsync(events, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
 
                 var total = events.Count;
                 _logger.LogInformation("Successfully saved {EventCount} events to the database (including restrictions).", total);
