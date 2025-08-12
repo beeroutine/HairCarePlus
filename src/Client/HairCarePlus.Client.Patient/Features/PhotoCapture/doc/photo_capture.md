@@ -81,4 +81,13 @@ PhotoCapture/
 - Optimize image caching, memory usage, and sync strategies
 
 ---
-© HairCare+, 2025 🩺 
+
+## Atomic Photo Report Set (3 photos)
+
+- The Patient app aggregates exactly three captures into a single `PhotoReportSetDto` (Front, Top, Back) with a shared `Id`, `PatientId`, `Date`, and optional `Notes`.
+- Before enqueueing, local file paths are uploaded to `/api/files/upload` to obtain HTTP `ImageUrl`s; sets without valid HTTP URLs are retried by the client.
+- The set is enqueued into the Outbox as one item; sync sends it via `/sync/batch` where the server places a single DeliveryQueue packet and emits `PhotoReportSetAdded` to `patient-{id}`.
+- The Clinic app consumes the packet, stores photos to its local DB/cache, and ACKs by DeliveryQueue packet Id; the server then deletes transient files and drops the packet.
+- The server never returns historical photo reports via typed lists and never persists them in DB, complying with the ephemeral storage policy.
+
+© HairCare+, 2025 🩺

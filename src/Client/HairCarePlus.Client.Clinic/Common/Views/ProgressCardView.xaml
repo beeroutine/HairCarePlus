@@ -43,37 +43,9 @@
                         <CarouselView.ItemTemplate>
                             <DataTemplate x:DataType="models:ProgressPhoto">
                                 <Grid>
-                                    <!-- Image with fallback handling -->
-                                    <Grid>
-                                        <Image x:Name="PhotoImage"
-                                               Source="{Binding ImageUrl}"
-                                               Aspect="AspectFill">
-                                            <Image.Behaviors>
-                                                <converters:ImageLoadFailedBehavior />
-                                            </Image.Behaviors>
-                                        </Image>
-                                        
-                                        <!-- Fallback UI for 404/load errors -->
-                                        <Grid x:Name="FallbackLayout" 
-                                              IsVisible="False" 
-                                              BackgroundColor="{StaticResource Gray100}">
-                                            <VerticalStackLayout Spacing="12" 
-                                                               HorizontalOptions="Center" 
-                                                               VerticalOptions="Center">
-                                                <Label Text="📷" 
-                                                       FontSize="40" 
-                                                       HorizontalOptions="Center"/>
-                                                <Label Text="Изображение недоступно" 
-                                                       Style="{StaticResource CommentTextStyle}"
-                                                       HorizontalOptions="Center"/>
-                                                <Button Text="Запросить повторно" 
-                                                        Style="{StaticResource SecondaryButtonStyle}"
-                                                        IsVisible="False"
-                                                        CommandParameter="{Binding .}"/>
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </Grid>
-                                    
+                                    <!-- Use persistent LocalPath with converter (as Patient app) -->
+                                    <Image Source="{Binding LocalPath, Converter={StaticResource FilePathToImageSourceConverter}}"
+                                           Aspect="AspectFill" />
                                     <!-- gradient overlay for badge contrast -->
                                     <Rectangle Fill="{StaticResource PhotoOverlayGradient}"
                                                VerticalOptions="Start"

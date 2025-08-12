@@ -7,4 +7,5 @@ public interface IEventsClient
 {
     Task PhotoReportAdded(string patientId, PhotoReportDto report);
     Task PhotoCommentAdded(string patientId, string photoReportId, PhotoCommentDto comment);
+    Task PhotoReportSetAdded(string patientId, PhotoReportSetDto set);
 } 

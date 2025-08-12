@@ -52,7 +52,7 @@ namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views
                 _logger.LogInformation("Virtual device detected, skipping camera setup.");
                 return;
             }
-            Dispatcher.Dispatch(() => StartPreviewWithLockAsync());
+            _ = StartPreviewWithLockAsync();
         }
 
         protected override async void OnDisappearing()

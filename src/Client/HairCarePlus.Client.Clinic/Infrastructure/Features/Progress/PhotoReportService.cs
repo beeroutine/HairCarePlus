@@ -125,14 +125,32 @@ public sealed class PhotoReportService : IPhotoReportService
     public async Task ConnectAsync(string patientId)
     {
         _patientId = patientId;
+        // Proactively drop stale cache so the first UI load after navigation always queries DB
+        if (!string.IsNullOrEmpty(patientId))
+        {
+            _cache.Remove(patientId);
+        }
         await _events.ConnectAsync(patientId);
 
         if(!_handlersAttached)
         {
             _events.PhotoReportAdded += OnPhotoReportAdded;
             _events.PhotoCommentAdded += OnPhotoCommentAdded;
+            // Важно: сервер пушит PhotoReportSetAdded, а не три отдельных события
+            _events.PhotoReportSetAdded += OnPhotoReportSetAdded;
             _handlersAttached=true;
         }
+    }
+
+    private async void OnPhotoReportSetAdded(object? sender, PhotoReportSetDto set)
+    {
+        try
+        {
+            // Упрощённо: на событие набора только инвалидируем кэш — UI вызовет GetReportsAsync заново
+            if(!string.IsNullOrEmpty(_patientId))
+                _cache.Remove(_patientId);
+        }
+        catch { }
     }
 
     private async void OnPhotoReportAdded(object? sender, PhotoReportDto dto)

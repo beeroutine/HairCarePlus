@@ -38,22 +38,34 @@ public class DeliveryQueueCleaner : BackgroundService
                     .Where(d => d.ExpiresAtUtc < now || d.DeliveredMask == d.ReceiversMask)
                     .ToListAsync();
 
-                // Clean up associated files BEFORE removing the DeliveryQueue records
-                foreach (var item in itemsToRemove.Where(i => i.EntityType == "PhotoReport"))
+                // Clean up associated files BEFORE removing the DeliveryQueue records (PhotoReport & PhotoReportSet)
+                foreach (var item in itemsToRemove)
                 {
                     try
                     {
-                        var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(item.PayloadJson);
-                        if (dto != null && !string.IsNullOrWhiteSpace(dto.ImageUrl))
+                        var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads");
+                        if (item.EntityType == "PhotoReport")
                         {
-                            var fileName = Path.GetFileName(new Uri(dto.ImageUrl, UriKind.Absolute).LocalPath);
-                            var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads");
-                            var physicalPath = Path.Combine(uploadsDir, fileName);
-                            
-                            if (File.Exists(physicalPath))
+                            var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(item.PayloadJson);
+                            if (dto != null && !string.IsNullOrWhiteSpace(dto.ImageUrl))
                             {
-                                File.Delete(physicalPath);
-                                _logger.LogInformation("[DeliveryQueueCleaner] Deleted orphaned file {File}", physicalPath);
+                                var fileName = Path.GetFileName(new Uri(dto.ImageUrl, UriKind.Absolute).LocalPath);
+                                var physicalPath = Path.Combine(uploadsDir, fileName);
+                                if (File.Exists(physicalPath)) { File.Delete(physicalPath); _logger.LogInformation("[DeliveryQueueCleaner] Deleted file {File}", physicalPath); }
+                            }
+                        }
+                        else if (item.EntityType == nameof(HairCarePlus.Shared.Communication.PhotoReportSetDto))
+                        {
+                            var set = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(item.PayloadJson);
+                            if (set?.Items != null)
+                            {
+                                foreach (var it in set.Items)
+                                {
+                                    if (string.IsNullOrWhiteSpace(it.ImageUrl)) continue;
+                                    var fileName = Path.GetFileName(new Uri(it.ImageUrl, UriKind.Absolute).LocalPath);
+                                    var physicalPath = Path.Combine(uploadsDir, fileName);
+                                    if (File.Exists(physicalPath)) { File.Delete(physicalPath); _logger.LogInformation("[DeliveryQueueCleaner] Deleted file {File}", physicalPath); }
+                                }
                             }
                         }
                     }
@@ -83,6 +95,47 @@ public class DeliveryQueueCleaner : BackgroundService
                     await db.SaveChangesAsync();
                     _logger.LogInformation("[DeliveryQueueCleaner] Hard-deleted {Count} stale PhotoReports older than {Days} days", staleReports.Count, ttlDays);
                 }
+
+                // Optional: delete orphaned files left in uploads (no corresponding queue items)
+                try
+                {
+                    var uploads = Path.Combine(AppContext.BaseDirectory, "uploads");
+                    if (Directory.Exists(uploads))
+                    {
+                        var keepSet = itemsToRemove.SelectMany(i =>
+                        {
+                            try
+                            {
+                                if (i.EntityType == "PhotoReport")
+                                {
+                                    var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportDto>(i.PayloadJson);
+                                    return dto != null && !string.IsNullOrWhiteSpace(dto.ImageUrl)
+                                        ? new[] { Path.GetFileName(new Uri(dto.ImageUrl, UriKind.Absolute).LocalPath) }
+                                        : Array.Empty<string>();
+                                }
+                                if (i.EntityType == nameof(HairCarePlus.Shared.Communication.PhotoReportSetDto))
+                                {
+                                    var set = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(i.PayloadJson);
+                                    return set?.Items?.Where(x => !string.IsNullOrWhiteSpace(x.ImageUrl))
+                                               .Select(x => Path.GetFileName(new Uri(x.ImageUrl, UriKind.Absolute).LocalPath))
+                                               .ToArray() ?? Array.Empty<string>();
+                                }
+                            }
+                            catch { }
+                            return Array.Empty<string>();
+                        }).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var file in Directory.EnumerateFiles(uploads))
+                        {
+                            var name = Path.GetFileName(file);
+                            if (!keepSet.Contains(name))
+                            {
+                                try { File.Delete(file); _logger.LogInformation("[DeliveryQueueCleaner] Deleted orphan file {File}", file); } catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {

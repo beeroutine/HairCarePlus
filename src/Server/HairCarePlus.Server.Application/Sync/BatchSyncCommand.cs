@@ -8,6 +8,7 @@ using HairCarePlus.Server.Infrastructure.Data.Repositories;
 using System.Text.Json;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using HairCarePlus.Shared.Communication.Events;
 
 namespace HairCarePlus.Server.Application.Sync;
 
@@ -19,13 +20,15 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
     private readonly IDeliveryQueueRepository _dq;
     private readonly ILogger<BatchSyncCommandHandler> _logger;
     private readonly HairCarePlus.Server.Infrastructure.DeliveryOptions _opt;
+    private readonly IEventsClient _events;
 
-    public BatchSyncCommandHandler(AppDbContext db, IDeliveryQueueRepository dq, ILogger<BatchSyncCommandHandler> logger, Microsoft.Extensions.Options.IOptions<HairCarePlus.Server.Infrastructure.DeliveryOptions> opt)
+    public BatchSyncCommandHandler(AppDbContext db, IDeliveryQueueRepository dq, ILogger<BatchSyncCommandHandler> logger, Microsoft.Extensions.Options.IOptions<HairCarePlus.Server.Infrastructure.DeliveryOptions> opt, IEventsClient events)
     {
         _db = db;
         _dq = dq;
         _logger = logger;
         _opt = opt.Value;
+        _events = events;
     }
 
     public async Task<BatchSyncResponseDto> Handle(BatchSyncCommand command, CancellationToken cancellationToken)
@@ -121,28 +124,9 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
 
         if (req.Restrictions?.Count > 0)
         {
+            // Ephemeral policy: do NOT persist restrictions on the server. Only relay via DeliveryQueue.
             _logger.LogInformation("BatchSync: received {Count} restrictions from {Client}", req.Restrictions.Count, req.ClientId);
-            foreach (var dto in req.Restrictions)
-            {
-                // Натуральный ключ: Patient + Type + Start/End → один row
-                var existing = await _db.Restrictions.FirstOrDefaultAsync(r =>
-                        r.PatientId == dto.PatientId &&
-                        r.Type == (HairCarePlus.Server.Domain.ValueObjects.RestrictionType)dto.Type &&
-                        r.StartUtc == dto.StartUtc &&
-                        r.EndUtc == dto.EndUtc,
-                        cancellationToken);
 
-                if (existing == null)
-                {
-                    await _db.Restrictions.AddAsync(dto.ToEntity(), cancellationToken);
-                }
-                else
-                {
-                    // Уже существует – ничего не меняем (могут быть только дубликаты)
-                }
-            }
-
-            // enqueue restrictions for opposite side
             var restrictionPackets = req.Restrictions.Select(dto => new Domain.Entities.DeliveryQueue
             {
                 EntityType = "Restriction",
@@ -176,6 +160,32 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
                 await _dq.AddRangeAsync(packetsToEnqueue);
         }
 
+        // New: accept PhotoReportSet packets from patient and enqueue as a single atomic packet; also push realtime event
+        if (req.PhotoReportSets != null && req.PhotoReportSets.Count > 0)
+        {
+            foreach (var set in req.PhotoReportSets)
+            {
+                try
+                {
+                    if (set == null || set.Items == null || set.Items.Count != 3) continue;
+                    var packet = new Domain.Entities.DeliveryQueue
+                    {
+                        EntityType = nameof(HairCarePlus.Shared.Communication.PhotoReportSetDto),
+                        PayloadJson = System.Text.Json.JsonSerializer.Serialize(set),
+                        PatientId = set.PatientId,
+                        ReceiversMask = otherMask,
+                        DeliveredMask = 0,
+                        ExpiresAtUtc = DateTime.UtcNow.AddDays(_opt.PhotoReportTtlDays)
+                    };
+                    await _dq.AddRangeAsync(new[] { packet });
+
+                    // Push realtime event so Clinic triggers immediate sync
+                    await _events.PhotoReportSetAdded(set.PatientId.ToString(), set);
+                }
+                catch { }
+            }
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         // 2. COLLECT DELTA -------------------------
@@ -200,11 +210,8 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             .Select(p => p.ToDto())
             .ToListAsync(cancellationToken);
         
-        var deltaRestrictions = await _db.Restrictions
-            .Where(r => r.CreatedAt > sinceUtc)
-            .Select(r => r.ToDto())
-            .ToListAsync(cancellationToken);
-        _logger.LogInformation("BatchSync: returning delta. Restrictions={Count}", deltaRestrictions.Count);
+        // Ephemeral policy: do not return typed restrictions (deliver only via DeliveryQueue)
+        List<RestrictionDto>? deltaRestrictions = null;
 
         // ---- PhotoReport differential sync -----------------------------
         // Ephemeral policy: server does not act as source of truth for PhotoReports.
@@ -213,7 +220,9 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         List<Guid> needFromClient = new();
 
         // fetch packets for this receiver
-        var pending = await _dq.GetPendingForReceiverAsync(Guid.Empty, receiverMask);
+        // If request carries PatientId (e.g., Patient app or Clinic scoped to a patient),
+        // the repository will filter accordingly; otherwise falls back to all pending for receiver
+        var pending = await _dq.GetPendingForReceiverAsync(req.PatientId, receiverMask);
 
         var packetsDto = pending.Select(p => new DeliveryPacketDto
         {

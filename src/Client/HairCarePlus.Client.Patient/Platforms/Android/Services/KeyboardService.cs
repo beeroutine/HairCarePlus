@@ -12,25 +12,34 @@ namespace HairCarePlus.Client.Patient.Platforms.Android.Services
 {
     public class KeyboardService : IKeyboardService
     {
-        public event EventHandler<KeyboardEventArgs> KeyboardShown;
-        public event EventHandler<KeyboardEventArgs> KeyboardHidden;
+        public event EventHandler<KeyboardEventArgs>? KeyboardShown;
+        public event EventHandler<KeyboardEventArgs>? KeyboardHidden;
 
-        private readonly ViewTreeObserver _window;
+        private ViewTreeObserver? _window;
         private bool _isKeyboardVisible;
 
         public KeyboardService()
         {
-            var context = Application.Context;
             var activity = Platform.CurrentActivity;
-            _window = activity.Window.DecorView.RootView.ViewTreeObserver;
-            _window.GlobalLayout += OnGlobalLayout;
+            var rootView = activity?.Window?.DecorView?.RootView;
+            _window = rootView?.ViewTreeObserver;
+            if (_window is not null)
+            {
+                _window.GlobalLayout += OnGlobalLayout;
+            }
         }
 
         private void OnGlobalLayout(object sender, EventArgs e)
         {
+            var activity = Platform.CurrentActivity;
+            var decorView = activity?.Window?.DecorView;
+            if (decorView is null)
+            {
+                return;
+            }
             var rect = new global::Android.Graphics.Rect();
-            Platform.CurrentActivity.Window.DecorView.GetWindowVisibleDisplayFrame(rect);
-            var screenHeight = Platform.CurrentActivity.Window.DecorView.Height;
+            decorView.GetWindowVisibleDisplayFrame(rect);
+            var screenHeight = decorView.Height;
             var keyboardHeight = screenHeight - rect.Bottom;
 
             if (keyboardHeight > screenHeight * 0.15 && !_isKeyboardVisible)
@@ -48,6 +57,10 @@ namespace HairCarePlus.Client.Patient.Platforms.Android.Services
         public void HideKeyboard()
         {
             var activity = Platform.CurrentActivity;
+            if (activity is null)
+            {
+                return;
+            }
             var inputMethodManager = activity.GetSystemService(Context.InputMethodService) as InputMethodManager;
             var token = activity.CurrentFocus?.WindowToken;
             inputMethodManager?.HideSoftInputFromWindow(token, HideSoftInputFlags.None);

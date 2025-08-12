@@ -66,6 +66,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
             await using var db = _dbFactory.CreateDbContext();
 
             var photoReportsToSend = new List<PhotoReportDto>();
+            var photoReportSetsToSend = new List<PhotoReportSetDto>();
             var photoCommentsToSend = new List<PhotoCommentDto>();
             var chatMessagesToSend = new List<ChatMessageDto>();
 
@@ -131,6 +132,61 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                             _logger.LogWarning(ex, "Failed to deserialize PhotoReport from outbox item {Id}", item.Id);
                         }
                         break;
+                    case nameof(PhotoReportSetDto):
+                        try
+                        {
+                            var setDto = JsonSerializer.Deserialize<PhotoReportSetDto>(item.PayloadJson);
+                            if (setDto == null) break;
+
+                            // Ensure exactly three items and try to guarantee HTTP urls by uploading any local files
+                            if (setDto.Items.Count == 3)
+                            {
+                                for (int i = 0; i < setDto.Items.Count; i++)
+                                {
+                                    var it = setDto.Items[i];
+                                    var hasHttp = !string.IsNullOrEmpty(it.ImageUrl) && it.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+                                    var candidatePath = !string.IsNullOrEmpty(it.LocalPath) && File.Exists(it.LocalPath)
+                                        ? it.LocalPath
+                                        : (!string.IsNullOrEmpty(it.ImageUrl) && File.Exists(it.ImageUrl) ? it.ImageUrl : null);
+
+                                    if (!hasHttp && candidatePath != null)
+                                    {
+                                        try
+                                        {
+                                            var fileName = System.IO.Path.GetFileName(candidatePath);
+                                            var newUrl = await _uploadService.UploadFileAsync(candidatePath, fileName);
+                                            if (!string.IsNullOrEmpty(newUrl))
+                                            {
+                                                it.ImageUrl = newUrl;
+                                                it.LocalPath = candidatePath; // keep local for offline
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            _logger.LogWarning(ex, "Failed to upload item {Index} for PhotoReportSet {SetId}", i, setDto.Id);
+                                        }
+                                    }
+                                }
+
+                                // After best-effort upload, send even if some URLs are still local — server/clinic rely on HTTP, but we prefer not to drop the set
+                                var httpReady = setDto.Items.All(i => !string.IsNullOrWhiteSpace(i.ImageUrl) && i.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase));
+                                if (!httpReady)
+                                {
+                                    _logger.LogWarning("PhotoReportSet {Id} has non-HTTP urls, sending anyway after best-effort upload", setDto.Id);
+                                }
+                                photoReportSetsToSend.Add(setDto);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("PhotoReportSet {Id} has {Count} items; expected 3. Sending anyway.", setDto.Id, setDto.Items.Count);
+                                photoReportSetsToSend.Add(setDto);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to process PhotoReportSet outbox item {Id}", item.Id);
+                        }
+                        break;
                     case "PhotoComment":
                         try
                         {
@@ -145,7 +201,34 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                         {
                             var chatDto = JsonSerializer.Deserialize<ChatMessageDto>(item.PayloadJson);
                             if (chatDto != null)
+                            {
+                                // If message has a local attachment – upload and swap to HTTP URL (Instagram-like local-first)
+                                bool needsUpload = !string.IsNullOrEmpty(chatDto.LocalAttachmentPath) &&
+                                                   File.Exists(chatDto.LocalAttachmentPath) &&
+                                                   string.IsNullOrEmpty(chatDto.AttachmentUrl);
+                                if (needsUpload)
+                                {
+                                    try
+                                    {
+                                        var fileName = Path.GetFileName(chatDto.LocalAttachmentPath);
+                                        var newUrl = await _uploadService.UploadFileAsync(chatDto.LocalAttachmentPath, fileName);
+                                        if (!string.IsNullOrEmpty(newUrl))
+                                        {
+                                            chatDto.AttachmentUrl = newUrl;
+                                            // keep LocalAttachmentPath for offline preview; network peers will use AttachmentUrl
+                                            // reflect change back into outbox payload
+                                            item.PayloadJson = JsonSerializer.Serialize(chatDto);
+                                            item.ModifiedAtUtc = DateTime.UtcNow;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "Failed to upload chat attachment for localId={LocalId}", item.LocalEntityId);
+                                    }
+                                }
+
                                 chatMessagesToSend.Add(chatDto);
+                            }
                         }
                         catch { }
                         break;
@@ -184,6 +267,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 LastSyncVersion = lastVersion,
                 PhotoReportHeaders = headers,
                 PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
+                PhotoReportSets = photoReportSetsToSend.Count > 0 ? photoReportSetsToSend : null,
                 PhotoComments = photoCommentsToSend.Count > 0 ? photoCommentsToSend : null,
                 ChatMessages = chatMessagesToSend.Count > 0 ? chatMessagesToSend : null,
                 AckIds = _pendingAckIds.Count > 0 ? _pendingAckIds : null,
@@ -221,6 +305,22 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                             // Patient app ignores incoming PhotoReports – they are produced locally only
                             _logger.LogDebug("Skipping PhotoReport packet {PacketId} – patient stores only local captures", p.Id);
                             break;
+                        case "ChatMessage":
+                            try
+                            {
+                                var dto = JsonSerializer.Deserialize<ChatMessageDto>(p.PayloadJson);
+                                if (dto != null)
+                                {
+                                    // Persist incoming chat locally for offline access
+                                    await _chatRepository.SaveMessageAsync(dto, cancellationToken);
+                                    _pendingAckIds.Add(p.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process ChatMessage packet {PacketId}", p.Id);
+                            }
+                            break;
                     }
                 }
                 await db2.SaveChangesAsync(cancellationToken);
@@ -228,8 +328,30 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
 
             await _applier.ApplyAsync(response);
 
-            if (pendingItems.Count > 0)
-                await _outbox.UpdateStatusAsync(pendingItems.Select(i => i.Id), HairCarePlus.Shared.Communication.OutboxStatus.Acked);
+            // Частичный ACK: подтверждаем только те элементы, которые реально ушли в запрос
+            var ackIds = new List<int>();
+            foreach (var item in pendingItems)
+            {
+                switch (item.EntityType)
+                {
+                    case "PhotoReport":
+                        if (photoReportsToSend.Any(r => r.Id.ToString() == item.LocalEntityId || r.Id != Guid.Empty && item.Payload.Contains(r.Id.ToString(), StringComparison.OrdinalIgnoreCase)))
+                            ackIds.Add(item.Id);
+                        break;
+                    case nameof(PhotoReportSetDto):
+                        if (photoReportSetsToSend.Any(s => s.Id.ToString() == item.LocalEntityId || item.Payload.Contains(s.Id.ToString(), StringComparison.OrdinalIgnoreCase)))
+                            ackIds.Add(item.Id);
+                        break;
+                    case "PhotoComment":
+                        if (photoCommentsToSend.Any()) ackIds.Add(item.Id);
+                        break;
+                    case "ChatMessage":
+                        if (chatMessagesToSend.Any()) ackIds.Add(item.Id);
+                        break;
+                }
+            }
+            if (ackIds.Count > 0)
+                await _outbox.UpdateStatusAsync(ackIds, HairCarePlus.Shared.Communication.OutboxStatus.Acked);
 
             foreach (var item in pendingItems.Where(i => i.EntityType == "ChatMessage"))
             {

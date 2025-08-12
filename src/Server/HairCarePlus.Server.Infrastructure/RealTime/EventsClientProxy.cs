@@ -23,4 +23,9 @@ public sealed class EventsClientProxy : IEventsClient
     {
         return _hubContext.Clients.Group(PatientEventNames.GroupName(patientId)).PhotoCommentAdded(patientId, photoReportId, comment);
     }
+
+    public Task PhotoReportSetAdded(string patientId, PhotoReportSetDto set)
+    {
+        return _hubContext.Clients.Group(PatientEventNames.GroupName(patientId)).PhotoReportSetAdded(patientId, set);
+    }
 } 

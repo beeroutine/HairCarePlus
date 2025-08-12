@@ -19,6 +19,7 @@ public sealed class SignalREventsSubscription : IEventsSubscription
 
     public event EventHandler<PhotoReportDto>? PhotoReportAdded;
     public event EventHandler<PhotoCommentDto>? PhotoCommentAdded;
+    public event EventHandler<PhotoReportSetDto>? PhotoReportSetAdded;
 
     public async Task ConnectAsync(string patientId)
     {
@@ -42,6 +43,15 @@ public sealed class SignalREventsSubscription : IEventsSubscription
         {
             if (pid == patientId)
                 PhotoCommentAdded?.Invoke(this, dto);
+        });
+
+        _connection.On<string, PhotoReportSetDto>("PhotoReportSetAdded", (pid, set) =>
+        {
+            if (pid == patientId)
+            {
+                _logger.LogInformation("SignalR: PhotoReportSetAdded received for patient {PatientId}. SetId={SetId} ItemCount={Count}", pid, set?.Id, set?.Items?.Count ?? 0);
+                PhotoReportSetAdded?.Invoke(this, set);
+            }
         });
 
         try

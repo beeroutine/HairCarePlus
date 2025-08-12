@@ -14,6 +14,8 @@ using HairCarePlus.Client.Clinic.Features.Chat.Domain;
 using HairCarePlus.Client.Clinic.Infrastructure.Features.Chat.Repositories;
 using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
 using Microsoft.Extensions.Logging;
+using CommunityToolkit.Mvvm.Messaging;
+using HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Messages;
 
 namespace HairCarePlus.Client.Clinic.Features.Sync.Application;
 
@@ -32,6 +34,7 @@ public class SyncService : ISyncService
     private readonly IChatMessageRepository _chatRepo;
     private readonly IFileCacheService _fileCache;
     private readonly ILogger<SyncService> _logger;
+    private readonly IMessenger _messenger;
 
     private readonly List<Guid> _pendingAckIds = new();
     private static readonly Guid _deviceId = Guid.NewGuid();
@@ -43,7 +46,9 @@ public class SyncService : ISyncService
                        ISyncChangeApplier applier,
                        IChatMessageRepository chatRepo,
                        IFileCacheService fileCache,
-                       ILogger<SyncService> logger)
+                       ILogger<SyncService> logger,
+                       IMessenger messenger,
+                       HairCarePlus.Client.Clinic.Infrastructure.Network.Events.IEventsSubscription events)
     {
         _outbox = outbox;
         _syncClient = syncClient;
@@ -53,6 +58,9 @@ public class SyncService : ISyncService
         _chatRepo = chatRepo;
         _fileCache = fileCache;
         _logger = logger;
+        _messenger = messenger;
+        // Auto-sync on new PhotoReportSet events for near-instant UI
+        events.PhotoReportSetAdded += async (_, __) => { try { await SynchronizeAsync(CancellationToken.None); } catch { } };
     }
 
     // Prevent concurrent syncs to avoid DB race conditions
@@ -128,6 +136,7 @@ public class SyncService : ISyncService
             // 2. Process incoming packets
             if (response.Packets != null)
             {
+                var notifyPatientIds = new HashSet<string>();
                 await using var db2 = _dbFactory.CreateDbContext();
                 var handledRestrictionIds = new HashSet<string>();
                 var handledPhotoIds = new HashSet<string>();
@@ -172,12 +181,53 @@ public class SyncService : ISyncService
                                         await db2.PhotoReports.AddAsync(entity, cancellationToken);
                                     }
 
-                                    _pendingAckIds.Add(dto.Id);
+                                    // Track patient for UI notification
+                                    notifyPatientIds.Add(dto.PatientId.ToString());
+
+                                    // ACK DeliveryQueue packet by its Id (not the inner entity id)
+                                    _pendingAckIds.Add(packet.Id);
                                 }
                             }
                             catch (Exception ex)
                             {
                                 _logger.LogWarning(ex, "Failed to process PhotoReport packet {PacketId}", packet.Id);
+                            }
+                            break;
+                        case nameof(HairCarePlus.Shared.Communication.PhotoReportSetDto):
+                            try
+                            {
+                                var set = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(packet.PayloadJson);
+                                if (set != null)
+                                {
+                                    foreach (var it in set.Items)
+                                    {
+                                        var id = Guid.NewGuid().ToString();
+                                        var entity = new Domain.Entities.PhotoReportEntity
+                                        {
+                                            Id = id,
+                                            PatientId = set.PatientId.ToString(),
+                                            ImageUrl = it.ImageUrl,
+                                            Date = set.Date,
+                                            DoctorComment = set.Notes ?? string.Empty
+                                        };
+                                        try
+                                        {
+                                            var path = await _fileCache.GetLocalPathAsync(it.ImageUrl, cancellationToken);
+                                            if (path != null)
+                                                entity.LocalPath = path;
+                                        }
+                                        catch { }
+                                        await db2.PhotoReports.AddAsync(entity, cancellationToken);
+                                    }
+                                    // Track patient for UI notification
+                                    notifyPatientIds.Add(set.PatientId.ToString());
+                                    // Для DeliveryQueue ACK нужен Id пакета, а не внутренний Set.Id
+                                    _pendingAckIds.Add(packet.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process PhotoReportSet packet {PacketId}", packet.Id);
                             }
                             break;
                         case "Restriction":
@@ -213,7 +263,8 @@ public class SyncService : ISyncService
                                     {
                                         entity.IsActive = dto.IsActive;
                                     }
-                                    _pendingAckIds.Add(dto.Id);
+                                    // ACK by DeliveryQueue packet Id
+                                    _pendingAckIds.Add(packet.Id);
                                 }
                             }
                             catch (Exception ex)
@@ -248,6 +299,11 @@ public class SyncService : ISyncService
                     }
                 }
                 await db2.SaveChangesAsync(cancellationToken);
+                // Notify UI to reload feed for affected patients (after DB commit)
+                foreach (var pid in notifyPatientIds)
+                {
+                    try { _messenger.Send(new PhotoReportsChangedMessage(pid)); } catch { }
+                }
             }
 
             // 3. Apply server changes via applier
@@ -260,8 +316,8 @@ public class SyncService : ISyncService
             // 5. Save new version
             await _versionStore.SetAsync(response.NewSyncVersion);
 
-            // 6. clear ack list
-            _pendingAckIds.Clear();
+            // 6. do NOT clear ACK list here — keep it to be sent with the next request.
+            //    This ensures ACKs captured during this sync are actually transmitted.
 
             // 7. Handle NeedPhotoReports -> enqueue missing ones
             if (response.NeedPhotoReports != null && response.NeedPhotoReports.Count > 0)

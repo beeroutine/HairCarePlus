@@ -10,7 +10,7 @@ namespace HairCarePlus.Client.Patient.Common.Utils
             if (element == null)
                 yield break;
 
-            foreach (var child in element.LogicalChildren)
+            foreach (var child in element.GetVisualTreeDescendantsInternal())
             {
                 yield return child;
 
@@ -19,6 +19,17 @@ namespace HairCarePlus.Client.Patient.Common.Utils
                     yield return descendant;
                 }
             }
+        }
+
+        private static IEnumerable<Element> GetVisualTreeDescendantsInternal(this Element element)
+        {
+#pragma warning disable CS0618
+            // Fallback for current MAUI: LogicalChildren still used in some cases; suppress obsoletion warning.
+            foreach (var child in element.LogicalChildren)
+            {
+                yield return child;
+            }
+#pragma warning restore CS0618
         }
     }
 } 

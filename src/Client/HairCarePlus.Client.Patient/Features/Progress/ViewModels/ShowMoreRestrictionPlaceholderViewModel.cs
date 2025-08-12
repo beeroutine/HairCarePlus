@@ -2,5 +2,5 @@ namespace HairCarePlus.Client.Patient.Features.Progress.ViewModels;
 
 public class ShowMoreRestrictionPlaceholderViewModel
 {
-    public string CountLabel { get; set; }
+    public string CountLabel { get; set; } = string.Empty;
 } 

@@ -11,12 +11,7 @@ namespace HairCarePlus.Server.API.Controllers
     [Route("api/[controller]")]
     public class FilesController : ControllerBase
     {
-        private readonly IHostEnvironment _environment;
-
-        public FilesController(IHostEnvironment environment)
-        {
-            _environment = environment;
-        }
+        public FilesController() { }
 
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
@@ -26,7 +21,9 @@ namespace HairCarePlus.Server.API.Controllers
                 return BadRequest("No file uploaded.");
             }
 
-            var uploadsFolderPath = Path.Combine(_environment.ContentRootPath, "uploads");
+            // IMPORTANT: Save files to the same physical folder that StaticFiles middleware serves
+            // and that DeliveryQueue cleaners/checkers use: AppContext.BaseDirectory/uploads
+            var uploadsFolderPath = Path.Combine(AppContext.BaseDirectory, "uploads");
             if (!Directory.Exists(uploadsFolderPath))
             {
                 Directory.CreateDirectory(uploadsFolderPath);

@@ -7,4 +7,5 @@ public static class PatientEventNames
 
     public const string PhotoReportAdded = nameof(PhotoReportAdded);
     public const string PhotoCommentAdded = nameof(PhotoCommentAdded);
+    public const string PhotoReportSetAdded = nameof(PhotoReportSetAdded);
 } 

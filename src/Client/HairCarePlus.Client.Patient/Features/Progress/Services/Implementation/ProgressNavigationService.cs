@@ -31,38 +31,62 @@ namespace HairCarePlus.Client.Patient.Features.Progress.Services.Implementation
         public async Task PreviewPhotoAsync(string localPath)
         {
             var popup = new PhotoPreviewPopup(localPath);
-            await MauiApp.Current.MainPage.ShowPopupAsync(popup);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(popup);
+            }
         }
 
         public async Task ShowDescriptionAsync(string description)
         {
             var sheet = new DescriptionSheet(description);
-            await MauiApp.Current.MainPage.ShowPopupAsync(sheet);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(sheet);
+            }
         }
 
         public async Task ShowRestrictionDetailsAsync(RestrictionTimer timer)
         {
             var popup = new RestrictionDetailPopup(timer);
-            await MauiApp.Current.MainPage.ShowPopupAsync(popup);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(popup);
+            }
         }
 
         public async Task ShowAllRestrictionsAsync(IReadOnlyList<RestrictionTimer> timers)
         {
             var popup = new AllRestrictionsPopup(timers);
-            await MauiApp.Current.MainPage.ShowPopupAsync(popup);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(popup);
+            }
         }
 
         public async Task ShowProcedureChecklistAsync()
         {
             var vm = _sp.GetRequiredService<ViewModels.ProcedureChecklistViewModel>();
             var popup = new ProcedureChecklistPopup(vm);
-            await MauiApp.Current.MainPage.ShowPopupAsync(popup);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(popup);
+            }
         }
 
         public async Task ShowInsightsAsync(AIReport report)
         {
             var sheet = new InsightsSheet(report);
-            await MauiApp.Current.MainPage.ShowPopupAsync(sheet);
+            var page = MauiApp.Current?.Windows?.FirstOrDefault()?.Page ?? MauiApp.Current?.MainPage;
+            if (page is not null)
+            {
+                await page.ShowPopupAsync(sheet);
+            }
         }
     }
 } 

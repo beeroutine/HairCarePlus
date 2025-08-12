@@ -10,7 +10,7 @@ namespace HairCarePlus.Server.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class PhotoReportsController : ControllerBase
+    public class PhotoReportsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -31,11 +31,20 @@ public class PhotoReportsController : ControllerBase
         return Ok(System.Array.Empty<PhotoReportDto>());
     }
 
+    // Legacy single-photo endpoint kept for backward compatibility during migration.
     [HttpPost]
     public async Task<ActionResult<PhotoReportDto>> CreateReport([FromBody] CreatePhotoReportRequest body)
     {
         var dto = await _mediator.Send(new CreatePhotoReportCommand(Guid.Parse(body.PatientId), body.ImageUrl, body.Date));
         return Ok(dto);
+    }
+
+    // New endpoint: accept a single PhotoReportSet (three photos atomically)
+    [HttpPost("set")]
+    public async Task<ActionResult<HairCarePlus.Shared.Communication.PhotoReportSetDto>> CreateReportSet([FromBody] HairCarePlus.Shared.Communication.PhotoReportSetDto set)
+    {
+        var created = await _mediator.Send(new HairCarePlus.Server.Application.PhotoReports.CreatePhotoReportSetCommand(set));
+        return Ok(created);
     }
 
     [HttpPost("{patientId}/{photoReportId}/comments")]

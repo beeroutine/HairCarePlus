@@ -15,6 +15,7 @@ using System;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Patient.Infrastructure.Storage;
+using HairCarePlus.Client.Patient.Features.Sync.Application;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Progress.Domain.Entities;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
@@ -32,6 +33,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
     private readonly HairCarePlus.Shared.Communication.IOutboxRepository _outboxRepo;
     private readonly IUploadService _uploadService;
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
+    private readonly ISyncService _syncService;
     private readonly IProfileService _profileService;
     private readonly CommunityToolkit.Mvvm.Messaging.IMessenger _messenger;
 
@@ -41,6 +43,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
                                  HairCarePlus.Shared.Communication.IOutboxRepository outboxRepo,
                                  IUploadService uploadService,
                                  IDbContextFactory<AppDbContext> dbFactory,
+                                 ISyncService syncService,
                                  IProfileService profileService,
                                  CommunityToolkit.Mvvm.Messaging.IMessenger messenger)
     {
@@ -50,6 +53,7 @@ public partial class PhotoCaptureViewModel : ObservableObject
         _outboxRepo = outboxRepo;
         _uploadService = uploadService;
         _dbFactory = dbFactory;
+        _syncService = syncService;
         _profileService = profileService;
         _messenger = messenger;
 
@@ -147,20 +151,35 @@ public partial class PhotoCaptureViewModel : ObservableObject
         {
             var fileName = Path.GetFileName(localPath);
 
-            // 1. Сохраняем локально и немедленно уведомляем UI
+            // 1. Переносим файл в постоянное хранилище AppData/Media и немедленно уведомляем UI
             Guid reportId = Guid.NewGuid();
             DateTime capturedUtc = DateTime.UtcNow;
+
+            // Гарантируем стабильный путь как в Instagram: AppData/Media/yyyyMMdd_HHmmss_{guid}.jpg
+            var mediaDir = Path.Combine(FileSystem.AppDataDirectory, "Media");
+            Directory.CreateDirectory(mediaDir);
+            var persistentName = $"{capturedUtc:yyyyMMdd_HHmmss}_{reportId}.jpg";
+            var persistentPath = Path.Combine(mediaDir, persistentName);
+            try
+            {
+                File.Copy(localPath, persistentPath, overwrite: true);
+            }
+            catch
+            {
+                // если копия не удалась, используем исходный путь как fallback
+                persistentPath = localPath;
+            }
 
             await using (var db = await _dbFactory.CreateDbContextAsync())
             {
                 db.PhotoReports.Add(new Features.Sync.Domain.Entities.PhotoReportEntity
                 {
                     Id = reportId.ToString(),
-                    ImageUrl = localPath,          // временно локальный путь; заменится после успешной загрузки
+                    ImageUrl = persistentPath,     // локальный постоянный путь; заменится после успешной загрузки
                     CaptureDate = capturedUtc,
                     DoctorComment = string.Empty,
-                    // сохраняем полный путь, чтобы SyncService надёжно находил файл при повторном запуске
-                    LocalPath = localPath,
+                    // сохраняем постоянный путь, чтобы лента была доступна после перезапуска
+                    LocalPath = persistentPath,
                     PatientId = _profileService.PatientId.ToString(),
                     Zone = PhotoZone.Front
                 });
@@ -171,37 +190,71 @@ public partial class PhotoCaptureViewModel : ObservableObject
             _messenger.Send(new PhotoSavedMessage(fileName));
 
             // 2. Пытаемся загрузить файл (может занять время)
-            var imageUrl = await _uploadService.UploadFileAsync(localPath, fileName);
+            var imageUrl = await _uploadService.UploadFileAsync(persistentPath, persistentName);
 
             if (string.IsNullOrEmpty(imageUrl))
             {
-                _logger.LogWarning("Upload failed or offline. Will defer to next sync. Path={Path}", localPath);
-                imageUrl = localPath; // SyncService позже загрузит файл и обновит запись.
+                _logger.LogWarning("Upload failed or offline. Will defer to next sync. Path={Path}", persistentPath);
+                imageUrl = persistentPath; // SyncService позже загрузит файл и обновит запись.
             }
 
-            // 3. Создаём DTO и Outbox (используем upload url или локальный путь)
-            var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
+            // 3. Группируем снимки в сессию: один PhotoReportSetDto на три кадра
+            // Сохраняем текущий кадр как элемент набора
+            var currentItem = new HairCarePlus.Shared.Communication.PhotoReportItemDto
             {
-                Id = reportId,
-                PatientId = _profileService.PatientId, // предположим Guid
-                ImageUrl = imageUrl,
-                Date = capturedUtc,
-                Notes = string.Empty,
                 Type = HairCarePlus.Shared.Communication.PhotoType.Custom,
-                Comments = new()
+                ImageUrl = imageUrl,
+                LocalPath = imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? null : persistentPath
             };
 
-            var outboxDto = new OutboxItemDto
-    {
-        EntityType = "PhotoReport",
-        Payload = JsonSerializer.Serialize(dto),
-        LocalEntityId = dto.Id.ToString(),
-        ModifiedAtUtc = DateTime.UtcNow
-    };
+            // Временное хранилище набора в Preferences по стабильному ключу активной сессии,
+            // чтобы три кадра гарантированно попали в один набор даже с паузами
+            const string activeSetKey = "photo-set:active";
+            HairCarePlus.Shared.Communication.PhotoReportSetDto set;
+            if (Microsoft.Maui.Storage.Preferences.ContainsKey(activeSetKey))
+            {
+                var raw = Microsoft.Maui.Storage.Preferences.Get(activeSetKey, string.Empty);
+                set = string.IsNullOrEmpty(raw)
+                    ? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc }
+                    : System.Text.Json.JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(raw) ?? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc };
+            }
+            else
+            {
+                set = new HairCarePlus.Shared.Communication.PhotoReportSetDto
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = _profileService.PatientId,
+                    Date = capturedUtc,
+                    Notes = string.Empty
+                };
+            }
+            set.Items.Add(currentItem);
+            Microsoft.Maui.Storage.Preferences.Set(activeSetKey, System.Text.Json.JsonSerializer.Serialize(set));
 
-    await _outboxRepo.AddAsync(outboxDto);
+            if (set.Items.Count >= 3)
+            {
+                // Набор готов – отправляем одним Outbox-элементом и очищаем кэш
+                var outboxDto = new OutboxItemDto
+                {
+                    EntityType = nameof(HairCarePlus.Shared.Communication.PhotoReportSetDto),
+                    Payload = JsonSerializer.Serialize(set),
+                    LocalEntityId = set.Id.ToString(),
+                    ModifiedAtUtc = DateTime.UtcNow
+                };
+                await _outboxRepo.AddAsync(outboxDto);
+                Microsoft.Maui.Storage.Preferences.Remove(activeSetKey);
+                _logger.LogInformation("PhotoReportSet enqueued. Id={Id} items={Count}", set.Id, set.Items.Count);
+            }
 
-            _logger.LogInformation("PhotoReport enqueued. Id={Id} url={Url}", dto.Id, dto.ImageUrl);
+            // 4. Немедленный триггер синхронизации, чтобы не ждать планировщик
+            try
+            {
+                await _syncService.SynchronizeAsync(CancellationToken.None);
+            }
+            catch (Exception syncEx)
+            {
+                _logger.LogWarning(syncEx, "Immediate sync after photo capture failed; will retry via scheduler");
+            }
         }
         catch (Exception ex)
         {

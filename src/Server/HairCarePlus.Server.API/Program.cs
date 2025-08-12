@@ -53,7 +53,8 @@ if (app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 app.UseCors();
 
-var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+// Store runtime uploads next to binaries, not in the source tree
+var uploadsPath = Path.Combine(AppContext.BaseDirectory, "uploads");
 if (!Directory.Exists(uploadsPath))
 {
     Directory.CreateDirectory(uploadsPath);

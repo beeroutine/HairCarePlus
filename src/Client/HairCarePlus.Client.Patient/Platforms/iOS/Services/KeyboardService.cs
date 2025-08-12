@@ -2,13 +2,14 @@ using Foundation;
 using HairCarePlus.Client.Patient.Infrastructure.Services;
 using UIKit;
 using System;
+using System.Linq;
 
 namespace HairCarePlus.Client.Patient.Platforms.iOS.Services
 {
     public class KeyboardService : IKeyboardService
     {
-        public event EventHandler<KeyboardEventArgs> KeyboardShown;
-        public event EventHandler<KeyboardEventArgs> KeyboardHidden;
+        public event EventHandler<KeyboardEventArgs>? KeyboardShown;
+        public event EventHandler<KeyboardEventArgs>? KeyboardHidden;
 
         private NSObject _keyboardShowObserver;
         private NSObject _keyboardHideObserver;
@@ -37,7 +38,14 @@ namespace HairCarePlus.Client.Patient.Platforms.iOS.Services
 
         public void HideKeyboard()
         {
-            UIApplication.SharedApplication.KeyWindow?.EndEditing(true);
+            // iOS 13+ multi-scene safe key window resolution
+            var keyWindow = UIApplication.SharedApplication
+                .ConnectedScenes
+                .OfType<UIWindowScene>()
+                .SelectMany(s => s.Windows)
+                .FirstOrDefault(w => w.IsKeyWindow);
+
+            keyWindow?.EndEditing(true);
         }
 
         public void Dispose()

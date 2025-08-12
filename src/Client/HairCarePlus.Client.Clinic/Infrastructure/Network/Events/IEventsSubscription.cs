@@ -10,4 +10,5 @@ public interface IEventsSubscription : IAsyncDisposable
 
     event EventHandler<PhotoReportDto>? PhotoReportAdded;
     event EventHandler<PhotoCommentDto>? PhotoCommentAdded;
+    event EventHandler<PhotoReportSetDto>? PhotoReportSetAdded;
 } 

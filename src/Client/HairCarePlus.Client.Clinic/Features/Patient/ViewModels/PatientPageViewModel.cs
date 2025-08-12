@@ -39,6 +39,9 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     public ObservableCollection<RestrictionTimer> Restrictions { get; } = new();
     public ObservableCollection<ProgressFeedItem> Feed { get; } = new();
 
+    // Avoid multiple event subscriptions during repeated LoadAsync calls
+    private bool _subscribed;
+
     public AsyncRelayCommand LoadCommand { get; }
     public IRelayCommand OpenChatCommand { get; }
     public IRelayCommand OpenProgressCommand { get; }
@@ -96,6 +99,8 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     private async Task LoadAsync()
     {
         IsRefreshing = true;
+        // Ensure we are connected to events BEFORE first load so cache is fresh and we catch first set
+        await _photoReportService.ConnectAsync(PatientId);
         // Fetch summary from API for demo
         var summaries = await _patientService.GetPatientsAsync();
         var summary = summaries.FirstOrDefault(p => p.Id == PatientId);
@@ -165,8 +170,35 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             Feed.Add(item);
         }
 
-        // Subscribe to real-time updates
-        await _photoReportService.ConnectAsync(PatientId);
+        // Subscribe to real-time updates and refresh feed when new set arrives
+        if (!_subscribed)
+        {
+            _subscribed = true;
+            HairCarePlus.Client.Clinic.Infrastructure.Network.Events.IEventsSubscription? ev = null;
+            try
+            {
+                // pull events subscription from service private field via reflection – keeps public surface minimal
+                var svcType = _photoReportService.GetType();
+                var field = svcType.GetField("_events", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                ev = field?.GetValue(_photoReportService) as HairCarePlus.Client.Clinic.Infrastructure.Network.Events.IEventsSubscription;
+            }
+            catch { }
+            if (ev != null)
+            {
+                ev.PhotoReportSetAdded += async (_, __) =>
+                {
+                    try
+                    {
+                        // re-load feed after cache invalidation to immediately show new photos
+                        await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
+                        {
+                            await LoadAsync();
+                        });
+                    }
+                    catch { }
+                };
+            }
+        }
 
         IsRefreshing = false;
     }

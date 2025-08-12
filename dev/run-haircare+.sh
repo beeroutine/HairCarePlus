@@ -79,6 +79,13 @@ fi
 ###############################################################################
 # 1) API Server — must start first so MAUI clients can connect
 ###############################################################################
+if [[ "${HC_RESET_SERVER:-0}" == "1" ]]; then
+  echo "🗑  HC_RESET_SERVER=1 → wiping server state (haircareplus.db + uploads/*)"
+  rm -f "$ROOT_DIR/src/Server/HairCarePlus.Server.API/haircareplus.db" 2>/dev/null || true
+  rm -rf "$ROOT_DIR/src/Server/HairCarePlus.Server.API/bin/Debug/net9.0/uploads" 2>/dev/null || true
+  rm -rf "$ROOT_DIR/src/Server/HairCarePlus.Server.API/uploads" 2>/dev/null || true
+fi
+
 echo "▶ Starting API server on $CHAT_BASE_URL ..."
 dotnet run \
   --project "$ROOT_DIR/src/Server/HairCarePlus.Server.API" \

@@ -14,6 +14,7 @@ public sealed class BatchSyncRequestDto
 
     // From patient side only
     public IReadOnlyList<PhotoReportDto>? PhotoReports { get; init; }
+    public IReadOnlyList<PhotoReportSetDto>? PhotoReportSets { get; init; }
     public IReadOnlyList<ProgressEntryDto>? ProgressEntries { get; init; }
     public IReadOnlyList<RestrictionDto>? Restrictions { get; init; }
 

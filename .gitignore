@@ -206,6 +206,9 @@ UpgradeLog*.htm
 *.sqlite3
 *.db
 
+# Runtime uploads (API server)
+src/Server/HairCarePlus.Server.API/uploads/
+
 # Windows specific
 Thumbs.db
 ehthumbs.db

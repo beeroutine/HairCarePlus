@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using HairCarePlus.Server.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
+using System.Text.Json;
+using HairCarePlus.Shared.Communication;
 
 namespace HairCarePlus.Server.Infrastructure.Data.Repositories;
 
@@ -30,16 +32,64 @@ public class DeliveryQueueRepository : IDeliveryQueueRepository
 
     public async Task<List<DeliveryQueue>> GetPendingForReceiverAsync(Guid patientId, byte receiverMask)
     {
-        var query = _db.DeliveryQueue.AsQueryable();
+        var now = DateTime.UtcNow;
 
+        // Base query: not expired and targeted to this receiver, not yet delivered to it
+        var query = _db.DeliveryQueue.Where(d => d.ExpiresAtUtc > now &&
+                                                 (d.ReceiversMask & receiverMask) != 0 &&
+                                                 (d.DeliveredMask & receiverMask) == 0);
+
+        // Optional scope by patient
         if (patientId != Guid.Empty)
         {
             query = query.Where(d => d.PatientId == patientId);
         }
 
-        return await query.Where(d => (d.ReceiversMask & receiverMask) != 0 &&
-                                       (d.DeliveredMask & receiverMask) == 0)
-                          .ToListAsync();
+        var candidates = await query.ToListAsync();
+
+        // Filter out photo packets that reference files that do not exist anymore
+        // This can happen after a "clean" server restart when uploads folder is empty.
+        var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads");
+        bool FileExistsByUrl(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+            try
+            {
+                var name = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
+                var path = Path.Combine(uploadsDir, name);
+                return File.Exists(path);
+            }
+            catch { return false; }
+        }
+
+        var filtered = new List<DeliveryQueue>(candidates.Count);
+        foreach (var item in candidates)
+        {
+            try
+            {
+                if (item.EntityType == nameof(PhotoReportDto) || item.EntityType == "PhotoReport")
+                {
+                    var dto = JsonSerializer.Deserialize<PhotoReportDto>(item.PayloadJson);
+                    if (dto == null || !FileExistsByUrl(dto.ImageUrl))
+                        continue; // skip broken packet
+                }
+                else if (item.EntityType == nameof(PhotoReportSetDto))
+                {
+                    var set = JsonSerializer.Deserialize<PhotoReportSetDto>(item.PayloadJson);
+                    if (set?.Items == null || set.Items.Count == 0 || !set.Items.All(i => FileExistsByUrl(i.ImageUrl)))
+                        continue; // skip if any photo file is missing
+                }
+            }
+            catch
+            {
+                // If payload cannot be parsed, skip to be safe
+                continue;
+            }
+
+            filtered.Add(item);
+        }
+
+        return filtered;
     }
 
     public async Task AckAsync(IEnumerable<Guid> ids, byte receiverMask)
@@ -56,18 +106,43 @@ public class DeliveryQueueRepository : IDeliveryQueueRepository
             // if delivered to all receivers -> mark for removal
             if ((row.DeliveredMask & row.ReceiversMask) == row.ReceiversMask)
             {
-                // remove associated blob if any
-                if (!string.IsNullOrWhiteSpace(row.BlobUrl))
+                // Remove associated files according to entity type (ephemeral policy)
+                try
                 {
-                    try
+                    var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads");
+                    if (row.EntityType == "PhotoReport")
                     {
-                        var root = AppContext.BaseDirectory;
-                        var path = Path.Combine(root, "uploads", Path.GetFileName(row.BlobUrl));
-                        if (File.Exists(path))
-                            File.Delete(path);
+                        var dto = JsonSerializer.Deserialize<PhotoReportDto>(row.PayloadJson);
+                        var url = dto?.ImageUrl;
+                        if (!string.IsNullOrWhiteSpace(url))
+                        {
+                            var fileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
+                            var path = Path.Combine(uploadsDir, fileName);
+                            if (File.Exists(path)) File.Delete(path);
+                        }
                     }
-                    catch { /* best effort */ }
+                    else if (row.EntityType == nameof(PhotoReportSetDto))
+                    {
+                        var set = JsonSerializer.Deserialize<PhotoReportSetDto>(row.PayloadJson);
+                        if (set?.Items != null)
+                        {
+                            foreach (var it in set.Items)
+                            {
+                                var url = it.ImageUrl;
+                                if (string.IsNullOrWhiteSpace(url)) continue;
+                                var fileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
+                                var path = Path.Combine(uploadsDir, fileName);
+                                if (File.Exists(path)) File.Delete(path);
+                            }
+                        }
+                    }
+                    else if (!string.IsNullOrWhiteSpace(row.BlobUrl))
+                    {
+                        var path = Path.Combine(uploadsDir, Path.GetFileName(row.BlobUrl));
+                        if (File.Exists(path)) File.Delete(path);
+                    }
                 }
+                catch { /* best effort */ }
 
                 _db.DeliveryQueue.Remove(row);
             }

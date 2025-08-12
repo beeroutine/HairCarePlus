@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HairCarePlus.Shared.Communication;
+using HairCarePlus.Client.Clinic.Infrastructure.Features.Progress.Messages;
 
 namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 
