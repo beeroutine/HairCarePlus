@@ -93,7 +93,7 @@
                     <Border Style="{StaticResource DoctorCommentStyle}">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer x:DataType="viewmodels:PatientPageViewModel"
-                                          Command="{Binding StartCommentCommand, Source={x:Reference thisView}}"
+                                          Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartCommentCommand}"
                                           CommandParameter="{Binding .}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
