@@ -145,7 +145,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                                 {
                                     var it = setDto.Items[i];
                                     var hasHttp = !string.IsNullOrEmpty(it.ImageUrl) && it.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase);
-                                    var candidatePath = !string.IsNullOrEmpty(it.LocalPath) && File.Exists(it.LocalPath)
+                                    string? candidatePath = !string.IsNullOrEmpty(it.LocalPath) && File.Exists(it.LocalPath)
                                         ? it.LocalPath
                                         : (!string.IsNullOrEmpty(it.ImageUrl) && File.Exists(it.ImageUrl) ? it.ImageUrl : null);
 
@@ -153,7 +153,11 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                                     {
                                         try
                                         {
+                                            if (string.IsNullOrEmpty(candidatePath))
+                                                break;
                                             var fileName = System.IO.Path.GetFileName(candidatePath);
+                                            if (string.IsNullOrEmpty(fileName))
+                                                break;
                                             var newUrl = await _uploadService.UploadFileAsync(candidatePath, fileName);
                                             if (!string.IsNullOrEmpty(newUrl))
                                             {
@@ -168,13 +172,20 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                                     }
                                 }
 
-                                // After best-effort upload, send even if some URLs are still local — server/clinic rely on HTTP, but we prefer not to drop the set
+                                // Only send when ALL three items have HTTP urls to avoid broken images in Clinic
                                 var httpReady = setDto.Items.All(i => !string.IsNullOrWhiteSpace(i.ImageUrl) && i.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase));
-                                if (!httpReady)
+                                if (httpReady)
                                 {
-                                    _logger.LogWarning("PhotoReportSet {Id} has non-HTTP urls, sending anyway after best-effort upload", setDto.Id);
+                                    photoReportSetsToSend.Add(setDto);
                                 }
-                                photoReportSetsToSend.Add(setDto);
+                                else
+                                {
+                                    // Keep in outbox for next sync attempt (uploads may succeed later)
+                                    _logger.LogInformation("PhotoReportSet {Id} deferred: waiting for HTTP URLs for all items", setDto.Id);
+                                    // reflect any uploads that did succeed back into payload for next run
+                                    item.PayloadJson = JsonSerializer.Serialize(setDto);
+                                    item.ModifiedAtUtc = DateTime.UtcNow;
+                                }
                             }
                             else
                             {
@@ -296,14 +307,35 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
 
             if (response.Packets != null && response.Packets.Count > 0)
             {
-                await using var db2 = _dbFactory.CreateDbContext();
+                await using var db2 = await _dbFactory.CreateDbContextAsync(cancellationToken);
                 foreach (var p in response.Packets)
                 {
                     switch (p.EntityType)
                     {
                         case "PhotoReport":
-                            // Patient app ignores incoming PhotoReports – they are produced locally only
-                            _logger.LogDebug("Skipping PhotoReport packet {PacketId} – patient stores only local captures", p.Id);
+                            try
+                            {
+                                var reportDto = JsonSerializer.Deserialize<PhotoReportDto>(p.PayloadJson);
+                                if (reportDto != null)
+                                {
+                                    var entity = new PhotoReportEntity
+                                    {
+                                        Id = reportDto.Id.ToString(),
+                                        PatientId = reportDto.PatientId.ToString(),
+                                        SetId = reportDto.SetId?.ToString(),
+                                        ImageUrl = reportDto.ImageUrl,
+                                        CaptureDate = reportDto.Date,
+                                        DoctorComment = reportDto.Notes,
+                                        Zone = MapZone(reportDto.Type),
+                                    };
+                                    db2.PhotoReports.Add(entity);
+                                    _pendingAckIds.Add(p.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process PhotoReport packet {PacketId}", p.Id);
+                            }
                             break;
                         case "ChatMessage":
                             try
@@ -410,6 +442,17 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 Shared.Domain.Restrictions.RestrictionIconType.NoSwimming => Shared.Communication.RestrictionType.Sport,
                 Shared.Domain.Restrictions.RestrictionIconType.NoSun => Shared.Communication.RestrictionType.Sauna,
                 _ => Shared.Communication.RestrictionType.Food
+            };
+
+        private static HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone MapZone(PhotoType type)
+            => type switch
+            {
+                PhotoType.FrontView => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Front,
+                PhotoType.TopView => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Top,
+                PhotoType.BackView => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Back,
+                PhotoType.LeftSideView => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Front,
+                PhotoType.RightSideView => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Front,
+                _ => HairCarePlus.Client.Patient.Features.Progress.Domain.Entities.PhotoZone.Front
             };
     }
 } 

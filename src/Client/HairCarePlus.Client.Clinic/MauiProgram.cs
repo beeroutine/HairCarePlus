@@ -87,7 +87,8 @@ public static class MauiProgram
 			client.BaseAddress = new Uri($"{HairCarePlus.Shared.Common.EnvironmentHelper.GetBaseApiUrl()}/");
 		});
 
-		builder.Services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
+        builder.Services.AddSingleton<ILastSyncVersionStore, PreferencesSyncVersionStore>();
+        builder.Services.AddSingleton<IAckStore, PreferencesAckStore>();
 		builder.Services.AddSingleton<ISyncChangeApplier, SyncChangeApplier>();
 
 		builder.Services.AddScoped<ISyncService, SyncService>();

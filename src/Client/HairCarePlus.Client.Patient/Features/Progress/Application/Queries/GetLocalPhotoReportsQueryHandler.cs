@@ -27,10 +27,11 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
     public async Task<IEnumerable<ProgressFeedItem>> HandleAsync(GetLocalPhotoReportsQuery request, CancellationToken cancellationToken)
     {
         await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
-        
+        var patientId = _profileService.PatientId.ToString();
+
         var allReports = await db.PhotoReports
             .AsNoTracking()
-            .Where(r => !string.IsNullOrEmpty(r.LocalPath))
+            .Where(r => r.PatientId == patientId || string.IsNullOrEmpty(r.PatientId))
             .OrderByDescending(r => r.CaptureDate)
             .ToListAsync(cancellationToken);
 
@@ -42,28 +43,64 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
             return Path.Combine(FileSystem.AppDataDirectory, "Media", storedPath);
         }
 
-        // filter out rows whose files are missing
-        allReports = allReports.Where(r => File.Exists(ToFullPath(r.LocalPath!))).ToList();
+        // Build a list with resolved local file paths (supports legacy rows where LocalPath was null
+        // but ImageUrl stored an absolute local file path)
+        var withPaths = allReports
+            .Select(r => new
+            {
+                Report = r,
+                Path = ResolveLocalFilePath(r)
+            })
+            .Where(x => !string.IsNullOrWhiteSpace(x.Path) && File.Exists(x.Path!))
+            .ToList();
 
-        var feedItems = allReports
-            .GroupBy(report => DateOnly.FromDateTime(report.CaptureDate))
+        string? ResolveLocalFilePath(HairCarePlus.Client.Patient.Features.Sync.Domain.Entities.PhotoReportEntity report)
+        {
+            // Prefer LocalPath when present
+            if (!string.IsNullOrWhiteSpace(report.LocalPath))
+            {
+                var full = ToFullPath(report.LocalPath!);
+                if (File.Exists(full))
+                    return full;
+            }
+
+            // Fallback: if ImageUrl is a local absolute file (pre-fix rows), use it
+            if (!string.IsNullOrWhiteSpace(report.ImageUrl)
+                && !report.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                && Path.IsPathRooted(report.ImageUrl)
+                && File.Exists(report.ImageUrl))
+            {
+                return report.ImageUrl;
+            }
+
+            return null;
+        }
+
+        var feedItems = withPaths
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Report.SetId) ? DateOnly.FromDateTime(x.Report.CaptureDate).ToString() : x.Report.SetId!)
             .Select(group =>
             {
-                var report = group.First();
+                var first = group.First().Report;
                 var photos = group
-                    .Select(r => new ProgressPhoto {
-                        LocalPath = ToFullPath(r.LocalPath ?? string.Empty),
-                        CapturedAt = r.CaptureDate,
-                        Zone = r.Zone })
+                    .Select(x => new ProgressPhoto {
+                        LocalPath = x.Path!,
+                        CapturedAt = x.Report.CaptureDate,
+                        Zone = x.Report.Zone })
                     .ToList();
 
+                // Compute Day N similar to clinic feed (Day 1 = earliest date in this local set)
+                var groupDate = DateOnly.FromDateTime(first.CaptureDate);
+                var earliestDate = withPaths.Any() ? DateOnly.FromDateTime(withPaths.Min(x => x.Report.CaptureDate)) : groupDate;
+                var dayIndex = (groupDate.DayNumber - earliestDate.DayNumber) + 1;
                 var feedItem = new ProgressFeedItem(
-                    Date: group.Key,
-                Title: "Фотоотчет",
-                    Description: report.DoctorComment ?? string.Empty,
+                    Date: groupDate,
+                    Title: $"Day {dayIndex}",
+                    Description: first.DoctorComment ?? string.Empty,
                     Photos: photos,
                     ActiveRestrictions: new List<RestrictionTimer>() // TODO: Load actual restrictions for that day
                 );
+                // Surface doctor's comment in a dedicated property used by the card view
+                feedItem.DoctorReportSummary = string.IsNullOrWhiteSpace(first.DoctorComment) ? null : first.DoctorComment;
                 return feedItem;
             })
             .ToList();

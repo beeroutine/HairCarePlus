@@ -36,6 +36,8 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Storage
                       .WithOne()
                       .HasForeignKey(c => c.PhotoReportId)
                       .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(p => p.SetId).HasColumnType("TEXT");
+                entity.Property(p => p.Type).HasConversion<int>();
             });
 
             modelBuilder.Entity<HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity>(entity =>

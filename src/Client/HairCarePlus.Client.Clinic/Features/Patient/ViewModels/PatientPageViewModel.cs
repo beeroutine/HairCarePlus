@@ -121,19 +121,60 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
 
         Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(UpdateVisibleRestrictionItems);
 
-        // Load photo reports and convert to grouped feed items (one item per day with up to 3 photos)
+        // Load photo reports and convert to grouped feed items
         Feed.Clear();
         var reports = await _photoReportService.GetReportsAsync(PatientId);
 
         var earliestDate = reports.Any() ? DateOnly.FromDateTime(reports.Min(r => r.Date)) : (DateOnly?)null;
 
-        var groupedByDate = reports
-            .GroupBy(r => DateOnly.FromDateTime(r.Date))
-            .OrderByDescending(g => g.Key);
-
-        foreach (var group in groupedByDate)
+        // Prefer grouping by atomic set when available; fallback to date grouping
+        if (reports.Any(r => r.SetId.HasValue && r.SetId.Value != Guid.Empty))
         {
-            var photos = group.Select(r => new ProgressPhoto
+            var groupedBySet = reports.GroupBy(r => r.SetId!.Value).OrderByDescending(g => g.First().Date);
+            foreach (var group in groupedBySet)
+            {
+                var items = group.ToList();
+                var first = items.First();
+                var groupDate = DateOnly.FromDateTime(first.Date);
+                var photos = items.Select(r => new ProgressPhoto
+                {
+                    ReportId = r.Id.ToString(),
+                    ImageUrl = r.ImageUrl,
+                    LocalPath = r.LocalPath,
+                    CapturedAt = r.Date,
+                    Zone = r.Type switch
+                    {
+                        PhotoType.FrontView => PhotoZone.Front,
+                        PhotoType.TopView => PhotoZone.Top,
+                        PhotoType.BackView => PhotoZone.Back,
+                        _ => PhotoZone.Front
+                    }
+                }).ToList();
+
+                var doctorNote = items.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                var dayIndex = earliestDate.HasValue ? (groupDate.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
+                var aiPlaceholder = new AIReport(groupDate, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
+                var item = new ProgressFeedItem(
+                    Date: groupDate,
+                    Title: $"Day {dayIndex}",
+                    Description: null,
+                    Photos: photos,
+                    ActiveRestrictions: new List<string>(),
+                    DoctorReportSummary: doctorNote,
+                    AiReport: aiPlaceholder
+                );
+                Feed.Add(item);
+            }
+        }
+        else
+        {
+            var groupedByDate = reports.GroupBy(r => DateOnly.FromDateTime(r.Date)).OrderByDescending(g => g.Key);
+            foreach (var group in groupedByDate)
+            {
+                var items = group.ToList();
+            var first = items.First();
+            var groupDate = DateOnly.FromDateTime(first.Date);
+            var photos = items.Select(r => new ProgressPhoto
             {
                 ReportId = r.Id.ToString(),
                 ImageUrl = r.ImageUrl,
@@ -148,26 +189,20 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                 }
             }).ToList();
 
-            // Take first non-empty doctor note
-            var doctorNote = group.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
-
-            // Compute relative day index (Day 1 = first captured date)
-            var dayIndex = earliestDate.HasValue ? (group.Key.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
-
-            // Placeholder AI report until backend integration
-            var aiPlaceholder = new AIReport(group.Key, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
-
-            var item = new ProgressFeedItem(
-                Date: group.Key,
-                Title: $"Day {dayIndex}",
-                Description: null,
-                Photos: photos,
-                ActiveRestrictions: new List<string>(),
-                DoctorReportSummary: doctorNote,
-                AiReport: aiPlaceholder
-            );
-
-            Feed.Add(item);
+                var doctorNote = items.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                var dayIndex = earliestDate.HasValue ? (groupDate.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
+                var aiPlaceholder = new AIReport(groupDate, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
+                var item = new ProgressFeedItem(
+                    Date: groupDate,
+                    Title: $"Day {dayIndex}",
+                    Description: null,
+                    Photos: photos,
+                    ActiveRestrictions: new List<string>(),
+                    DoctorReportSummary: doctorNote,
+                    AiReport: aiPlaceholder
+                );
+                Feed.Add(item);
+            }
         }
 
         // Subscribe to real-time updates and refresh feed when new set arrives

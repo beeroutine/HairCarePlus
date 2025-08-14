@@ -47,14 +47,19 @@ public partial class App : Application
 
 	protected override void OnStart()
 	{
-		// Replace the temporary loading page with the actual AppShell immediately
-		if (_mainWindow is not null)
+		// Keep LoadingPage visible until startup tasks complete to avoid race conditions
+		// that could cause the Progress feed to query the database before it is created/migrated.
+		_ = Task.Run(async () =>
 		{
-			_mainWindow.Page = new AppShell();
-		}
-
-		// Run startup tasks without blocking the UI thread
-		_ = Task.Run(RunStartupTasksAsync);
+			await RunStartupTasksAsync();
+			await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(() =>
+			{
+				if (_mainWindow is not null)
+				{
+					_mainWindow.Page = new AppShell();
+				}
+			});
+		});
 
 		base.OnStart();
 	}

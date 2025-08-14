@@ -47,14 +47,21 @@ public sealed class PhotoPrefetchWorker : BackgroundService
                                .ToListAsync(ct);
         if (uncached.Count == 0) return;
 
-        var urls = uncached.Select(u => u.ImageUrl).ToList();
+        var urls = uncached.Select(u => u.ImageUrl)
+                           .Where(u => !string.IsNullOrWhiteSpace(u) &&
+                                       (u.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || u.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                           .ToList();
         await _fileCache.PrefetchAsync(urls, ct);
 
         foreach (var item in uncached)
         {
-            var path = await _fileCache.GetLocalPathAsync(item.ImageUrl, ct);
-            var entity = await db.PhotoReports.FirstAsync(r => r.Id == item.Id, ct);
-            entity.LocalPath = path;
+            if (!string.IsNullOrWhiteSpace(item.ImageUrl) &&
+                (item.ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || item.ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+            {
+                var path = await _fileCache.GetLocalPathAsync(item.ImageUrl, ct);
+                var entity = await db.PhotoReports.FirstAsync(r => r.Id == item.Id, ct);
+                entity.LocalPath = path;
+            }
         }
         await db.SaveChangesAsync(ct);
     }

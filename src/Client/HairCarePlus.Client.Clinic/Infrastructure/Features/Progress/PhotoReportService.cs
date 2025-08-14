@@ -8,25 +8,36 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
 using HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities;
 using System;
+using System.Text.Json;
+using System.Threading;
+using HairCarePlus.Client.Clinic.Features.Sync.Application;
 
 namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 
-public sealed class PhotoReportService : IPhotoReportService
+    public sealed class PhotoReportService : IPhotoReportService
 {
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly IMessenger _messenger;
     private readonly IEventsSubscription _events;
+        private readonly IOutboxRepository _outbox;
+        private readonly ISyncService _syncService;
     private bool _handlersAttached = false;
     private string _patientId = string.Empty;
 
     // simple per-patient cache to avoid redundant DB selects during one ViewModel lifecycle
     private readonly Dictionary<string, IReadOnlyList<PhotoReportDto>> _cache = new();
 
-    public PhotoReportService(IDbContextFactory<AppDbContext> dbFactory, IMessenger messenger, IEventsSubscription eventsSub)
+        public PhotoReportService(IDbContextFactory<AppDbContext> dbFactory,
+                                  IMessenger messenger,
+                                  IEventsSubscription eventsSub,
+                                  IOutboxRepository outbox,
+                                  ISyncService syncService)
     {
         _dbFactory = dbFactory;
         _messenger = messenger;
         _events = eventsSub;
+            _outbox = outbox;
+            _syncService = syncService;
     }
 
     public async Task<IReadOnlyList<PhotoReportDto>> GetReportsAsync(string patientId)
@@ -65,7 +76,7 @@ public sealed class PhotoReportService : IPhotoReportService
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
 
-        // TODO: вместо прямого POST создаём OutboxItem; пока просто сохраняем локально
+        // Persist locally for immediate UI reflection
         await using var db = _dbFactory.CreateDbContext();
         db.PhotoComments.Add(new PhotoCommentEntity
         {
@@ -75,6 +86,19 @@ public sealed class PhotoReportService : IPhotoReportService
             CreatedAtUtc = dto.CreatedAtUtc
         });
         await db.SaveChangesAsync();
+
+        // Enqueue to Outbox for reliable sync to server → patient
+        await _outbox.AddAsync(new OutboxItemDto
+        {
+            EntityType = "PhotoComment",
+            Payload = JsonSerializer.Serialize(dto),
+            LocalEntityId = dto.PhotoReportId.ToString(),
+            ModifiedAtUtc = DateTime.UtcNow
+        });
+
+        // Try to push immediately (non-blocking if it fails)
+        try { await _syncService.SynchronizeAsync(CancellationToken.None); } catch { }
+
         return dto;
     }
 
@@ -82,30 +106,46 @@ public sealed class PhotoReportService : IPhotoReportService
     {
         Guid.TryParse(e.Id, out var repId);
         Guid.TryParse(e.PatientId, out var pid);
+        Guid? setId = null;
+        if (!string.IsNullOrWhiteSpace(e.SetId) && Guid.TryParse(e.SetId, out var setGuid))
+            setId = setGuid;
 
-        // Fallback: если remote ImageUrl приведёт к 404, отдаём локальный путь (если файл существует)
-        var preferredUrl = e.ImageUrl;
-        if (!string.IsNullOrWhiteSpace(e.LocalPath) && System.IO.File.Exists(e.LocalPath))
+        // resolve LocalPath (may be relative) and decide which path to expose to UI
+        string? resolvedLocal = null;
+        if (!string.IsNullOrWhiteSpace(e.LocalPath))
         {
-            // if remote is empty или явно localhost адрес (предположительно может отсутствовать), используем локальный файл
-            if (string.IsNullOrWhiteSpace(preferredUrl))
+            resolvedLocal = e.LocalPath;
+            if (!Path.IsPathRooted(resolvedLocal))
             {
-                preferredUrl = e.LocalPath;
-            }
-            else if (preferredUrl.Contains("/uploads/", StringComparison.OrdinalIgnoreCase))
-            {
-                // prefer server file if it looks like an uploaded asset; otherwise keep as is
+                try
+                {
+                    var baseDir = Microsoft.Maui.Storage.FileSystem.AppDataDirectory;
+                    resolvedLocal = Path.Combine(baseDir, resolvedLocal);
+                }
+                catch { }
             }
         }
+
+        // prefer existing local file; otherwise UI can fall back to ImageUrl (HTTP) via converter
+        var localForUi = !string.IsNullOrWhiteSpace(resolvedLocal) && System.IO.File.Exists(resolvedLocal)
+            ? resolvedLocal
+            : null;
 
         return new PhotoReportDto
         {
             Id = repId == Guid.Empty ? Guid.NewGuid() : repId,
             PatientId = pid == Guid.Empty ? Guid.NewGuid() : pid,
-            ImageUrl = preferredUrl,
-            LocalPath = e.LocalPath,
+            SetId = setId,
+            ImageUrl = e.ImageUrl,
+            LocalPath = localForUi ?? (
+                !string.IsNullOrWhiteSpace(e.ImageUrl) &&
+                (e.ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || e.ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    ? e.ImageUrl
+                    : e.LocalPath
+            ),
             Date = e.Date,
             Notes = e.DoctorComment ?? string.Empty,
+            Type = e.Type,
             Comments = e.Comments.Select(c =>
             {
                 Guid.TryParse(c.PhotoReportId, out var prId);

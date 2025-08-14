@@ -8,6 +8,7 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 public interface IPhotoReportService
 {
     Task<IReadOnlyList<PhotoReportDto>> GetReportsAsync(string patientId);
+    // Future: Task<IReadOnlyList<PhotoReportSetDto>> GetReportSetsAsync(string patientId);
 
     Task<PhotoCommentDto> AddCommentAsync(string patientId, string photoReportId, string authorId, string text);
 

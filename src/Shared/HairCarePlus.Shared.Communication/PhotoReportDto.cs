@@ -8,6 +8,11 @@ public sealed class PhotoReportDto
 {
     public Guid Id { get; set; }
     public Guid PatientId { get; set; }
+    /// <summary>
+    ///   Optional identifier of the atomic set (PhotoReportSetDto.Id) this photo belongs to.
+    ///   When present, clients should group photos by this value to display exactly three items per set.
+    /// </summary>
+    public Guid? SetId { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
     public string ThumbnailUrl { get; set; } = string.Empty;
     public DateTime Date { get; set; }

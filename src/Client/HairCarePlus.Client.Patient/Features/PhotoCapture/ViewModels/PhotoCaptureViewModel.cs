@@ -160,34 +160,60 @@ public partial class PhotoCaptureViewModel : ObservableObject
             Directory.CreateDirectory(mediaDir);
             var persistentName = $"{capturedUtc:yyyyMMdd_HHmmss}_{reportId}.jpg";
             var persistentPath = Path.Combine(mediaDir, persistentName);
+            var persisted = false;
             try
             {
                 File.Copy(localPath, persistentPath, overwrite: true);
+                persisted = File.Exists(persistentPath);
             }
-            catch
+            catch (Exception copyEx)
             {
-                // если копия не удалась, используем исходный путь как fallback
-                persistentPath = localPath;
+                _logger.LogWarning(copyEx, "Initial copy to persistent storage failed. Retrying with stream copy...  src={Src} dst={Dst}", localPath, persistentPath);
+            }
+
+            if (!persisted)
+            {
+                try
+                {
+                    await using var src = File.OpenRead(localPath);
+                    await using var dst = File.Open(persistentPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                    await src.CopyToAsync(dst);
+                    persisted = File.Exists(persistentPath);
+                }
+                catch (Exception streamEx)
+                {
+                    _logger.LogError(streamEx, "Failed to persist captured photo to AppData/Media. src={Src} dst={Dst}", localPath, persistentPath);
+                }
+            }
+
+            if (!persisted)
+            {
+                // Не записываем в БД путь из Cache, т.к. он может быть очищен при рестарте.
+                // Без надежной локальной копии останавливаем обработку и попросим пользователя повторить снимок.
+                await Shell.Current.DisplayAlert("Ошибка", "Не удалось сохранить снимок в память устройства. Повторите попытку.", "OK");
+                return;
             }
 
             await using (var db = await _dbFactory.CreateDbContextAsync())
             {
+                // Persist relative file name in LocalPath so that future app sandbox moves don't break absolute paths
+                var fileNameOnly = Path.GetFileName(persistentPath);
                 db.PhotoReports.Add(new Features.Sync.Domain.Entities.PhotoReportEntity
                 {
                     Id = reportId.ToString(),
                     ImageUrl = persistentPath,     // локальный постоянный путь; заменится после успешной загрузки
                     CaptureDate = capturedUtc,
                     DoctorComment = string.Empty,
-                    // сохраняем постоянный путь, чтобы лента была доступна после перезапуска
-                    LocalPath = persistentPath,
+                    // сохраняем относительный путь (имя файла) для устойчивости к изменению AppDataDirectory
+                    LocalPath = fileNameOnly,
                     PatientId = _profileService.PatientId.ToString(),
                     Zone = PhotoZone.Front
                 });
                 await db.SaveChangesAsync();
             }
 
-            // мгновенно обновляем ProgressPage
-            _messenger.Send(new PhotoSavedMessage(fileName));
+            // мгновенно обновляем ProgressPage корректным именем постоянного файла
+            _messenger.Send(new PhotoSavedMessage(persistentName));
 
             // 2. Пытаемся загрузить файл (может занять время)
             var imageUrl = await _uploadService.UploadFileAsync(persistentPath, persistentName);

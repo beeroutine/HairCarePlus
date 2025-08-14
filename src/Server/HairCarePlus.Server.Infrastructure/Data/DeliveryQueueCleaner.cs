@@ -97,12 +97,19 @@ public class DeliveryQueueCleaner : BackgroundService
                 }
 
                 // Optional: delete orphaned files left in uploads (no corresponding queue items)
+                // SAFETY FIX: compute keep-set from ALL ACTIVE queue items (not just the ones being removed),
+                // so we never wipe valid files on startup.
                 try
                 {
                     var uploads = Path.Combine(AppContext.BaseDirectory, "uploads");
                     if (Directory.Exists(uploads))
                     {
-                        var keepSet = itemsToRemove.SelectMany(i =>
+                        var now2 = DateTime.UtcNow;
+                        var activeItems = await db.DeliveryQueue
+                                                  .Where(d => d.ExpiresAtUtc > now2 && d.DeliveredMask != d.ReceiversMask)
+                                                  .ToListAsync(stoppingToken);
+
+                        var keepSet = activeItems.SelectMany(i =>
                         {
                             try
                             {

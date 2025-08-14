@@ -72,6 +72,19 @@ namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views
 
                 _logger.LogInformation("Starting camera preview...");
 
+                // Ensure the Camera view is loaded and has a handler before starting preview
+                int retries = 0;
+                while (Camera?.Handler is null && retries < 20)
+                {
+                    await Task.Delay(50);
+                    retries++;
+                }
+                if (Camera?.Handler is null)
+                {
+                    _logger.LogWarning("Camera handler is still null after waiting; skipping StartCameraPreview for now.");
+                    return;
+                }
+
                 await PickCameraForFacingAsync(_viewModel.Facing);
 
                 await Camera.StartCameraPreview(CancellationToken.None);
@@ -130,6 +143,8 @@ namespace HairCarePlus.Client.Patient.Features.PhotoCapture.Views
                 _isCapturing = true;
                 await Camera.CaptureImage(CancellationToken.None);
                 _logger.LogInformation("CaptureImage called.");
+                // Defensive reset in case MediaCaptured handler fails to flip the flag
+                _isCapturing = false;
             }
             catch (Exception ex)
             {

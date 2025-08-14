@@ -48,20 +48,37 @@ CLINIC_SIM_UDID="${CLINIC_SIM_UDID:-}"
 
 if [[ -z "$CLINIC_SIM_UDID" ]]; then
   echo "ℹ️  Selecting default iOS Simulator for Clinic (preferring iPhone 16 Pro → iPhone 16) ..."
-  for MODEL in "iPhone 16 Pro" "iPhone 16"; do
-    CANDIDATE=$(xcrun simctl list devices 2>/dev/null | sed -n "s/.*${MODEL} (\([A-Fa-f0-9-]\{36\}\)).* (available).*/\1/p" | head -n 1 || true)
-    if [[ -n "$CANDIDATE" ]]; then
-      CLINIC_SIM_UDID="$CANDIDATE"
-      break
-    fi
-  done
-  if [[ -z "$CLINIC_SIM_UDID" ]]; then
-    CLINIC_SIM_UDID=$(xcrun simctl list devices 2>/dev/null | sed -n 's/.*iPhone .* (\([A-Fa-f0-9-]\{36\}\)).* (available).*/\1/p' | head -n1 || true)
-  fi
-  # Fallback: use already Booted iPhone simulator if any is open
-  if [[ -z "$CLINIC_SIM_UDID" ]]; then
-    CLINIC_SIM_UDID=$(xcrun simctl list devices 2>/dev/null | sed -n 's/.*iPhone .* (\([A-Fa-f0-9-]\{36\}\)).* (Booted).*/\1/p' | head -n1 || true)
-  fi
+  # Use JSON output from simctl to robustly pick an available iPhone simulator
+  CLINIC_SIM_UDID=$(python3 - <<'PY'
+import json, subprocess
+prefer = ["iPhone 16 Pro", "iPhone 16"]
+try:
+    out = subprocess.check_output(["xcrun", "simctl", "list", "devices", "--json"], stderr=subprocess.DEVNULL)
+    data = json.loads(out)
+    devices = []
+    for runtime, arr in data.get("devices", {}).items():
+        for d in arr:
+            # We only want iOS simulators that are available
+            if d.get("isAvailable") and "iPhone" in d.get("name", ""):
+                devices.append(d)
+    # Prefer already booted
+    booted = [d for d in devices if d.get("state") == "Booted"]
+    ordered = booted + [d for d in devices if d.get("state") != "Booted"]
+    # Prefer named models
+    for name in prefer:
+        for d in ordered:
+            if d.get("name") == name:
+                print(d.get("udid", ""))
+                raise SystemExit
+    # Fallback: first available iPhone
+    if ordered:
+        print(ordered[0].get("udid", ""))
+        raise SystemExit
+except Exception:
+    pass
+print("")
+PY
+  )
   if [[ -z "$CLINIC_SIM_UDID" ]]; then
     echo "⚠️  Could not resolve an iPhone simulator UDID. Open any iPhone simulator or pass CLINIC_SIM_UDID explicitly."
   fi

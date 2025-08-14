@@ -25,7 +25,17 @@ public sealed class FileCacheService : IFileCacheService
         if (File.Exists(localPath)) return localPath;
 
         await DownloadAsync(remoteUrl, localPath, cancellationToken);
-        return localPath;
+        // Return RELATIVE path to be robust across app reinstalls and simulator sandbox moves
+        // Callers should persist this relative value; UI mappers will re-root against AppDataDirectory
+        try
+        {
+            var relative = Path.GetRelativePath(FileSystem.AppDataDirectory, localPath);
+            return relative;
+        }
+        catch
+        {
+            return localPath;
+        }
     }
 
     public async Task PrefetchAsync(IEnumerable<string> remoteUrls, CancellationToken cancellationToken = default)
@@ -47,8 +57,17 @@ public sealed class FileCacheService : IFileCacheService
     private string GetPathForUrl(string url)
     {
         var hash = Sha1(url);
-        var ext = Path.GetExtension(new Uri(url).LocalPath);
-        if (string.IsNullOrWhiteSpace(ext)) ext = ".jpg";
+        string ext = ".jpg";
+        try
+        {
+            var uri = new Uri(url, UriKind.RelativeOrAbsolute);
+            if (uri.IsAbsoluteUri)
+            {
+                var candidate = Path.GetExtension(uri.LocalPath);
+                if (!string.IsNullOrWhiteSpace(candidate)) ext = candidate;
+            }
+        }
+        catch { }
         return Path.Combine(_rootDir, $"{hash}{ext}");
     }
 
