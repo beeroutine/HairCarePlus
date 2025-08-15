@@ -9,7 +9,6 @@ public partial class PatientPage : ContentPage
         InitializeComponent();
         _vm = vm;
         BindingContext = _vm;
-        Loaded += async (s,e) => await _vm.LoadCommand.ExecuteAsync(null);
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)

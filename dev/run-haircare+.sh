@@ -201,6 +201,13 @@ if [[ -z "$IPHONE_UDID" ]]; then
 fi
 
 PATIENT_TARGET="${PATIENT_DEVICENAME:-$IPHONE_UDID}"
+echo "🔧 Prebuilding Patient app (Debug, net9.0-ios, ios-arm64) ..."
+dotnet build -c Debug \
+  "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" \
+  -f net9.0-ios \
+  -p:RuntimeIdentifier=ios-arm64 \
+  -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/patient.prebuild.log"
+
 echo "▶ Running Patient (Rider-style) on device=$PATIENT_TARGET ..."
 dotnet build -t:Run -c Debug \
   "$ROOT_DIR/src/Client/HairCarePlus.Client.Patient" \
@@ -208,6 +215,7 @@ dotnet build -t:Run -c Debug \
   -p:RuntimeIdentifier=ios-arm64 \
   -p:_DeviceName=$PATIENT_TARGET \
   -p:MtouchLink=None -p:PublishAot=false \
+  -p:NoRestore=true \
   -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/patient.log" &
 PATIENT_PID=$!
 
@@ -226,11 +234,19 @@ if [[ -n "$CLINIC_SIM_UDID" ]]; then
   dotnet restore "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" -f net9.0-ios -p:RuntimeIdentifier=$SIM_RID >/dev/null 2>&1 || true
   set -e
   CLINIC_TARGET="${CLINIC_DEVICENAME:-:v2:udid=$CLINIC_SIM_UDID}"
+  echo "🔧 Prebuilding Clinic app (Debug, net9.0-ios, $SIM_RID) ..."
+  dotnet build -c Debug \
+    "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
+    -f net9.0-ios \
+    -p:RuntimeIdentifier=$SIM_RID \
+    -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.prebuild.log"
+
   dotnet build -t:Run -c Debug -p:MtouchLink=None -p:PublishAot=false \
     "$ROOT_DIR/src/Client/HairCarePlus.Client.Clinic" \
     -f net9.0-ios \
     -p:RuntimeIdentifier=$SIM_RID \
     -p:_DeviceName=$CLINIC_TARGET \
+    -p:NoRestore=true \
     -p:CHAT_BASE_URL=$CHAT_BASE_URL 2>&1 | tee "$LOG_DIR/clinic.log" &
   CLINIC_PID=$!
 else

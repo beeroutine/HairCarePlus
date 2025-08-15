@@ -8,6 +8,7 @@
              xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models"
              xmlns:converters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
              xmlns:maui="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Clinic.Common.Behaviors"
              >
     <ContentView.Resources>
         <ResourceDictionary>
@@ -91,22 +92,29 @@
                 <VerticalStackLayout Spacing="8">
                     <!-- Doctor comment (tap to add/edit) -->
                     <Border Style="{StaticResource DoctorCommentStyle}">
+                        <Border.Behaviors>
+                            <behaviors:VisualFeedbackBehavior />
+                        </Border.Behaviors>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer x:DataType="viewmodels:PatientPageViewModel"
-                                          Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.StartCommentCommand}"
-                                          CommandParameter="{Binding .}" />
+                            <TapGestureRecognizer
+                                Command="{Binding Source={x:Reference thisView}, Path=CommentCommand}"
+                                CommandParameter="{Binding .}"
+                                Tapped="OnDoctorCommentTapped" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
                             <HorizontalStackLayout Spacing="6">
                                 <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
                                          WidthRequest="8"
                                          HeightRequest="8"
-                                         VerticalOptions="Center" />
+                                         VerticalOptions="Center"
+                                         InputTransparent="True" />
                                 <Label Text="Комментарий врача"
-                                       Style="{StaticResource CommentHeaderStyle}" />
+                                       Style="{StaticResource CommentHeaderStyle}"
+                                       InputTransparent="True" />
                             </HorizontalStackLayout>
                             <Label Text="{Binding DoctorReportSummary, TargetNullValue='Добавить комментарий'}"
-                                   Style="{StaticResource CommentTextStyle}" />
+                                   Style="{StaticResource CommentTextStyle}"
+                                   InputTransparent="True" />
                         </VerticalStackLayout>
                     </Border>
 
