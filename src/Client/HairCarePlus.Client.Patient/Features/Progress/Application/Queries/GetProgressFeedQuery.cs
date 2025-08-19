@@ -80,6 +80,7 @@ public sealed class GetProgressFeedHandler : IQueryHandler<GetProgressFeedQuery,
                     {
                         photos.Add(new ProgressPhoto
                         {
+                            ReportId = null,
                             LocalPath = file,
                             CapturedAt = File.GetCreationTime(file),
                             Zone = GuessZone(file),

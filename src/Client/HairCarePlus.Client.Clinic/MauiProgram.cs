@@ -17,6 +17,7 @@ using System.Threading;
 using HairCarePlus.Shared.Common;
 using HairCarePlus.Client.Clinic.Infrastructure.FileCache;
 using SQLitePCL;
+using System.Runtime.Versioning;
 using HairCarePlus.Client.Clinic.Infrastructure.Services;
 using HairCarePlus.Client.Clinic.Infrastructure.Navigation;
 #if IOS
@@ -32,6 +33,8 @@ namespace HairCarePlus.Client.Clinic;
 public static class MauiProgram
 {
 
+	[SupportedOSPlatform("ios13.0")]
+	[SupportedOSPlatform("maccatalyst13.0")]
 	public static MauiApp CreateMauiApp()
 	{
 		// Ensure SQLite engine is initialized for thread-safety

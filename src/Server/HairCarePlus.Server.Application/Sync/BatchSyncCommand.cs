@@ -48,67 +48,59 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         // 1. APPLY INCOMING -----------------------
         var sinceUtc = DateTimeOffset.FromUnixTimeMilliseconds(req.LastSyncVersion).UtcDateTime;
 
+        // Chat messages: relay-only (do not persist). Enqueue for the opposite side with short TTL.
         if (req.ChatMessages?.Count > 0)
         {
-            foreach (var dto in req.ChatMessages)
-            {
-                Guid.TryParse(dto.ServerMessageId ?? string.Empty, out var messageGuid);
-                var existing = messageGuid == Guid.Empty ? null : await _db.ChatMessages.FirstOrDefaultAsync(c => c.Id == messageGuid, cancellationToken);
-                if (existing == null)
-                {
-                    await _db.ChatMessages.AddAsync(dto.ToEntity(), cancellationToken);
-                }
-                else if (dto.SentAt > existing.CreatedAt)
-                {
-                    existing.UpdateStatus((Domain.ValueObjects.MessageStatus)dto.Status);
-                }
-            }
-
-            // enqueue packets for opposite side
             var chatPackets = req.ChatMessages.Select(dto => new HairCarePlus.Server.Domain.Entities.DeliveryQueue
             {
                 EntityType = "ChatMessage",
                 PayloadJson = JsonSerializer.Serialize(dto),
-                PatientId = Guid.Empty, // Chat not bound to patient strictly; adjust if needed
+                PatientId = Guid.Empty,
                 ReceiversMask = otherMask,
                 DeliveredMask = 0,
-                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(30)
             }).ToList();
 
             if (chatPackets.Count > 0)
                 await _dq.AddRangeAsync(chatPackets);
         }
 
+        // Photo comments: relay-only (no server persistence). Use patient-scoped DeliveryQueue.
         if (req.PhotoComments?.Count > 0)
         {
-            foreach (var dto in req.PhotoComments)
+            var commentPackets = req.PhotoComments.Select(dto => new HairCarePlus.Server.Domain.Entities.DeliveryQueue
             {
-                var existing = await _db.PhotoComments.FirstOrDefaultAsync(c => c.Id == dto.Id, cancellationToken);
-                if (existing == null)
-                {
-                    await _db.PhotoComments.AddAsync(dto.ToEntity(), cancellationToken);
-                }
-                else if (dto.CreatedAtUtc > existing.CreatedAtUtc)
-                {
-                    existing.UpdateText(dto.Text);
-                }
-            }
-            await _db.SaveChangesAsync(cancellationToken);
+                EntityType = "PhotoComment",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                PatientId = req.PatientId,
+                ReceiversMask = otherMask,
+                DeliveredMask = 0,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            }).ToList();
+
+            if (commentPackets.Count > 0)
+                await _dq.AddRangeAsync(commentPackets);
         }
 
+        // Calendar tasks: relay-only. Clients remain source of truth; server only forwards and broadcasts RT events.
         if (req.CalendarTasks?.Count > 0)
         {
+            var calendarPackets = req.CalendarTasks.Select(dto => new HairCarePlus.Server.Domain.Entities.DeliveryQueue
+            {
+                EntityType = "CalendarTask",
+                PayloadJson = JsonSerializer.Serialize(dto),
+                PatientId = dto.PatientId,
+                ReceiversMask = otherMask,
+                DeliveredMask = 0,
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(14)
+            }).ToList();
+
+            if (calendarPackets.Count > 0)
+                await _dq.AddRangeAsync(calendarPackets);
+
             foreach (var dto in req.CalendarTasks)
             {
-                var existing = await _db.TreatmentSchedules.FirstOrDefaultAsync(c => c.Id == dto.Id, cancellationToken);
-                if (existing == null)
-                {
-                    await _db.TreatmentSchedules.AddAsync(dto.ToEntity(), cancellationToken);
-                }
-                else if (dto.DueDateUtc > existing.StartDate) // Simplified update logic
-                {
-                    existing.UpdateSchedule(dto.DueDateUtc, null, existing.RecurrencePattern);
-                }
+                try { await _events.CalendarTaskChanged(dto); } catch { }
             }
         }
 
@@ -140,6 +132,12 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
             if (restrictionPackets.Count > 0)
                 await _dq.AddRangeAsync(restrictionPackets);
             _logger.LogInformation("BatchSync: enqueued {Count} restriction packets for mask {Mask}", restrictionPackets.Count, otherMask);
+
+            // push realtime events so UIs can react immediately
+            foreach (var dto in req.Restrictions)
+            {
+                try { await _events.RestrictionChanged(dto); } catch { }
+            }
         }
 
         // Handle incoming PhotoReports (patient -> server)
@@ -189,21 +187,15 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         await _db.SaveChangesAsync(cancellationToken);
 
         // 2. COLLECT DELTA -------------------------
-        var deltaChat = await _db.ChatMessages
-            .Where(c => c.CreatedAt > sinceUtc)
-            .Select(c => c.ToDto())
-            .ToListAsync(cancellationToken);
+        // Server no longer persists chat; no typed delta returned
+        var deltaChat = new List<ChatMessageDto>();
 
         // Use base CreatedAt (DateTime) to avoid DateTimeOffset translation issues and rely on global soft-delete filter
-        var deltaComments = await _db.PhotoComments
-            .Where(c => c.CreatedAt > sinceUtc)
-            .Select(c => c.ToDto())
-            .ToListAsync(cancellationToken);
+        // Server no longer persists photo comments; no typed delta returned
+        var deltaComments = new List<PhotoCommentDto>();
 
-        var deltaCalendar = await _db.TreatmentSchedules
-            .Where(c => c.CreatedAt > sinceUtc) // Simplified delta logic
-            .Select(c => c.ToDto())
-            .ToListAsync(cancellationToken);
+        // Calendar tasks not persisted; no typed delta
+        var deltaCalendar = new List<CalendarTaskDto>();
 
         var deltaProgress = await _db.ProgressEntries
             .Where(p => p.CreatedAt > sinceUtc)

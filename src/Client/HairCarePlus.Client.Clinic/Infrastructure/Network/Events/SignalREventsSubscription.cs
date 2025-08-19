@@ -20,6 +20,8 @@ public sealed class SignalREventsSubscription : IEventsSubscription
     public event EventHandler<PhotoReportDto>? PhotoReportAdded;
     public event EventHandler<PhotoCommentDto>? PhotoCommentAdded;
     public event EventHandler<PhotoReportSetDto>? PhotoReportSetAdded;
+    public event EventHandler<RestrictionDto>? RestrictionChangedEvent;
+    public event EventHandler<CalendarTaskDto>? CalendarTaskChangedEvent;
 
     public async Task ConnectAsync(string patientId)
     {
@@ -52,6 +54,16 @@ public sealed class SignalREventsSubscription : IEventsSubscription
                 _logger.LogInformation("SignalR: PhotoReportSetAdded received for patient {PatientId}. SetId={SetId} ItemCount={Count}", pid, set?.Id, set?.Items?.Count ?? 0);
                 PhotoReportSetAdded?.Invoke(this, set);
             }
+        });
+
+        _connection.On<RestrictionDto>("RestrictionChanged", dto =>
+        {
+            RestrictionChangedEvent?.Invoke(this, dto);
+        });
+
+        _connection.On<CalendarTaskDto>("CalendarTaskChanged", dto =>
+        {
+            CalendarTaskChangedEvent?.Invoke(this, dto);
         });
 
         try

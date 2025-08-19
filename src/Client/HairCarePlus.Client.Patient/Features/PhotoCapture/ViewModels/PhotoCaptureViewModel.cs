@@ -81,6 +81,12 @@ public partial class PhotoCaptureViewModel : ObservableObject
     [ObservableProperty]
     private bool _showInstruction;
 
+    [ObservableProperty]
+    private int _capturesDone;
+
+    [ObservableProperty]
+    private string _captureProgressText = "0/3";
+
     public enum CameraFacing
     {
         Front,
@@ -228,7 +234,13 @@ public partial class PhotoCaptureViewModel : ObservableObject
             // Сохраняем текущий кадр как элемент набора
             var currentItem = new HairCarePlus.Shared.Communication.PhotoReportItemDto
             {
-                Type = HairCarePlus.Shared.Communication.PhotoType.Custom,
+                Type = SelectedTemplate?.Id switch
+                {
+                    "front" => HairCarePlus.Shared.Communication.PhotoType.FrontView,
+                    "top" => HairCarePlus.Shared.Communication.PhotoType.TopView,
+                    "back" => HairCarePlus.Shared.Communication.PhotoType.BackView,
+                    _ => HairCarePlus.Shared.Communication.PhotoType.Custom
+                },
                 ImageUrl = imageUrl,
                 LocalPath = imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? null : persistentPath
             };
@@ -257,6 +269,10 @@ public partial class PhotoCaptureViewModel : ObservableObject
             set.Items.Add(currentItem);
             Microsoft.Maui.Storage.Preferences.Set(activeSetKey, System.Text.Json.JsonSerializer.Serialize(set));
 
+            // Update progress counters for UI
+            CapturesDone = Math.Clamp(set.Items.Count, 0, 3);
+            CaptureProgressText = $"{CapturesDone}/3";
+
             if (set.Items.Count >= 3)
             {
                 // Набор готов – отправляем одним Outbox-элементом и очищаем кэш
@@ -270,6 +286,10 @@ public partial class PhotoCaptureViewModel : ObservableObject
                 await _outboxRepo.AddAsync(outboxDto);
                 Microsoft.Maui.Storage.Preferences.Remove(activeSetKey);
                 _logger.LogInformation("PhotoReportSet enqueued. Id={Id} items={Count}", set.Id, set.Items.Count);
+
+                // Reset progress indicator after enqueue
+                CapturesDone = 3;
+                CaptureProgressText = "3/3";
             }
 
             // 4. Немедленный триггер синхронизации, чтобы не ждать планировщик

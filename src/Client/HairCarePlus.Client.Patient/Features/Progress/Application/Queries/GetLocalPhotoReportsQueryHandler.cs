@@ -83,6 +83,7 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
                 var first = group.First().Report;
                 var photos = group
                     .Select(x => new ProgressPhoto {
+                        ReportId = x.Report.Id,
                         LocalPath = x.Path!,
                         CapturedAt = x.Report.CaptureDate,
                         Zone = x.Report.Zone })

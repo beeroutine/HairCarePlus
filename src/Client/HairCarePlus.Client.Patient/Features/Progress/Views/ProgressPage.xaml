@@ -27,7 +27,7 @@
             <DataTemplate x:Key="StandardRestrictionTimerTemplate" x:DataType="models:RestrictionTimer">
                 <VerticalStackLayout WidthRequest="70" HorizontalOptions="Center" Spacing="6">
                     <VerticalStackLayout.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
+                        <TapGestureRecognizer Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.OpenRestrictionDetailsCommand}" CommandParameter="{Binding .}" />
                     </VerticalStackLayout.GestureRecognizers>
                     
                     <Grid WidthRequest="50" HeightRequest="50"
@@ -63,7 +63,7 @@
                     <Grid WidthRequest="50" HeightRequest="50"
                           HorizontalOptions="Center" VerticalOptions="Center">
                         <Grid.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ShowAllRestrictionsCommand}" />
+                            <TapGestureRecognizer Command="{Binding Source={x:Reference RootPage}, Path=BindingContext.ShowAllRestrictionsCommand}" />
                         </Grid.GestureRecognizers>
                         
                         <!-- Кружок "Показать еще" -->

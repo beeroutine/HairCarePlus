@@ -48,6 +48,29 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     public AsyncRelayCommand<ProgressFeedItem?> StartCommentCommand { get; }
     public IRelayCommand ShowAllRestrictionsCommand { get; }
 
+    // Inline Instagram-like comment bar state
+    [ObservableProperty] private bool _isCommenting;
+    [ObservableProperty] private string _commentText = string.Empty;
+    [ObservableProperty] private ProgressFeedItem? _commentTarget;
+    public AsyncRelayCommand SendCommentCommand { get; }
+    public IRelayCommand CancelCommentCommand { get; }
+    public bool IsSendEnabled => CommentTarget != null && !string.IsNullOrWhiteSpace(CommentText);
+
+    partial void OnIsCommentingChanged(bool oldValue, bool newValue)
+    {
+        _logger.LogInformation("IsCommenting changed: {Old} -> {New}", oldValue, newValue);
+    }
+
+    partial void OnCommentTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsSendEnabled));
+    }
+
+    partial void OnCommentTargetChanged(ProgressFeedItem? value)
+    {
+        OnPropertyChanged(nameof(IsSendEnabled));
+    }
+
     public PatientPageViewModel(IPhotoReportService photoReportService,
         HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IPatientService patientService,
         HairCarePlus.Client.Clinic.Infrastructure.Features.Patient.IRestrictionService restrictionService,
@@ -78,6 +101,50 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         });
 
         StartCommentCommand = new AsyncRelayCommand<ProgressFeedItem?>(StartCommentAsync);
+
+        SendCommentCommand = new AsyncRelayCommand(async () =>
+        {
+            if (CommentTarget == null) return;
+            var text = CommentText?.Trim();
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            // Choose a photo with ReportId to attach the comment
+            var photoWithId = CommentTarget.Photos.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.ReportId));
+            if (photoWithId == null) return; // wait until feed item has a stable ReportId
+            // Optimistic UI: update local DB and outbox first; never block on network
+            try
+            {
+                await SubmitCommentAsync(photoWithId.ReportId!, text);
+            }
+            catch (Exception ex)
+            {
+                // Even если локальная запись не удалась, не ломаем UX: просто логируем
+                _logger.LogError(ex, "Failed to submit comment locally for report {ReportId}", photoWithId.ReportId);
+            }
+
+            // Update local feed/UI state
+            var index = Feed.IndexOf(CommentTarget);
+            if (index >= 0)
+            {
+                var updated = CommentTarget with { DoctorReportSummary = text };
+                Feed[index] = updated;
+            }
+
+            // Fire-and-forget background sync, UI уже обновлён локально
+            try { _ = Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () => await _photoReportService.ConnectAsync(PatientId)); } catch { }
+            CommentText = string.Empty;
+            CommentTarget = null;
+            IsCommenting = false;
+            OnPropertyChanged(nameof(IsSendEnabled));
+        });
+
+        CancelCommentCommand = new RelayCommand(() =>
+        {
+            CommentText = string.Empty;
+            CommentTarget = null;
+            IsCommenting = false;
+            OnPropertyChanged(nameof(IsSendEnabled));
+        });
 
         ShowAllRestrictionsCommand = new RelayCommand(() =>
         {
@@ -232,6 +299,36 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                     }
                     catch { }
                 };
+
+                ev.RestrictionChangedEvent += async (_, dto) =>
+                {
+                    if (dto != null && dto.PatientId.ToString() == PatientId)
+                    {
+                        try
+                        {
+                            await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
+                            {
+                                await LoadAsync();
+                            });
+                        }
+                        catch { }
+                    }
+                };
+
+                ev.CalendarTaskChangedEvent += async (_, dto) =>
+                {
+                    if (dto != null && dto.PatientId.ToString() == PatientId)
+                    {
+                        try
+                        {
+                            await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
+                            {
+                                await LoadAsync();
+                            });
+                        }
+                        catch { }
+                    }
+                };
             }
         }
 
@@ -261,41 +358,12 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     private async Task StartCommentAsync(ProgressFeedItem? item)
     {
         if (item == null) return;
-        try
-        {
-            var page = Application.Current?.Windows.FirstOrDefault()?.Page;
-            if (page == null) return;
-            var text = await page.DisplayPromptAsync("Комментарий", "Введите комментарий", "Отправить", "Отмена", maxLength: 200, keyboard: Keyboard.Default);
-            if (string.IsNullOrWhiteSpace(text)) return;
-
-            var photoWithId = item.Photos.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.ReportId));
-            if (photoWithId == null)
-            {
-                await page.DisplayAlert("Ошибка", "Невозможно определить идентификатор фото-отчёта.", "OK");
-                return;
-            }
-
-            var photoId = photoWithId.ReportId;
-            if(!Guid.TryParse(photoId, out _))
-            {
-                await page.DisplayAlert("Ошибка", "Некорректный идентификатор фото-отчёта.", "OK");
-                return;
-            }
-
-            await SubmitCommentAsync(photoId, text);
-
-            // update local feed
-            var index = Feed.IndexOf(item);
-            if (index >= 0)
-            {
-                var updated = item with { DoctorReportSummary = text };
-                Feed[index] = updated;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to add comment");
-        }
+        _logger.LogInformation("StartComment tapped for date {Date}, photos={Count}", item.Date, item.Photos.Count);
+        CommentTarget = item;
+        // Prefill with existing doctor note to enable edit-in-place
+        CommentText = item.DoctorReportSummary ?? string.Empty;
+        IsCommenting = true;
+        OnPropertyChanged(nameof(IsSendEnabled));
     }
 
     public async Task SubmitCommentAsync(string photoReportId, string comment)

@@ -374,6 +374,37 @@ public class SyncService : ISyncService
                                 _logger.LogWarning(ex, "Failed to process ChatMessage packet {PacketId}", packet.Id);
                             }
                             break;
+                        case "PhotoComment":
+                            try
+                            {
+                                var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(packet.PayloadJson);
+                                if (dto != null)
+                                {
+                                    // Persist comment locally
+                                    var comment = new HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity
+                                    {
+                                        PhotoReportId = dto.PhotoReportId.ToString(),
+                                        AuthorId = dto.AuthorId.ToString(),
+                                        Text = dto.Text,
+                                        CreatedAtUtc = dto.CreatedAtUtc
+                                    };
+                                    await db2.PhotoComments.AddAsync(comment, cancellationToken);
+                                    // Best-effort: also mirror summary on parent report if present
+                                    var parent = await db2.PhotoReports.FirstOrDefaultAsync(r => r.Id == dto.PhotoReportId.ToString(), cancellationToken);
+                                    if (parent != null && string.IsNullOrWhiteSpace(parent.DoctorComment))
+                                    {
+                                        parent.DoctorComment = dto.Text;
+                                    }
+                                    // ACK by DeliveryQueue packet Id
+                                    _pendingAckIds.Add(packet.Id);
+                                    try { await _ackStore.AddAsync(packet.Id); } catch { }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to process PhotoComment packet {PacketId}", packet.Id);
+                            }
+                            break;
                     }
                 }
                 await db2.SaveChangesAsync(cancellationToken);

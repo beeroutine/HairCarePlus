@@ -15,7 +15,11 @@
                 <Label Text="{Binding Date, StringFormat='Insights — {0:d}'}" FontAttributes="Bold" FontSize="18" />
                 <Label Text="{Binding Score, StringFormat='AI Score: {0}'}" FontAttributes="Bold" FontSize="16" />
                 <Label Text="{Binding Summary}" LineBreakMode="WordWrap" />
-                <Button Text="Close" Command="{Binding Source={x:Reference Name=popupRoot}, Path=CloseCommand}" />
+                <Button Text="Close">
+                    <Button.Command>
+                        <Binding Source="{x:Reference popupRoot}" Path="CloseCommand" />
+                    </Button.Command>
+                </Button>
             </VerticalStackLayout>
         </ScrollView>
     </Border>

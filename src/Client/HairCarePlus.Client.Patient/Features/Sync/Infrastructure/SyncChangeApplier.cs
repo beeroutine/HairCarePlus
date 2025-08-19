@@ -52,16 +52,37 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                 var duplicate = await db.PhotoComments.AnyAsync(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString() && c.Text == dto.Text && c.CreatedAtUtc == dto.CreatedAtUtc);
                 if (duplicate) continue;
 
-                var newEntity = new Domain.Entities.PhotoCommentEntity
+                // Upsert comment from the same author for the same report (edit)
+                var existing = await db.PhotoComments
+                    .Where(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString())
+                    .OrderByDescending(c => c.CreatedAtUtc)
+                    .FirstOrDefaultAsync();
+                Domain.Entities.PhotoCommentEntity newEntity;
+                if (existing == null)
                 {
-                    PhotoReportId = parentId,
-                    AuthorId = dto.AuthorId.ToString(),
-                    Text = dto.Text,
-                    CreatedAtUtc = dto.CreatedAtUtc
-                };
-                db.PhotoComments.Add(newEntity);
+                    newEntity = new Domain.Entities.PhotoCommentEntity
+                    {
+                        PhotoReportId = parentId,
+                        AuthorId = dto.AuthorId.ToString(),
+                        Text = dto.Text,
+                        CreatedAtUtc = dto.CreatedAtUtc
+                    };
+                    db.PhotoComments.Add(newEntity);
+                }
+                else
+                {
+                    existing.Text = dto.Text;
+                    existing.CreatedAtUtc = dto.CreatedAtUtc;
+                    newEntity = existing;
+                }
                 changesApplied++;
                 _messenger.Send(new Messages.PhotoCommentSyncedMessage(newEntity));
+                // Also mirror summary on the report so feed queries show doctor comment immediately
+                var parentReport = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == parentId);
+                if (parentReport != null)
+                {
+                    parentReport.DoctorComment = dto.Text;
+                }
             }
         }
 
@@ -108,16 +129,35 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                 var duplicate = await db.PhotoComments.AnyAsync(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString() && c.Text == dto.Text && c.CreatedAtUtc == dto.CreatedAtUtc);
                 if (duplicate) continue;
 
-                var newEntity = new Domain.Entities.PhotoCommentEntity
+                var existing2 = await db.PhotoComments
+                    .Where(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString())
+                    .OrderByDescending(c => c.CreatedAtUtc)
+                    .FirstOrDefaultAsync();
+                Domain.Entities.PhotoCommentEntity newEntity;
+                if (existing2 == null)
                 {
-                    PhotoReportId = parentId,
-                    AuthorId = dto.AuthorId.ToString(),
-                    Text = dto.Text,
-                    CreatedAtUtc = dto.CreatedAtUtc
-                };
-                db.PhotoComments.Add(newEntity);
+                    newEntity = new Domain.Entities.PhotoCommentEntity
+                    {
+                        PhotoReportId = parentId,
+                        AuthorId = dto.AuthorId.ToString(),
+                        Text = dto.Text,
+                        CreatedAtUtc = dto.CreatedAtUtc
+                    };
+                    db.PhotoComments.Add(newEntity);
+                }
+                else
+                {
+                    existing2.Text = dto.Text;
+                    existing2.CreatedAtUtc = dto.CreatedAtUtc;
+                    newEntity = existing2;
+                }
                 changesApplied++;
                 _messenger.Send(new Messages.PhotoCommentSyncedMessage(newEntity));
+                var parentReport2 = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == parentId);
+                if (parentReport2 != null)
+                {
+                    parentReport2.DoctorComment = dto.Text;
+                }
             }
         }
 

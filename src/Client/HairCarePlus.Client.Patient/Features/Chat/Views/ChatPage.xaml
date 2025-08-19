@@ -10,6 +10,7 @@
              xmlns:viewModels="clr-namespace:HairCarePlus.Client.Patient.Features.Chat.ViewModels"
              x:DataType="viewModels:ChatViewModel"
              x:Class="HairCarePlus.Client.Patient.Features.Chat.Views.ChatPage"
+             x:Name="RootChatPage"
              BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}"
              Shell.TabBarIsVisible="False"
              NavigationPage.HasNavigationBar="False"
@@ -109,7 +110,7 @@
                                 </Border.Behaviors>
                                 <Border.GestureRecognizers>
                                     <!-- Tap to reply -->
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.HandleReplyToMessageCommand}"
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference RootChatPage}, Path=BindingContext.HandleReplyToMessageCommand}"
                                                          CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
                                 <VerticalStackLayout Spacing="2">

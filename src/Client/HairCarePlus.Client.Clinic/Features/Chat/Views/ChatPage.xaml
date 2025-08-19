@@ -7,6 +7,7 @@
              xmlns:model="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Models"
              xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.ViewModels"
              x:Class="HairCarePlus.Client.Clinic.Features.Chat.Views.ChatPage"
+             x:DataType="vm:ChatViewModel"
             
              x:Name="thisPage"
              

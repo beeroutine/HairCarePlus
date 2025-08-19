@@ -17,6 +17,9 @@
             <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
             <converters:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBoolConverter" />
             <converters:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
+            <converters:IsSameItemConverter x:Key="IsSameItemConverter" />
+            <converters:IsNotSameItemConverter x:Key="IsNotSameItemConverter" />
+            <converters:NotBoolConverter x:Key="NotBoolConverter" />
         </ResourceDictionary>
     </ContentView.Resources>
 
@@ -88,55 +91,64 @@
             <Label Text="{Binding Date, StringFormat='{0:d MMMM yyyy}'}"
                        Style="{StaticResource InstagramDateStyle}" />
 
-                <!-- Comment blocks -->
-                <VerticalStackLayout Spacing="8">
-                    <!-- Doctor comment (tap to add/edit) -->
-                    <Border Style="{StaticResource DoctorCommentStyle}">
-                        <Border.Behaviors>
-                            <behaviors:VisualFeedbackBehavior />
-                        </Border.Behaviors>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer
-                                Command="{Binding Source={x:Reference thisView}, Path=CommentCommand}"
-                                CommandParameter="{Binding .}"
-                                Tapped="OnDoctorCommentTapped" />
-                        </Border.GestureRecognizers>
-                        <VerticalStackLayout Spacing="4">
-                            <HorizontalStackLayout Spacing="6">
-                                <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
-                                         WidthRequest="8"
-                                         HeightRequest="8"
-                                         VerticalOptions="Center"
-                                         InputTransparent="True" />
-                                <Label Text="Комментарий врача"
-                                       Style="{StaticResource CommentHeaderStyle}"
-                                       InputTransparent="True" />
-                            </HorizontalStackLayout>
-                            <Label Text="{Binding DoctorReportSummary, TargetNullValue='Добавить комментарий'}"
-                                   Style="{StaticResource CommentTextStyle}"
-                                   InputTransparent="True" />
-                        </VerticalStackLayout>
-                    </Border>
+                <!-- Doctor comment: single bordered block with view and edit modes -->
+                <Border Style="{StaticResource DoctorCommentStyle}">
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*">
+                        <!-- Header -->
+                        <HorizontalStackLayout Grid.Row="0" Spacing="6">
+                            <Ellipse Fill="{StaticResource DoctorIndicatorColor}"
+                                     WidthRequest="8"
+                                     HeightRequest="8"
+                                     VerticalOptions="Center" />
+                            <Label Text="Комментарий врача"
+                                   Style="{StaticResource CommentHeaderStyle}" />
+                        </HorizontalStackLayout>
 
-                    <!-- AI analysis (optional) -->
-                    <Border Style="{StaticResource AICommentStyle}"
-                            IsVisible="{Binding AiReport, Converter={StaticResource NullToBoolConverter}}">
-                        <VerticalStackLayout Spacing="4">
-                            <HorizontalStackLayout Spacing="6">
-                                <Ellipse Fill="{StaticResource AIIndicatorColor}"
-                                         WidthRequest="8"
-                                         HeightRequest="8"
-                                         VerticalOptions="Center" />
-                                <Label Text="AI анализ"
-                                       Style="{StaticResource CommentHeaderStyle}" />
-                            </HorizontalStackLayout>
-                            <Label Text="{Binding AiReport.Summary}"
-                                   Style="{StaticResource CommentTextStyle}"
-                                   MaxLines="3"
-                                   LineBreakMode="TailTruncation" />
-                        </VerticalStackLayout>
-                    </Border>
-                </VerticalStackLayout>
+                        <!-- Read-only text -->
+                        <Label Grid.Row="1"
+                               Text="{Binding DoctorReportSummary}"
+                               Style="{StaticResource CommentTextStyle}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                            Binding="{Binding Source={x:Reference InlineEditPanel}, Path=IsVisible}"
+                                            Value="True">
+                                    <Setter Property="IsVisible" Value="False" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDoctorCommentTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+
+                        <!-- Edit in place -->
+                        <Grid Grid.Row="1"
+                              x:Name="InlineEditPanel"
+                              x:DataType="{x:Null}"
+                              ColumnDefinitions="*,Auto"
+                              IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.CommentTarget, Converter={StaticResource IsSameItemConverter}, ConverterParameter={x:Reference thisView}}">
+                            <Editor x:Name="InlineEditor"
+                                   Grid.Column="0"
+                                   Text="{Binding Path=BindingContext.CommentText, Source={RelativeSource AncestorType={x:Type ContentPage}}, Mode=TwoWay}"
+                                   Placeholder="Добавить комментарий"
+                                   PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                                   TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                   BackgroundColor="Transparent"
+                                   FontSize="17"
+                                   AutoSize="TextChanges"
+                                   Focused="OnEditorFocused"
+                                   Keyboard="Chat" />
+                            <Button Grid.Column="1"
+                                    Text="↑"
+                                    FontSize="24"
+                                    FontAttributes="Bold"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                    IsEnabled="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSendEnabled}"
+                                    IsVisible="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.IsSendEnabled}"
+                                    Clicked="OnSendClicked" />
+                        </Grid>
+                    </Grid>
+                </Border>
         </VerticalStackLayout>
 
         </Grid>

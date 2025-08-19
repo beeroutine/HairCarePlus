@@ -76,10 +76,16 @@ namespace HairCarePlus.Client.Clinic.Common.Views
             var info = e.Info;
             canvas?.Clear();
 
+            // Guard against invalid sizes or NaN values to avoid CoreGraphics NaN warnings
+            if (info.Width <= 0 || info.Height <= 0) return;
+            if (double.IsNaN(Thickness) || double.IsInfinity(Thickness)) return;
+            if (double.IsNaN(_animatedProgress) || double.IsInfinity(_animatedProgress)) return;
+
             float cx = info.Width / 2f;
             float cy = info.Height / 2f;
             float thick = (float)Thickness;
             float radius = Math.Min(info.Width, info.Height) / 2f - thick / 2f;
+            if (radius <= 0) return;
 
             bool isDarkTheme = Application.Current?.RequestedTheme == AppTheme.Dark;
 
@@ -115,7 +121,7 @@ namespace HairCarePlus.Client.Clinic.Common.Views
                     IsAntialias = true,
                     StrokeCap = SKStrokeCap.Round
                 };
-                float sweep = 360f * (float)_animatedProgress;
+                float sweep = 360f * (float)Math.Clamp(_animatedProgress, 0d, 1d);
                 var rect = new SKRect(cx - radius, cy - radius, cx + radius, cy + radius);
                 canvas.DrawArc(rect, -90, sweep, false, arcPaint);
 

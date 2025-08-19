@@ -31,21 +31,15 @@ public sealed class AddPhotoCommentCommandHandler : IRequestHandler<AddPhotoComm
     {
         _logger.LogInformation("[PhotoReports] Adding comment for report {ReportId} by author {AuthorId}", request.PhotoReportId, request.AuthorId);
 
-        var report = await _db.PhotoReports.FindAsync(new object[] { request.PhotoReportId }, cancellationToken);
-        if (report is null)
-            throw new InvalidOperationException("PhotoReport not found");
-
-        var comment = new PhotoComment(request.PhotoReportId, request.AuthorId, request.Text);
-        _db.PhotoComments.Add(comment);
-        await _db.SaveChangesAsync(cancellationToken);
-
+        // Ephemeral behavior: do not require parent PhotoReport to exist on the server.
+        // Build DTO directly and enqueue + broadcast.
         var dto = new PhotoCommentDto
         {
-            Id = comment.Id,
-            PhotoReportId = comment.PhotoReportId,
-            AuthorId = comment.AuthorId,
-            Text = comment.Text,
-            CreatedAtUtc = comment.CreatedAtUtc
+            Id = Guid.NewGuid(),
+            PhotoReportId = request.PhotoReportId,
+            AuthorId = request.AuthorId,
+            Text = request.Text,
+            CreatedAtUtc = DateTimeOffset.UtcNow
         };
 
         // enqueue for clinic side
@@ -62,7 +56,7 @@ public sealed class AddPhotoCommentCommandHandler : IRequestHandler<AddPhotoComm
 
         await _events.PhotoCommentAdded(request.PatientId.ToString(), request.PhotoReportId.ToString(), dto);
 
-        _logger.LogInformation("[PhotoReports] Added comment {CommentId} to report {ReportId}", comment.Id, request.PhotoReportId);
+        _logger.LogInformation("[PhotoReports] Enqueued comment {CommentId} to report {ReportId}", dto.Id, request.PhotoReportId);
 
         return dto;
     }

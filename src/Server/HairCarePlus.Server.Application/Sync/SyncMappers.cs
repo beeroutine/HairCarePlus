@@ -8,16 +8,7 @@ namespace HairCarePlus.Server.Application.Sync;
 
 public static class SyncMappers
 {
-    public static PhotoComment ToEntity(this PhotoCommentDto dto)
-    {
-        return new PhotoComment(
-            dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
-            dto.AuthorId,
-            dto.PhotoReportId,
-            dto.Text,
-            dto.CreatedAtUtc
-        );
-    }
+    // Server no longer persists PhotoComment entities; mapper retained for legacy but unused
 
     public static PhotoCommentDto ToDto(this HairCarePlus.Server.Domain.ValueObjects.PhotoComment entity)
     {

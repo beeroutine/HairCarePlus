@@ -78,14 +78,39 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 
         // Persist locally for immediate UI reflection
         await using var db = _dbFactory.CreateDbContext();
-        db.PhotoComments.Add(new PhotoCommentEntity
+        // Upsert semantics for doctor's comment per report+author: replace last text
+        var existing = await db.PhotoComments
+            .Where(c => c.PhotoReportId == photoReportId && c.AuthorId == authorId)
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+        if (existing == null)
         {
-            PhotoReportId = photoReportId,
-            AuthorId = authorId,
-            Text = text,
-            CreatedAtUtc = dto.CreatedAtUtc
-        });
+            db.PhotoComments.Add(new PhotoCommentEntity
+            {
+                PhotoReportId = photoReportId,
+                AuthorId = authorId,
+                Text = text,
+                CreatedAtUtc = dto.CreatedAtUtc
+            });
+        }
+        else
+        {
+            existing.Text = text;
+            existing.CreatedAtUtc = dto.CreatedAtUtc;
+        }
+        // Also store brief summary on the parent report so feed builder can surface it later
+        var parentReport = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == photoReportId);
+        if (parentReport != null)
+        {
+            parentReport.DoctorComment = text;
+        }
         await db.SaveChangesAsync();
+
+        // Invalidate in-memory cache so next GetReportsAsync reflects the new comment
+        if (!string.IsNullOrEmpty(patientId))
+        {
+            _cache.Remove(patientId);
+        }
 
         // Enqueue to Outbox for reliable sync to server → patient
         await _outbox.AddAsync(new OutboxItemDto
@@ -96,8 +121,8 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
             ModifiedAtUtc = DateTime.UtcNow
         });
 
-        // Try to push immediately (non-blocking if it fails)
-        try { await _syncService.SynchronizeAsync(CancellationToken.None); } catch { }
+        // Trigger sync in background (do not await to avoid blocking UI editor)
+        try { _ = _syncService.SynchronizeAsync(CancellationToken.None); } catch { }
 
         return dto;
     }

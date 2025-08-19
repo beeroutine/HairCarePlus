@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="HairCarePlus.Client.Clinic.Features.Patient.Views.Components.CommentOverlayView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.ViewModels"
+             xmlns:conv="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             x:DataType="vm:PatientPageViewModel"
+             IsVisible="{Binding IsCommenting}">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <conv:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+            <conv:FilePathToImageSourceConverter x:Key="FilePathToImageSourceConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <!-- Dimmed backdrop -->
+    <Grid BackgroundColor="#80000000">
+        <!-- Close on backdrop tap -->
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Command="{Binding CancelCommentCommand}" />
+        </Grid.GestureRecognizers>
+
+        <!-- Centered card -->
+        <Border HorizontalOptions="Center"
+                VerticalOptions="Center"
+                WidthRequest="360"
+                MaximumWidthRequest="520"
+                BackgroundColor="{AppThemeBinding Light={StaticResource TaskCardBackgroundLight}, Dark={StaticResource TaskCardBackgroundDark}}"
+                StrokeShape="RoundRectangle 16"
+                StrokeThickness="0"
+                Shadow="{OnPlatform iOS={StaticResource SmallShadow}}">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*">
+                <!-- Photo preview (first photo of target set) -->
+                <Border Grid.Row="0" StrokeThickness="0" StrokeShape="RoundRectangle 16">
+                    <Image Source="{Binding CommentTarget.Photos[0].LocalPath, Converter={StaticResource FilePathToImageSourceConverter}}"
+                           Aspect="AspectFill"
+                           HeightRequest="240" />
+                </Border>
+
+                <!-- Input area styled like Chat input -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Padding="12" BackgroundColor="Transparent">
+                    <Border Grid.Column="0"
+                           BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                           Padding="10,6"
+                           StrokeShape="RoundRectangle 18"
+                           StrokeThickness="0"
+                           MinimumHeightRequest="40"
+                           MaximumHeightRequest="120">
+                        <Editor Text="{Binding CommentText, Mode=TwoWay}"
+                                Placeholder="Добавить комментарий"
+                                PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                                TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                                BackgroundColor="Transparent"
+                                FontSize="17"
+                                AutoSize="TextChanges"
+                                Keyboard="Chat"
+                                x:Name="CommentEditor" />
+                    </Border>
+                    <Button Grid.Column="1"
+                            Text="↑"
+                            FontSize="24"
+                            FontAttributes="Bold"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                            IsEnabled="{Binding IsSendEnabled}"
+                            Command="{Binding SendCommentCommand}" />
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>
+
+

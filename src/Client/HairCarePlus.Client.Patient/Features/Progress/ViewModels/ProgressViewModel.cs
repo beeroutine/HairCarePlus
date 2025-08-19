@@ -285,21 +285,17 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSaved
     // При приходе нового комментария от клиники обновляем соответствующий день
     public void Receive(PhotoCommentSyncedMessage msg)
     {
-        var dateLocal = DateOnly.FromDateTime(msg.Comment.CreatedAtUtc.LocalDateTime);
-        var item = Feed.FirstOrDefault(f => f.Date == dateLocal);
-        if(item==null) return;
+        // Locate feed item by report id instead of date to avoid mismatches with time zones
+        var reportId = msg.Comment.PhotoReportId;
+        // Find the item that contains this photo report
+        var item = Feed.FirstOrDefault(f => f.Photos.Any(p => string.Equals(p.ReportId, reportId, StringComparison.OrdinalIgnoreCase)));
+        if (item == null) return;
 
-        item.DoctorReportSummary = msg.Comment.Text;
-
-        // The UI will not update if we just mutate a property of an item.
-        // We need to re-create the collection or replace the item to trigger a UI refresh.
         var index = Feed.IndexOf(item);
         if (index != -1)
         {
-            // To be safe, create a new list and re-assign
-            var newList = new ObservableCollection<ProgressFeedItem>(Feed);
-            newList[index] = item with { DoctorReportSummary = msg.Comment.Text };
-            Feed = newList;
+            var updated = item with { DoctorReportSummary = msg.Comment.Text };
+            Feed[index] = updated;
         }
     }
 } 

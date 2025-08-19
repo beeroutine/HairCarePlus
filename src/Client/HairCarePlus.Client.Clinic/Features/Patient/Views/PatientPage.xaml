@@ -66,7 +66,7 @@
     </ContentPage.Resources>
 
     <!-- Reworked layout: Progress-like structure with independent scrolling feed -->
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16" Padding="20,0,20,0">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16" Padding="20,0,20,0">
         <!-- Header section (navigation + patient details) -->
         <VerticalStackLayout Grid.Row="0" Spacing="24">
             <!-- Navigation Header -->
@@ -138,11 +138,14 @@
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
-                            <commonViews:ProgressCardView CommentCommand="{Binding Source={x:Reference thisPage}, Path=BindingContext.StartCommentCommand}" />
+                            <commonViews:ProgressCardView
+                                CommentCommand="{Binding Path=BindingContext.StartCommentCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" />
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
             </RefreshView>
+
+        <!-- Comment overlay no longer used: inline editor lives inside each card -->
     </Grid>
     <!-- End reworked layout -->
 </ContentPage> 
