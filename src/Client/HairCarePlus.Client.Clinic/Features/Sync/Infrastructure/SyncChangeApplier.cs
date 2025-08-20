@@ -130,7 +130,9 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
 
         private int ApplyRestriction(AppDbContext db, RestrictionDto dto, Dictionary<string, Domain.Entities.RestrictionEntity> existingRestrictions)
         {
-            var id = dto.Id.ToString();
+            var id = dto.Id != System.Guid.Empty
+                ? dto.Id.ToString()
+                : $"{dto.PatientId:N}-{(int)dto.IconType}-{dto.StartUtc.Date:yyyyMMdd}-{dto.EndUtc.Date:yyyyMMdd}";
             if (existingRestrictions.TryGetValue(id, out var entity))
             {
                 entity.Type = (int)dto.IconType;

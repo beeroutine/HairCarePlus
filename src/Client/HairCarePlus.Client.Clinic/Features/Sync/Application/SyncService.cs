@@ -312,7 +312,10 @@ public class SyncService : ISyncService
                                 var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.RestrictionDto>(packet.PayloadJson);
                                 if (dto != null)
                                 {
-                                    var id = dto.Id.ToString();
+                                    // Use deterministic key when Id is missing to avoid collapsing multiple items
+                                    var id = dto.Id != Guid.Empty
+                                        ? dto.Id.ToString()
+                                        : $"{dto.PatientId:N}-{(int)dto.IconType}-{dto.StartUtc.Date:yyyyMMdd}-{dto.EndUtc.Date:yyyyMMdd}";
                                     // skip duplicate within same batch
                                     if (!handledRestrictionIds.Add(id))
                                         break;
@@ -338,6 +341,9 @@ public class SyncService : ISyncService
                                     else
                                     {
                                         entity.IsActive = dto.IsActive;
+                                        entity.Type = (int)dto.IconType;
+                                        entity.StartUtc = dto.StartUtc;
+                                        entity.EndUtc = dto.EndUtc;
                                     }
                                     // ACK by DeliveryQueue packet Id
                                     _pendingAckIds.Add(packet.Id);

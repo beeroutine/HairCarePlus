@@ -123,6 +123,14 @@
                 Value="{AppThemeBinding Light={StaticResource Gray700}, Dark={StaticResource Gray300}}" />
     </Style>
 
+    <!-- Restriction label style (match Patient app) -->
+    <Style x:Key="RestrictionLabelStyle" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor"
+                Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray600}}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+    </Style>
+
     <!-- Dock button uses shared PrimaryButton style -->
     <Style x:Key="DockButtonStyle" TargetType="Button" BasedOn="{StaticResource PrimaryButton}" />
 

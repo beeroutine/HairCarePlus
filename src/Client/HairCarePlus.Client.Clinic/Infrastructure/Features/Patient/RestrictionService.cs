@@ -27,11 +27,11 @@ public sealed class RestrictionService : IRestrictionService
         await using var db = await _dbFactory.CreateDbContextAsync();
         var entities = await db.Restrictions
             .Where(r => r.PatientId == patientId && r.IsActive)
+            .OrderBy(r => r.EndUtc)
             .ToListAsync();
 
+        // 1:1 retransmission of patient's active restrictions (no grouping/collapsing)
         var list = entities
-            .GroupBy(e => e.Type) // collapse by type, keep the one with nearest deadline
-            .Select(g => g.OrderBy(e => (e.EndUtc.Date - DateTime.UtcNow.Date).Days).First())
             .Select(e => new Models.RestrictionDto
             {
                 IconType = MapToIconType(e.Type),

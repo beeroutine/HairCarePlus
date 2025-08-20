@@ -99,21 +99,9 @@
             </Grid>
         </VerticalStackLayout>
 
-        <!-- Restrictions timers -->
-        <ScrollView Grid.Row="1"
-                    Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never"
-                    Padding="0"
-                        HeightRequest="90">
-                <CollectionView x:Name="RestrictionCollectionView"
-                                ItemsSource="{Binding VisibleRestrictionItems}"
-                                ItemTemplate="{StaticResource RestrictionItemTemplateSelector}"
-                                SelectionMode="None">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
-                    </CollectionView.ItemsLayout>
-                </CollectionView>
-            </ScrollView>
+        <!-- Restrictions timers (reusable component) -->
+        <commonViews:RestrictionStrip Grid.Row="1"
+                                      Items="{Binding VisibleRestrictionItems}" />
 
         <!-- Progress feed (independent scroll) -->
         <RefreshView Grid.Row="2"
