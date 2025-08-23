@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="HairCarePlus.Client.Clinic.Common.Views.ChatMessageBubble"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Clinic.Common.Behaviors"
+             xmlns:shared="clr-namespace:HairCarePlus.Shared.Communication;assembly=HairCarePlus.Shared.Communication"
+             xmlns:model="clr-namespace:HairCarePlus.Client.Clinic.Features.Chat.Models"
+             xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             x:Name="Root"
+             x:DataType="model:ChatMessage"
+             BindingContext="{Binding Source={x:Reference Root}, Path=Message}"
+             >
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid Padding="4,4">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <SwipeView>
+            <SwipeView.RightItems>
+                <SwipeItems Mode="Execute" />
+            </SwipeView.RightItems>
+            <Border x:Name="bubbleBorder"
+                    Grid.Column="0"
+                    BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                    HorizontalOptions="Start"
+                    Margin="8,6,80,6"
+                    StrokeShape="RoundRectangle 18"
+                    StrokeThickness="0"
+                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    Padding="12,8">
+                <Border.Triggers>
+                    <!-- Current user (doctor) alignment/colors -->
+                    <DataTrigger TargetType="Border" Binding="{Binding SenderId}" Value="doctor">
+                        <Setter Property="Grid.Column" Value="1" />
+                        <Setter Property="HorizontalOptions" Value="End" />
+                        <Setter Property="Margin" Value="80,6,8,6" />
+                        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <Border.Behaviors>
+                    <behaviors:VisualFeedbackBehavior />
+                </Border.Behaviors>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer
+                        Command="{Binding Source={x:Reference Root}, Path=ReplyCommand}"
+                        CommandParameter="{Binding .}" />
+                </Border.GestureRecognizers>
+
+                <VerticalStackLayout Spacing="2">
+                    <!-- Reply Preview -->
+                    <Grid IsVisible="{Binding ReplyTo, Converter={StaticResource IsNotNullConverter}}"
+                          Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <BoxView Grid.Column="0"
+                                 BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
+                                 CornerRadius="2"
+                                 Margin="0,2,0,2"
+                                 HorizontalOptions="Start" />
+
+                        <Border Grid.Column="1"
+                               Padding="6,3"
+                               StrokeShape="RoundRectangle 8"
+                               BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                               Opacity="0.85"
+                               StrokeThickness="0">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border">
+                                    <DataTrigger.Binding>
+                                        <Binding Path="ReplyTo.SenderId" />
+                                    </DataTrigger.Binding>
+                                    <DataTrigger.Value>doctor</DataTrigger.Value>
+                                    <Setter Property="Grid.Column" Value="1" />
+                                    <Setter Property="HorizontalOptions" Value="End" />
+                                    <Setter Property="Margin" Value="80,6,8,6" />
+                                    <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <StackLayout Orientation="Vertical" Spacing="2">
+                                <StackLayout Orientation="Horizontal" Spacing="3">
+                                    <Image Source="{FontImageSource FontFamily=MaterialIcons, Glyph=&#xe15e;, Size=12, Color={AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}}"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding ReplyTo.SenderId, StringFormat='Reply to {0}'}"
+                                           TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
+                                           FontSize="10"
+                                           FontAttributes="Bold"
+                                           VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding ReplyTo.SenderId}" Value="doctor">
+                                                <Setter Property="Text" Value="Reply to your message" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </StackLayout>
+                                <Label Text="{Binding ReplyTo.Content}"
+                                       TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
+                                       FontSize="11"
+                                       MaxLines="1"
+                                       LineBreakMode="TailTruncation" />
+                            </StackLayout>
+                        </Border>
+                    </Grid>
+
+                    <!-- Text content -->
+                    <Label Text="{Binding Content}"
+                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                           FontSize="17"
+                           Margin="0,4,0,0"
+                           LineBreakMode="WordWrap"
+                           LineHeight="1.25"
+                           VerticalOptions="Center">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding SenderId}" Value="doctor">
+                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+
+                    <!-- Image content -->
+                    <Image Source="{Binding LocalAttachmentPath}"
+                           Aspect="AspectFill"
+                           HeightRequest="200"
+                           IsVisible="False"
+                           Margin="0,4,0,0">
+                        <Image.Triggers>
+                            <DataTrigger TargetType="Image" Binding="{Binding Type}" Value="{x:Static shared:MessageType.Image}">
+                                <Setter Property="IsVisible" Value="True" />
+                            </DataTrigger>
+                        </Image.Triggers>
+                    </Image>
+
+                    <Label Text="{Binding Timestamp, StringFormat='{0:HH:mm}'}"
+                           TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}"
+                           FontSize="11"
+                           Opacity="0.8"
+                           HorizontalOptions="End" />
+                </VerticalStackLayout>
+            </Border>
+        </SwipeView>
+    </Grid>
+</ContentView>
+
+

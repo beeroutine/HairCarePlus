@@ -215,6 +215,27 @@ public class BatchSyncCommandHandler : IRequestHandler<BatchSyncCommand, BatchSy
         // If request carries PatientId (e.g., Patient app or Clinic scoped to a patient),
         // the repository will filter accordingly; otherwise falls back to all pending for receiver
         var pending = await _dq.GetPendingForReceiverAsync(req.PatientId, receiverMask);
+        // Filter out obsolete PhotoComment packets that don't target known sets, if client provided KnownSetIds
+        if (req.KnownSetIds != null && req.KnownSetIds.Count > 0)
+        {
+            try
+            {
+                var known = req.KnownSetIds.ToHashSet();
+                pending = pending.Where(p =>
+                {
+                    if (!string.Equals(p.EntityType, "PhotoComment", StringComparison.OrdinalIgnoreCase)) return true;
+                    try
+                    {
+                        var dto = System.Text.Json.JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(p.PayloadJson);
+                        if (dto == null) return false;
+                        // Keep only comments explicitly tied to a known set. Legacy packets without SetId are dropped.
+                        return dto.SetId.HasValue && known.Contains(dto.SetId.Value);
+                    }
+                    catch { return true; }
+                }).ToList();
+            }
+            catch { }
+        }
 
         var packetsDto = pending.Select(p => new DeliveryPacketDto
         {

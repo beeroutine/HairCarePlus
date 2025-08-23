@@ -259,7 +259,20 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
             var activeRestrictions = await _restrictionService.GetActiveRestrictionsAsync(cancellationToken);
             _logger.LogInformation("Patient Sync: active restrictions fetched = {Count}", activeRestrictions.Count);
 
-            var restrictionDtos = activeRestrictions.Select(r => new RestrictionDto
+            // Skip sending identical restriction snapshot repeatedly by comparing to last sent hash
+            // Build a stable snapshot key from available fields: IconType + DaysRemaining + TotalDays
+            var snapshotKey = $"{activeRestrictions.Count}|" + string.Join(
+                ",",
+                activeRestrictions
+                    .OrderBy(r => (int)r.IconType)
+                    .Select(r => $"{(int)r.IconType}:{r.DaysRemaining}:{r.TotalDays}")
+            );
+            var lastKey = Microsoft.Maui.Storage.Preferences.Get("restrictions:last-key", string.Empty);
+            bool restrictionsChanged = snapshotKey != lastKey;
+            if (restrictionsChanged)
+                Microsoft.Maui.Storage.Preferences.Set("restrictions:last-key", snapshotKey);
+
+            var restrictionDtos = restrictionsChanged ? activeRestrictions.Select(r => new RestrictionDto
             {
                 Id = Guid.Empty,
                 PatientId = _patientId,
@@ -268,7 +281,7 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 StartUtc = DateTime.UtcNow.Date.AddDays(-(r.TotalDays - r.DaysRemaining)),
                 EndUtc = DateTime.UtcNow.Date.AddDays(r.DaysRemaining - 1),
                 IsActive = r.DaysRemaining > 0
-            }).ToList();
+            }).ToList() : new List<RestrictionDto>();
 
             var req = new BatchSyncRequestDto
             {
@@ -276,6 +289,12 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 PatientId = _patientId,
                 ClientId = $"patient-{_patientId}",
                 LastSyncVersion = lastVersion,
+                KnownSetIds = await db.PhotoReports
+                                       .Where(r => !string.IsNullOrEmpty(r.SetId))
+                                       .Select(r => r.SetId!)
+                                       .Distinct()
+                                       .Select(s => Guid.Parse(s))
+                                       .ToListAsync(cancellationToken),
                 PhotoReportHeaders = headers,
                 PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
                 PhotoReportSets = photoReportSetsToSend.Count > 0 ? photoReportSetsToSend : null,
@@ -285,6 +304,13 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                 Restrictions = restrictionDtos.Count > 0 ? restrictionDtos : null
             };
 
+            // Log details of PhotoReports being sent
+            foreach (var report in photoReportsToSend)
+            {
+                _logger.LogInformation("[PATIENT-SYNC] Sending PhotoReport: Id={ReportId}, PatientId={PatientId}",
+                    report.Id, report.PatientId);
+            }
+            
             _logger.LogInformation(
                 "Patient Sync: sending request. Reports={Reports}, Comments={Comments}, Chat={Chat}, Restrictions={Restrictions}, AckIds={Ack}",
                 photoReportsToSend.Count, photoCommentsToSend.Count, chatMessagesToSend.Count, restrictionDtos.Count, _pendingAckIds.Count);
@@ -293,12 +319,12 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
 
             if (response == null)
             {
-                _logger.LogWarning("Patient Sync: response is null (network error)");
+                _logger.LogWarning("[PATIENT-SYNC] Response is null (network error)");
                 return;
             }
 
             _logger.LogInformation(
-                "Patient Sync: received response. PhotoReports={Reports}, Comments={Comments}, Chat={Chat}, Restrictions={Restrictions}, Packets={Packets}",
+                "[PATIENT-SYNC] Received sync response: PhotoReports={Reports}, Comments={Comments}, Chat={Chat}, Restrictions={Restrictions}, Packets={Packets}",
                 response.PhotoReports?.Count ?? 0,
                 response.PhotoComments?.Count ?? 0,
                 response.ChatMessages?.Count ?? 0,
@@ -351,6 +377,102 @@ namespace HairCarePlus.Client.Patient.Features.Sync.Application
                             catch (Exception ex)
                             {
                                 _logger.LogWarning(ex, "Failed to process ChatMessage packet {PacketId}", p.Id);
+                            }
+                            break;
+                        case "PhotoComment":
+                            try
+                            {
+                                _logger.LogInformation("[PATIENT-SYNC] Processing PhotoComment packet: Id={PacketId}", p.Id);
+                                var commentDto = JsonSerializer.Deserialize<PhotoCommentDto>(p.PayloadJson);
+                                if (commentDto != null)
+                                {
+                                    _logger.LogInformation("[PATIENT-SYNC] PhotoComment details: ReportId={ReportId}, AuthorId={AuthorId}, Text={Text}, CreatedAt={CreatedAt}",
+                                        commentDto.PhotoReportId, commentDto.AuthorId, 
+                                        commentDto.Text?.Length > 50 ? commentDto.Text.Substring(0, 50) + "..." : commentDto.Text,
+                                        commentDto.CreatedAtUtc);
+                                    var parentId = commentDto.PhotoReportId.ToString();
+                                    // Log all available reports for debugging
+                                    var allReports = await db2.PhotoReports.Select(r => new { r.Id, r.SetId, r.Zone }).ToListAsync(cancellationToken);
+                                    _logger.LogInformation("[PATIENT-SYNC] Available PhotoReports in DB: {Reports}", 
+                                        string.Join(", ", allReports.Select(r => $"Id={r.Id}, SetId={r.SetId}, Zone={r.Zone}")));
+                                    
+                                    // Ensure parent report exists; if not, try resolve by SetId+Zone mapping
+                                    var parent = await db2.PhotoReports.FirstOrDefaultAsync(r => r.Id == parentId, cancellationToken);
+                                    if (parent == null && commentDto.SetId.HasValue)
+                                    {
+                                        _logger.LogInformation("[PATIENT-SYNC] Parent not found by ID {ParentId}, trying SetId={SetId}, Type={Type}", 
+                                            parentId, commentDto.SetId.Value, commentDto.Type);
+                                        var desiredZone = commentDto.Type switch
+                                        {
+                                            PhotoType.FrontView => PhotoZone.Front,
+                                            PhotoType.TopView => PhotoZone.Top,
+                                            PhotoType.BackView => PhotoZone.Back,
+                                            _ => PhotoZone.Front
+                                        };
+                                        parent = await db2.PhotoReports
+                                            .Where(r => r.SetId == commentDto.SetId.Value.ToString() && r.Zone == desiredZone)
+                                            .OrderBy(r => r.CaptureDate)
+                                            .FirstOrDefaultAsync(cancellationToken);
+                                        if (parent != null)
+                                        {
+                                            parentId = parent.Id;
+                                            _logger.LogInformation("[PATIENT-SYNC] Resolved parent report via SetId+Zone: {ParentId}", parentId);
+                                        }
+                                    }
+                                    if (parent != null)
+                                    {
+                                        var duplicate = await db2.PhotoComments.AnyAsync(
+                                            c => c.PhotoReportId == parentId && c.AuthorId == commentDto.AuthorId.ToString() && c.Text == commentDto.Text && c.CreatedAtUtc == commentDto.CreatedAtUtc,
+                                            cancellationToken);
+                                        _logger.LogDebug("[PATIENT-SYNC] Comment is duplicate: {IsDuplicate}", duplicate);
+                                        
+                                        if (!duplicate)
+                                        {
+                                            // Avoid ORDER BY DateTimeOffset in SQLite: fetch and sort in memory
+                                            var existingList = await db2.PhotoComments
+                                                .Where(c => c.PhotoReportId == parentId && c.AuthorId == commentDto.AuthorId.ToString())
+                                                .ToListAsync(cancellationToken);
+                                            var existing = existingList
+                                                .OrderByDescending(c => c.CreatedAtUtc)
+                                                .FirstOrDefault();
+                                            if (existing == null)
+                                            {
+                                                _logger.LogInformation("[PATIENT-SYNC] Adding new PhotoComment for report {ParentId}", parentId);
+                                                db2.PhotoComments.Add(new Features.Sync.Domain.Entities.PhotoCommentEntity
+                                                {
+                                                    PhotoReportId = parentId,
+                                                    AuthorId = commentDto.AuthorId.ToString(),
+                                                    Text = commentDto.Text,
+                                                    CreatedAtUtc = commentDto.CreatedAtUtc
+                                                });
+                                            }
+                                            else
+                                            {
+                                                _logger.LogInformation("[PATIENT-SYNC] Updating existing PhotoComment for report {ParentId}", parentId);
+                                                existing.Text = commentDto.Text;
+                                                existing.CreatedAtUtc = commentDto.CreatedAtUtc;
+                                            }
+                                            // Mirror on parent report so feed can show latest doctor comment
+                                            parent.DoctorComment = commentDto.Text;
+                                            _logger.LogInformation("[PATIENT-SYNC] Updated DoctorComment on PhotoReport {ParentId}", parentId);
+                                        }
+                                        // ACK only when we have applied the comment (and updated parent)
+                                        _pendingAckIds.Add(p.Id);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning("[PATIENT-SYNC] Parent report {ParentId} not found, skipping comment", parentId);
+                                        // do NOT ACK here to keep packet for next cycle after photos arrive
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("[PATIENT-SYNC] PhotoComment deserialization returned null for packet {PacketId}", p.Id);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "[PATIENT-SYNC] Failed to process PhotoComment packet {PacketId}", p.Id);
                             }
                             break;
                     }

@@ -81,6 +81,9 @@ public class SyncService : ISyncService
             var photoReportsToSend = new List<HairCarePlus.Shared.Communication.PhotoReportDto>();
             var photoCommentsToSend = new List<HairCarePlus.Shared.Communication.PhotoCommentDto>();
             var chatMessagesToSend = new List<HairCarePlus.Shared.Communication.ChatMessageDto>();
+            
+            // Determine scope (patient) for this batch – will be inferred from content
+            Guid patientScope = Guid.Empty;
 
             foreach (var item in pendingItems)
             {
@@ -100,7 +103,26 @@ public class SyncService : ISyncService
                         {
                             var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(item.PayloadJson);
                             if (dto != null)
+                            {
+                                // If patient scope is not yet resolved, try to infer via parent report
+                                if (Guid.Empty == patientScope)
+                                {
+                                    try
+                                    {
+                                        var prId = dto.PhotoReportId.ToString();
+                                        var parent = await db.PhotoReports.AsNoTracking().FirstOrDefaultAsync(p => p.Id == prId, cancellationToken);
+                                        if (parent != null && Guid.TryParse(parent.PatientId, out var pid)) 
+                                        {
+                                            patientScope = pid;
+                                            _logger.LogInformation("[CLINIC-SYNC] Resolved PatientScope {PatientId} for PhotoComment via parent report", pid);
+                                        }
+                                    }
+                                    catch { }
+                                }
+                                _logger.LogInformation("[CLINIC-SYNC] Preparing to send PhotoComment: ReportId={ReportId}, AuthorId={AuthorId}, PatientScope={PatientScope}",
+                                    dto.PhotoReportId, dto.AuthorId, patientScope);
                                 photoCommentsToSend.Add(dto);
+                            }
                         }
                         catch { /* ignore */ }
                         break;
@@ -114,6 +136,54 @@ public class SyncService : ISyncService
                         catch { }
                         break;
                 }
+            }
+
+            // Ensure parent PhotoReports are included when sending PhotoComments so the patient can resolve parents
+            if (photoCommentsToSend.Count > 0)
+            {
+                try
+                {
+                    var parentIds = photoCommentsToSend
+                        .Select(c => c.PhotoReportId.ToString())
+                        .Where(id => !string.IsNullOrWhiteSpace(id))
+                        .Distinct()
+                        .ToList();
+                    if (parentIds.Count > 0)
+                    {
+                        var existingReportIds = new HashSet<string>(photoReportsToSend.Select(r => r.Id.ToString()));
+                        var parents = await db.PhotoReports.Include(r => r.Comments)
+                                                           .Where(r => parentIds.Contains(r.Id))
+                                                           .ToListAsync(cancellationToken);
+                        foreach (var rep in parents)
+                        {
+                            var idStr = rep.Id;
+                            if (existingReportIds.Contains(idStr)) continue;
+
+                            Guid.TryParse(rep.Id, out var repId);
+                            Guid.TryParse(rep.PatientId, out var pid);
+
+                            var dto = new HairCarePlus.Shared.Communication.PhotoReportDto
+                            {
+                                Id = repId,
+                                PatientId = pid,
+                                ImageUrl = rep.ImageUrl,
+                                Date = rep.Date,
+                                Notes = rep.DoctorComment ?? string.Empty,
+                                Comments = rep.Comments.Select(c => new HairCarePlus.Shared.Communication.PhotoCommentDto
+                                {
+                                    PhotoReportId = Guid.TryParse(c.PhotoReportId, out var prGuid) ? prGuid : Guid.Empty,
+                                    AuthorId = Guid.TryParse(c.AuthorId, out var auGuid) ? auGuid : Guid.Empty,
+                                    Text = c.Text,
+                                    CreatedAtUtc = c.CreatedAtUtc
+                                }).ToList()
+                            };
+
+                            photoReportsToSend.Add(dto);
+                            existingReportIds.Add(idStr);
+                        }
+                    }
+                }
+                catch { /* best-effort */ }
             }
 
             // prepare headers (clinic should not reconstruct history from server; headers are optional)
@@ -136,11 +206,31 @@ public class SyncService : ISyncService
             // Snapshot ACKs included in the first request
             var firstAckBatch = _pendingAckIds.ToList();
 
+            // Finalize patient scope if not yet determined
+            try
+            {
+                if (patientScope == Guid.Empty && photoCommentsToSend.Count > 0)
+                {
+                    var firstComment = photoCommentsToSend[0];
+                    var prId = firstComment.PhotoReportId.ToString();
+                    var parent = await db.PhotoReports.AsNoTracking().FirstOrDefaultAsync(p => p.Id == prId, cancellationToken);
+                    if (parent != null && Guid.TryParse(parent.PatientId, out var pid)) patientScope = pid;
+                }
+                else if (photoReportsToSend.Count > 0)
+                {
+                    // If we ever send reports from Clinic, take their patient id
+                    var firstReport = photoReportsToSend[0];
+                    patientScope = firstReport.PatientId;
+                }
+            }
+            catch { }
+
             var request = new BatchSyncRequestDto
             {
                 DeviceId = _deviceId,
                 ClientId = "clinic-app", // TODO: unique device id
                 LastSyncVersion = lastVersion,
+                PatientId = patientScope,
                  PhotoReportHeaders = reportHeaders,
                 PhotoReports = photoReportsToSend.Count > 0 ? photoReportsToSend : null,
                 PhotoComments = photoCommentsToSend,
@@ -149,7 +239,17 @@ public class SyncService : ISyncService
             };
 
             var response = await _syncClient.PushAsync(request, cancellationToken);
-            if (response == null) return; // network error
+            if (response == null) 
+            {
+                _logger.LogWarning("[CLINIC-SYNC] Sync response was null (network error)");
+                return; // network error
+            }
+            
+            _logger.LogInformation("[CLINIC-SYNC] Received sync response: PhotoReports={PhotoReports}, Restrictions={Restrictions}, Packets={Packets}, PhotoComments={PhotoComments}",
+                response.PhotoReports?.Count ?? 0,
+                response.Restrictions?.Count ?? 0,
+                response.Packets?.Count ?? 0,
+                response.PhotoComments?.Count ?? 0);
 
             // First request succeeded: remove sent ACKs from persistent store and in-memory list
             if (firstAckBatch.Count > 0)
@@ -195,6 +295,8 @@ public class SyncService : ISyncService
                                             SetId = dto.SetId?.ToString(),
                                             ImageUrl = dto.ImageUrl,
                                             Date = dto.Date,
+                                            // При создании можно проставить Notes, чтобы отобразить сводку,
+                                            // но дальше не перезаписывать её входящими данными из пациента.
                                             DoctorComment = dto.Notes ?? string.Empty,
                                             Type = dto.Type
                                         };
@@ -251,7 +353,8 @@ public class SyncService : ISyncService
                                     bool allCached = true;
                                     foreach (var it in set.Items)
                                     {
-                                        var id = Guid.NewGuid().ToString();
+                                        // ВАЖНО: используем ID из PhotoReportItemDto, чтобы он совпадал с ID на стороне пациента!
+                                        var id = it.Id?.ToString() ?? Guid.NewGuid().ToString();
                                         var entity = new Domain.Entities.PhotoReportEntity
                                         {
                                             Id = id,
@@ -259,6 +362,7 @@ public class SyncService : ISyncService
                                             SetId = set.Id.ToString(),
                                             ImageUrl = it.ImageUrl,
                                             Date = set.Date,
+                                            // При создании допускаем заполнение Notes
                                             DoctorComment = set.Notes ?? string.Empty,
                                             Type = it.Type
                                         };
@@ -307,53 +411,11 @@ public class SyncService : ISyncService
                             }
                             break;
                         case "Restriction":
-                            try
-                            {
-                                var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.RestrictionDto>(packet.PayloadJson);
-                                if (dto != null)
-                                {
-                                    // Use deterministic key when Id is missing to avoid collapsing multiple items
-                                    var id = dto.Id != Guid.Empty
-                                        ? dto.Id.ToString()
-                                        : $"{dto.PatientId:N}-{(int)dto.IconType}-{dto.StartUtc.Date:yyyyMMdd}-{dto.EndUtc.Date:yyyyMMdd}";
-                                    // skip duplicate within same batch
-                                    if (!handledRestrictionIds.Add(id))
-                                        break;
-
-                                    // Check ChangeTracker first
-                                    var tracked = db2.ChangeTracker.Entries<Domain.Entities.RestrictionEntity>()
-                                                             .FirstOrDefault(e => e.Entity.Id == id)?.Entity;
-
-                                    var entity = tracked ?? await db2.Restrictions.FirstOrDefaultAsync(r => r.Id == id);
-                                    if (entity == null)
-                                    {
-                                        entity = new Domain.Entities.RestrictionEntity
-                                        {
-                                            Id = id,
-                                            PatientId = dto.PatientId.ToString(),
-                                            Type = (int)dto.IconType,
-                                            StartUtc = dto.StartUtc,
-                                            EndUtc = dto.EndUtc,
-                                            IsActive = dto.IsActive
-                                        };
-                                        await db2.Restrictions.AddAsync(entity, cancellationToken);
-                                    }
-                                    else
-                                    {
-                                        entity.IsActive = dto.IsActive;
-                                        entity.Type = (int)dto.IconType;
-                                        entity.StartUtc = dto.StartUtc;
-                                        entity.EndUtc = dto.EndUtc;
-                                    }
-                                    // ACK by DeliveryQueue packet Id
-                                    _pendingAckIds.Add(packet.Id);
-                                    try { await _ackStore.AddAsync(packet.Id); } catch { }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Failed to process Restriction packet {PacketId}", packet.Id);
-                            }
+                            // Restriction packets are handled by SyncChangeApplier.ApplyAsync(response)
+                            // Just ACK the packet here to prevent re-delivery
+                            _logger.LogInformation("[CLINIC-SYNC] ACKing Restriction packet {PacketId} (will be processed by SyncChangeApplier)", packet.Id);
+                            _pendingAckIds.Add(packet.Id);
+                            try { await _ackStore.AddAsync(packet.Id); } catch { }
                             break;
                         case "ChatMessage":
                             try
@@ -383,9 +445,14 @@ public class SyncService : ISyncService
                         case "PhotoComment":
                             try
                             {
+                                _logger.LogInformation("[CLINIC-SYNC] Processing incoming PhotoComment packet {PacketId}", packet.Id);
                                 var dto = JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoCommentDto>(packet.PayloadJson);
                                 if (dto != null)
                                 {
+                                    _logger.LogInformation("[CLINIC-SYNC] PhotoComment details: ReportId={ReportId}, AuthorId={AuthorId}, Text={Text}",
+                                        dto.PhotoReportId, dto.AuthorId, 
+                                        dto.Text?.Length > 50 ? dto.Text.Substring(0, 50) + "..." : dto.Text);
+                                    
                                     // Persist comment locally
                                     var comment = new HairCarePlus.Client.Clinic.Features.Sync.Domain.Entities.PhotoCommentEntity
                                     {
@@ -400,6 +467,7 @@ public class SyncService : ISyncService
                                     if (parent != null && string.IsNullOrWhiteSpace(parent.DoctorComment))
                                     {
                                         parent.DoctorComment = dto.Text;
+                                        _logger.LogDebug("[CLINIC-SYNC] Updated DoctorComment on PhotoReport {ReportId}", dto.PhotoReportId);
                                     }
                                     // ACK by DeliveryQueue packet Id
                                     _pendingAckIds.Add(packet.Id);

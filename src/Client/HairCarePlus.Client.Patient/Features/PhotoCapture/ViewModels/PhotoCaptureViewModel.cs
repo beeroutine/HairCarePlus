@@ -99,9 +99,9 @@ public partial class PhotoCaptureViewModel : ObservableObject
     [RelayCommand]
     private void ToggleFacing()
     {
-        _logger.LogInformation($"ToggleFacingCommand called. Current facing: {_facing}");
+        _logger.LogInformation($"ToggleFacingCommand called. Current facing: {Facing}");
         Facing = Facing == CameraFacing.Front ? CameraFacing.Back : CameraFacing.Front;
-        _logger.LogInformation($"New facing: {_facing}");
+        _logger.LogInformation($"New facing: {Facing}");
         // TODO: publish message or invoke service to switch actual camera in view.
     }
 
@@ -200,6 +200,43 @@ public partial class PhotoCaptureViewModel : ObservableObject
                 return;
             }
 
+            // Подготовим набор (Session) заранее, чтобы записать SetId в локальную запись
+            const string activeSetKey = "photo-set:active";
+            HairCarePlus.Shared.Communication.PhotoReportSetDto set;
+            if (Microsoft.Maui.Storage.Preferences.ContainsKey(activeSetKey))
+            {
+                var raw = Microsoft.Maui.Storage.Preferences.Get(activeSetKey, string.Empty);
+                set = string.IsNullOrEmpty(raw)
+                    ? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc }
+                    : System.Text.Json.JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(raw) ?? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc };
+            }
+            else
+            {
+                set = new HairCarePlus.Shared.Communication.PhotoReportSetDto
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = _profileService.PatientId,
+                    Date = capturedUtc,
+                    Notes = string.Empty
+                };
+            }
+
+            // Определим тип текущего кадра и соответствующую зону
+            var currentType = SelectedTemplate?.Id switch
+            {
+                "front" => HairCarePlus.Shared.Communication.PhotoType.FrontView,
+                "top" => HairCarePlus.Shared.Communication.PhotoType.TopView,
+                "back" => HairCarePlus.Shared.Communication.PhotoType.BackView,
+                _ => HairCarePlus.Shared.Communication.PhotoType.Custom
+            };
+            var currentZone = currentType switch
+            {
+                HairCarePlus.Shared.Communication.PhotoType.FrontView => PhotoZone.Front,
+                HairCarePlus.Shared.Communication.PhotoType.TopView => PhotoZone.Top,
+                HairCarePlus.Shared.Communication.PhotoType.BackView => PhotoZone.Back,
+                _ => PhotoZone.Front
+            };
+
             await using (var db = await _dbFactory.CreateDbContextAsync())
             {
                 // Persist relative file name in LocalPath so that future app sandbox moves don't break absolute paths
@@ -213,7 +250,8 @@ public partial class PhotoCaptureViewModel : ObservableObject
                     // сохраняем относительный путь (имя файла) для устойчивости к изменению AppDataDirectory
                     LocalPath = fileNameOnly,
                     PatientId = _profileService.PatientId.ToString(),
-                    Zone = PhotoZone.Front
+                    SetId = set.Id.ToString(),
+                    Zone = currentZone
                 });
                 await db.SaveChangesAsync();
             }
@@ -234,38 +272,13 @@ public partial class PhotoCaptureViewModel : ObservableObject
             // Сохраняем текущий кадр как элемент набора
             var currentItem = new HairCarePlus.Shared.Communication.PhotoReportItemDto
             {
-                Type = SelectedTemplate?.Id switch
-                {
-                    "front" => HairCarePlus.Shared.Communication.PhotoType.FrontView,
-                    "top" => HairCarePlus.Shared.Communication.PhotoType.TopView,
-                    "back" => HairCarePlus.Shared.Communication.PhotoType.BackView,
-                    _ => HairCarePlus.Shared.Communication.PhotoType.Custom
-                },
+                Id = reportId,  // ВАЖНО: используем тот же ID, что сохранили в БД!
+                Type = currentType,
                 ImageUrl = imageUrl,
-                LocalPath = imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? null : persistentPath
+                LocalPath = imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? null : persistentPath,
+                SetId = set.Id  // Также явно указываем SetId
             };
 
-            // Временное хранилище набора в Preferences по стабильному ключу активной сессии,
-            // чтобы три кадра гарантированно попали в один набор даже с паузами
-            const string activeSetKey = "photo-set:active";
-            HairCarePlus.Shared.Communication.PhotoReportSetDto set;
-            if (Microsoft.Maui.Storage.Preferences.ContainsKey(activeSetKey))
-            {
-                var raw = Microsoft.Maui.Storage.Preferences.Get(activeSetKey, string.Empty);
-                set = string.IsNullOrEmpty(raw)
-                    ? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc }
-                    : System.Text.Json.JsonSerializer.Deserialize<HairCarePlus.Shared.Communication.PhotoReportSetDto>(raw) ?? new HairCarePlus.Shared.Communication.PhotoReportSetDto { Id = Guid.NewGuid(), PatientId = _profileService.PatientId, Date = capturedUtc };
-            }
-            else
-            {
-                set = new HairCarePlus.Shared.Communication.PhotoReportSetDto
-                {
-                    Id = Guid.NewGuid(),
-                    PatientId = _profileService.PatientId,
-                    Date = capturedUtc,
-                    Notes = string.Empty
-                };
-            }
             set.Items.Add(currentItem);
             Microsoft.Maui.Storage.Preferences.Set(activeSetKey, System.Text.Json.JsonSerializer.Serialize(set));
 

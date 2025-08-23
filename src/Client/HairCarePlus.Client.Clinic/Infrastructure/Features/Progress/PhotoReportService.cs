@@ -21,6 +21,7 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
     private readonly IEventsSubscription _events;
         private readonly IOutboxRepository _outbox;
         private readonly ISyncService _syncService;
+    private readonly HairCarePlus.Client.Clinic.Infrastructure.FileCache.IFileCacheService _fileCache;
     private bool _handlersAttached = false;
     private string _patientId = string.Empty;
 
@@ -31,13 +32,15 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
                                   IMessenger messenger,
                                   IEventsSubscription eventsSub,
                                   IOutboxRepository outbox,
-                                  ISyncService syncService)
+                                  ISyncService syncService,
+                                  HairCarePlus.Client.Clinic.Infrastructure.FileCache.IFileCacheService fileCache)
     {
         _dbFactory = dbFactory;
         _messenger = messenger;
         _events = eventsSub;
             _outbox = outbox;
             _syncService = syncService;
+        _fileCache = fileCache;
     }
 
     public async Task<IReadOnlyList<PhotoReportDto>> GetReportsAsync(string patientId)
@@ -78,11 +81,23 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
 
         // Persist locally for immediate UI reflection
         await using var db = _dbFactory.CreateDbContext();
+        // Enrich DTO with set/type so the patient app can match by SetId when PhotoReportId differs across devices
+        var parentReport = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == photoReportId);
+        if (parentReport != null)
+        {
+            if (!string.IsNullOrWhiteSpace(parentReport.SetId) && Guid.TryParse(parentReport.SetId, out var setGuid))
+                dto.SetId = setGuid;
+            dto.Type = parentReport.Type;
+        }
         // Upsert semantics for doctor's comment per report+author: replace last text
-        var existing = await db.PhotoComments
+        // SQLite doesn't support ORDER BY DateTimeOffset translation.
+        // Fetch and order in-memory to pick the latest author comment for this report.
+        var existingList = await db.PhotoComments
             .Where(c => c.PhotoReportId == photoReportId && c.AuthorId == authorId)
+            .ToListAsync();
+        var existing = existingList
             .OrderByDescending(c => c.CreatedAtUtc)
-            .FirstOrDefaultAsync();
+            .FirstOrDefault();
         if (existing == null)
         {
             db.PhotoComments.Add(new PhotoCommentEntity
@@ -99,7 +114,6 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
             existing.CreatedAtUtc = dto.CreatedAtUtc;
         }
         // Also store brief summary on the parent report so feed builder can surface it later
-        var parentReport = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == photoReportId);
         if (parentReport != null)
         {
             parentReport.DoctorComment = text;
@@ -211,7 +225,42 @@ namespace HairCarePlus.Client.Clinic.Infrastructure.Features.Progress;
     {
         try
         {
-            // Упрощённо: на событие набора только инвалидируем кэш — UI вызовет GetReportsAsync заново
+            // Преобразуем набор в три photo reports в локальную БД и инвалидируем кэш, чтобы UI перерисовался
+            if (set == null || set.Items == null || set.Items.Count == 0) return;
+
+            await using var db = _dbFactory.CreateDbContext();
+            foreach (var it in set.Items)
+            {
+                var id = it.Id?.ToString() ?? Guid.NewGuid().ToString();
+                var exists = await db.PhotoReports.AnyAsync(p => p.Id == id);
+                if (exists) continue;
+                var entity = new PhotoReportEntity
+                {
+                    Id = id,
+                    PatientId = set.PatientId.ToString(),
+                    SetId = set.Id.ToString(),
+                    ImageUrl = it.ImageUrl,
+                    LocalPath = null,
+                    Date = set.Date,
+                    DoctorComment = set.Notes ?? string.Empty,
+                    Type = it.Type
+                };
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(it.ImageUrl) &&
+                        (it.ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                         it.ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var path = await _fileCache.GetLocalPathAsync(it.ImageUrl, CancellationToken.None);
+                        if (path != null)
+                            entity.LocalPath = path;
+                    }
+                }
+                catch { }
+                await db.PhotoReports.AddAsync(entity);
+            }
+            await db.SaveChangesAsync();
+
             if(!string.IsNullOrEmpty(_patientId))
                 _cache.Remove(_patientId);
         }

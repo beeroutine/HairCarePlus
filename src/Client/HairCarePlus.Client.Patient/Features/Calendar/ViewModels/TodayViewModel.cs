@@ -87,7 +87,7 @@ namespace HairCarePlus.Client.Patient.Features.Calendar.ViewModels
         private static int _concurrentRejections = 0;
         
         // Диагностические счетчики для дополнительных метрик
-        private int _eventCountsRequests = 0;
+        private int _eventCountsRequests = 0; // used in debug logs to measure fetch frequency
         private int _eventCountsCacheHits = 0;
         private int _eventCountsBatchRequests = 0;
         

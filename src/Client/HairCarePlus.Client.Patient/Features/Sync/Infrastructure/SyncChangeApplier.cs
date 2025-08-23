@@ -44,10 +44,26 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
                 var dto = elem.Deserialize<PhotoCommentDto>();
                 if (dto == null) continue;
 
-                // ensure parent report exists
+                // ensure parent report exists; if not, resolve by SetId + Zone (from Type)
                 var parentId = dto.PhotoReportId.ToString();
-                var exists = await db.PhotoReports.AnyAsync(p => p.Id == parentId);
-                if (!exists) continue; // or create stub
+                var parent = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == parentId);
+                if (parent == null && dto.SetId.HasValue)
+                {
+                    var desiredZone = dto.Type switch
+                    {
+                        PhotoType.FrontView => Progress.Domain.Entities.PhotoZone.Front,
+                        PhotoType.TopView => Progress.Domain.Entities.PhotoZone.Top,
+                        PhotoType.BackView => Progress.Domain.Entities.PhotoZone.Back,
+                        _ => Progress.Domain.Entities.PhotoZone.Front
+                    };
+                    parent = await db.PhotoReports
+                        .Where(r => r.SetId == dto.SetId.Value.ToString() && r.Zone == desiredZone)
+                        .OrderBy(r => r.CaptureDate)
+                        .FirstOrDefaultAsync();
+                    if (parent != null)
+                        parentId = parent.Id;
+                }
+                if (parent == null) continue; // or create stub
 
                 var duplicate = await db.PhotoComments.AnyAsync(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString() && c.Text == dto.Text && c.CreatedAtUtc == dto.CreatedAtUtc);
                 if (duplicate) continue;
@@ -123,8 +139,24 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             foreach (var dto in response.PhotoComments!)
             {
                 var parentId = dto.PhotoReportId.ToString();
-                var exists = await db.PhotoReports.AnyAsync(p => p.Id == parentId);
-                if (!exists) continue;
+                var parent = await db.PhotoReports.FirstOrDefaultAsync(p => p.Id == parentId);
+                if (parent == null && dto.SetId.HasValue)
+                {
+                    var desiredZone = dto.Type switch
+                    {
+                        PhotoType.FrontView => Progress.Domain.Entities.PhotoZone.Front,
+                        PhotoType.TopView => Progress.Domain.Entities.PhotoZone.Top,
+                        PhotoType.BackView => Progress.Domain.Entities.PhotoZone.Back,
+                        _ => Progress.Domain.Entities.PhotoZone.Front
+                    };
+                    parent = await db.PhotoReports
+                        .Where(r => r.SetId == dto.SetId.Value.ToString() && r.Zone == desiredZone)
+                        .OrderBy(r => r.CaptureDate)
+                        .FirstOrDefaultAsync();
+                    if (parent != null)
+                        parentId = parent.Id;
+                }
+                if (parent == null) continue;
 
                 var duplicate = await db.PhotoComments.AnyAsync(c => c.PhotoReportId == parentId && c.AuthorId == dto.AuthorId.ToString() && c.Text == dto.Text && c.CreatedAtUtc == dto.CreatedAtUtc);
                 if (duplicate) continue;

@@ -1,3 +1,4 @@
+using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -34,7 +35,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
     // Items displayed in UI (RestrictionTimer or ShowMore placeholder)
     public ObservableCollection<object> VisibleRestrictionItems { get; } = new();
 
-    private const int MaxVisibleRestrictions = 8;
+    private const int MaxVisibleRestrictions = int.MaxValue; // show all, align with Patient app
 
     public ObservableCollection<RestrictionTimer> Restrictions { get; } = new();
     public ObservableCollection<ProgressFeedItem> Feed { get; } = new();
@@ -130,8 +131,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                 Feed[index] = updated;
             }
 
-            // Fire-and-forget background sync, UI уже обновлён локально
-            try { _ = Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () => await _photoReportService.ConnectAsync(PatientId)); } catch { }
+            // Background sync is triggered by outbox; avoid redundant reconnection here
             CommentText = string.Empty;
             CommentTarget = null;
             IsCommenting = false;
@@ -163,11 +163,17 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         }
     }
 
+    private readonly SemaphoreSlim _loadGate = new(1, 1);
+
     private async Task LoadAsync()
     {
+        if (!await _loadGate.WaitAsync(0)) return;
         IsRefreshing = true;
         // Ensure we are connected to events BEFORE first load so cache is fresh and we catch first set
-        await _photoReportService.ConnectAsync(PatientId);
+        if (!_subscribed)
+        {
+            await _photoReportService.ConnectAsync(PatientId);
+        }
         // Fetch summary from API for demo
         var summaries = await _patientService.GetPatientsAsync();
         var summary = summaries.FirstOrDefault(p => p.Id == PatientId);
@@ -272,7 +278,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
             }
         }
 
-        // Subscribe to real-time updates and refresh feed when new set arrives
+        // Subscribe to real-time updates once and refresh feed when new set arrives
         if (!_subscribed)
         {
             _subscribed = true;
@@ -294,7 +300,83 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                         // re-load feed after cache invalidation to immediately show new photos
                         await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
                         {
-                            await LoadAsync();
+                            Feed.Clear();
+                            var reports = await _photoReportService.GetReportsAsync(PatientId);
+                            var earliestDate = reports.Any() ? DateOnly.FromDateTime(reports.Min(r => r.Date)) : (DateOnly?)null;
+                            if (reports.Any(r => r.SetId.HasValue && r.SetId.Value != Guid.Empty))
+                            {
+                                var groupedBySet = reports.GroupBy(r => r.SetId!.Value).OrderByDescending(g => g.First().Date);
+                                foreach (var group in groupedBySet)
+                                {
+                                    var items = group.ToList();
+                                    var first = items.First();
+                                    var groupDate = DateOnly.FromDateTime(first.Date);
+                                    var photos = items.Select(r => new ProgressPhoto
+                                    {
+                                        ReportId = r.Id.ToString(),
+                                        ImageUrl = r.ImageUrl,
+                                        LocalPath = r.LocalPath,
+                                        CapturedAt = r.Date,
+                                        Zone = r.Type switch
+                                        {
+                                            PhotoType.FrontView => PhotoZone.Front,
+                                            PhotoType.TopView => PhotoZone.Top,
+                                            PhotoType.BackView => PhotoZone.Back,
+                                            _ => PhotoZone.Front
+                                        }
+                                    }).ToList();
+                                    var doctorNote = items.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                                    var dayIndex = earliestDate.HasValue ? (groupDate.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
+                                    var aiPlaceholder = new AIReport(groupDate, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
+                                    var item = new ProgressFeedItem(
+                                        Date: groupDate,
+                                        Title: $"Day {dayIndex}",
+                                        Description: null,
+                                        Photos: photos,
+                                        ActiveRestrictions: new List<string>(),
+                                        DoctorReportSummary: doctorNote,
+                                        AiReport: aiPlaceholder
+                                    );
+                                    Feed.Add(item);
+                                }
+                            }
+                            else
+                            {
+                                var groupedByDate = reports.GroupBy(r => DateOnly.FromDateTime(r.Date)).OrderByDescending(g => g.Key);
+                                foreach (var group in groupedByDate)
+                                {
+                                    var items = group.ToList();
+                                    var first = items.First();
+                                    var groupDate = DateOnly.FromDateTime(first.Date);
+                                    var photos = items.Select(r => new ProgressPhoto
+                                    {
+                                        ReportId = r.Id.ToString(),
+                                        ImageUrl = r.ImageUrl,
+                                        LocalPath = r.LocalPath,
+                                        CapturedAt = r.Date,
+                                        Zone = r.Type switch
+                                        {
+                                            PhotoType.FrontView => PhotoZone.Front,
+                                            PhotoType.TopView => PhotoZone.Top,
+                                            PhotoType.BackView => PhotoZone.Back,
+                                            _ => PhotoZone.Front
+                                        }
+                                    }).ToList();
+                                    var doctorNote = items.Select(r => r.Notes).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                                    var dayIndex = earliestDate.HasValue ? (groupDate.DayNumber - earliestDate.Value.DayNumber) + 1 : 1;
+                                    var aiPlaceholder = new AIReport(groupDate, 0, "_Awaiting official AI analysis. Auto-generated score for preview purposes._");
+                                    var item = new ProgressFeedItem(
+                                        Date: groupDate,
+                                        Title: $"Day {dayIndex}",
+                                        Description: null,
+                                        Photos: photos,
+                                        ActiveRestrictions: new List<string>(),
+                                        DoctorReportSummary: doctorNote,
+                                        AiReport: aiPlaceholder
+                                    );
+                                    Feed.Add(item);
+                                }
+                            }
                         });
                     }
                     catch { }
@@ -308,7 +390,7 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
                         {
                             await Microsoft.Maui.ApplicationModel.MainThread.InvokeOnMainThreadAsync(async () =>
                             {
-                                await LoadAsync();
+                                await ReloadRestrictionsAsync();
                             });
                         }
                         catch { }
@@ -333,37 +415,61 @@ public partial class PatientPageViewModel : ObservableObject, IQueryAttributable
         }
 
         IsRefreshing = false;
+        _loadGate.Release();
     }
 
     private void UpdateVisibleRestrictionItems()
     {
         VisibleRestrictionItems.Clear();
 
-        if (Restrictions.Count <= MaxVisibleRestrictions)
-        {
-            foreach (var item in Restrictions)
-                VisibleRestrictionItems.Add(item);
-        }
-        else
-        {
-            int take = MaxVisibleRestrictions - 1;
-            foreach (var item in Restrictions.Take(take))
-                VisibleRestrictionItems.Add(item);
+        foreach (var item in Restrictions.OrderBy(r => r.DaysRemaining))
+            VisibleRestrictionItems.Add(item);
+    }
 
-            int remaining = Restrictions.Count - take;
-            VisibleRestrictionItems.Add(new ShowMoreRestrictionPlaceholderViewModel { CountLabel = $"+{remaining}" });
+    private async Task ReloadRestrictionsAsync()
+    {
+        try
+        {
+            Restrictions.Clear();
+            var restrictionDtos = await _restrictionService.GetRestrictionsAsync(PatientId);
+            foreach (var r in restrictionDtos)
+            {
+                Restrictions.Add(new RestrictionTimer(r.IconType, r.DaysRemaining, r.Progress));
+            }
+            Microsoft.Maui.ApplicationModel.MainThread.BeginInvokeOnMainThread(UpdateVisibleRestrictionItems);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to reload restrictions");
         }
     }
 
     private async Task StartCommentAsync(ProgressFeedItem? item)
     {
-        if (item == null) return;
+        if (item == null) 
+        {
+            _logger.LogWarning("StartCommentAsync called with null item");
+            return;
+        }
+        
         _logger.LogInformation("StartComment tapped for date {Date}, photos={Count}", item.Date, item.Photos.Count);
+        
+        // Check if photos have ReportId
+        var hasReportId = item.Photos.Any(p => !string.IsNullOrWhiteSpace(p.ReportId));
+        _logger.LogInformation("Photos have ReportId: {HasReportId}, First photo ReportId: {ReportId}", 
+            hasReportId, 
+            item.Photos.FirstOrDefault()?.ReportId ?? "null");
+        
         CommentTarget = item;
         // Prefill with existing doctor note to enable edit-in-place
         CommentText = item.DoctorReportSummary ?? string.Empty;
         IsCommenting = true;
         OnPropertyChanged(nameof(IsSendEnabled));
+        
+        _logger.LogInformation("Comment state updated: IsCommenting={IsCommenting}, CommentTarget set={HasTarget}, IsSendEnabled={IsSendEnabled}", 
+            IsCommenting, 
+            CommentTarget != null, 
+            IsSendEnabled);
     }
 
     public async Task SubmitCommentAsync(string photoReportId, string comment)

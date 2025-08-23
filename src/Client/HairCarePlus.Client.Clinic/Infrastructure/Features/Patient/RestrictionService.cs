@@ -27,7 +27,15 @@ public sealed class RestrictionService : IRestrictionService
         await using var db = await _dbFactory.CreateDbContextAsync();
         var entities = await db.Restrictions
             .Where(r => r.PatientId == patientId && r.IsActive)
-            .OrderBy(r => r.EndUtc)
+            .GroupBy(r => new { r.PatientId, r.Type })
+            .Select(g => new
+            {
+                Type = g.Key.Type,
+                // Take the most recent window (max EndUtc) to mirror Patient UI collapsing
+                StartUtc = g.OrderByDescending(e => e.EndUtc).First().StartUtc,
+                EndUtc = g.Max(e => e.EndUtc)
+            })
+            .OrderBy(x => x.EndUtc)
             .ToListAsync();
 
         // 1:1 retransmission of patient's active restrictions (no grouping/collapsing)
@@ -38,6 +46,7 @@ public sealed class RestrictionService : IRestrictionService
                 DaysRemaining = Math.Max(0, (e.EndUtc.Date - DateTime.UtcNow.Date).Days + 1),
                 Progress = CalculateProgress(e.StartUtc, e.EndUtc)
             })
+            .Where(r => r.DaysRemaining > 0)
             .OrderBy(r => r.DaysRemaining)
             .ToList();
 

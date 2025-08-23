@@ -22,6 +22,17 @@ public sealed class PhotoReportSetDto
 
 public sealed class PhotoReportItemDto
 {
+    /// <summary>
+    ///   Unique identifier for this photo report item. Must match the ID used in local DB
+    ///   to ensure comments can be linked back to the correct photo.
+    /// </summary>
+    public Guid? Id { get; set; }
+    
+    /// <summary>
+    ///   Reference to the parent PhotoReportSetDto.Id for consistency.
+    /// </summary>
+    public Guid? SetId { get; set; }
+    
     public PhotoType Type { get; set; }
 
     /// <summary>

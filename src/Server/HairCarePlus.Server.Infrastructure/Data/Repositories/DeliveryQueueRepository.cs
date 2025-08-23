@@ -45,7 +45,10 @@ public class DeliveryQueueRepository : IDeliveryQueueRepository
             query = query.Where(d => d.PatientId == patientId);
         }
 
-        var candidates = await query.ToListAsync();
+        var candidates = await query
+            .OrderBy(d => d.EntityType == nameof(PhotoReportSetDto) ? 0 : d.EntityType == "PhotoReport" ? 0 : d.EntityType == "PhotoComment" ? 1 : 2)
+            .ThenBy(d => d.CreatedAt)
+            .ToListAsync();
 
         // Filter out photo packets that reference files that do not exist anymore
         // This can happen after a "clean" server restart when uploads folder is empty.

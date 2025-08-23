@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView x:Class="HairCarePlus.Client.Clinic.Common.Views.ChatComposerView"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:HairCarePlus.Client.Clinic.Common.Behaviors"
+             xmlns:commonConverters="clr-namespace:HairCarePlus.Client.Clinic.Common.Converters"
+             x:Name="Root">
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <commonConverters:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <commonConverters:StringNotEmptyConverter x:Key="StringNotEmptyConverter" />
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto" Padding="0" BackgroundColor="{AppThemeBinding Light=#F7F7F7, Dark=#121212}">
+        <!-- Reply Preview -->
+        <Grid Grid.Row="0"
+              IsVisible="{Binding Source={x:Reference Root}, Path=ReplyTo, Converter={StaticResource IsNotNullConverter}}"
+              Margin="8,4,8,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <BoxView Grid.Column="0"
+                     BackgroundColor="{AppThemeBinding Light=#2D6A4F, Dark=#8FD5A6}"
+                     CornerRadius="2"
+                     Margin="2,4,2,4" />
+
+            <Border Grid.Column="1"
+                   BackgroundColor="{AppThemeBinding Light=#A0DAB2, Dark=#4D7B63}"
+                   Opacity="0.85"
+                   Padding="10,6"
+                   StrokeShape="RoundRectangle 12"
+                   StrokeThickness="0">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Reply to patient's message"
+                               TextColor="{AppThemeBinding Light=#2D6A4F, Dark=#FFFFFF}"
+                               FontAttributes="Bold"
+                               FontSize="11">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding Source={x:Reference Root}, Path=ReplyTo.SenderId}" Value="doctor">
+                                    <Setter Property="Text" Value="Reply to your message" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding Source={x:Reference Root}, Path=ReplyTo.Content}"
+                               TextColor="{AppThemeBinding Light=#105E29, Dark=#FFFFFF}"
+                               FontSize="12"
+                               MaxLines="1"
+                               LineBreakMode="TailTruncation" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1"
+                            Text="×"
+                            BackgroundColor="Transparent"
+                            TextColor="{AppThemeBinding Light=#8E8E93, Dark=#636366}"
+                            FontSize="20"
+                            Padding="0"
+                            Margin="-8,-8,-8,-8"
+                            HeightRequest="36"
+                            WidthRequest="36"
+                            Command="{Binding Source={x:Reference Root}, Path=CancelReplyCommand}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Input Controls -->
+        <Grid Grid.Row="2" ColumnDefinitions="44,*,44" Padding="8,6,8,8">
+            <Button Grid.Column="0"
+                    Text="＋"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    FontSize="24"
+                    Padding="0"
+                    Margin="0"
+                    HeightRequest="38"
+                    WidthRequest="38"
+                    VerticalOptions="Start"
+                    x:Name="AttachmentButton">
+                <Button.Behaviors>
+                    <behaviors:MenuFlyoutBehavior x:Name="AttachmentMenu" />
+                </Button.Behaviors>
+            </Button>
+
+            <Border Grid.Column="1"
+                    BackgroundColor="{AppThemeBinding Light=#EAF4FC, Dark=#1E2A35}"
+                    Padding="8,0"
+                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    StrokeShape="RoundRectangle 18"
+                    StrokeThickness="0"
+                    Margin="4,0,4,0"
+                    MinimumHeightRequest="38"
+                    MaximumHeightRequest="120"
+                    VerticalOptions="Start">
+                <Editor Text="{Binding Source={x:Reference Root}, Path=MessageText, Mode=TwoWay, UpdateSourceEventName=TextChanged}"
+                       Placeholder="Message"
+                       PlaceholderColor="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}"
+                       TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                       BackgroundColor="Transparent"
+                       FontSize="17"
+                       AutoSize="TextChanges"
+                       MaxLength="1000"
+                       Keyboard="Chat"
+                       VerticalTextAlignment="Center"
+                       Margin="0,-2,0,-2" />
+            </Border>
+
+            <Button Grid.Column="2"
+                    IsVisible="{Binding Source={x:Reference Root}, Path=MessageText, Converter={StaticResource StringNotEmptyConverter}}"
+                    Text="↑"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"
+                    Shadow="{OnPlatform iOS={StaticResource SmallShadow}}"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    Padding="0"
+                    Margin="0"
+                    HeightRequest="38"
+                    WidthRequest="38"
+                    Command="{Binding Source={x:Reference Root}, Path=SendCommand}" />
+        </Grid>
+    </Grid>
+</ContentView>
+
+

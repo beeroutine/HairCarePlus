@@ -24,6 +24,16 @@
 		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
 		<SelfContained>false</SelfContained>
 
+		<!-- Disable IL Linking/Trimming for Debug builds to speed up compilation -->
+		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">false</PublishTrimmed>
+		<TrimMode Condition="'$(Configuration)' == 'Debug'">none</TrimMode>
+		<EnableTrimAnalyzer Condition="'$(Configuration)' == 'Debug'">false</EnableTrimAnalyzer>
+		<EnableSingleFileAnalyzer Condition="'$(Configuration)' == 'Debug'">false</EnableSingleFileAnalyzer>
+		
+		<!-- Keep trimming for Release builds for smaller app size -->
+		<PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+		<TrimMode Condition="'$(Configuration)' == 'Release'">link</TrimMode>
+
 		<!-- Display name -->
 		<ApplicationTitle>HairCare+ Patient</ApplicationTitle>
 

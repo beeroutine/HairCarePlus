@@ -25,6 +25,12 @@ public sealed class BatchSyncRequestDto
     public Guid PatientId { get; init; }
 
     /// <summary>
+    ///   Множество SetId, которые уже известны клиенту (локально сохранённые наборы фотоотчётов).
+    ///   Используется сервером для фильтрации нерелевантных комментариев к чужим/устаревшим наборам.
+    /// </summary>
+    public IReadOnlyList<Guid>? KnownSetIds { get; init; }
+
+    /// <summary>
     ///   Идентификаторы DeliveryQueue записей, которые клиент подтвердил (ACK)
     /// </summary>
     public IReadOnlyList<Guid>? AckIds { get; init; }

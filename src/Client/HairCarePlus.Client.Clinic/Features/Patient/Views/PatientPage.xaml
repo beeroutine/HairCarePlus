@@ -127,7 +127,7 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:ProgressFeedItem" xmlns:models="clr-namespace:HairCarePlus.Client.Clinic.Features.Patient.Models">
                             <commonViews:ProgressCardView
-                                CommentCommand="{Binding Path=BindingContext.StartCommentCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" />
+                                CommentCommand="{Binding Path=BindingContext.StartCommentCommand, Source={x:Reference thisPage}}" />
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>

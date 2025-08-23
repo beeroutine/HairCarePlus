@@ -1,8 +1,12 @@
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
+
 namespace HairCarePlus.Client.Clinic.Common.Views;
 
 public partial class ProgressCardView : ContentView
 {
+    private readonly ILogger<ProgressCardView>? _logger;
+    
     public static readonly BindableProperty CommentCommandProperty = BindableProperty.Create(
         nameof(CommentCommand), typeof(ICommand), typeof(ProgressCardView));
 
@@ -12,17 +16,34 @@ public partial class ProgressCardView : ContentView
         set => SetValue(CommentCommandProperty, value);
     }
 
-    public ProgressCardView() => InitializeComponent();
+    public ProgressCardView() 
+    {
+        InitializeComponent();
+        try
+        {
+            _logger = Application.Current?.Handler?.MauiContext?.Services?.GetService(typeof(ILogger<ProgressCardView>)) as ILogger<ProgressCardView>;
+        }
+        catch { }
+    }
 
     // Ensure event fallback triggers the command even if binding fails
     private void OnDoctorCommentTapped(object? sender, EventArgs e)
     {
+        _logger?.LogInformation("[ProgressCardView] OnDoctorCommentTapped called");
+        System.Diagnostics.Debug.WriteLine($"[ProgressCardView] OnDoctorCommentTapped called");
+        
         var item = BindingContext;
         if (CommentCommand?.CanExecute(item) == true)
         {
+            _logger?.LogInformation("[ProgressCardView] Executing CommentCommand");
+            System.Diagnostics.Debug.WriteLine($"[ProgressCardView] Executing CommentCommand");
             CommentCommand.Execute(item);
             return;
         }
+        
+        _logger?.LogInformation("[ProgressCardView] CommentCommand not available, using fallback");
+        System.Diagnostics.Debug.WriteLine($"[ProgressCardView] CommentCommand not available, using fallback");
+        
         // Fallback: walk up the visual tree to find the nearest Page and its VM
         Element? current = this;
         while (current != null && current is not Page)
@@ -34,14 +55,22 @@ public partial class ProgressCardView : ContentView
         if (vm != null)
         {
             var typed = item as HairCarePlus.Client.Clinic.Features.Patient.Models.ProgressFeedItem;
+            System.Diagnostics.Debug.WriteLine($"[ProgressCardView] VM found, typed item: {typed?.Date}, IsCommenting: {vm.IsCommenting}");
+            
             if (vm.IsCommenting && ReferenceEquals(vm.CommentTarget, typed))
             {
+                System.Diagnostics.Debug.WriteLine($"[ProgressCardView] Cancelling comment");
                 vm.CancelCommentCommand.Execute(null);
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine($"[ProgressCardView] Starting comment for item: {typed?.Date}");
                 vm.StartCommentCommand.Execute(typed);
             }
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[ProgressCardView] VM not found!");
         }
     }
 

@@ -106,13 +106,20 @@
 
                         <!-- Read-only text -->
                         <Label Grid.Row="1"
-                               Text="{Binding DoctorReportSummary}"
-                               Style="{StaticResource CommentTextStyle}">
+                               Text="{Binding DoctorReportSummary, TargetNullValue='Нажмите для добавления комментария'}"
+                               Style="{StaticResource CommentTextStyle}"
+                               MinimumHeightRequest="44">
                             <Label.Triggers>
                                 <DataTrigger TargetType="Label"
                                             Binding="{Binding Source={x:Reference InlineEditPanel}, Path=IsVisible}"
                                             Value="True">
                                     <Setter Property="IsVisible" Value="False" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                            Binding="{Binding DoctorReportSummary}"
+                                            Value="">
+                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+                                    <Setter Property="FontAttributes" Value="Italic" />
                                 </DataTrigger>
                             </Label.Triggers>
                             <Label.GestureRecognizers>

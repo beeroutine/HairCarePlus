@@ -31,6 +31,11 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
 
     public async Task ApplyAsync(BatchSyncResponseDto response)
     {
+            _logger.LogInformation("[CLINIC-SYNC-APPLIER] Starting ApplyAsync - Restrictions: {RestrictionsCount}, PhotoReports: {ReportsCount}, Packets: {PacketsCount}",
+                response.Restrictions?.Count ?? 0,
+                response.PhotoReports?.Count ?? 0,
+                response.Packets?.Count ?? 0);
+            
             await using var db = await _dbFactory.CreateDbContextAsync();
         var applied = 0;
 
@@ -40,17 +45,39 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             
             if (response.Packets != null)
             {
+                _logger.LogInformation("[CLINIC-SYNC-APPLIER] Processing {Count} packets", response.Packets.Count);
                 foreach (var packet in response.Packets)
                 {
+                    _logger.LogDebug("[CLINIC-SYNC-APPLIER] Packet: Type={Type}, Id={Id}", packet.EntityType, packet.Id);
                     if (packet.EntityType == nameof(PhotoReportDto))
                     {
                         var dto = JsonSerializer.Deserialize<PhotoReportDto>(packet.PayloadJson);
-                        if (dto != null) reportIds.Add(dto.Id.ToString());
+                        if (dto != null) 
+                        {
+                            reportIds.Add(dto.Id.ToString());
+                            _logger.LogDebug("[CLINIC-SYNC-APPLIER] Added PhotoReport ID {Id} to processing list", dto.Id);
+                        }
                     }
                     else if (packet.EntityType == nameof(RestrictionDto))
                     {
                         var dto = JsonSerializer.Deserialize<RestrictionDto>(packet.PayloadJson);
-                        if (dto != null) restrictionIds.Add(dto.Id.ToString());
+                        if (dto != null) 
+                        {
+                            restrictionIds.Add(dto.Id.ToString());
+                            _logger.LogInformation("[CLINIC-SYNC-APPLIER] Found Restriction packet: Id={Id}, PatientId={PatientId}, Type={Type}, Active={Active}",
+                                dto.Id, dto.PatientId, dto.IconType, dto.IsActive);
+                        }
+                    }
+                    else if (packet.EntityType == "Restriction")
+                    {
+                        // Handle packets with EntityType="Restriction" (not "RestrictionDto")
+                        var dto = JsonSerializer.Deserialize<RestrictionDto>(packet.PayloadJson);
+                        if (dto != null) 
+                        {
+                            restrictionIds.Add(dto.Id.ToString());
+                            _logger.LogInformation("[CLINIC-SYNC-APPLIER] Found Restriction packet (non-Dto type): Id={Id}, PatientId={PatientId}, Type={Type}, Active={Active}",
+                                dto.Id, dto.PatientId, dto.IconType, dto.IsActive);
+                        }
                     }
                 }
             }
@@ -70,9 +97,11 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             // if (response.PhotoReports != null) { ... }
             if (response.Restrictions != null)
             {
-                 _logger.LogInformation("Clinic SyncApplier: applying {Count} restrictions from typed list", response.Restrictions.Count);
+                 _logger.LogInformation("[CLINIC-SYNC-APPLIER] Processing {Count} restrictions from typed list", response.Restrictions.Count);
                 foreach (var dto in response.Restrictions)
                 {
+                    _logger.LogDebug("[CLINIC-SYNC-APPLIER] Applying restriction from list: Id={Id}, PatientId={PatientId}, Type={Type}",
+                        dto.Id, dto.PatientId, dto.IconType);
                     applied += ApplyRestriction(db, dto, existingRestrictions);
                 }
             }
@@ -80,17 +109,27 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             // Step 4: Process DTOs from packets
             if (response.Packets != null)
             {
+                _logger.LogInformation("[CLINIC-SYNC-APPLIER] Processing packets for persistence");
                 foreach (var packet in response.Packets)
                 {
                     if (packet.EntityType == nameof(PhotoReportDto))
                     {
                         var dto = JsonSerializer.Deserialize<PhotoReportDto>(packet.PayloadJson);
-                        if(dto != null) applied += ApplyPhotoReport(db, dto, existingReports);
+                        if(dto != null) 
+                        {
+                            _logger.LogDebug("[CLINIC-SYNC-APPLIER] Applying PhotoReport from packet: Id={Id}", dto.Id);
+                            applied += ApplyPhotoReport(db, dto, existingReports);
+                        }
                     }
-                    else if (packet.EntityType == nameof(RestrictionDto))
+                    else if (packet.EntityType == nameof(RestrictionDto) || packet.EntityType == "Restriction")
                     {
                         var dto = JsonSerializer.Deserialize<RestrictionDto>(packet.PayloadJson);
-                        if(dto != null) applied += ApplyRestriction(db, dto, existingRestrictions);
+                        if(dto != null) 
+                        {
+                            _logger.LogInformation("[CLINIC-SYNC-APPLIER] Applying Restriction from packet: Id={Id}, PatientId={PatientId}, Type={Type}, Active={Active}",
+                                dto.Id, dto.PatientId, dto.IconType, dto.IsActive);
+                            applied += ApplyRestriction(db, dto, existingRestrictions);
+                        }
                     }
                 }
             }
@@ -98,7 +137,11 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             if (applied > 0)
             {
                 await db.SaveChangesAsync();
-                _logger.LogInformation("Clinic SyncApplier applied {Count} changes", applied);
+                _logger.LogInformation("[CLINIC-SYNC-APPLIER] Successfully saved {Count} changes to database", applied);
+            }
+            else
+            {
+                _logger.LogInformation("[CLINIC-SYNC-APPLIER] No changes to apply");
             }
         }
 
@@ -109,7 +152,12 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             {
                 entity.ImageUrl = dto.ImageUrl;
                 entity.Date = dto.Date;
-                entity.DoctorComment = dto.Notes;
+                // Важно: не перезаписывать локально отредактированный комментарий врача
+                // входящими Notes из пациента. Обновляем сводку только если она пустая.
+                if (string.IsNullOrWhiteSpace(entity.DoctorComment) && !string.IsNullOrWhiteSpace(dto.Notes))
+                {
+                    entity.DoctorComment = dto.Notes;
+                }
             }
             else
             {
@@ -130,11 +178,16 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
 
         private int ApplyRestriction(AppDbContext db, RestrictionDto dto, Dictionary<string, Domain.Entities.RestrictionEntity> existingRestrictions)
         {
+            // Use stable, deterministic key per patient + type so repeated packets update the same row
             var id = dto.Id != System.Guid.Empty
                 ? dto.Id.ToString()
-                : $"{dto.PatientId:N}-{(int)dto.IconType}-{dto.StartUtc.Date:yyyyMMdd}-{dto.EndUtc.Date:yyyyMMdd}";
+                : $"{dto.PatientId:N}-{(int)dto.IconType}";
+            
+            _logger.LogDebug("[CLINIC-SYNC-APPLIER] ApplyRestriction: Processing Id={Id}, PatientId={PatientId}, Type={Type}, Active={Active}",
+                id, dto.PatientId, dto.IconType, dto.IsActive);
             if (existingRestrictions.TryGetValue(id, out var entity))
             {
+                _logger.LogDebug("[CLINIC-SYNC-APPLIER] Updating existing restriction {Id}", id);
                 entity.Type = (int)dto.IconType;
                 entity.StartUtc = dto.StartUtc;
                 entity.EndUtc = dto.EndUtc;
@@ -142,6 +195,8 @@ public sealed class SyncChangeApplier : ISyncChangeApplier
             }
             else
                 {
+                    _logger.LogInformation("[CLINIC-SYNC-APPLIER] Creating new restriction: Id={Id}, PatientId={PatientId}, Type={Type}, Active={Active}",
+                        id, dto.PatientId, dto.IconType, dto.IsActive);
                     entity = new Domain.Entities.RestrictionEntity
                     {
                         Id = id,

@@ -101,7 +101,8 @@ public sealed class GetLocalPhotoReportsQueryHandler : IQueryHandler<GetLocalPho
                     ActiveRestrictions: new List<RestrictionTimer>() // TODO: Load actual restrictions for that day
                 );
                 // Surface doctor's comment in a dedicated property used by the card view
-                feedItem.DoctorReportSummary = string.IsNullOrWhiteSpace(first.DoctorComment) ? null : first.DoctorComment;
+                var summary = group.Select(g => g.Report.DoctorComment).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+                feedItem.DoctorReportSummary = string.IsNullOrWhiteSpace(summary) ? null : summary;
                 return feedItem;
             })
             .ToList();

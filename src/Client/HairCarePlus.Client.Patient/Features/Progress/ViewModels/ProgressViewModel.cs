@@ -16,6 +16,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Application.Messages;
 using HairCarePlus.Client.Patient.Features.PhotoCapture.Views;
 using HairCarePlus.Client.Patient.Features.Progress.Application.Messages;
+using HairCarePlus.Client.Patient.Features.Sync.Application;
 using HairCarePlus.Client.Patient.Infrastructure.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Progress.Services.Interfaces;
 using HairCarePlus.Client.Patient.Features.Sync.Messages;
@@ -43,6 +44,7 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSaved
 
     // Prevent parallel executions of LoadAsync which cause CollectionView inconsistency
     private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private Timer? _syncTimer;
 
     private const int DefaultDaysRange = 7;
     private const int MaxVisibleRestrictionItems = 4;
@@ -69,6 +71,21 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSaved
         WeakReferenceMessenger.Default.Register<PhotoReportSyncedMessage>(this);
         // подписка на синхронизированный комментарий к фото
         WeakReferenceMessenger.Default.Register<PhotoCommentSyncedMessage>(this);
+        
+        // Start periodic sync timer (every 30 seconds)
+        _syncTimer = new Timer(async _ => 
+        {
+            try
+            {
+                var syncService = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services?.GetService(typeof(ISyncService)) as ISyncService;
+                if (syncService != null)
+                {
+                    await syncService.SynchronizeAsync(CancellationToken.None);
+                    await LoadAsync();
+                }
+            }
+            catch { }
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
     }
 
     public ObservableCollection<RestrictionTimer> RestrictionTimers { get; }
@@ -173,6 +190,21 @@ public partial class ProgressViewModel : ObservableObject, IRecipient<PhotoSaved
         IsRefreshing = true;
         try
         {
+            // Trigger sync to get latest comments from clinic
+            try
+            {
+                var syncService = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services?.GetService(typeof(ISyncService)) as ISyncService;
+                if (syncService != null)
+                {
+                    await syncService.SynchronizeAsync(CancellationToken.None);
+                    _logger.LogInformation("Sync completed before loading feed");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to sync before loading feed");
+            }
+            
             var feedItems = await _queryBus.SendAsync(new Application.Queries.GetLocalPhotoReportsQuery());
             _logger.LogInformation("Fetched {Count} feed items from local database.", feedItems.Count());
             
